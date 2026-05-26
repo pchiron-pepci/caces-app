@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.stagiaire import Stagiaire
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
+import shutil
+import os
 
 router = APIRouter(prefix="/stagiaires", tags=["Stagiaires"])
+
+UPLOAD_DIR = "uploads/photos"
 
 class StagiaireCreate(BaseModel):
     nom: str
@@ -60,6 +64,22 @@ def update_stagiaire(id: int, data: StagiaireCreate, db: Session = Depends(get_d
     db.commit()
     db.refresh(s)
     return s
+
+@router.post("/photo/{id}")
+def upload_photo(id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    s = db.query(Stagiaire).filter(Stagiaire.id == id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Stagiaire non trouve")
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        raise HTTPException(status_code=400, detail="Format non supporte")
+    filename = f"stagiaire_{id}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    s.photo = f"/uploads/photos/{filename}"
+    db.commit()
+    return {"message": "Photo uploadee", "photo": s.photo}
 
 @router.delete("/{id}")
 def delete_stagiaire(id: int, pin: str, db: Session = Depends(get_db)):

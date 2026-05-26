@@ -12,11 +12,11 @@
     </div>
 </div>
 
-<!-- LISTE -->
 <div class="card" style="margin-top: 20px;">
     <table class="table" id="tableau">
         <thead>
             <tr>
+                <th>Photo</th>
                 <th>Nom / Prénom</th>
                 <th>Date naissance</th>
                 <th>Employeur</th>
@@ -28,6 +28,13 @@
         <tbody id="tbody">
             {% for s in stagiaires %}
             <tr>
+                <td>
+                    {% if s.photo %}
+                        <img src="{{ s.photo }}" style="width:40px; height:50px; object-fit:cover; border-radius:4px; border:2px solid #1a3a8f;">
+                    {% else %}
+                        <div style="width:40px; height:50px; background:#e0e0e0; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:18px;">👤</div>
+                    {% endif %}
+                </td>
                 <td><strong>{{ s.nom }} {{ s.prenom }}</strong></td>
                 <td>{{ s.date_naissance }}</td>
                 <td>{{ s.employeur or '—' }}</td>
@@ -45,7 +52,7 @@
 
 <!-- MODAL FORMULAIRE -->
 <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:16px; padding:32px; width:600px; max-width:90%;">
+    <div style="background:white; border-radius:16px; padding:32px; width:600px; max-width:90%; max-height:90vh; overflow-y:auto;">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;" id="modal-title">Nouveau stagiaire</h2>
         <input type="hidden" id="stagiaire-id">
         <div class="form-grid">
@@ -77,6 +84,11 @@
                 <label>Note</label>
                 <textarea id="f-note" rows="3" placeholder="CACES précédents, informations particulières..."></textarea>
             </div>
+            <div class="form-field" style="grid-column: span 2;">
+                <label>Photo</label>
+                <input type="file" id="f-photo" accept="image/*" onchange="previewPhoto()">
+                <img id="f-photo-preview" style="display:none; width:80px; height:100px; object-fit:cover; border-radius:4px; margin-top:8px; border:2px solid #1a3a8f;">
+            </div>
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" onclick="sauvegarder()">💾 Sauvegarder</button>
@@ -105,6 +117,19 @@
 <script>
 let idAArchiver = null;
 
+function previewPhoto() {
+    const file = document.getElementById('f-photo').files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const preview = document.getElementById('f-photo-preview');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
 function ouvrirFormulaire() {
     document.getElementById('modal-title').textContent = 'Nouveau stagiaire';
     document.getElementById('stagiaire-id').value = '';
@@ -115,6 +140,8 @@ function ouvrirFormulaire() {
     document.getElementById('f-email').value = '';
     document.getElementById('f-tel').value = '';
     document.getElementById('f-note').value = '';
+    document.getElementById('f-photo').value = '';
+    document.getElementById('f-photo-preview').style.display = 'none';
     document.getElementById('modal').style.display = 'flex';
 }
 
@@ -128,6 +155,8 @@ function editer(id, nom, prenom, ddn, email, tel, employeur, note) {
     document.getElementById('f-tel').value = tel;
     document.getElementById('f-employeur').value = employeur;
     document.getElementById('f-note').value = note;
+    document.getElementById('f-photo').value = '';
+    document.getElementById('f-photo-preview').style.display = 'none';
     document.getElementById('modal').style.display = 'flex';
 }
 
@@ -162,6 +191,16 @@ async function sauvegarder() {
     });
 
     if (resp.ok) {
+        const stagiaire = await resp.json();
+        const photoFile = document.getElementById('f-photo').files[0];
+        if (photoFile) {
+            const formData = new FormData();
+            formData.append('file', photoFile);
+            await fetch(`/stagiaires/photo/${stagiaire.id}`, {
+                method: 'POST',
+                body: formData
+            });
+        }
         fermerModal();
         location.reload();
     } else {
