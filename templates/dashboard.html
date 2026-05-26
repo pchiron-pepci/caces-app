@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-icon">👥</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ stats.stagiaires }}</div>
+            <div class="stat-label">Stagiaires</div>
+        </div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon">🪪</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ stats.cartes }}</div>
+            <div class="stat-label">Cartes délivrées</div>
+        </div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon">📋</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ stats.sessions }}</div>
+            <div class="stat-label">Sessions</div>
+        </div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-info">
+            <div class="stat-number">{{ stats.expirations }}</div>
+            <div class="stat-label">Expirations à venir</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2>🗺️ Cartographie PEPCI</h2>
+            <span class="badge green">Valide jusqu'au 13/06/2028</span>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Famille</th>
+                    <th>Catégories</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>R482</strong> — Engins de chantier</td>
+                    <td>A, B1, C1, F</td>
+                    <td><span class="badge green">✅ Habilité</span></td>
+                </tr>
+                <tr>
+                    <td><strong>R486A</strong> — PEMP</td>
+                    <td>A, B</td>
+                    <td><span class="badge green">✅ Habilité</span></td>
+                </tr>
+                <tr>
+                    <td><strong>R489</strong> — Chariots</td>
+                    <td>1B, 3, 5</td>
+                    <td><span class="badge green">✅ Habilité</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>👨‍🏫 Testeurs actifs</h2>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Testeur</th>
+                    <th>Habilitations</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for testeur in testeurs %}
+                <tr>
+                    <td><strong>{{ testeur.nom }} {{ testeur.prenom }}</strong></td>
+                    <td>{{ testeur.statut }}</td>
+                    <td><span class="badge green">✅ Actif</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

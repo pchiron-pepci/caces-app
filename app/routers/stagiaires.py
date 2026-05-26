@@ -62,7 +62,10 @@ def update_stagiaire(id: int, data: StagiaireCreate, db: Session = Depends(get_d
     return s
 
 @router.delete("/{id}")
-def delete_stagiaire(id: int, db: Session = Depends(get_db)):
+def delete_stagiaire(id: int, pin: str, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Stagiaire).filter(Stagiaire.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Stagiaire non trouve")

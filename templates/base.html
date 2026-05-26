@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CACES® Manager - PEPCI Formation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-text">CACES®</div>
+            <div class="logo-sub">PEPCI Formation</div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/" class="nav-item {% if page == 'dashboard' %}active{% endif %}">
+                📊 Dashboard
+            </a>
+            <a href="/stagiaires" class="nav-item {% if page == 'stagiaires' %}active{% endif %}">
+                👥 Stagiaires
+            </a>
+            <a href="/testeurs" class="nav-item {% if page == 'testeurs' %}active{% endif %}">
+                👨‍🏫 Testeurs
+            </a>
+            <a href="/sessions" class="nav-item {% if page == 'sessions' %}active{% endif %}">
+                📋 Sessions
+            </a>
+            <a href="/cartes" class="nav-item {% if page == 'cartes' %}active{% endif %}">
+                🪪 Cartes CACES
+            </a>
+            <a href="/statistiques" class="nav-item {% if page == 'statistiques' %}active{% endif %}">
+                📈 Statistiques
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="cert-badge">N° D-552-06</div>
+            <div class="cert-date">Valide jusqu'au 13/06/2028</div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+        <div class="topbar">
+            <h1 class="page-title">{% block title %}{% endblock %}</h1>
+            <div class="topbar-right">
+                <span class="user-badge">👤 Patrice CHIRON</span>
+            </div>
+        </div>
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html>
