@@ -11,7 +11,7 @@ from app.models.session import Session
 from app.models.categorie import Famille, Categorie
 from app.models.habilitation_testeur import HabilitationTesteur
 
-from app.routers import stagiaires, testeurs
+from app.routers import stagiaires, testeurs, admin
 
 Base.metadata.create_all(bind=engine)
 
@@ -35,6 +35,7 @@ app.add_middleware(
 
 app.include_router(stagiaires.router)
 app.include_router(testeurs.router)
+app.include_router(admin.router)
 
 @app.get("/")
 def dashboard(request: Request):
@@ -87,6 +88,35 @@ def page_testeurs(request: Request):
         context={
             "page": "testeurs",
             "testeurs": liste
+        }
+    )
+
+@app.get("/admin")
+def page_admin(request: Request):
+    db = SessionLocal()
+    familles = db.query(Famille).filter(Famille.actif == True).all()
+    categories_raw = db.query(Categorie).filter(Categorie.actif == True).all()
+    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+    for t in testeurs_list:
+        t.habilitations = db.query(HabilitationTesteur).filter(
+            HabilitationTesteur.testeur_id == t.id,
+            HabilitationTesteur.actif == True
+        ).all()
+    # Ajouter le code famille à chaque catégorie
+    categories = []
+    for c in categories_raw:
+        f = db.query(Famille).filter(Famille.id == c.famille_id).first()
+        c.famille_code = f.code if f else "?"
+        categories.append(c)
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="admin.html",
+        context={
+            "page": "admin",
+            "familles": familles,
+            "categories": categories,
+            "testeurs": testeurs_list
         }
     )
 

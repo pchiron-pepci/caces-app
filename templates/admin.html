@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Administration{% endblock %}
+
+{% block content %}
+
+<!-- TABS -->
+<div class="tabs">
+    <button class="tab active" onclick="showTab('cartographie', this)">🗺️ Cartographie PEPCI</button>
+    <button class="tab" onclick="showTab('habilitations', this)">👨‍🏫 Habilitations testeurs</button>
+    <button class="tab" onclick="showTab('parametres', this)">⚙️ Paramètres</button>
+</div>
+
+<!-- TAB CARTOGRAPHIE -->
+<div id="tab-cartographie">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div>
+            <strong>Certificat DEKRA N° D-552-06</strong>
+            <span class="badge green" style="margin-left:8px;">Valide jusqu'au 13/06/2028</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>✅ Catégories habilitées PEPCI</h2>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Famille</th>
+                    <th>Code</th>
+                    <th>Libellé</th>
+                    <th>UT pratique</th>
+                    <th>Date habilitation</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in categories %}
+                {% if c.pepci_habilite %}
+                <tr>
+                    <td><strong>{{ c.famille_code }}</strong></td>
+                    <td><span class="badge blue">{{ c.code }}</span></td>
+                    <td>{{ c.libelle }}</td>
+                    <td>{{ c.ut_pratique }} UT</td>
+                    <td>{{ c.date_habilitation or '—' }}</td>
+                    <td>
+                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                            onclick="desactiverHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">
+                            🔒 Désactiver
+                        </button>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top:24px;">
+        <div class="card">
+            <div class="card-header">
+                <h2>⭕ Catégories non habilitées</h2>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Famille</th>
+                        <th>Code</th>
+                        <th>Libellé</th>
+                        <th>UT pratique</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in categories %}
+                    {% if not c.pepci_habilite %}
+                    <tr>
+                        <td><strong>{{ c.famille_code }}</strong></td>
+                        <td><span class="badge orange">{{ c.code }}</span></td>
+                        <td>{{ c.libelle }}</td>
+                        <td>{{ c.ut_pratique }} UT</td>
+                        <td>
+                            <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;"
+                                onclick="activerHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">
+                                ✅ Activer
+                            </button>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- TAB HABILITATIONS TESTEURS -->
+<div id="tab-habilitations" style="display:none;">
+    {% for t in testeurs %}
+    <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+            <h2>👨‍🏫 {{ t.nom }} {{ t.prenom }}</h2>
+            <button class="btn btn-primary" onclick="ouvrirHabilitation({{ t.id }}, '{{ t.nom }} {{ t.prenom }}')">
+                ➕ Ajouter habilitation
+            </button>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Famille</th>
+                    <th>Catégorie</th>
+                    <th>Option PE</th>
+                    <th>Option Tel</th>
+                    <th>Date intégration</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in t.habilitations %}
+                <tr>
+                    <td><strong>{{ h.famille }}</strong></td>
+                    <td><span class="badge blue">{{ h.categorie }}</span></td>
+                    <td>{{ '✅' if h.option_pe else '—' }}</td>
+                    <td>{{ '✅' if h.option_tel else '—' }}</td>
+                    <td>{{ h.date_integration }}</td>
+                    <td><span class="badge green">Actif</span></td>
+                    <td>
+                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                            onclick="retirerHabilitation({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- TAB PARAMETRES -->
+<div id="tab-parametres" style="display:none;">
+    <div class="card">
+        <div class="card-header">
+            <h2>⚙️ Paramètres système</h2>
+        </div>
+        <div style="padding:24px;">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>UT max par jour par testeur (total)</label>
+                    <input type="number" value="7" step="0.5" id="p-ut-max">
+                </div>
+                <div class="form-field">
+                    <label>UT pratiques max par jour par testeur</label>
+                    <input type="number" value="6" step="0.5" id="p-ut-pratique-max">
+                </div>
+                <div class="form-field">
+                    <label>% max sessions Hors CDT (année en cours)</label>
+                    <input type="number" value="25" id="p-ratio-hors-cdt">
+                </div>
+                <div class="form-field">
+                    <label>Année de référence</label>
+                    <input type="number" value="2026" id="p-annee">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="sauvegarderParametres()">💾 Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PIN -->
+<div id="modal-pin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:400px; text-align:center;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">🔒 Confirmation Admin</h2>
+        <p style="color:#666; margin-bottom:24px;" id="pin-message"></p>
+        <div class="form-field" style="margin-bottom:16px;">
+            <label>Code PIN administrateur</label>
+            <input type="password" id="pin-input" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:8px;">
+        </div>
+        <div style="display:flex; gap:12px; justify-content:center;">
+            <button class="btn btn-primary" id="pin-confirm-btn">Confirmer</button>
+            <button class="btn btn-secondary" onclick="fermerPin()">Annuler</button>
+        </div>
+        <p id="pin-error" style="color:red; margin-top:12px; display:none;">❌ Code PIN incorrect !</p>
+    </div>
+</div>
+
+<!-- MODAL HABILITATION TESTEUR -->
+<div id="modal-hab" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:500px;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;" id="hab-title">Ajouter habilitation</h2>
+        <input type="hidden" id="hab-testeur-id">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>Famille</label>
+                <select id="hab-famille" onchange="chargerCategories()">
+                    <option value="">— Choisir —</option>
+                    {% for f in familles %}
+                    <option value="{{ f.code }}">{{ f.code }} — {{ f.libelle }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-field">
+                <label>Catégorie</label>
+                <select id="hab-categorie">
+                    <option value="">— Choisir une famille d'abord —</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <label>Date intégration</label>
+                <input type="date" id="hab-date">
+            </div>
+            <div class="form-field">
+                <label>Options</label>
+                <div style="display:flex; gap:16px; margin-top:8px;">
+                    <label style="text-transform:none; font-size:14px;">
+                        <input type="checkbox" id="hab-pe"> Porte-Engins
+                    </label>
+                    <label style="text-transform:none; font-size:14px;">
+                        <input type="checkbox" id="hab-tel"> Télécommande
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="sauvegarderHabilitation()">💾 Sauvegarder</button>
+            <button class="btn btn-secondary" onclick="fermerHabilitation()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(name, btn) {
+    document.getElementById('tab-cartographie').style.display = 'none';
+    document.getElementById('tab-habilitations').style.display = 'none';
+    document.getElementById('tab-parametres').style.display = 'none';
+    document.getElementById(`tab-${name}`).style.display = 'block';
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function demanderPin(message, callback) {
+    document.getElementById('pin-message').textContent = message;
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+    document.getElementById('pin-confirm-btn').onclick = async () => {
+        const pin = document.getElementById('pin-input').value;
+        if (pin !== '1505') {
+            document.getElementById('pin-error').style.display = 'block';
+            return;
+        }
+        fermerPin();
+        await callback();
+    };
+}
+
+function fermerPin() {
+    document.getElementById('modal-pin').style.display = 'none';
+}
+
+async function chargerCategories() {
+    const famille = document.getElementById('hab-famille').value;
+    if (!famille) return;
+    const resp = await fetch(`/admin/categories/${famille}`);
+    const cats = await resp.json();
+    const select = document.getElementById('hab-categorie');
+    select.innerHTML = cats.map(c => `<option value="${c.code}">${c.code} — ${c.libelle}</option>`).join('');
+}
+
+function activerHabilitation(id, nom) {
+    demanderPin(`Activer l'habilitation PEPCI : ${nom} ?`, async () => {
+        const resp = await fetch(`/admin/categorie/${id}/activer`, { method: 'POST' });
+        if (resp.ok) location.reload();
+        else alert('Erreur !');
+    });
+}
+
+function desactiverHabilitation(id, nom) {
+    demanderPin(`Désactiver l'habilitation PEPCI : ${nom} ?`, async () => {
+        const resp = await fetch(`/admin/categorie/${id}/desactiver`, { method: 'POST' });
+        if (resp.ok) location.reload();
+        else alert('Erreur !');
+    });
+}
+
+function ouvrirHabilitation(testeurId, nom) {
+    document.getElementById('hab-title').textContent = `Ajouter habilitation — ${nom}`;
+    document.getElementById('hab-testeur-id').value = testeurId;
+    document.getElementById('hab-famille').value = '';
+    document.getElementById('hab-categorie').innerHTML = '<option value="">— Choisir une famille d\'abord —</option>';
+    document.getElementById('hab-date').value = '';
+    document.getElementById('hab-pe').checked = false;
+    document.getElementById('hab-tel').checked = false;
+    document.getElementById('modal-hab').style.display = 'flex';
+}
+
+function fermerHabilitation() {
+    document.getElementById('modal-hab').style.display = 'none';
+}
+
+async function sauvegarderHabilitation() {
+    const data = {
+        testeur_id: parseInt(document.getElementById('hab-testeur-id').value),
+        famille: document.getElementById('hab-famille').value,
+        categorie: document.getElementById('hab-categorie').value,
+        date_integration: document.getElementById('hab-date').value,
+        option_pe: document.getElementById('hab-pe').checked,
+        option_tel: document.getElementById('hab-tel').checked
+    };
+    if (!data.famille || !data.categorie || !data.date_integration) {
+        alert('Tous les champs sont obligatoires !');
+        return;
+    }
+    const resp = await fetch('/admin/habilitation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (resp.ok) {
+        fermerHabilitation();
+        location.reload();
+    } else {
+        alert('Erreur lors de la sauvegarde !');
+    }
+}
+
+function retirerHabilitation(id, nom) {
+    demanderPin(`Retirer l'habilitation : ${nom} ?`, async () => {
+        const resp = await fetch(`/admin/habilitation/${id}`, { method: 'DELETE' });
+        if (resp.ok) location.reload();
+        else alert('Erreur !');
+    });
+}
+
+function sauvegarderParametres() {
+    alert('Paramètres sauvegardés !');
+}
+</script>
+{% endblock %}

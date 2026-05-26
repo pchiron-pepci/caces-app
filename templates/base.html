@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="sidebar-logo">
             <div class="logo-text">CACES®</div>
@@ -33,6 +32,10 @@
             <a href="/statistiques" class="nav-item {% if page == 'statistiques' %}active{% endif %}">
                 📈 Statistiques
             </a>
+            <div class="nav-separator"></div>
+            <a href="/admin" class="nav-item {% if page == 'admin' %}active{% endif %}">
+                ⚙️ Administration
+            </a>
         </nav>
         <div class="sidebar-footer">
             <div class="cert-badge">N° D-552-06</div>
@@ -40,7 +43,6 @@
         </div>
     </div>
 
-    <!-- MAIN -->
     <div class="main">
         <div class="topbar">
             <h1 class="page-title">{% block title %}{% endblock %}</h1>
