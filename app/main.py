@@ -11,7 +11,7 @@ from app.models.session import Session
 from app.models.categorie import Famille, Categorie
 from app.models.habilitation_testeur import HabilitationTesteur
 
-from app.routers import stagiaires
+from app.routers import stagiaires, testeurs
 
 Base.metadata.create_all(bind=engine)
 
@@ -33,11 +33,12 @@ app.add_middleware(
 )
 
 app.include_router(stagiaires.router)
+app.include_router(testeurs.router)
 
 @app.get("/")
 def dashboard(request: Request):
     db = SessionLocal()
-    testeurs = db.query(Testeur).filter(Testeur.actif == True).all()
+    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
     stats = {
         "stagiaires": db.query(Stagiaire).filter(Stagiaire.actif == 1).count(),
         "cartes": 0,
@@ -51,7 +52,7 @@ def dashboard(request: Request):
         context={
             "page": "dashboard",
             "stats": stats,
-            "testeurs": testeurs
+            "testeurs": testeurs_list
         }
     )
 
@@ -66,6 +67,25 @@ def page_stagiaires(request: Request):
         context={
             "page": "stagiaires",
             "stagiaires": liste
+        }
+    )
+
+@app.get("/testeurs")
+def page_testeurs(request: Request):
+    db = SessionLocal()
+    liste = db.query(Testeur).filter(Testeur.actif == True).all()
+    for t in liste:
+        t.habilitations = db.query(HabilitationTesteur).filter(
+            HabilitationTesteur.testeur_id == t.id,
+            HabilitationTesteur.actif == True
+        ).all()
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="testeurs.html",
+        context={
+            "page": "testeurs",
+            "testeurs": liste
         }
     )
 

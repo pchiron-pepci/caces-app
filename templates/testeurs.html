@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Testeurs{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <div class="toolbar-left">
+        <input type="text" id="search" placeholder="🔍 Rechercher un testeur..." class="search-input" onkeyup="filtrer()">
+    </div>
+    <div class="toolbar-right">
+        <button class="btn btn-primary" onclick="ouvrirFormulaire()">➕ Nouveau testeur</button>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <table class="table" id="tableau">
+        <thead>
+            <tr>
+                <th>Nom / Prénom</th>
+                <th>Statut</th>
+                <th>Entreprise</th>
+                <th>N° INRS</th>
+                <th>Habilitations</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tbody">
+            {% for t in testeurs %}
+            <tr>
+                <td><strong>{{ t.nom }} {{ t.prenom }}</strong></td>
+                <td>
+                    {% if t.statut == 'interne' %}
+                        <span class="badge blue">Interne</span>
+                    {% elif t.statut == 'independant' %}
+                        <span class="badge orange">Indépendant</span>
+                    {% else %}
+                        <span class="badge green">Entreprise</span>
+                    {% endif %}
+                </td>
+                <td>{{ t.entreprise or '—' }}</td>
+                <td>{{ t.numero_inrs or '—' }}</td>
+                <td>
+                    {% for h in t.habilitations %}
+                        <span class="badge blue" style="margin:2px;">{{ h.famille }} {{ h.categorie }}</span>
+                    {% endfor %}
+                </td>
+                <td>
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" 
+                        onclick="editer({{ t.id }}, '{{ t.nom }}', '{{ t.prenom }}', '{{ t.statut }}', '{{ t.entreprise or '' }}', '{{ t.numero_inrs or '' }}', '{{ t.email or '' }}', '{{ t.telephone or '' }}')">✏️</button>
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" 
+                        onclick="archiver({{ t.id }}, '{{ t.nom }} {{ t.prenom }}')">🗑️</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL FORMULAIRE -->
+<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:600px; max-width:90%;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;" id="modal-title">Nouveau testeur</h2>
+        <input type="hidden" id="testeur-id">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>Nom *</label>
+                <input type="text" id="f-nom" placeholder="JOSSELIN">
+            </div>
+            <div class="form-field">
+                <label>Prénom *</label>
+                <input type="text" id="f-prenom" placeholder="Sébastien">
+            </div>
+            <div class="form-field">
+                <label>Statut *</label>
+                <select id="f-statut">
+                    <option value="interne">Interne</option>
+                    <option value="independant">Indépendant</option>
+                    <option value="entreprise">Entreprise</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <label>Entreprise</label>
+                <input type="text" id="f-entreprise" placeholder="Si indépendant ou entreprise...">
+            </div>
+            <div class="form-field">
+                <label>Email</label>
+                <input type="email" id="f-email" placeholder="testeur@exemple.fr">
+            </div>
+            <div class="form-field">
+                <label>Téléphone</label>
+                <input type="text" id="f-tel" placeholder="0612345678">
+            </div>
+            <div class="form-field">
+                <label>N° INRS</label>
+                <input type="text" id="f-inrs" placeholder="D-552-06">
+            </div>
+            <div class="form-field">
+                <label>Date habilitation</label>
+                <input type="date" id="f-habilitation">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="sauvegarder()">💾 Sauvegarder</button>
+            <button class="btn btn-secondary" onclick="fermerModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PIN -->
+<div id="modal-pin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:400px; text-align:center;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">🔒 Confirmation</h2>
+        <p style="color:#666; margin-bottom:24px;" id="pin-message"></p>
+        <div class="form-field" style="margin-bottom:16px;">
+            <label>Code PIN</label>
+            <input type="password" id="pin-input" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:8px;">
+        </div>
+        <div style="display:flex; gap:12px; justify-content:center;">
+            <button class="btn btn-danger" onclick="confirmerArchivage()">Confirmer</button>
+            <button class="btn btn-secondary" onclick="fermerPin()">Annuler</button>
+        </div>
+        <p id="pin-error" style="color:red; margin-top:12px; display:none;">❌ Code PIN incorrect !</p>
+    </div>
+</div>
+
+<script>
+let idAArchiver = null;
+
+function ouvrirFormulaire() {
+    document.getElementById('modal-title').textContent = 'Nouveau testeur';
+    document.getElementById('testeur-id').value = '';
+    document.getElementById('f-nom').value = '';
+    document.getElementById('f-prenom').value = '';
+    document.getElementById('f-statut').value = 'interne';
+    document.getElementById('f-entreprise').value = '';
+    document.getElementById('f-email').value = '';
+    document.getElementById('f-tel').value = '';
+    document.getElementById('f-inrs').value = '';
+    document.getElementById('f-habilitation').value = '';
+    document.getElementById('modal').style.display = 'flex';
+}
+
+function editer(id, nom, prenom, statut, entreprise, inrs, email, tel) {
+    document.getElementById('modal-title').textContent = 'Modifier testeur';
+    document.getElementById('testeur-id').value = id;
+    document.getElementById('f-nom').value = nom;
+    document.getElementById('f-prenom').value = prenom;
+    document.getElementById('f-statut').value = statut;
+    document.getElementById('f-entreprise').value = entreprise;
+    document.getElementById('f-inrs').value = inrs;
+    document.getElementById('f-email').value = email;
+    document.getElementById('f-tel').value = tel;
+    document.getElementById('modal').style.display = 'flex';
+}
+
+function fermerModal() {
+    document.getElementById('modal').style.display = 'none';
+}
+
+async function sauvegarder() {
+    const id = document.getElementById('testeur-id').value;
+    const data = {
+        nom: document.getElementById('f-nom').value.toUpperCase(),
+        prenom: document.getElementById('f-prenom').value,
+        statut: document.getElementById('f-statut').value,
+        entreprise: document.getElementById('f-entreprise').value || null,
+        email: document.getElementById('f-email').value || null,
+        telephone: document.getElementById('f-tel').value || null,
+        numero_inrs: document.getElementById('f-inrs').value || null,
+        date_habilitation: document.getElementById('f-habilitation').value || null
+    };
+
+    if (!data.nom || !data.prenom) {
+        alert('Nom et prénom sont obligatoires !');
+        return;
+    }
+
+    const url = id ? `/api/testeurs/${id}` : '/api/testeurs/';
+    const method = id ? 'PUT' : 'POST';
+
+    const resp = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+
+    if (resp.ok) {
+        fermerModal();
+        location.reload();
+    } else {
+        alert('Erreur lors de la sauvegarde !');
+    }
+}
+
+function archiver(id, nom) {
+    idAArchiver = id;
+    document.getElementById('pin-message').textContent = `Archiver "${nom}" ?`;
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+}
+
+function fermerPin() {
+    document.getElementById('modal-pin').style.display = 'none';
+    idAArchiver = null;
+}
+
+async function confirmerArchivage() {
+    const pin = document.getElementById('pin-input').value;
+    const resp = await fetch(`/api/testeurs/${idAArchiver}?pin=${pin}`, {
+        method: 'DELETE'
+    });
+    if (resp.ok) {
+        fermerPin();
+        location.reload();
+    } else {
+        document.getElementById('pin-error').style.display = 'block';
+    }
+}
+
+function filtrer() {
+    const q = document.getElementById('search').value.toLowerCase();
+    document.querySelectorAll('#tbody tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
