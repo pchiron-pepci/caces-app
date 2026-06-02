@@ -8,7 +8,7 @@ from app.models.equipement import Equipement
 from app.models.stagiaire import Stagiaire
 from app.models.testeur import Testeur
 from app.models.categorie import Categorie, Famille
-from app.models.jour_test import JourTest, ResultatTheorie
+from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille
 from app.services.tirage_grille import tirer_grille, calculer_resultat_theorie
 from pydantic import BaseModel
@@ -65,6 +65,10 @@ class JourTestCreate(BaseModel):
     type: str
     testeur_id: Optional[int] = None
     note: Optional[str] = None
+    candidats: List[int] = []
+
+class AjoutCandidatsJour(BaseModel):
+    candidats: List[int] = []
 
 class ReponsesCandidatCreate(BaseModel):
     jour_test_id: int
@@ -77,6 +81,12 @@ def liste_sessions(db: DBSession = Depends(get_db)):
 
 @router.post("/", response_model=SessionResponse)
 def create_session(data: SessionCreate, db: DBSession = Depends(get_db)):
+    from datetime import datetime
+    annee = datetime.now().year
+    # Générer référence auto si non fournie
+    if not data.reference:
+        nb = db.query(Session).filter(Session.annee == annee).count()
+        data.reference = f"SESSION-{annee}-{str(nb + 1).zfill(3)}"
     s = Session(**data.model_dump())
     db.add(s)
     db.commit()
@@ -166,7 +176,6 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
         raise HTTPException(status_code=404, detail="Session non trouvee")
 
     grille_id = None
-
     if data.type == "theorie":
         from datetime import datetime
         annee = datetime.now().year
@@ -185,6 +194,12 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
         note=data.note
     )
     db.add(jour)
+    db.flush()
+
+    for stagiaire_id in data.candidats:
+        jtc = JourTestCandidat(jour_test_id=jour.id, stagiaire_id=stagiaire_id)
+        db.add(jtc)
+
     db.commit()
     db.refresh(jour)
 
@@ -194,6 +209,19 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
         result["grille_numero"] = grille.numero
         result["grille_id"] = grille_id
     return result
+
+@router.post("/{session_id}/jours/{jour_id}/candidats")
+def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, db: DBSession = Depends(get_db)):
+    for stagiaire_id in data.candidats:
+        existing = db.query(JourTestCandidat).filter(
+            JourTestCandidat.jour_test_id == jour_id,
+            JourTestCandidat.stagiaire_id == stagiaire_id
+        ).first()
+        if not existing:
+            jtc = JourTestCandidat(jour_test_id=jour_id, stagiaire_id=stagiaire_id)
+            db.add(jtc)
+    db.commit()
+    return {"message": "Candidats ajoutes"}
 
 @router.delete("/{session_id}/jours/{id}")
 def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
@@ -213,19 +241,14 @@ def sauvegarder_reponses(session_id: int, data: ReponsesCandidatCreate, db: DBSe
 
     resultat = calculer_resultat_theorie(data.reponses, jour.grille_id, db)
 
-    rt = db.query(ResultatTheorie).filter(
-        ResultatTheorie.session_id == session_id,
-        ResultatTheorie.stagiaire_id == data.stagiaire_id
-    ).first()
-
-    if not rt:
-        rt = ResultatTheorie(
-            jour_test_id=data.jour_test_id,
-            session_id=session_id,
-            stagiaire_id=data.stagiaire_id,
-            grille_id=jour.grille_id
-        )
-        db.add(rt)
+  # Toujours créer un nouveau résultat pour la traçabilité
+    rt = ResultatTheorie(
+        jour_test_id=data.jour_test_id,
+        session_id=session_id,
+        stagiaire_id=data.stagiaire_id,
+        grille_id=jour.grille_id
+    )
+    db.add(rt)
 
     rt.reponses_json = json.dumps(data.reponses)
     rt.note_theme1 = resultat["notes_themes"].get("1")
@@ -240,12 +263,9 @@ def sauvegarder_reponses(session_id: int, data: ReponsesCandidatCreate, db: DBSe
     rt.theme4_ok = resultat["themes_ok"].get("4")
     rt.theme5_ok = resultat["themes_ok"].get("5")
     rt.obtenue = resultat["obtenue"]
-
     db.commit()
-    return {
-        "message": "Reponses sauvegardees",
-        "resultat": resultat
-    }
+
+    return {"message": "Reponses sauvegardees", "resultat": resultat}
 
 @router.get("/{session_id}/theorie/{stagiaire_id}")
 def get_resultat_theorie(session_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):

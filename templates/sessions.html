@@ -74,12 +74,11 @@
                     {% for l in lieux %}{% if l.actif %}
                     <option value="{{ l.id }}">{{ l.nom }} ({{ l.type }})</option>
                     {% endif %}{% endfor %}
-                    <option value="0">+ Nouveau lieu Hors CDT</option>
                 </select>
             </div>
             <div class="form-field">
-                <label>Reference interne</label>
-                <input type="text" id="f-reference" placeholder="SESSION-2026-001">
+                <label>Reference interne (optionnel)</label>
+                <input type="text" id="f-reference" placeholder="Auto : SESSION-2026-001">
             </div>
             <div class="form-field">
                 <label>Testeur principal (theorie)</label>
@@ -91,15 +90,11 @@
                 </select>
             </div>
             <div class="form-field">
-                <label>Date theorie</label>
-                <input type="date" id="f-theorie">
-            </div>
-            <div class="form-field">
-                <label>Date debut pratique</label>
+                <label>Date debut session</label>
                 <input type="date" id="f-pratique-debut">
             </div>
             <div class="form-field">
-                <label>Date fin pratique</label>
+                <label>Date fin session</label>
                 <input type="date" id="f-pratique-fin">
             </div>
             <div class="form-field" style="grid-column: span 2;">
@@ -141,12 +136,10 @@ function fermerModal() {
 }
 
 async function sauvegarder() {
-    const lieuVal = document.getElementById('f-lieu').value;
     const data = {
         famille: document.getElementById('f-famille').value,
-        lieu_id: parseInt(lieuVal),
+        lieu_id: parseInt(document.getElementById('f-lieu').value),
         reference: document.getElementById('f-reference').value || null,
-        date_theorie: document.getElementById('f-theorie').value || null,
         date_pratique_debut: document.getElementById('f-pratique-debut').value || null,
         date_pratique_fin: document.getElementById('f-pratique-fin').value || null,
         note: document.getElementById('f-note').value || null
@@ -165,20 +158,20 @@ async function sauvegarder() {
 
     if (resp.ok) {
         const session = await resp.json();
-        window.location.href = `/sessions/${session.id}`;
+        window.location.href = '/sessions/' + session.id;
     } else {
         alert('Erreur lors de la creation !');
     }
 }
 
 function annuler(id, nom) {
-    document.getElementById('pin-message').textContent = `Annuler la session "${nom}" ?`;
+    document.getElementById('pin-message').textContent = 'Annuler la session "' + nom + '" ?';
     document.getElementById('pin-input').value = '';
     document.getElementById('pin-error').style.display = 'none';
     document.getElementById('modal-pin').style.display = 'flex';
     document.getElementById('pin-confirm-btn').onclick = async () => {
         const pin = document.getElementById('pin-input').value;
-        const resp = await fetch(`/api/sessions/${id}?pin=${pin}`, { method: 'DELETE' });
+        const resp = await fetch('/api/sessions/' + id + '?pin=' + pin, { method: 'DELETE' });
         if (resp.ok) { fermerPin(); location.reload(); }
         else document.getElementById('pin-error').style.display = 'block';
     };

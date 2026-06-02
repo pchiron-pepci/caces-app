@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- HEADER SESSION -->
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <div>
         <a href="/sessions" style="color:#666; text-decoration:none; font-size:13px;">Retour aux sessions</a>
@@ -36,14 +35,15 @@
 <!-- TAB SEQUENCAGE -->
 <div id="tab-sequencage">
 
-    <!-- JOURS DE TEST THEORIE -->
+    <!-- EPREUVE THEORIQUE -->
     <div class="card" style="margin-bottom:16px;">
         <div class="card-header">
             <h2>Epreuve theorique</h2>
             <button class="btn btn-primary" onclick="ouvrirAjoutJourTheorie()">+ Planifier test theorique</button>
         </div>
         {% if jours_test %}
-            {% for j in jours_test %}{% if j.type == 'theorie' %}
+            {% for j in jours_test %}
+            {% if j.type == 'theorie' %}
             <div style="padding:16px; border-bottom:1px solid #f0f2f7;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
@@ -57,12 +57,12 @@
                         {% endif %}
                     </div>
                     <div style="display:flex; gap:8px;">
-                        <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;"
-                            onclick="ouvrirSaisieTheorie({{ j.id }}, {{ j.grille_id or 'null' }}, '{{ j.date }}')">
-                            Saisir resultats
+                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                            onclick="ouvrirAjoutCandidatJour({{ j.id }})">
+                            + Candidat
                         </button>
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
-                            class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">
+                            class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
                             Tablette candidat
                         </a>
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
@@ -70,28 +70,28 @@
                     </div>
                 </div>
 
-                <!-- Résultats théorie par candidat -->
                 <table class="table" style="margin-top:12px;">
                     <thead>
                         <tr>
                             <th>Candidat</th>
-<th style="text-align:center;">T1/12</th>
-<th style="text-align:center;">T2/28</th>
-<th style="text-align:center;">T3/44</th>
-<th style="text-align:center;">T4/12</th>
-<th style="text-align:center;">T5/4</th>
-<th style="text-align:center;">Total/100</th>
-<th style="text-align:center;">Resultat</th>
+                            <th style="text-align:center;">T1/12</th>
+                            <th style="text-align:center;">T2/28</th>
+                            <th style="text-align:center;">T3/44</th>
+                            <th style="text-align:center;">T4/12</th>
+                            <th style="text-align:center;">T5/4</th>
+                            <th style="text-align:center;">Total/100</th>
+                            <th style="text-align:center;">Resultat</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for sc in session_candidats %}
+                        {% if sc.stagiaire_id in j.candidats_ids %}
                         <tr>
                             <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
                             {% if sc.theorie_dispensee %}
                                 <td colspan="7" style="text-align:center;"><span class="badge orange">Dispense</span></td>
                             {% else %}
-                                {% set rt = resultats_theorie.get(sc.stagiaire_id) %}
+                              {% set rt = resultats_theorie_par_jour.get(j.id, {}).get(sc.stagiaire_id) %}
                                 {% if rt %}
                                     <td style="text-align:center;">
                                         <span class="{{ 'badge green' if rt.theme1_ok else 'badge red' }}">{{ rt.note_theme1|int }}</span>
@@ -108,35 +108,27 @@
                                     <td style="text-align:center;">
                                         <span class="{{ 'badge green' if rt.theme5_ok else 'badge red' }}">{{ rt.note_theme5|int }}</span>
                                     </td>
+                                    <td style="text-align:center;"><strong>{{ rt.note_totale|int }}/100</strong></td>
                                     <td style="text-align:center;">
-                                        <strong>{{ rt.note_totale|int }}/100</strong>
-                                    </td>
-                                    <td style="text-align:center;">
-                                        {% if rt.obtenue %}
-                                            <span class="badge green">REUSSI</span>
-                                        {% else %}
-                                            <span class="badge red">ECHEC</span>
-                                        {% endif %}
+                                        {% if rt.obtenue %}<span class="badge green">REUSSI</span>
+                                        {% else %}<span class="badge red">ECHEC</span>{% endif %}
                                     </td>
                                 {% else %}
                                     <td colspan="6" style="text-align:center; color:#888;">En attente</td>
-                                    <td style="text-align:center;">
-                                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:11px;"
-                                            onclick="ouvrirSaisieTheorie({{ j.id }}, {{ j.grille_id or 'null' }}, '{{ j.date }}', {{ sc.stagiaire_id }})">
-                                            Saisir
-                                        </button>
-                                    </td>
+                                    <td style="text-align:center;"><span style="color:#888;">—</span></td>
                                 {% endif %}
                             {% endif %}
                         </tr>
+                        {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            {% endif %}{% endfor %}
+            {% endif %}
+            {% endfor %}
         {% else %}
             <div style="padding:24px; text-align:center; color:#888;">
-                Aucun jour de test planifie. Cliquez sur "Planifier test theorique".
+                Aucun jour de test planifie. Cliquez sur "+ Planifier test theorique".
             </div>
         {% endif %}
     </div>
@@ -167,19 +159,17 @@
                     <tr>
                         <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
                         <td style="text-align:center;">
+                            {% set rt = resultats_theorie.get(sc.stagiaire_id) %}
                             {% if sc.theorie_dispensee %}
                                 <span class="badge orange" style="font-size:10px;">Dispense</span>
-                            {% else %}
-                                {% set rt = resultats_theorie.get(sc.stagiaire_id) %}
-                                {% if rt %}
-                                    {% if rt.obtenue %}
-                                        <span class="badge green" style="font-size:10px;">{{ rt.note_totale|int }}/100</span>
-                                    {% else %}
-                                        <span class="badge red" style="font-size:10px;">{{ rt.note_totale|int }}/100</span>
-                                    {% endif %}
+                            {% elif rt %}
+                                {% if rt.obtenue %}
+                                    <span class="badge green" style="font-size:10px;">{{ rt.note_totale|int }}/100</span>
                                 {% else %}
-                                    <span style="color:#888; font-size:11px;">—</span>
+                                    <span class="badge red" style="font-size:10px;">{{ rt.note_totale|int }}/100</span>
                                 {% endif %}
+                            {% else %}
+                                <span style="color:#888; font-size:11px;">—</span>
                             {% endif %}
                         </td>
                         {% for cat in categories %}
@@ -349,9 +339,9 @@
     </div>
 </div>
 
-<!-- MODAL AJOUT JOUR THEORIE -->
+<!-- MODAL PLANIFIER JOUR THEORIE -->
 <div id="modal-jour-theorie" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:16px; padding:32px; width:600px; max-width:95vw;">
+    <div style="background:white; border-radius:16px; padding:32px; width:650px; max-width:95vw; max-height:90vh; overflow-y:auto;">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;">Planifier test theorique</h2>
         <div class="form-grid">
             <div class="form-field">
@@ -368,8 +358,21 @@
                 </select>
             </div>
         </div>
-        <div style="background:#e8f5e9; border-radius:8px; padding:12px; margin-top:8px; color:#2e7d32; font-size:13px;">
-            La grille theorique sera tiree automatiquement au moment de la validation.
+        <div style="margin-top:16px;">
+            <label style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; display:block; margin-bottom:12px;">
+                Candidats qui passent ce jour *
+            </label>
+            <div style="background:#f0f2f7; border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+                {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
+                <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px; background:white; border-radius:8px;">
+                    <input type="checkbox" name="jt-candidat" value="{{ sc.stagiaire_id }}" checked>
+                    {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
+                </label>
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+        <div style="background:#e8f5e9; border-radius:8px; padding:12px; margin-top:16px; color:#2e7d32; font-size:13px;">
+            La grille theorique sera tiree automatiquement.
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" onclick="sauvegarderJourTheorie()">Valider et tirer la grille</button>
@@ -378,94 +381,27 @@
     </div>
 </div>
 
-<!-- MODAL SAISIE RESULTATS THEORIE -->
-<div id="modal-theorie" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:flex-start; justify-content:center; overflow-y:auto; padding:20px 0;">
-    <div style="background:white; border-radius:16px; padding:32px; width:95vw; max-width:900px; margin:auto;">
-        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">Saisie resultats theoriques</h2>
-        <p style="color:#666; font-size:13px; margin-bottom:24px;" id="theorie-info"></p>
-        <input type="hidden" id="theorie-jour-id">
-        <input type="hidden" id="theorie-grille-id">
-        <input type="hidden" id="theorie-stagiaire-id">
-
-        <!-- Choix du candidat -->
-        <div class="form-field" style="margin-bottom:24px;" id="field-choix-candidat">
-            <label>Candidat *</label>
-            <select id="theorie-candidat" onchange="chargerGrilleSaisie()">
-                <option value="">-- Choisir un candidat --</option>
-                {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
-                <option value="{{ sc.stagiaire_id }}">{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</option>
-                {% endif %}{% endfor %}
-            </select>
+<!-- MODAL AJOUT CANDIDAT JOUR EXISTANT -->
+<div id="modal-candidat-jour" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:500px; max-width:95vw;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;">Ajouter un candidat a ce jour</h2>
+        <input type="hidden" id="acj-jour-id">
+        <div style="background:#f0f2f7; border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+            {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
+            <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px; background:white; border-radius:8px;">
+                <input type="checkbox" name="acj-candidat" value="{{ sc.stagiaire_id }}">
+                {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
+            </label>
+            {% endif %}{% endfor %}
         </div>
-
-        <!-- Grille de saisie par thème -->
-        <div id="grille-saisie" style="display:none;">
-            <div style="background:#f0f2f7; border-radius:8px; padding:16px; margin-bottom:16px;">
-                <p style="font-size:13px; color:#555; margin:0;">
-                    Repondez VRAI ou FAUX pour chaque question. Le calcul est automatique.
-                </p>
-            </div>
-
-            <!-- Thème 1 : 12 questions -->
-            <div class="card" style="margin-bottom:12px;">
-                <div class="card-header" style="background:#e3f2fd;">
-                    <h3 style="font-size:16px;">Theme 1 : Connaissances generales (12 pts)</h3>
-                </div>
-                <div id="theme1-questions" style="padding:16px; display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;"></div>
-            </div>
-
-            <!-- Thème 2 : 28 questions -->
-            <div class="card" style="margin-bottom:12px;">
-                <div class="card-header" style="background:#e8f5e9;">
-                    <h3 style="font-size:16px;">Theme 2 : Technologie et stabilite (28 pts)</h3>
-                </div>
-                <div id="theme2-questions" style="padding:16px; display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;"></div>
-            </div>
-
-            <!-- Thème 3 : 44 questions -->
-            <div class="card" style="margin-bottom:12px;">
-                <div class="card-header" style="background:#fff8e1;">
-                    <h3 style="font-size:16px;">Theme 3 : Exploitation (44 pts)</h3>
-                </div>
-                <div id="theme3-questions" style="padding:16px; display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;"></div>
-            </div>
-
-            <!-- Thème 4 : 12 questions -->
-            <div class="card" style="margin-bottom:12px;">
-                <div class="card-header" style="background:#fce4ec;">
-                    <h3 style="font-size:16px;">Theme 4 : Circulation (12 pts)</h3>
-                </div>
-                <div id="theme4-questions" style="padding:16px; display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;"></div>
-            </div>
-
-            <!-- Thème 5 : 4 questions -->
-            <div class="card" style="margin-bottom:12px;">
-                <div class="card-header" style="background:#ede7f6;">
-                    <h3 style="font-size:16px;">Theme 5 : Fin de poste / Maintenance (4 pts)</h3>
-                </div>
-                <div id="theme5-questions" style="padding:16px; display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;"></div>
-            </div>
-
-            <!-- Score en temps réel -->
-            <div id="score-temps-reel" style="background:#f0f2f7; border-radius:8px; padding:16px; margin-bottom:16px; display:none;">
-                <strong>Score actuel :</strong>
-                <span id="score-t1">T1: ?/12</span> |
-                <span id="score-t2">T2: ?/28</span> |
-                <span id="score-t3">T3: ?/44</span> |
-                <span id="score-t4">T4: ?/12</span> |
-                <span id="score-t5">T5: ?/4</span> |
-                <strong id="score-total">Total: ?/100</strong>
-            </div>
-
-            <div class="form-actions">
-                <button class="btn btn-primary" onclick="sauvegarderReponses()">Calculer et sauvegarder</button>
-                <button class="btn btn-secondary" onclick="fermerModalTheorie()">Annuler</button>
-            </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="sauvegarderCandidatJour()">Ajouter</button>
+            <button class="btn btn-secondary" onclick="fermerModalCandidatJour()">Annuler</button>
         </div>
     </div>
 </div>
 
-<!-- MODAL AJOUT CANDIDAT -->
+<!-- MODAL AJOUT CANDIDAT SESSION -->
 <div id="modal-candidat" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:32px; width:600px; max-width:95vw;">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;" id="candidat-title">Ajouter un candidat</h2>
@@ -549,7 +485,6 @@
 
 <script>
 const SESSION_ID = {{ session.id }};
-let grilleData = null;
 
 function showTab(name, btn) {
     ['sequencage','candidats','testeurs','equipements'].forEach(t => {
@@ -560,10 +495,11 @@ function showTab(name, btn) {
     btn.classList.add('active');
 }
 
-// JOURS DE TEST THEORIE
+// JOURS THEORIE
 function ouvrirAjoutJourTheorie() {
     document.getElementById('jt-date').value = '';
     document.getElementById('jt-testeur').value = '';
+    document.querySelectorAll('[name="jt-candidat"]').forEach(cb => cb.checked = true);
     document.getElementById('modal-jour-theorie').style.display = 'flex';
 }
 
@@ -576,11 +512,18 @@ async function sauvegarderJourTheorie() {
     const testeur_id = document.getElementById('jt-testeur').value;
     if (!date) { alert('La date est obligatoire !'); return; }
 
+    const candidats = [];
+    document.querySelectorAll('[name="jt-candidat"]:checked').forEach(cb => {
+        candidats.push(parseInt(cb.value));
+    });
+    if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
+
     const data = {
         session_id: SESSION_ID,
         date: date,
         type: 'theorie',
-        testeur_id: testeur_id ? parseInt(testeur_id) : null
+        testeur_id: testeur_id ? parseInt(testeur_id) : null,
+        candidats: candidats
     };
 
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours', {
@@ -593,7 +536,7 @@ async function sauvegarderJourTheorie() {
         const result = await resp.json();
         fermerModalJourTheorie();
         if (result.grille_numero) {
-            alert('Grille n°' + result.grille_numero + ' tiree automatiquement !');
+            alert('Grille n°' + result.grille_numero + ' tiree !');
         }
         location.reload();
     } else {
@@ -608,175 +551,40 @@ async function supprimerJour(id) {
     else alert('Erreur !');
 }
 
-// SAISIE RESULTATS THEORIE
+// AJOUT CANDIDAT SUR JOUR EXISTANT
+function ouvrirAjoutCandidatJour(jourId) {
+    document.getElementById('acj-jour-id').value = jourId;
+    document.querySelectorAll('[name="acj-candidat"]').forEach(cb => cb.checked = false);
+    document.getElementById('modal-candidat-jour').style.display = 'flex';
+}
+
+function fermerModalCandidatJour() {
+    document.getElementById('modal-candidat-jour').style.display = 'none';
+}
+
+async function sauvegarderCandidatJour() {
+    const jourId = document.getElementById('acj-jour-id').value;
+    const candidats = [];
+    document.querySelectorAll('[name="acj-candidat"]:checked').forEach(cb => {
+        candidats.push(parseInt(cb.value));
+    });
+    if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
+
+    const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/candidats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidats: candidats })
+    });
+
+    if (resp.ok) { fermerModalCandidatJour(); location.reload(); }
+    else alert('Erreur !');
+}
+
 function ouvrirAjoutJourPratique() {
     alert('Planification jour pratique - a implementer');
 }
 
-function ouvrirSaisieTheorie(jourId, grilleId, date, stagiaireId) {
-    document.getElementById('theorie-jour-id').value = jourId;
-    document.getElementById('theorie-grille-id').value = grilleId || '';
-    document.getElementById('theorie-info').textContent = 'Grille tiree le ' + date;
-    document.getElementById('grille-saisie').style.display = 'none';
-
-    if (stagiaireId) {
-        document.getElementById('theorie-candidat').value = stagiaireId;
-        document.getElementById('field-choix-candidat').style.display = 'none';
-        chargerGrilleSaisie();
-    } else {
-        document.getElementById('theorie-candidat').value = '';
-        document.getElementById('field-choix-candidat').style.display = 'block';
-    }
-
-    document.getElementById('modal-theorie').style.display = 'flex';
-}
-
-function fermerModalTheorie() {
-    document.getElementById('modal-theorie').style.display = 'none';
-    grilleData = null;
-}
-
-async function chargerGrilleSaisie() {
-    const jourId = document.getElementById('theorie-jour-id').value;
-    const stagiaireId = document.getElementById('theorie-candidat').value;
-    if (!stagiaireId) return;
-
-    document.getElementById('theorie-stagiaire-id').value = stagiaireId;
-
-    // Charger la grille
-    const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/grille');
-    if (!resp.ok) { alert('Erreur chargement grille !'); return; }
-    grilleData = await resp.json();
-
-    // Générer les boutons VRAI/FAUX pour chaque thème
-    for (let t = 1; t <= 5; t++) {
-        const container = document.getElementById('theme' + t + '-questions');
-        const questions = grilleData.themes[t] || [];
-        container.innerHTML = '';
-        questions.forEach((q, idx) => {
-            const div = document.createElement('div');
-            div.style.cssText = 'display:flex; flex-direction:column; align-items:center; gap:4px;';
-            div.innerHTML = `
-                <span style="font-size:11px; color:#555;">Q${q.numero}</span>
-                <div style="display:flex; gap:4px;">
-                    <button id="t${t}_q${idx}_vrai"
-                        onclick="setReponse(${t}, ${idx}, true)"
-                        style="padding:4px 8px; font-size:11px; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:white;">V</button>
-                    <button id="t${t}_q${idx}_faux"
-                        onclick="setReponse(${t}, ${idx}, false)"
-                        style="padding:4px 8px; font-size:11px; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:white;">F</button>
-                </div>`;
-            container.appendChild(div);
-        });
-    }
-
-    document.getElementById('grille-saisie').style.display = 'block';
-    document.getElementById('score-temps-reel').style.display = 'block';
-}
-
-// Stockage des réponses en mémoire
-const reponsesCandidatLocal = {};
-
-function setReponse(theme, idx, valeur) {
-    if (!reponsesCandidatLocal[theme]) {
-        const nbQ = grilleData.themes[theme].length;
-        reponsesCandidatLocal[theme] = new Array(nbQ).fill(null);
-    }
-    reponsesCandidatLocal[theme][idx] = valeur;
-
-    // Mettre à jour le style des boutons
-    const vraiBtn = document.getElementById('t' + theme + '_q' + idx + '_vrai');
-    const fauxBtn = document.getElementById('t' + theme + '_q' + idx + '_faux');
-    if (valeur === true) {
-        vraiBtn.style.background = '#1565c0';
-        vraiBtn.style.color = 'white';
-        fauxBtn.style.background = 'white';
-        fauxBtn.style.color = 'black';
-    } else {
-        fauxBtn.style.background = '#c62828';
-        fauxBtn.style.color = 'white';
-        vraiBtn.style.background = 'white';
-        vraiBtn.style.color = 'black';
-    }
-
-    mettreAJourScore();
-}
-
-function mettreAJourScore() {
-    // Calcul approximatif côté client pour feedback temps réel
-    const pointsMax = {1: 12, 2: 28, 3: 44, 4: 12, 5: 4};
-    let totalScore = 0;
-
-    for (let t = 1; t <= 5; t++) {
-        const reponses = reponsesCandidatLocal[t] || [];
-        const questions = grilleData.themes[t] || [];
-        const ptParQ = pointsMax[t] / questions.length;
-        let scoreTheme = 0;
-        reponses.forEach((rep, idx) => {
-            if (rep !== null) scoreTheme += ptParQ;
-        });
-        document.getElementById('score-t' + t).textContent = 'T' + t + ': ~' + Math.round(scoreTheme) + '/' + pointsMax[t];
-        totalScore += scoreTheme;
-    }
-    document.getElementById('score-total').textContent = 'Total: ~' + Math.round(totalScore) + '/100';
-}
-
-async function sauvegarderReponses() {
-    const jourId = document.getElementById('theorie-jour-id').value;
-    const stagiaireId = document.getElementById('theorie-stagiaire-id').value;
-    if (!stagiaireId) { alert('Choisir un candidat !'); return; }
-
-    // Vérifier que toutes les réponses sont saisies
-    let manquantes = 0;
-    for (let t = 1; t <= 5; t++) {
-        const questions = grilleData.themes[t] || [];
-        const reponses = reponsesCandidatLocal[t] || [];
-        questions.forEach((q, idx) => {
-            if (reponses[idx] === null || reponses[idx] === undefined) manquantes++;
-        });
-    }
-
-    if (manquantes > 0) {
-        if (!confirm(manquantes + ' question(s) sans reponse. Continuer quand meme ?')) return;
-    }
-
-    // Préparer les données
-    const reponses = {};
-    for (let t = 1; t <= 5; t++) {
-        const questions = grilleData.themes[t] || [];
-        reponses[t.toString()] = questions.map((q, idx) => {
-            const rep = (reponsesCandidatLocal[t] || [])[idx];
-            return rep === null || rep === undefined ? false : rep;
-        });
-    }
-
-    const resp = await fetch('/api/sessions/' + SESSION_ID + '/theorie/reponses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            jour_test_id: parseInt(jourId),
-            stagiaire_id: parseInt(stagiaireId),
-            reponses: reponses
-        })
-    });
-
-    if (resp.ok) {
-        const result = await resp.json();
-        const r = result.resultat;
-        const msg = 'Resultat : ' + r.note_totale + '/100\n' +
-            'T1: ' + r.notes_themes['1'] + ' T2: ' + r.notes_themes['2'] +
-            ' T3: ' + r.notes_themes['3'] + ' T4: ' + r.notes_themes['4'] +
-            ' T5: ' + r.notes_themes['5'] + '\n' +
-            (r.obtenue ? 'REUSSI !' : 'ECHEC');
-        alert(msg);
-        fermerModalTheorie();
-        location.reload();
-    } else {
-        alert('Erreur lors de la sauvegarde !');
-    }
-}
-
-// CANDIDATS
+// CANDIDATS SESSION
 function ouvrirAjoutCandidat() {
     document.getElementById('candidat-title').textContent = 'Ajouter un candidat';
     document.getElementById('sc-id').value = '';

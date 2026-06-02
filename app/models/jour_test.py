@@ -7,10 +7,18 @@ class JourTest(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
     date = Column(Date, nullable=False)
-    type = Column(String(10), nullable=False)  # theorie / pratique
+    type = Column(String(10), nullable=False)
     testeur_id = Column(Integer, ForeignKey("testeurs.id"), nullable=True)
     grille_id = Column(Integer, ForeignKey("grilles_theorie.id"), nullable=True)
     note = Column(Text, nullable=True)
+    actif = Column(Boolean, default=True)
+
+class JourTestCandidat(Base):
+    __tablename__ = "jour_test_candidats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    jour_test_id = Column(Integer, ForeignKey("jours_test.id"), nullable=False)
+    stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
     actif = Column(Boolean, default=True)
 
 class ResultatTheorie(Base):
@@ -21,25 +29,17 @@ class ResultatTheorie(Base):
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
     stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
     grille_id = Column(Integer, ForeignKey("grilles_theorie.id"), nullable=False)
-
-    # Réponses candidat stockées en JSON
-    # Format : {"1": [true, false, ...], "2": [...], ...} par thème
     reponses_json = Column(Text, nullable=True)
-
-    # Notes calculées auto
     note_theme1 = Column(Float, nullable=True)
     note_theme2 = Column(Float, nullable=True)
     note_theme3 = Column(Float, nullable=True)
     note_theme4 = Column(Float, nullable=True)
     note_theme5 = Column(Float, nullable=True)
     note_totale = Column(Float, nullable=True)
-
-    # Seuils par thème
     theme1_ok = Column(Boolean, nullable=True)
     theme2_ok = Column(Boolean, nullable=True)
     theme3_ok = Column(Boolean, nullable=True)
     theme4_ok = Column(Boolean, nullable=True)
     theme5_ok = Column(Boolean, nullable=True)
-
     obtenue = Column(Boolean, nullable=True)
     dispense = Column(Boolean, default=False)

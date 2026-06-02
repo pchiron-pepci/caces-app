@@ -14,7 +14,7 @@ from app.models.lieu_habilitation import LieuHabilitation
 from app.models.session_candidat import SessionCandidat
 from app.models.session_epreuve import SessionEpreuve
 from app.models.equipement import Equipement
-from app.models.jour_test import JourTest, ResultatTheorie
+from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
 
 from app.routers import stagiaires, testeurs, admin, sessions
@@ -186,7 +186,7 @@ def page_session_detail(request: Request, session_id: int):
     # Epreuves pratiques
     epreuves = db.query(SessionEpreuve).filter(SessionEpreuve.session_id == session_id).all()
 
-    # Catégories de la session
+    # Catégories
     famille = db.query(Famille).filter(Famille.code == session.famille).first()
     categories_obj = db.query(Categorie).filter(
         Categorie.famille_id == (famille.id if famille else 0),
@@ -196,7 +196,7 @@ def page_session_detail(request: Request, session_id: int):
     categories = [c.code for c in categories_obj]
     ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
 
-    # Map épreuves par (stagiaire_id, categorie)
+    # Map épreuves
     epreuves_map = {}
     for e in epreuves:
         testeur = db.query(Testeur).filter(Testeur.id == e.testeur_id).first()
@@ -230,6 +230,7 @@ def page_session_detail(request: Request, session_id: int):
         JourTest.session_id == session_id,
         JourTest.actif == True
     ).order_by(JourTest.date).all()
+
     for j in jours_test:
         if j.testeur_id:
             t = db.query(Testeur).filter(Testeur.id == j.testeur_id).first()
@@ -241,14 +242,39 @@ def page_session_detail(request: Request, session_id: int):
             j.grille_numero = g.numero if g else "?"
         else:
             j.grille_numero = None
+        j.candidats_ids = [
+            jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
+                JourTestCandidat.jour_test_id == j.id,
+                JourTestCandidat.actif == True
+            ).all()
+        ]
 
-    # Résultats théorie par candidat
+    # Résultats théorie par jour (pour affichage dans chaque bloc jour)
+    resultats_theorie_par_jour = {}
+    for j in jours_test:
+        if j.type == 'theorie':
+            resultats_jour = {}
+            for sc in session_candidats:
+                rt = db.query(ResultatTheorie).filter(
+                    ResultatTheorie.jour_test_id == j.id,
+                    ResultatTheorie.stagiaire_id == sc.stagiaire_id
+                ).order_by(ResultatTheorie.id.desc()).first()
+                resultats_jour[sc.stagiaire_id] = rt
+            resultats_theorie_par_jour[j.id] = resultats_jour
+
+    # Résultats théorie pour tableau pratique (meilleur résultat)
     resultats_theorie = {}
     for sc in session_candidats:
         rt = db.query(ResultatTheorie).filter(
             ResultatTheorie.session_id == session_id,
-            ResultatTheorie.stagiaire_id == sc.stagiaire_id
-        ).first()
+            ResultatTheorie.stagiaire_id == sc.stagiaire_id,
+            ResultatTheorie.obtenue == True
+        ).order_by(ResultatTheorie.id.asc()).first()
+        if not rt:
+            rt = db.query(ResultatTheorie).filter(
+                ResultatTheorie.session_id == session_id,
+                ResultatTheorie.stagiaire_id == sc.stagiaire_id
+            ).order_by(ResultatTheorie.id.desc()).first()
         resultats_theorie[sc.stagiaire_id] = rt
 
     # Equipements
@@ -257,7 +283,6 @@ def page_session_detail(request: Request, session_id: int):
         Equipement.actif == True
     ).order_by(Equipement.numero).all()
 
-    # Stagiaires et testeurs disponibles
     stagiaires = db.query(Stagiaire).filter(Stagiaire.actif == 1).all()
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
 
@@ -276,6 +301,7 @@ def page_session_detail(request: Request, session_id: int):
             "ut_candidat": ut_candidat,
             "ut_testeurs": ut_testeurs,
             "jours_test": jours_test,
+            "resultats_theorie_par_jour": resultats_theorie_par_jour,
             "resultats_theorie": resultats_theorie,
             "equipements": equipements,
             "stagiaires": stagiaires,
@@ -292,8 +318,15 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
         db.close()
         return {"error": "Non trouve"}
     grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first()
+    candidats_ids = [
+        jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
+            JourTestCandidat.jour_test_id == jour_id,
+            JourTestCandidat.actif == True
+        ).all()
+    ]
     session_candidats = db.query(SessionCandidat).filter(
         SessionCandidat.session_id == session_id,
+        SessionCandidat.stagiaire_id.in_(candidats_ids),
         SessionCandidat.actif == True
     ).all()
     for sc in session_candidats:
