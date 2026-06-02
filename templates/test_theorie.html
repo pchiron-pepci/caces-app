@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CACES® Test Theorique</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f6fa;
+            min-height: 100vh;
+            color: #1a1a2e;
+        }
+
+        /* HEADER */
+        .header {
+            background: #1a237e;
+            color: white;
+            padding: 12px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .header-row1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .header-title {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .header-candidat {
+            font-size: 12px;
+            opacity: 0.75;
+        }
+
+        .progress-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .q-counter {
+            font-size: 20px;
+            font-weight: 800;
+            white-space: nowrap;
+            min-width: 90px;
+        }
+
+        .q-counter small {
+            font-size: 12px;
+            font-weight: 400;
+            opacity: 0.65;
+        }
+
+        .progress-bar-wrap {
+            flex: 1;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: #64b5f6;
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        .q-pct {
+            font-size: 13px;
+            font-weight: 700;
+            min-width: 36px;
+            text-align: right;
+        }
+
+        /* CONTENEUR CENTRAL */
+        .screen {
+            max-width: 540px;
+            margin: 0 auto;
+            padding: 20px 16px 40px;
+        }
+
+        /* ECRAN ACCUEIL */
+        .accueil-logo {
+            text-align: center;
+            margin-bottom: 28px;
+            margin-top: 12px;
+        }
+
+        .accueil-logo-circle {
+            width: 72px;
+            height: 72px;
+            background: #1a237e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 30px;
+        }
+
+        .accueil-titre {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1a237e;
+            margin-bottom: 4px;
+        }
+
+        .accueil-sous-titre {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            margin-bottom: 14px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e8eaf6;
+            border-radius: 10px;
+            font-size: 15px;
+            background: white;
+            color: #333;
+            appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #1a237e;
+        }
+
+        .grille-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: #e8eaf6;
+            border-radius: 10px;
+            margin-top: 14px;
+        }
+
+        .grille-badge {
+            background: #1a237e;
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .grille-texte {
+            font-size: 13px;
+            color: #3949ab;
+        }
+
+        .btn-commencer {
+            width: 100%;
+            padding: 16px;
+            background: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-commencer:hover { background: #283593; }
+        .btn-commencer:active { transform: scale(0.99); }
+
+        /* ECRAN QCM */
+        .theme-badge {
+            display: inline-block;
+            background: #e8eaf6;
+            color: #3949ab;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+        }
+
+        .question-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            background: #f0f2f7;
+            display: none;
+        }
+
+        .question-image.visible { display: block; }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.55;
+            color: #1a1a2e;
+            margin-bottom: 28px;
+            min-height: 80px;
+        }
+
+        /* BOUTONS VRAI/FAUX CÔTE À CÔTE */
+        .reponse-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn-reponse {
+            border: 2px solid;
+            border-radius: 14px;
+            padding: 18px 12px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .btn-vrai {
+            background: #f1f8e9;
+            color: #33691e;
+            border-color: #c5e1a5;
+        }
+
+        .btn-vrai.selected {
+            background: #33691e;
+            color: white;
+            border-color: #33691e;
+        }
+
+        .btn-faux {
+            background: #fce4ec;
+            color: #b71c1c;
+            border-color: #f48fb1;
+        }
+
+        .btn-faux.selected {
+            background: #b71c1c;
+            color: white;
+            border-color: #b71c1c;
+        }
+
+        /* NAVIGATION */
+        .navigation {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-nav {
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-precedent {
+            background: #f0f2f7;
+            color: #555;
+        }
+
+        .btn-suivant {
+            background: #1a237e;
+            color: white;
+        }
+
+        .btn-nav:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* RECAP */
+        .recap-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .recap-score-big {
+            font-size: 52px;
+            font-weight: 800;
+            color: #1a237e;
+            line-height: 1;
+        }
+
+        .recap-score-label {
+            font-size: 14px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .recap-theme {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+        }
+
+        .recap-theme-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .recap-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .recap-q {
+            width: 34px;
+            height: 34px;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .recap-q.vrai { background: #c8e6c9; color: #2e7d32; }
+        .recap-q.faux { background: #ffcdd2; color: #c62828; }
+        .recap-q.vide { background: #fff9c4; color: #f57f17; border: 2px dashed #ffd54f; }
+
+        .btn-valider {
+            width: 100%;
+            padding: 16px;
+            background: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+            margin-bottom: 10px;
+        }
+
+        .btn-retour {
+            width: 100%;
+            padding: 13px;
+            background: #f0f2f7;
+            color: #555;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* RESULTAT */
+        .resultat-header {
+            text-align: center;
+            padding: 28px 20px 20px;
+        }
+
+        .resultat-emoji { font-size: 60px; margin-bottom: 8px; }
+
+        .resultat-score {
+            font-size: 68px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .resultat-score.reussi { color: #2e7d32; }
+        .resultat-score.echec { color: #c62828; }
+
+        .resultat-label {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .resultat-label.reussi { color: #2e7d32; }
+        .resultat-label.echec { color: #c62828; }
+
+        .theme-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+        }
+
+        .theme-row:last-child { border: none; }
+        .theme-ok { color: #2e7d32; font-weight: 700; }
+        .theme-ko { color: #c62828; font-weight: 700; }
+
+        .fin-msg {
+            text-align: center;
+            color: #aaa;
+            font-size: 13px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="header-row1">
+        <div class="header-title">CACES® R.482 - Theorie</div>
+        <div class="header-candidat" id="header-candidat"></div>
+    </div>
+    <div class="progress-row" id="progress-section" style="display:none;">
+        <div class="q-counter">Q <span id="q-num">1</span><small> / 100</small></div>
+        <div class="progress-bar-wrap">
+            <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+        <div class="q-pct" id="q-pct">0%</div>
+    </div>
+</div>
+
+<!-- ECRAN ACCUEIL -->
+<div class="screen" id="ecran-accueil">
+    <div class="accueil-logo">
+        <div class="accueil-logo-circle">📋</div>
+        <div class="accueil-titre">Test theorique</div>
+        <div class="accueil-sous-titre">CACES® R.482 — Engins de chantier</div>
+    </div>
+
+    <div class="card">
+        <label class="field-label">Votre nom</label>
+        <select id="select-candidat">
+            <option value="">-- Selectionnez votre nom --</option>
+            {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
+            <option value="{{ sc.stagiaire_id }}">{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</option>
+            {% endif %}{% endfor %}
+        </select>
+        <div class="grille-info">
+            <span class="grille-badge">Grille n°{{ grille_numero }}</span>
+            <span class="grille-texte">100 questions · VRAI ou FAUX</span>
+        </div>
+    </div>
+
+    <button class="btn-commencer" onclick="commencer()">Commencer le test →</button>
+</div>
+
+<!-- ECRAN QCM -->
+<div class="screen" id="ecran-qcm" style="display:none;">
+    <div class="card">
+        <div class="theme-badge" id="q-theme-label">Theme 1</div>
+        <img id="q-image" class="question-image" src="" alt="">
+        <div class="question-text" id="q-texte">Chargement...</div>
+        <div class="reponse-grid">
+            <button class="btn-reponse btn-vrai" id="btn-vrai" onclick="repondre(true)">✅ VRAI</button>
+            <button class="btn-reponse btn-faux" id="btn-faux" onclick="repondre(false)">❌ FAUX</button>
+        </div>
+        <div class="navigation">
+            <button class="btn-nav btn-precedent" id="btn-precedent" onclick="precedent()" disabled>← Precedente</button>
+            <button class="btn-nav btn-suivant" id="btn-suivant" onclick="suivant()">Suivante →</button>
+        </div>
+    </div>
+</div>
+
+<!-- ECRAN RECAP -->
+<div class="screen" id="ecran-recap" style="display:none;">
+    <div class="recap-header">
+        <div class="recap-score-big" id="recap-nb">0</div>
+        <div class="recap-score-label">questions repondues sur 100</div>
+    </div>
+
+    {% set theme_noms = {1: 'Connaissances generales', 2: 'Technologie et stabilite', 3: 'Exploitation', 4: 'Circulation', 5: 'Fin de poste'} %}
+    {% set theme_nb = {1: 12, 2: 28, 3: 44, 4: 12, 5: 4} %}
+    {% for t in [1,2,3,4,5] %}
+    <div class="recap-theme">
+        <div class="recap-theme-title">Theme {{ t }} · {{ theme_noms[t] }}</div>
+        <div class="recap-questions" id="recap-t{{ t }}">
+            {% for i in range(theme_nb[t]) %}
+            <div class="recap-q vide" id="rq-{{ t }}-{{ i }}" onclick="allerQuestion({{ t }}, {{ i }})">{{ i+1 }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <button class="btn-valider" onclick="valider()">✅ Valider mes reponses</button>
+    <button class="btn-retour" onclick="retourQcm()">← Continuer a repondre</button>
+</div>
+
+<!-- ECRAN RESULTAT -->
+<div class="screen" id="ecran-resultat" style="display:none;">
+    <div class="card">
+        <div class="resultat-header">
+            <div class="resultat-emoji" id="res-emoji">🎉</div>
+            <div class="resultat-score" id="res-score">--</div>
+            <div class="resultat-label" id="res-label">--</div>
+        </div>
+        <div id="res-themes"></div>
+    </div>
+    <div class="fin-msg">Remettez la tablette au testeur</div>
+</div>
+
+<script>
+const SESSION_ID = {{ session_id }};
+const JOUR_ID = {{ jour_id }};
+const GRILLE_ID = {{ grille_id }};
+
+let questions = [];
+let reponses = {};
+let questionActuelle = 0;
+let stagiaireId = null;
+
+const THEME_NOMS = {
+    1: 'Theme 1 · Connaissances generales',
+    2: 'Theme 2 · Technologie et stabilite',
+    3: 'Theme 3 · Exploitation',
+    4: 'Theme 4 · Circulation',
+    5: 'Theme 5 · Fin de poste'
+};
+
+async function chargerQuestions() {
+    try {
+        const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + JOUR_ID + '/grille');
+        const data = await resp.json();
+        questions = [];
+        for (let t = 1; t <= 5; t++) {
+            const qs = data.themes[t] || [];
+            qs.forEach((q, idx) => {
+                questions.push({
+                    theme: t,
+                    theme_nom: THEME_NOMS[t],
+                    numero: q.numero,
+                    texte: q.texte || 'Question ' + q.numero + ' (theme ' + t + ')',
+                    image: q.image || null,
+                    points: q.points,
+                    idx_theme: idx
+                });
+            });
+        }
+    } catch(e) {
+        console.error('Erreur chargement grille:', e);
+    }
+}
+
+chargerQuestions();
+
+function commencer() {
+    const sel = document.getElementById('select-candidat');
+    stagiaireId = sel.value;
+    if (!stagiaireId) { alert('Veuillez selectionner votre nom !'); return; }
+    const nom = sel.options[sel.selectedIndex].text;
+    document.getElementById('header-candidat').textContent = nom;
+    document.getElementById('ecran-accueil').style.display = 'none';
+    document.getElementById('ecran-qcm').style.display = 'block';
+    document.getElementById('progress-section').style.display = 'flex';
+    afficherQuestion(0);
+}
+
+function afficherQuestion(idx) {
+    questionActuelle = idx;
+    const q = questions[idx];
+    if (!q) return;
+
+    // Header progress
+    document.getElementById('q-num').textContent = idx + 1;
+    const pct = Math.round((idx + 1) / questions.length * 100);
+    document.getElementById('q-pct').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('q-theme-label').textContent = q.theme_nom;
+
+    // Image
+    const img = document.getElementById('q-image');
+    if (q.image) {
+        img.src = q.image;
+        img.classList.add('visible');
+    } else {
+        img.classList.remove('visible');
+    }
+
+    // Texte
+    document.getElementById('q-texte').textContent = q.texte;
+
+    // Boutons
+    const btnV = document.getElementById('btn-vrai');
+    const btnF = document.getElementById('btn-faux');
+    btnV.classList.remove('selected');
+    btnF.classList.remove('selected');
+    if (reponses[idx] === true) btnV.classList.add('selected');
+    else if (reponses[idx] === false) btnF.classList.add('selected');
+
+    // Navigation
+    document.getElementById('btn-precedent').disabled = idx === 0;
+    const btnS = document.getElementById('btn-suivant');
+    if (idx === questions.length - 1) {
+        btnS.textContent = 'Voir recap →';
+        btnS.onclick = afficherRecap;
+    } else {
+        btnS.textContent = 'Suivante →';
+        btnS.onclick = suivant;
+    }
+}
+
+function repondre(valeur) {
+    reponses[questionActuelle] = valeur;
+    const btnV = document.getElementById('btn-vrai');
+    const btnF = document.getElementById('btn-faux');
+    btnV.classList.remove('selected');
+    btnF.classList.remove('selected');
+    if (valeur === true) btnV.classList.add('selected');
+    else btnF.classList.add('selected');
+
+    // Mise à jour recap
+    const q = questions[questionActuelle];
+    const el = document.getElementById('rq-' + q.theme + '-' + q.idx_theme);
+    if (el) el.className = 'recap-q ' + (valeur ? 'vrai' : 'faux');
+}
+
+function suivant() {
+    if (questionActuelle < questions.length - 1) {
+        afficherQuestion(questionActuelle + 1);
+    }
+}
+
+function precedent() {
+    if (questionActuelle > 0) {
+        afficherQuestion(questionActuelle - 1);
+    }
+}
+
+function afficherRecap() {
+    document.getElementById('ecran-qcm').style.display = 'none';
+    document.getElementById('ecran-recap').style.display = 'block';
+    document.getElementById('recap-nb').textContent = Object.keys(reponses).length;
+}
+
+function allerQuestion(theme, idx) {
+    document.getElementById('ecran-recap').style.display = 'none';
+    document.getElementById('ecran-qcm').style.display = 'block';
+    const globalIdx = questions.findIndex(q => q.theme == theme && q.idx_theme == idx);
+    if (globalIdx >= 0) afficherQuestion(globalIdx);
+}
+
+function retourQcm() {
+    document.getElementById('ecran-recap').style.display = 'none';
+    document.getElementById('ecran-qcm').style.display = 'block';
+    afficherQuestion(questionActuelle);
+}
+
+async function valider() {
+    const nb = Object.keys(reponses).length;
+    if (nb < questions.length) {
+        if (!confirm((questions.length - nb) + ' question(s) sans reponse. Valider quand meme ?')) return;
+    }
+
+    const reponsesParTheme = {};
+    questions.forEach((q, idx) => {
+        const t = q.theme.toString();
+        if (!reponsesParTheme[t]) reponsesParTheme[t] = [];
+        reponsesParTheme[t].push(reponses[idx] !== undefined ? reponses[idx] : false);
+    });
+
+    const resp = await fetch('/api/sessions/' + SESSION_ID + '/theorie/reponses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            jour_test_id: JOUR_ID,
+            stagiaire_id: parseInt(stagiaireId),
+            reponses: reponsesParTheme
+        })
+    });
+
+    if (resp.ok) {
+        const data = await resp.json();
+        afficherResultat(data.resultat);
+    } else {
+        alert('Erreur lors de la sauvegarde !');
+    }
+}
+
+function afficherResultat(r) {
+    document.getElementById('ecran-recap').style.display = 'none';
+    document.getElementById('progress-section').style.display = 'none';
+    document.getElementById('ecran-resultat').style.display = 'block';
+
+    const reussi = r.obtenue;
+    document.getElementById('res-emoji').textContent = reussi ? '🎉' : '😔';
+    document.getElementById('res-score').textContent = r.note_totale + '/100';
+    document.getElementById('res-score').className = 'resultat-score ' + (reussi ? 'reussi' : 'echec');
+    document.getElementById('res-label').textContent = reussi ? 'REUSSI !' : 'ECHEC';
+    document.getElementById('res-label').className = 'resultat-label ' + (reussi ? 'reussi' : 'echec');
+
+    const themesNoms = {
+        '1': 'Connaissances generales (/12)',
+        '2': 'Technologie et stabilite (/28)',
+        '3': 'Exploitation (/44)',
+        '4': 'Circulation (/12)',
+        '5': 'Fin de poste (/4)'
+    };
+
+    let html = '';
+    for (let t = 1; t <= 5; t++) {
+        const note = Math.round(r.notes_themes[t.toString()] || 0);
+        const ok = r.themes_ok[t.toString()];
+        html += '<div class="theme-row">' +
+            '<span>' + themesNoms[t.toString()] + '</span>' +
+            '<span class="' + (ok ? 'theme-ok' : 'theme-ko') + '">' +
+            note + ' ' + (ok ? '✅' : '❌') +
+            '</span></div>';
+    }
+    document.getElementById('res-themes').innerHTML = html;
+}
+</script>
+</body>
+</html>

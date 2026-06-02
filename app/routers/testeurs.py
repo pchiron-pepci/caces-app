@@ -18,6 +18,11 @@ class TesteurCreate(BaseModel):
     telephone: Optional[str] = None
     numero_inrs: Optional[str] = None
     date_habilitation: Optional[date] = None
+    date_expiration_habilitation: Optional[date] = None
+    visite_medicale: Optional[date] = None
+    formation_continue: Optional[date] = None
+    date_prochain_controle: Optional[date] = None
+    note: Optional[str] = None
 
 class TesteurResponse(BaseModel):
     id: int
@@ -29,6 +34,11 @@ class TesteurResponse(BaseModel):
     telephone: Optional[str] = None
     numero_inrs: Optional[str] = None
     date_habilitation: Optional[date] = None
+    date_expiration_habilitation: Optional[date] = None
+    visite_medicale: Optional[date] = None
+    formation_continue: Optional[date] = None
+    date_prochain_controle: Optional[date] = None
+    note: Optional[str] = None
     actif: bool
 
     class Config:

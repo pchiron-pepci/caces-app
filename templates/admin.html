@@ -4,10 +4,10 @@
 
 {% block content %}
 
-<!-- TABS -->
 <div class="tabs">
     <button class="tab active" onclick="showTab('cartographie', this)">🗺️ Cartographie PEPCI</button>
     <button class="tab" onclick="showTab('habilitations', this)">👨‍🏫 Habilitations testeurs</button>
+    <button class="tab" onclick="showTab('lieux', this)">📍 Lieux</button>
     <button class="tab" onclick="showTab('parametres', this)">⚙️ Paramètres</button>
 </div>
 
@@ -19,76 +19,43 @@
             <span class="badge green" style="margin-left:8px;">Valide jusqu'au 13/06/2028</span>
         </div>
     </div>
-
     <div class="card">
-        <div class="card-header">
-            <h2>✅ Catégories habilitées PEPCI</h2>
-        </div>
+        <div class="card-header"><h2>✅ Catégories habilitées PEPCI</h2></div>
         <table class="table">
             <thead>
-                <tr>
-                    <th>Famille</th>
-                    <th>Code</th>
-                    <th>Libellé</th>
-                    <th>UT pratique</th>
-                    <th>Date habilitation</th>
-                    <th>Actions</th>
-                </tr>
+                <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Date habilitation</th><th>Actions</th></tr>
             </thead>
             <tbody>
-                {% for c in categories %}
-                {% if c.pepci_habilite %}
+                {% for c in categories %}{% if c.pepci_habilite %}
                 <tr>
                     <td><strong>{{ c.famille_code }}</strong></td>
                     <td><span class="badge blue">{{ c.code }}</span></td>
                     <td>{{ c.libelle }}</td>
                     <td>{{ c.ut_pratique }} UT</td>
                     <td>{{ c.date_habilitation or '—' }}</td>
-                    <td>
-                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                            onclick="desactiverHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">
-                            🔒 Désactiver
-                        </button>
-                    </td>
+                    <td><button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="desactiverHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">🔒 Désactiver</button></td>
                 </tr>
-                {% endif %}
-                {% endfor %}
+                {% endif %}{% endfor %}
             </tbody>
         </table>
     </div>
-
     <div style="margin-top:24px;">
         <div class="card">
-            <div class="card-header">
-                <h2>⭕ Catégories non habilitées</h2>
-            </div>
+            <div class="card-header"><h2>⭕ Catégories non habilitées</h2></div>
             <table class="table">
                 <thead>
-                    <tr>
-                        <th>Famille</th>
-                        <th>Code</th>
-                        <th>Libellé</th>
-                        <th>UT pratique</th>
-                        <th>Actions</th>
-                    </tr>
+                    <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
-                    {% for c in categories %}
-                    {% if not c.pepci_habilite %}
+                    {% for c in categories %}{% if not c.pepci_habilite %}
                     <tr>
                         <td><strong>{{ c.famille_code }}</strong></td>
                         <td><span class="badge orange">{{ c.code }}</span></td>
                         <td>{{ c.libelle }}</td>
                         <td>{{ c.ut_pratique }} UT</td>
-                        <td>
-                            <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;"
-                                onclick="activerHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">
-                                ✅ Activer
-                            </button>
-                        </td>
+                        <td><button class="btn btn-primary" style="padding:6px 12px; font-size:12px;" onclick="activerHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">✅ Activer</button></td>
                     </tr>
-                    {% endif %}
-                    {% endfor %}
+                    {% endif %}{% endfor %}
                 </tbody>
             </table>
         </div>
@@ -101,36 +68,56 @@
     <div class="card" style="margin-bottom:16px;">
         <div class="card-header">
             <h2>👨‍🏫 {{ t.nom }} {{ t.prenom }}</h2>
-            <button class="btn btn-primary" onclick="ouvrirHabilitation({{ t.id }}, '{{ t.nom }} {{ t.prenom }}')">
-                ➕ Ajouter habilitation
-            </button>
+            <button class="btn btn-primary" onclick="ouvrirHabilitation({{ t.id }}, '{{ t.nom }} {{ t.prenom }}')">➕ Ajouter habilitation</button>
         </div>
         <table class="table">
             <thead>
                 <tr>
                     <th>Famille</th>
                     <th>Catégorie</th>
-                    <th>Option PE</th>
-                    <th>Option Tel</th>
+                    <th>PE</th>
+                    <th>Tel</th>
                     <th>Date intégration</th>
+                    <th>Date échéance</th>
                     <th>Statut</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for h in t.habilitations %}
-                <tr>
+                <tr style="{{ 'opacity:0.5;' if not h.actif else '' }}">
                     <td><strong>{{ h.famille }}</strong></td>
                     <td><span class="badge blue">{{ h.categorie }}</span></td>
                     <td>{{ '✅' if h.option_pe else '—' }}</td>
                     <td>{{ '✅' if h.option_tel else '—' }}</td>
                     <td>{{ h.date_integration }}</td>
-                    <td><span class="badge green">Actif</span></td>
                     <td>
+                        {% if h.date_expiration %}
+                            <span class="badge orange">{{ h.date_expiration }}</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if h.actif %}<span class="badge green">Actif</span>
+                        {% else %}<span class="badge red">Inactif</span>{% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                            onclick="editerHabilitation(
+                                {{ h.id }},
+                                '{{ h.famille }}',
+                                '{{ h.categorie }}',
+                                '{{ h.date_integration }}',
+                                '{{ h.date_expiration or '' }}',
+                                {{ 'true' if h.option_pe else 'false' }},
+                                {{ 'true' if h.option_tel else 'false' }}
+                            )">✏️</button>
+                        {% if h.actif %}
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                            onclick="retirerHabilitation({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')">
-                            🗑️
-                        </button>
+                            onclick="desactiverHabTesteur({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')">🔒</button>
+                        {% else %}
+                        <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;"
+                            onclick="activerHabTesteur({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')">✅</button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -140,12 +127,69 @@
     {% endfor %}
 </div>
 
+<!-- TAB LIEUX -->
+<div id="tab-lieux" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <p style="color:#666; font-size:14px;">Gérez vos lieux CDT et Hors CDT.</p>
+        <button class="btn btn-primary" onclick="ouvrirLieu()">➕ Nouveau lieu</button>
+    </div>
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr><th>Nom</th><th>Type</th><th>Adresse</th><th>Familles/Catégories</th><th>Statut</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for l in lieux %}
+                <tr style="{{ 'opacity:0.5;' if not l.actif else '' }}">
+                    <td><strong>{{ l.nom }}</strong></td>
+                    <td>
+                        {% if l.type == 'cdt' %}<span class="badge blue">CDT</span>
+                        {% else %}<span class="badge orange">Hors CDT</span>{% endif %}
+                    </td>
+                    <td>{{ l.adresse or '—' }}{% if l.ville %}, {{ l.ville }}{% endif %}</td>
+                    <td>
+                        {% if l.type == 'cdt' %}
+                            {% for h in l.habilitations %}
+                                <span class="badge blue" style="margin:2px;">{{ h.famille }} : {{ h.categories }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span style="color:#888; font-size:12px;">Toutes familles PEPCI</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if l.actif %}<span class="badge green">✅ Actif</span>
+                        {% else %}<span class="badge red">❌ Inactif</span>{% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                            data-id="{{ l.id }}"
+                            data-nom="{{ l.nom }}"
+                            data-type="{{ l.type }}"
+                            data-adresse="{{ l.adresse or '' }}"
+                            data-cp="{{ l.code_postal or '' }}"
+                            data-ville="{{ l.ville or '' }}"
+                            data-tel="{{ l.telephone or '' }}"
+                            data-email="{{ l.email or '' }}"
+                            onclick="editerLieu(this)">✏️</button>
+                        {% if l.actif %}
+                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                            onclick="desactiverLieu({{ l.id }}, '{{ l.nom }}')">🔒 Désactiver</button>
+                        {% else %}
+                        <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;"
+                            onclick="activerLieu({{ l.id }}, '{{ l.nom }}')">✅ Activer</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <!-- TAB PARAMETRES -->
 <div id="tab-parametres" style="display:none;">
     <div class="card">
-        <div class="card-header">
-            <h2>⚙️ Paramètres système</h2>
-        </div>
+        <div class="card-header"><h2>⚙️ Paramètres système</h2></div>
         <div style="padding:24px;">
             <div class="form-grid">
                 <div class="form-field">
@@ -157,7 +201,7 @@
                     <input type="number" value="6" step="0.5" id="p-ut-pratique-max">
                 </div>
                 <div class="form-field">
-                    <label>% max sessions Hors CDT (année en cours)</label>
+                    <label>% max sessions Hors CDT</label>
                     <input type="number" value="25" id="p-ratio-hors-cdt">
                 </div>
                 <div class="form-field">
@@ -191,9 +235,10 @@
 
 <!-- MODAL HABILITATION TESTEUR -->
 <div id="modal-hab" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-   <div style="background:white; border-radius:16px; padding:32px; width:95vw; max-width:1000px; max-height:90vh; overflow-y:auto;">
+    <div style="background:white; border-radius:16px; padding:32px; width:95vw; max-width:1100px; max-height:90vh; overflow-y:auto;">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;" id="hab-title">Ajouter habilitation</h2>
         <input type="hidden" id="hab-testeur-id">
+        <input type="hidden" id="hab-id">
         <div class="form-grid">
             <div class="form-field">
                 <label>Famille</label>
@@ -211,18 +256,18 @@
                 </select>
             </div>
             <div class="form-field">
-                <label>Date intégration</label>
+                <label>Date intégration *</label>
                 <input type="date" id="hab-date">
             </div>
             <div class="form-field">
+                <label>Date échéance</label>
+                <input type="date" id="hab-date-exp">
+            </div>
+            <div class="form-field" style="grid-column: span 2;">
                 <label>Options</label>
                 <div style="display:flex; gap:16px; margin-top:8px;">
-                    <label style="text-transform:none; font-size:14px;">
-                        <input type="checkbox" id="hab-pe"> Porte-Engins
-                    </label>
-                    <label style="text-transform:none; font-size:14px;">
-                        <input type="checkbox" id="hab-tel"> Télécommande
-                    </label>
+                    <label style="text-transform:none; font-size:14px;"><input type="checkbox" id="hab-pe"> Porte-Engins</label>
+                    <label style="text-transform:none; font-size:14px;"><input type="checkbox" id="hab-tel"> Télécommande</label>
                 </div>
             </div>
         </div>
@@ -233,11 +278,74 @@
     </div>
 </div>
 
+<!-- MODAL LIEU -->
+<div id="modal-lieu" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:700px; max-width:95vw; max-height:90vh; overflow-y:auto;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;" id="lieu-title">Nouveau lieu</h2>
+        <input type="hidden" id="lieu-id">
+        <div class="form-grid">
+            <div class="form-field" style="grid-column: span 2;">
+                <label>Nom du lieu *</label>
+                <input type="text" id="l-nom" placeholder="CDT Saint-Michel-sur-Orge">
+            </div>
+            <div class="form-field" style="grid-column: span 2;">
+                <label>Type *</label>
+                <div style="display:flex; gap:24px; margin-top:8px;">
+                    <label style="text-transform:none; font-size:14px; font-weight:600; cursor:pointer;">
+                        <input type="radio" name="l-type" value="cdt" checked onchange="toggleHabilitations()"> CDT
+                    </label>
+                    <label style="text-transform:none; font-size:14px; font-weight:600; cursor:pointer;">
+                        <input type="radio" name="l-type" value="hors_cdt" onchange="toggleHabilitations()"> Hors CDT
+                    </label>
+                </div>
+            </div>
+            <div class="form-field" style="grid-column: span 2;">
+                <label>Adresse</label>
+                <input type="text" id="l-adresse" placeholder="6 Avenue Condorcet">
+            </div>
+            <div class="form-field">
+                <label>Code postal</label>
+                <input type="text" id="l-cp" placeholder="91240">
+            </div>
+            <div class="form-field">
+                <label>Ville</label>
+                <input type="text" id="l-ville" placeholder="Saint-Michel-sur-Orge">
+            </div>
+            <div class="form-field">
+                <label>Téléphone</label>
+                <input type="text" id="l-tel">
+            </div>
+            <div class="form-field">
+                <label>Email</label>
+                <input type="email" id="l-email">
+            </div>
+        </div>
+
+        <div id="section-habilitations" style="margin-top:20px;">
+            <label style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; display:block; margin-bottom:12px;">
+                Familles/Catégories habilitées sur ce lieu
+            </label>
+            <div id="lieu-habilitations"><p style="color:#888;">Chargement...</p></div>
+        </div>
+
+        <div id="section-hors-cdt" style="display:none; margin-top:20px; background:#fff3e0; border-radius:8px; padding:16px; color:#e65100;">
+            ℹ️ Pour un lieu Hors CDT, toutes les familles et catégories habilitées par PEPCI sont disponibles.
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="sauvegarderLieu()">💾 Sauvegarder</button>
+            <button class="btn btn-secondary" onclick="fermerLieu()">Annuler</button>
+        </div>
+    </div>
+</div>
+
 <script>
+const FAMILLES = {{ familles | map(attribute='code') | list | tojson }};
+
 function showTab(name, btn) {
-    document.getElementById('tab-cartographie').style.display = 'none';
-    document.getElementById('tab-habilitations').style.display = 'none';
-    document.getElementById('tab-parametres').style.display = 'none';
+    ['cartographie','habilitations','lieux','parametres'].forEach(t => {
+        document.getElementById(`tab-${t}`).style.display = 'none';
+    });
     document.getElementById(`tab-${name}`).style.display = 'block';
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
@@ -268,8 +376,9 @@ async function chargerCategories() {
     if (!famille) return;
     const resp = await fetch(`/admin/categories/${famille}`);
     const cats = await resp.json();
-    const select = document.getElementById('hab-categorie');
-    select.innerHTML = cats.map(c => `<option value="${c.code}">${c.code} — ${c.libelle}</option>`).join('');
+    document.getElementById('hab-categorie').innerHTML = cats.map(c =>
+        `<option value="${c.code}">${c.code} — ${c.libelle}</option>`
+    ).join('');
 }
 
 function activerHabilitation(id, nom) {
@@ -291,47 +400,208 @@ function desactiverHabilitation(id, nom) {
 function ouvrirHabilitation(testeurId, nom) {
     document.getElementById('hab-title').textContent = `Ajouter habilitation — ${nom}`;
     document.getElementById('hab-testeur-id').value = testeurId;
+    document.getElementById('hab-id').value = '';
     document.getElementById('hab-famille').value = '';
-    document.getElementById('hab-categorie').innerHTML = '<option value="">— Choisir une famille d\'abord —</option>';
+    document.getElementById('hab-famille').disabled = false;
+    document.getElementById('hab-categorie').innerHTML = '<option value="">— Choisir une famille —</option>';
+    document.getElementById('hab-categorie').disabled = false;
     document.getElementById('hab-date').value = '';
+    document.getElementById('hab-date-exp').value = '';
     document.getElementById('hab-pe').checked = false;
     document.getElementById('hab-tel').checked = false;
     document.getElementById('modal-hab').style.display = 'flex';
 }
 
+async function editerHabilitation(id, famille, categorie, dateInt, dateExp, pe, tel) {
+    document.getElementById('hab-title').textContent = `Modifier — ${famille} ${categorie}`;
+    document.getElementById('hab-id').value = id;
+    document.getElementById('hab-testeur-id').value = '';
+    document.getElementById('hab-famille').value = famille;
+    document.getElementById('hab-famille').disabled = true;
+    await chargerCategories();
+    document.getElementById('hab-categorie').value = categorie;
+    document.getElementById('hab-categorie').disabled = true;
+    document.getElementById('hab-date').value = dateInt;
+    document.getElementById('hab-date-exp').value = dateExp;
+    document.getElementById('hab-pe').checked = pe;
+    document.getElementById('hab-tel').checked = tel;
+    document.getElementById('modal-hab').style.display = 'flex';
+}
+
 function fermerHabilitation() {
     document.getElementById('modal-hab').style.display = 'none';
+    document.getElementById('hab-famille').disabled = false;
+    document.getElementById('hab-categorie').disabled = false;
 }
 
 async function sauvegarderHabilitation() {
-    const data = {
-        testeur_id: parseInt(document.getElementById('hab-testeur-id').value),
-        famille: document.getElementById('hab-famille').value,
-        categorie: document.getElementById('hab-categorie').value,
-        date_integration: document.getElementById('hab-date').value,
-        option_pe: document.getElementById('hab-pe').checked,
-        option_tel: document.getElementById('hab-tel').checked
-    };
-    if (!data.famille || !data.categorie || !data.date_integration) {
-        alert('Tous les champs sont obligatoires !');
-        return;
-    }
-    const resp = await fetch('/admin/habilitation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if (resp.ok) {
-        fermerHabilitation();
-        location.reload();
+    const habId = document.getElementById('hab-id').value;
+    const testeurId = document.getElementById('hab-testeur-id').value;
+
+    if (habId) {
+        const data = {
+            date_integration: document.getElementById('hab-date').value,
+            date_expiration: document.getElementById('hab-date-exp').value || null,
+            option_pe: document.getElementById('hab-pe').checked,
+            option_tel: document.getElementById('hab-tel').checked
+        };
+        if (!data.date_integration) { alert('Date intégration obligatoire !'); return; }
+        const resp = await fetch(`/admin/habilitation/${habId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (resp.ok) { fermerHabilitation(); location.reload(); }
+        else alert('Erreur !');
     } else {
-        alert('Erreur lors de la sauvegarde !');
+        const data = {
+            testeur_id: parseInt(testeurId),
+            famille: document.getElementById('hab-famille').value,
+            categorie: document.getElementById('hab-categorie').value,
+            date_integration: document.getElementById('hab-date').value,
+            date_expiration: document.getElementById('hab-date-exp').value || null,
+            option_pe: document.getElementById('hab-pe').checked,
+            option_tel: document.getElementById('hab-tel').checked
+        };
+        if (!data.famille || !data.categorie || !data.date_integration) {
+            alert('Famille, catégorie et date intégration sont obligatoires !'); return;
+        }
+        const resp = await fetch('/admin/habilitation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (resp.ok) { fermerHabilitation(); location.reload(); }
+        else alert('Erreur !');
     }
 }
 
-function retirerHabilitation(id, nom) {
-    demanderPin(`Retirer l'habilitation : ${nom} ?`, async () => {
+function activerHabTesteur(id, nom) {
+    demanderPin(`Activer l'habilitation : ${nom} ?`, async () => {
+        const resp = await fetch(`/admin/habilitation/${id}/activer`, { method: 'POST' });
+        if (resp.ok) location.reload();
+        else alert('Erreur !');
+    });
+}
+
+function desactiverHabTesteur(id, nom) {
+    demanderPin(`Désactiver l'habilitation : ${nom} ?`, async () => {
         const resp = await fetch(`/admin/habilitation/${id}`, { method: 'DELETE' });
+        if (resp.ok) location.reload();
+        else alert('Erreur !');
+    });
+}
+
+async function chargerCategoriesLieu(habsExistantes) {
+    const container = document.getElementById('lieu-habilitations');
+    container.innerHTML = '<p style="color:#888;">Chargement...</p>';
+    let html = '';
+    for (const f of FAMILLES) {
+        const resp = await fetch(`/admin/categories/${f}`);
+        const cats = await resp.json();
+        html += `
+            <div style="background:#f0f2f7; border-radius:8px; padding:12px; margin-bottom:8px;">
+                <strong>${f}</strong>
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+                    ${cats.map(c => `
+                        <label style="font-size:13px; background:white; padding:4px 10px; border-radius:6px; border:1px solid #d0d8e8; cursor:pointer;">
+                            <input type="checkbox" name="lieu-cat-${f}" value="${c.code}"
+                                ${habsExistantes.includes(f+'|'+c.code) ? 'checked' : ''}>
+                            ${c.code}
+                        </label>
+                    `).join('')}
+                </div>
+            </div>`;
+    }
+    container.innerHTML = html;
+}
+
+function toggleHabilitations() {
+    const type = document.querySelector('[name="l-type"]:checked').value;
+    document.getElementById('section-habilitations').style.display = type === 'cdt' ? 'block' : 'none';
+    document.getElementById('section-hors-cdt').style.display = type === 'hors_cdt' ? 'block' : 'none';
+}
+
+async function ouvrirLieu() {
+    document.getElementById('lieu-title').textContent = 'Nouveau lieu';
+    document.getElementById('lieu-id').value = '';
+    document.getElementById('l-nom').value = '';
+    document.getElementById('l-adresse').value = '';
+    document.getElementById('l-cp').value = '';
+    document.getElementById('l-ville').value = '';
+    document.getElementById('l-tel').value = '';
+    document.getElementById('l-email').value = '';
+    document.querySelector('[name="l-type"][value="cdt"]').checked = true;
+    toggleHabilitations();
+    document.getElementById('modal-lieu').style.display = 'flex';
+    await chargerCategoriesLieu([]);
+}
+
+async function editerLieu(btn) {
+    const id = btn.dataset.id;
+    document.getElementById('lieu-title').textContent = 'Modifier lieu';
+    document.getElementById('lieu-id').value = id;
+    document.getElementById('l-nom').value = btn.dataset.nom;
+    document.getElementById('l-adresse').value = btn.dataset.adresse;
+    document.getElementById('l-cp').value = btn.dataset.cp;
+    document.getElementById('l-ville').value = btn.dataset.ville;
+    document.getElementById('l-tel').value = btn.dataset.tel;
+    document.getElementById('l-email').value = btn.dataset.email;
+    const type = btn.dataset.type;
+    document.querySelector(`[name="l-type"][value="${type}"]`).checked = true;
+    toggleHabilitations();
+    document.getElementById('modal-lieu').style.display = 'flex';
+    const resp = await fetch(`/admin/lieu/${id}/habilitations`);
+    const habs = await resp.json();
+    const existantes = habs.map(h => h.famille + '|' + h.categorie);
+    await chargerCategoriesLieu(existantes);
+}
+
+function fermerLieu() {
+    document.getElementById('modal-lieu').style.display = 'none';
+}
+
+async function sauvegarderLieu() {
+    const id = document.getElementById('lieu-id').value;
+    const type = document.querySelector('[name="l-type"]:checked').value;
+    const habilitations = [];
+    if (type === 'cdt') {
+        document.querySelectorAll('[name^="lieu-cat-"]').forEach(cb => {
+            if (cb.checked) {
+                const famille = cb.name.replace('lieu-cat-', '');
+                habilitations.push({ famille, categorie: cb.value });
+            }
+        });
+    }
+    const data = {
+        nom: document.getElementById('l-nom').value,
+        type,
+        adresse: document.getElementById('l-adresse').value || null,
+        code_postal: document.getElementById('l-cp').value || null,
+        ville: document.getElementById('l-ville').value || null,
+        telephone: document.getElementById('l-tel').value || null,
+        email: document.getElementById('l-email').value || null,
+        habilitations
+    };
+    if (!data.nom) { alert('Le nom est obligatoire !'); return; }
+    const url = id ? `/admin/lieu/${id}` : '/admin/lieu';
+    const method = id ? 'PUT' : 'POST';
+    const resp = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (resp.ok) { fermerLieu(); location.reload(); }
+    else alert('Erreur lors de la sauvegarde !');
+}
+
+function activerLieu(id, nom) {
+    demanderPin(`Activer le lieu "${nom}" ?`, async () => {
+        const resp = await fetch(`/admin/lieu/${id}/activer`, { method: 'POST' });
+        if (resp.ok) location.reload();
+        else alert('Erreur !');
+    });
+}
+
+function desactiverLieu(id, nom) {
+    demanderPin(`Désactiver le lieu "${nom}" ?`, async () => {
+        const resp = await fetch(`/admin/lieu/${id}/desactiver`, { method: 'POST' });
         if (resp.ok) location.reload();
         else alert('Erreur !');
     });

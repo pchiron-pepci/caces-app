@@ -3,8 +3,11 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.categorie import Categorie, Famille
 from app.models.habilitation_testeur import HabilitationTesteur
+from app.models.lieu import Lieu
+from app.models.lieu_habilitation import LieuHabilitation
 from pydantic import BaseModel
 from datetime import date
+from typing import Optional, List
 
 router = APIRouter(prefix="/admin", tags=["Administration"])
 
@@ -13,8 +16,31 @@ class HabilitationCreate(BaseModel):
     famille: str
     categorie: str
     date_integration: date
+    date_expiration: Optional[date] = None
+    date_prochain_controle: Optional[date] = None
     option_pe: bool = False
     option_tel: bool = False
+
+class HabilitationUpdate(BaseModel):
+    date_integration: date
+    date_expiration: Optional[date] = None
+    date_prochain_controle: Optional[date] = None
+    option_pe: bool = False
+    option_tel: bool = False
+
+class LieuHabilitationCreate(BaseModel):
+    famille: str
+    categorie: str
+
+class LieuCreate(BaseModel):
+    nom: str
+    type: str = "cdt"
+    adresse: Optional[str] = None
+    code_postal: Optional[str] = None
+    ville: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    habilitations: List[LieuHabilitationCreate] = []
 
 @router.get("/categories/{famille}")
 def get_categories_famille(famille: str, db: Session = Depends(get_db)):
@@ -53,6 +79,28 @@ def add_habilitation(data: HabilitationCreate, db: Session = Depends(get_db)):
     db.refresh(h)
     return {"message": "Habilitation ajoutee", "id": h.id}
 
+@router.put("/habilitation/{id}")
+def update_habilitation(id: int, data: HabilitationUpdate, db: Session = Depends(get_db)):
+    h = db.query(HabilitationTesteur).filter(HabilitationTesteur.id == id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Habilitation non trouvee")
+    h.date_integration = data.date_integration
+    h.date_expiration = data.date_expiration
+    h.date_prochain_controle = data.date_prochain_controle
+    h.option_pe = data.option_pe
+    h.option_tel = data.option_tel
+    db.commit()
+    return {"message": "Habilitation mise a jour"}
+
+@router.post("/habilitation/{id}/activer")
+def activer_habilitation(id: int, db: Session = Depends(get_db)):
+    h = db.query(HabilitationTesteur).filter(HabilitationTesteur.id == id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Habilitation non trouvee")
+    h.actif = True
+    db.commit()
+    return {"message": "Habilitation activee"}
+
 @router.delete("/habilitation/{id}")
 def delete_habilitation(id: int, db: Session = Depends(get_db)):
     h = db.query(HabilitationTesteur).filter(HabilitationTesteur.id == id).first()
@@ -61,3 +109,57 @@ def delete_habilitation(id: int, db: Session = Depends(get_db)):
     h.actif = False
     db.commit()
     return {"message": "Habilitation retiree"}
+
+@router.get("/lieu/{id}/habilitations")
+def get_lieu_habilitations(id: int, db: Session = Depends(get_db)):
+    habs = db.query(LieuHabilitation).filter(
+        LieuHabilitation.lieu_id == id,
+        LieuHabilitation.actif == True
+    ).all()
+    return [{"famille": h.famille, "categorie": h.categorie} for h in habs]
+
+@router.post("/lieu")
+def create_lieu(data: LieuCreate, db: Session = Depends(get_db)):
+    lieu_data = data.model_dump(exclude={"habilitations"})
+    l = Lieu(**lieu_data)
+    db.add(l)
+    db.flush()
+    for h in data.habilitations:
+        lh = LieuHabilitation(lieu_id=l.id, famille=h.famille, categorie=h.categorie)
+        db.add(lh)
+    db.commit()
+    db.refresh(l)
+    return {"message": "Lieu cree", "id": l.id}
+
+@router.put("/lieu/{id}")
+def update_lieu(id: int, data: LieuCreate, db: Session = Depends(get_db)):
+    l = db.query(Lieu).filter(Lieu.id == id).first()
+    if not l:
+        raise HTTPException(status_code=404, detail="Lieu non trouve")
+    lieu_data = data.model_dump(exclude={"habilitations"})
+    for key, value in lieu_data.items():
+        setattr(l, key, value)
+    db.query(LieuHabilitation).filter(LieuHabilitation.lieu_id == id).delete()
+    for h in data.habilitations:
+        lh = LieuHabilitation(lieu_id=id, famille=h.famille, categorie=h.categorie)
+        db.add(lh)
+    db.commit()
+    return {"message": "Lieu mis a jour"}
+
+@router.post("/lieu/{id}/activer")
+def activer_lieu(id: int, db: Session = Depends(get_db)):
+    l = db.query(Lieu).filter(Lieu.id == id).first()
+    if not l:
+        raise HTTPException(status_code=404, detail="Lieu non trouve")
+    l.actif = True
+    db.commit()
+    return {"message": "Lieu active"}
+
+@router.post("/lieu/{id}/desactiver")
+def desactiver_lieu(id: int, db: Session = Depends(get_db)):
+    l = db.query(Lieu).filter(Lieu.id == id).first()
+    if not l:
+        raise HTTPException(status_code=404, detail="Lieu non trouve")
+    l.actif = False
+    db.commit()
+    return {"message": "Lieu desactive"}
