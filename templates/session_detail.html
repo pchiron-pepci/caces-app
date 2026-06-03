@@ -66,10 +66,12 @@
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="ouvrirAjoutCandidatJour({{ j.id }})">+ Candidat</button>
                         {% endif %}
+                        {% if session.statut != 'terminee' %}
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
                             class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
                             Tablette candidat
                         </a>
+                        {% endif %}
                         {% if session.statut != 'terminee' %}
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                             onclick="supprimerJour({{ j.id }})">X</button>
