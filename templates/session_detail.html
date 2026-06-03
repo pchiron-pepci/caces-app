@@ -97,8 +97,10 @@
                                     <td style="text-align:center;"><span class="{{ 'badge green' if rt.theme5_ok else 'badge red' }}">{{ rt.note_theme5|int }}</span></td>
                                     <td style="text-align:center;"><strong>{{ rt.note_totale|int }}/100</strong></td>
                                     <td style="text-align:center;">
-                                        {% if rt.obtenue %}<span class="badge green">REUSSI</span>
-                                        {% else %}<span class="badge red">ECHEC</span>{% endif %}
+                                    {% if rt.obtenue %}<span class="badge green">REUSSI</span>
+{% else %}<span class="badge red">ECHEC</span>{% endif %}
+<a href="/sessions/{{ session.id }}/theorie/{{ sc.stagiaire_id }}/detail?jour_id={{ j.id }}"
+    style="font-size:11px; color:#1a237e; margin-left:6px;">Détail</a>
                                     </td>
                                 {% else %}
                                     <td colspan="6" style="text-align:center; color:#888;">En attente</td>

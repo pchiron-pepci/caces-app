@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Detail test theorique{% endblock %}
+
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <div>
+        <a href="/sessions/{{ session_id }}" style="color:#666; text-decoration:none; font-size:13px;">← Retour a la session</a>
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px; margin-top:4px;">
+            Detail du test theorique
+        </h2>
+        <div style="color:#666; font-size:14px; margin-top:4px;">
+            {{ stagiaire.nom }} {{ stagiaire.prenom }} —
+            {% if rt.obtenue %}
+                <span class="badge green">REUSSI — {{ rt.note_totale|int }}/100</span>
+            {% else %}
+                <span class="badge red">ECHEC — {{ rt.note_totale|int }}/100</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% for t, questions in detail_themes.items() %}
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+        <h2>Theme {{ t }} — {{ theme_noms[t] }}</h2>
+        <div>
+            {% set note_t = namespace(val=0) %}
+            {% for q in questions %}
+                {% if q.correcte %}{% set note_t.val = note_t.val + q.points %}{% endif %}
+            {% endfor %}
+            {% if t == '1' %}
+                {% if note_t.val >= 6 %}<span class="badge green">{{ note_t.val|int }}/12 ✅</span>
+                {% else %}<span class="badge red">{{ note_t.val|int }}/12 ❌</span>{% endif %}
+            {% elif t == '2' %}
+                {% if note_t.val >= 14 %}<span class="badge green">{{ note_t.val|int }}/28 ✅</span>
+                {% else %}<span class="badge red">{{ note_t.val|int }}/28 ❌</span>{% endif %}
+            {% elif t == '3' %}
+                {% if note_t.val >= 22 %}<span class="badge green">{{ note_t.val|int }}/44 ✅</span>
+                {% else %}<span class="badge red">{{ note_t.val|int }}/44 ❌</span>{% endif %}
+            {% elif t == '4' %}
+                {% if note_t.val >= 6 %}<span class="badge green">{{ note_t.val|int }}/12 ✅</span>
+                {% else %}<span class="badge red">{{ note_t.val|int }}/12 ❌</span>{% endif %}
+            {% elif t == '5' %}
+                {% if note_t.val >= 2 %}<span class="badge green">{{ note_t.val|int }}/4 ✅</span>
+                {% else %}<span class="badge red">{{ note_t.val|int }}/4 ❌</span>{% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width:40px;">N°</th>
+                <th>Question</th>
+                <th style="text-align:center; width:100px;">Bonne reponse</th>
+                <th style="text-align:center; width:100px;">Candidat</th>
+                <th style="text-align:center; width:80px;">Resultat</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in questions %}
+            <tr style="background:{{ '#f1f8e9' if q.correcte else '#ffebee' }};">
+                <td>{{ q.numero }}</td>
+                <td style="font-size:13px;">{{ q.texte }}</td>
+                <td style="text-align:center;">
+                    {% if q.reponse_correcte %}
+                        <span class="badge green">VRAI</span>
+                    {% else %}
+                        <span class="badge red">FAUX</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    {% if q.reponse_candidat is none %}
+                        <span style="color:#888;">—</span>
+                    {% elif q.reponse_candidat %}
+                        <span class="badge blue">VRAI</span>
+                    {% else %}
+                        <span class="badge orange">FAUX</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    {% if q.correcte %}✅{% else %}❌{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+{% endblock %}

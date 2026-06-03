@@ -378,7 +378,68 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
             "session_candidats": session_candidats
         }
     )
-
+@app.get("/sessions/{session_id}/theorie/{stagiaire_id}/detail")
+def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jour_id: int = None):
+    db = SessionLocal()
+    
+    query = db.query(ResultatTheorie).filter(
+        ResultatTheorie.session_id == session_id,
+        ResultatTheorie.stagiaire_id == stagiaire_id
+    )
+    if jour_id:
+        query = query.filter(ResultatTheorie.jour_test_id == jour_id)
+    rt = query.order_by(ResultatTheorie.id.desc()).first()
+    
+    if not rt:
+        db.close()
+        return {"error": "Resultat non trouve"}
+    
+    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+    
+    from app.models.grille_theorie import ReponseGrille
+    reponses_grille = db.query(ReponseGrille).filter(
+        ReponseGrille.grille_id == rt.grille_id
+    ).order_by(ReponseGrille.theme, ReponseGrille.numero_question).all()
+    
+    import json
+    reponses_candidat = json.loads(rt.reponses_json) if rt.reponses_json else {}
+    
+    detail_themes = {}
+    for r in reponses_grille:
+        t = str(r.theme)
+        if t not in detail_themes:
+            detail_themes[t] = []
+        candidat_reponses = reponses_candidat.get(t, [])
+        q_idx = r.numero_question - 1
+        reponse_candidat = candidat_reponses[q_idx] if q_idx < len(candidat_reponses) else None
+        correcte = reponse_candidat is not None and reponse_candidat == r.reponse_correcte
+        detail_themes[t].append({
+            "numero": r.numero_question,
+            "texte": r.texte_question,
+            "reponse_correcte": r.reponse_correcte,
+            "reponse_candidat": reponse_candidat,
+            "correcte": correcte,
+            "points": r.points
+        })
+    
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="detail_theorie.html",
+        context={
+            "stagiaire": stagiaire,
+            "session_id": session_id,
+            "rt": rt,
+            "detail_themes": detail_themes,
+            "theme_noms": {
+                "1": "Connaissances generales",
+                "2": "Technologie et stabilite",
+                "3": "Exploitation",
+                "4": "Circulation",
+                "5": "Fin de poste"
+            }
+        }
+    )
 @app.get("/health")
 def health():
     return {"status": "ok"}
