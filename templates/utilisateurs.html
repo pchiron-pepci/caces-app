@@ -157,8 +157,8 @@ async function sauvegarderUser() {
 }
 
 async function desactiverUser(id) {
-    if (!confirm('Desactiver cet utilisateur ?')) return;
-    const pin = prompt('Code PIN administrateur :');
+    const pin = prompt('Code PIN administrateur pour desactiver :');
+    if (pin === null) return;
     if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
     const token = localStorage.getItem('token');
     const resp = await fetch('/api/auth/utilisateurs/' + id, { 
@@ -169,18 +169,21 @@ async function desactiverUser(id) {
     else alert('Erreur !');
 }
 
-async function reactiverUser(id) {
+async function desactiverUser(id) {
+    const pin = prompt('Code PIN administrateur pour desactiver :');
+    if (pin === null) return;
+    if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
     const token = localStorage.getItem('token');
-    const resp = await fetch('/api/auth/utilisateurs/' + id, {
-        method: 'PUT',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ actif: true })
+    const resp = await fetch('/api/auth/utilisateurs/' + id, { 
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
     });
-    if (resp.ok) chargerUsers();
-    else alert('Erreur !');
+    if (resp.ok) {
+        chargerUsers();
+    } else {
+        const data = await resp.json();
+        alert('Erreur : ' + (data.detail || resp.status));
+    }
 }
 
 chargerUsers();
