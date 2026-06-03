@@ -567,66 +567,34 @@ let tempsRestant = 60 * 60;
 
 function demarrerTimer() {
     document.getElementById('timer').style.display = 'block';
-    timerInterval = setInterval(() => {
-        tempsRestant--;
-        const minutes = Math.floor(tempsRestant / 60);
-        const secondes = tempsRestant % 60;
-        const affichage = String(minutes).padStart(2, '0') + ':' + String(secondes).padStart(2, '0');
-        const timerEl = document.getElementById('timer');
-        timerEl.textContent = '⏱ ' + affichage;
-
-        if (tempsRestant === 600) {
-            timerEl.style.color = '#ff9800';
-            alert('⚠️ Il vous reste 10 minutes !');
-        }
-        if (tempsRestant === 300) {
-            timerEl.style.color = '#f44336';
-            alert('⚠️ Il vous reste 5 minutes !');
-        }
-        if (tempsRestant <= 0) {
-            clearInterval(timerInterval);
-            timerEl.textContent = '⏱ 00:00';
-            timerEl.style.color = '#f44336';
-            alert('⏰ Temps ecoule ! Vos reponses sont sauvegardees automatiquement.');
-            valider();
-        }
-    }, 1000);
+    timerInterval = setInterval(tickTimer, 1000);
 }
-let timerInterval = null;
-let tempsRestant = 60 * 60; // 60 minutes en secondes
 
-function demarrerTimer() {
-    document.getElementById('timer').style.display = 'block';
-    timerInterval = setInterval(() => {
-        tempsRestant--;
-        const minutes = Math.floor(tempsRestant / 60);
-        const secondes = tempsRestant % 60;
-        const affichage = String(minutes).padStart(2, '0') + ':' + String(secondes).padStart(2, '0');
-        const timerEl = document.getElementById('timer');
-        timerEl.textContent = '⏱ ' + affichage;
+function tickTimer() {
+    tempsRestant--;
+    const minutes = Math.floor(tempsRestant / 60);
+    const secondes = tempsRestant % 60;
+    const affichage = String(minutes).padStart(2, '0') + ':' + String(secondes).padStart(2, '0');
+    const timerEl = document.getElementById('timer');
+    timerEl.textContent = '⏱ ' + affichage;
 
-        // Alerte à 10 minutes
-        if (tempsRestant === 600) {
-            timerEl.style.color = '#ff9800';
-            alert('⚠️ Il vous reste 10 minutes !');
-        }
-
-        // Alerte à 5 minutes
-        if (tempsRestant === 300) {
-            timerEl.style.color = '#f44336';
-            alert('⚠️ Il vous reste 5 minutes !');
-        }
-
-        // Temps écoulé
-        if (tempsRestant <= 0) {
-            clearInterval(timerInterval);
-            timerEl.textContent = '⏱ 00:00';
-            timerEl.style.color = '#f44336';
-            alert('⏰ Temps écoulé ! Vos réponses sont sauvegardées automatiquement.');
-            valider();
-        }
-    }, 1000);
+    if (tempsRestant === 600) {
+        timerEl.style.color = '#ff9800';
+        alert('⚠️ Il vous reste 10 minutes !');
+    }
+    if (tempsRestant === 300) {
+        timerEl.style.color = '#f44336';
+        alert('⚠️ Il vous reste 5 minutes !');
+    }
+    if (tempsRestant <= 0) {
+        clearInterval(timerInterval);
+        timerEl.textContent = '⏱ 00:00';
+        timerEl.style.color = '#f44336';
+        alert('⏰ Temps ecoule ! Vos reponses sont sauvegardees automatiquement.');
+        valider();
+    }
 }
+
 const THEME_NOMS = {
     1: 'Theme 1 · Connaissances generales',
     2: 'Theme 2 · Technologie et stabilite',
