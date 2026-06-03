@@ -440,6 +440,70 @@ def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jo
             }
         }
     )
+@app.get("/statistiques")
+def page_statistiques(request: Request):
+    db = SessionLocal()
+    from app.models.grille_theorie import GrilleTheorie, UtilisationGrille
+    from datetime import datetime
+    annee = datetime.now().year
+
+    # Stats par grille
+    grilles = db.query(GrilleTheorie).filter(GrilleTheorie.actif == True).all()
+    total = db.query(UtilisationGrille).filter(UtilisationGrille.annee == annee).count()
+
+    stats_grilles = []
+    for g in grilles:
+        count = db.query(UtilisationGrille).filter(
+            UtilisationGrille.grille_id == g.id,
+            UtilisationGrille.annee == annee
+        ).count()
+        pct = round(count / total * 100, 1) if total > 0 else 0
+        statut = "OK"
+        if pct < 10 and total > 0:
+            statut = "SOUS"
+        elif pct > 30:
+            statut = "SUR"
+        stats_grilles.append({
+            "numero": g.numero,
+            "famille": g.famille,
+            "count": count,
+            "pct": pct,
+            "statut": statut
+        })
+
+    # Historique des tirages
+    historique = db.query(UtilisationGrille).filter(
+        UtilisationGrille.annee == annee
+    ).order_by(UtilisationGrille.id.desc()).all()
+
+    historique_detail = []
+    for u in historique:
+        g = db.query(GrilleTheorie).filter(GrilleTheorie.id == u.grille_id).first()
+        s = db.query(Session).filter(Session.id == u.session_id).first()
+        # Récupérer la date du jour théorique
+        j = db.query(JourTest).filter(
+            JourTest.session_id == u.session_id,
+            JourTest.grille_id == u.grille_id,
+            JourTest.actif == True
+        ).first()
+        historique_detail.append({
+            "grille_numero": g.numero if g else "?",
+            "session_ref": s.reference if s else "?",
+            "date": j.date if j else "?"
+        })
+
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="statistiques.html",
+        context={
+            "page": "statistiques",
+            "annee": annee,
+            "total": total,
+            "stats_grilles": stats_grilles,
+            "historique": historique_detail
+        }
+    )
 @app.get("/health")
 def health():
     return {"status": "ok"}
