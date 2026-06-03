@@ -594,10 +594,20 @@ async function chargerQuestions() {
 
 chargerQuestions();
 
-function commencer() {
+async function commencer() {
     const sel = document.getElementById('select-candidat');
     stagiaireId = sel.value;
     if (!stagiaireId) { alert('Veuillez selectionner votre nom !'); return; }
+    
+    // Attendre que les questions soient chargées
+    if (questions.length === 0) {
+        await chargerQuestions();
+    }
+    
+    if (questions.length === 0) { 
+        alert('Erreur chargement des questions !'); 
+        return; 
+    }
     const nom = sel.options[sel.selectedIndex].text;
     document.getElementById('header-candidat').textContent = nom;
     document.getElementById('ecran-accueil').style.display = 'none';
