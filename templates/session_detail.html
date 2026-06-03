@@ -760,6 +760,7 @@ async function sauvegarderJourTheorie() {
     const date = document.getElementById('jt-date').value;
     const testeur_id = document.getElementById('jt-testeur').value;
     if (!date) { alert('La date est obligatoire !'); return; }
+    if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
 
     const candidats = [];
     document.querySelectorAll('[name="jt-candidat"]:checked').forEach(cb => {
