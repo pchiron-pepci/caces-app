@@ -70,6 +70,17 @@
 
     // Afficher le nom de l'utilisateur connecte
     const nomUser = localStorage.getItem('nom');
+    
+    // Gestion des droits par role
+const role = localStorage.getItem('role');
+if (role !== 'admin') {
+    // Masquer le lien Administration
+    document.querySelectorAll('.nav-item').forEach(link => {
+        if (link.href && link.href.includes('/admin')) {
+            link.style.display = 'none';
+        }
+    });
+}
     if (nomUser) {
         const el = document.getElementById('user-nom');
         if (el) el.textContent = nomUser;
