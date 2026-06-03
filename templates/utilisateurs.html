@@ -10,7 +10,7 @@
 </div>
 
 <div class="card">
-    <table class="table" id="tableau-users">
+    <table class="table">
         <thead>
             <tr>
                 <th>Nom</th>
@@ -67,9 +67,9 @@
 <div id="modal-pin-user" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:32px; width:380px; text-align:center;">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">Confirmation</h2>
-        <p style="color:#666; margin-bottom:24px;">Entrez le code PIN administrateur pour desactiver cet utilisateur.</p>
-        <input type="password" id="pin-input-user" placeholder="••••" 
-            style="width:100%; text-align:center; font-size:24px; letter-spacing:8px; padding:12px; border:2px solid #e0e0e0; border-radius:10px; margin-bottom:16px;">
+        <p style="color:#666; margin-bottom:24px;">Code PIN administrateur requis.</p>
+        <input type="password" id="pin-input-user" placeholder="••••"
+            style="width:100%; text-align:center; font-size:24px; letter-spacing:8px; padding:12px; border:2px solid #e0e0e0; border-radius:10px; margin-bottom:12px;">
         <p id="pin-error-user" style="color:red; font-size:13px; margin-bottom:12px; display:none;">Code PIN incorrect !</p>
         <div style="display:flex; gap:12px; justify-content:center;">
             <button class="btn btn-danger" id="pin-confirm-user-btn">Confirmer</button>
@@ -79,89 +79,64 @@
 </div>
 
 <script>
-// Charge la liste des utilisateurs depuis l'API en envoyant le token JWT
+// On stocke la liste des utilisateurs dans une variable globale
+// pour éviter de repasser des données dans les attributs onclick
+let listeUsers = [];
+
 async function chargerUsers() {
     const token = localStorage.getItem('token');
     const resp = await fetch('/api/auth/utilisateurs', {
         headers: { 'Authorization': 'Bearer ' + token }
     });
     if (!resp.ok) {
-        document.getElementById('tbody-users').innerHTML = 
-            '<tr><td colspan="5" style="text-align:center; color:#c62828;">Erreur de chargement — veuillez vous reconnecter.</td></tr>';
+        document.getElementById('tbody-users').innerHTML =
+            '<tr><td colspan="5" style="text-align:center; color:#c62828;">Erreur — veuillez vous reconnecter.</td></tr>';
         return;
     }
-    const users = await resp.json();
+    listeUsers = await resp.json();
     const tbody = document.getElementById('tbody-users');
-    if (users.length === 0) {
+    if (listeUsers.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">Aucun utilisateur</td></tr>';
         return;
     }
-    tbody.innerHTML = users.map(u => {
-        const btnAction = u.actif
-            ? `<button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="demanderPinDesactiver(${u.id})">Desactiver</button>`
-            : `<button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="reactiverUser(${u.id})">Reactiver</button>`;
-        return `<tr style="opacity:${u.actif ? '1' : '0.5'}">
+    tbody.innerHTML = listeUsers.map(u => `
+        <tr style="opacity:${u.actif ? '1' : '0.5'}">
             <td><strong>${u.nom} ${u.prenom}</strong></td>
             <td>${u.email}</td>
-            <td>${u.role === 'admin' ? '<span class="badge blue">Admin</span>' : '<span class="badge green">Testeur</span>'}</td>
-            <td>${u.actif ? '<span class="badge green">Actif</span>' : '<span class="badge red">Inactif</span>'}</td>
+            <td>${u.role === 'admin' 
+                ? '<span class="badge blue">Admin</span>' 
+                : '<span class="badge green">Testeur</span>'}</td>
+            <td>${u.actif 
+                ? '<span class="badge green">Actif</span>' 
+                : '<span class="badge red">Inactif</span>'}</td>
             <td>
                 <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                    onclick="editerUser(${u.id}, '${u.nom}', '${u.prenom}', '${u.email}', '${u.role}')">Modifier</button>
-                ${btnAction}
+                    onclick="editerUser(${u.id})">Modifier</button>
+                ${u.actif
+                    ? `<button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                        onclick="demanderPinDesactiver(${u.id})">Desactiver</button>`
+                    : `<button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                        onclick="reactiverUser(${u.id})">Reactiver</button>`
+                }
             </td>
-        </tr>`;
-    }).join('');
+        </tr>
+    `).join('');
 }
 
-// Ouvre le modal PIN avant de désactiver
-function demanderPinDesactiver(id) {
-    document.getElementById('pin-input-user').value = '';
-    document.getElementById('pin-error-user').style.display = 'none';
-    document.getElementById('modal-pin-user').style.display = 'flex';
-    // Quand l'utilisateur confirme, on exécute la désactivation
-    document.getElementById('pin-confirm-user-btn').onclick = async () => {
-        const pin = document.getElementById('pin-input-user').value;
-        if (pin !== '1505') {
-            document.getElementById('pin-error-user').style.display = 'block';
-            return;
-        }
-        fermerPinUser();
-        await desactiverUser(id);
-    };
-}
-
-function fermerPinUser() {
-    document.getElementById('modal-pin-user').style.display = 'none';
-}
-
-// Désactive l'utilisateur après validation du PIN
-async function desactiverUser(id) {
-    const token = localStorage.getItem('token');
-    const resp = await fetch('/api/auth/utilisateurs/' + id, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (resp.ok) {
-        chargerUsers();
-    } else {
-        const data = await resp.json();
-        alert('Erreur : ' + (data.detail || resp.status));
-    }
-}
-
-async function reactiverUser(id) {
-    const token = localStorage.getItem('token');
-    const resp = await fetch('/api/auth/utilisateurs/' + id, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ actif: true })
-    });
-    if (resp.ok) chargerUsers();
-    else alert('Erreur lors de la reactivation !');
+// On récupère les données de l'utilisateur depuis la variable globale
+// plutôt que depuis les attributs HTML — ça évite les problèmes avec les accents
+function editerUser(id) {
+    const u = listeUsers.find(x => x.id === id);
+    if (!u) return;
+    document.getElementById('modal-titre').textContent = 'Modifier utilisateur';
+    document.getElementById('user-id').value = u.id;
+    document.getElementById('user-nom-input').value = u.nom;
+    document.getElementById('user-prenom').value = u.prenom;
+    document.getElementById('user-email').value = u.email;
+    document.getElementById('user-role').value = u.role;
+    document.getElementById('user-mdp').value = '';
+    document.getElementById('field-mdp').style.display = 'none';
+    document.getElementById('modal-user').style.display = 'flex';
 }
 
 function ouvrirAjout() {
@@ -173,18 +148,6 @@ function ouvrirAjout() {
     document.getElementById('user-role').value = 'testeur';
     document.getElementById('user-mdp').value = '';
     document.getElementById('field-mdp').style.display = 'block';
-    document.getElementById('modal-user').style.display = 'flex';
-}
-
-function editerUser(id, nom, prenom, email, role) {
-    document.getElementById('modal-titre').textContent = 'Modifier utilisateur';
-    document.getElementById('user-id').value = id;
-    document.getElementById('user-nom-input').value = nom;
-    document.getElementById('user-prenom').value = prenom;
-    document.getElementById('user-email').value = email;
-    document.getElementById('user-role').value = role;
-    document.getElementById('user-mdp').value = '';
-    document.getElementById('field-mdp').style.display = 'none';
     document.getElementById('modal-user').style.display = 'flex';
 }
 
@@ -206,10 +169,7 @@ async function sauvegarderUser() {
     if (id) {
         const resp = await fetch('/api/auth/utilisateurs/' + id, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({ nom, prenom, email, role })
         });
         if (resp.ok) { fermerModal(); chargerUsers(); }
@@ -218,10 +178,7 @@ async function sauvegarderUser() {
         if (!mdp) { alert('Mot de passe obligatoire !'); return; }
         const resp = await fetch('/api/auth/utilisateurs', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({ nom, prenom, email, role, mot_de_passe: mdp })
         });
         if (resp.ok) { fermerModal(); chargerUsers(); }
@@ -230,6 +187,53 @@ async function sauvegarderUser() {
             alert('Erreur : ' + (data.detail || 'Inconnue'));
         }
     }
+}
+
+function demanderPinDesactiver(id) {
+    document.getElementById('pin-input-user').value = '';
+    document.getElementById('pin-error-user').style.display = 'none';
+    document.getElementById('modal-pin-user').style.display = 'flex';
+    document.getElementById('pin-confirm-user-btn').onclick = async () => {
+        const pin = document.getElementById('pin-input-user').value;
+        if (pin !== '1505') {
+            document.getElementById('pin-error-user').style.display = 'block';
+            return;
+        }
+        fermerPinUser();
+        const token = localStorage.getItem('token');
+        const resp = await fetch('/api/auth/utilisateurs/' + id, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (resp.ok) chargerUsers();
+        else alert('Erreur lors de la desactivation !');
+    };
+}
+
+function fermerPinUser() {
+    document.getElementById('modal-pin-user').style.display = 'none';
+}
+
+async function reactiverUser(id) {
+    document.getElementById('pin-input-user').value = '';
+    document.getElementById('pin-error-user').style.display = 'none';
+    document.getElementById('modal-pin-user').style.display = 'flex';
+    document.getElementById('pin-confirm-user-btn').onclick = async () => {
+        const pin = document.getElementById('pin-input-user').value;
+        if (pin !== '1505') {
+            document.getElementById('pin-error-user').style.display = 'block';
+            return;
+        }
+        fermerPinUser();
+        const token = localStorage.getItem('token');
+        const resp = await fetch('/api/auth/utilisateurs/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ actif: true })
+        });
+        if (resp.ok) chargerUsers();
+        else alert('Erreur lors de la reactivation !');
+    };
 }
 
 chargerUsers();
