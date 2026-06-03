@@ -14,7 +14,6 @@
             color: #1a1a2e;
         }
 
-        /* HEADER */
         .header {
             background: #1a237e;
             color: white;
@@ -85,21 +84,28 @@
             text-align: right;
         }
 
-        /* CONTENEUR CENTRAL */
         .screen {
             max-width: 540px;
             margin: 0 auto;
             padding: 20px 16px 40px;
         }
 
-        /* ECRAN ACCUEIL */
-        .accueil-logo {
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            margin-bottom: 14px;
+        }
+
+        /* ECRAN SELECTION CANDIDAT */
+        .selection-logo {
             text-align: center;
             margin-bottom: 28px;
             margin-top: 12px;
         }
 
-        .accueil-logo-circle {
+        .selection-logo-circle {
             width: 72px;
             height: 72px;
             background: #1a237e;
@@ -111,24 +117,16 @@
             font-size: 30px;
         }
 
-        .accueil-titre {
+        .selection-titre {
             font-size: 24px;
             font-weight: 800;
             color: #1a237e;
             margin-bottom: 4px;
         }
 
-        .accueil-sous-titre {
+        .selection-sous-titre {
             font-size: 14px;
             color: #666;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-            margin-bottom: 14px;
         }
 
         .field-label {
@@ -187,7 +185,7 @@
             color: #3949ab;
         }
 
-        .btn-commencer {
+        .btn-action {
             width: 100%;
             padding: 16px;
             background: #1a237e;
@@ -203,8 +201,87 @@
             transition: background 0.2s;
         }
 
-        .btn-commencer:hover { background: #283593; }
-        .btn-commencer:active { transform: scale(0.99); }
+        .btn-action:hover { background: #283593; }
+        .btn-action:active { transform: scale(0.99); }
+
+        .btn-action-secondary {
+            width: 100%;
+            padding: 14px;
+            background: #f0f2f7;
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        /* ECRAN CONFIRMATION IDENTITE */
+        .identite-nom {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1a237e;
+            text-align: center;
+            margin: 20px 0 8px;
+        }
+
+        .identite-info {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-confirm {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: #f0f2f7;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-confirm input {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .checkbox-confirm span {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        /* ECRAN CONSIGNES */
+        .timer-display {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 800;
+            color: #1a237e;
+            margin: 16px 0;
+        }
+
+        .consigne-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .consigne-item:last-child { border: none; }
+
+        .consigne-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
 
         /* ECRAN QCM */
         .theme-badge {
@@ -241,7 +318,6 @@
             min-height: 80px;
         }
 
-        /* BOUTONS VRAI/FAUX CÔTE À CÔTE */
         .reponse-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -265,31 +341,11 @@
             text-transform: uppercase;
         }
 
-        .btn-vrai {
-            background: #f1f8e9;
-            color: #33691e;
-            border-color: #c5e1a5;
-        }
+        .btn-vrai { background: #f1f8e9; color: #33691e; border-color: #c5e1a5; }
+        .btn-vrai.selected { background: #33691e; color: white; border-color: #33691e; }
+        .btn-faux { background: #fce4ec; color: #b71c1c; border-color: #f48fb1; }
+        .btn-faux.selected { background: #b71c1c; color: white; border-color: #b71c1c; }
 
-        .btn-vrai.selected {
-            background: #33691e;
-            color: white;
-            border-color: #33691e;
-        }
-
-        .btn-faux {
-            background: #fce4ec;
-            color: #b71c1c;
-            border-color: #f48fb1;
-        }
-
-        .btn-faux.selected {
-            background: #b71c1c;
-            color: white;
-            border-color: #b71c1c;
-        }
-
-        /* NAVIGATION */
         .navigation {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -306,39 +362,14 @@
             transition: all 0.15s;
         }
 
-        .btn-precedent {
-            background: #f0f2f7;
-            color: #555;
-        }
-
-        .btn-suivant {
-            background: #1a237e;
-            color: white;
-        }
-
-        .btn-nav:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
+        .btn-precedent { background: #f0f2f7; color: #555; }
+        .btn-suivant { background: #1a237e; color: white; }
+        .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
 
         /* RECAP */
-        .recap-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .recap-score-big {
-            font-size: 52px;
-            font-weight: 800;
-            color: #1a237e;
-            line-height: 1;
-        }
-
-        .recap-score-label {
-            font-size: 14px;
-            color: #888;
-            margin-top: 4px;
-        }
+        .recap-header { text-align: center; margin-bottom: 20px; }
+        .recap-score-big { font-size: 52px; font-weight: 800; color: #1a237e; line-height: 1; }
+        .recap-score-label { font-size: 14px; color: #888; margin-top: 4px; }
 
         .recap-theme {
             background: white;
@@ -357,22 +388,13 @@
             margin-bottom: 10px;
         }
 
-        .recap-questions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
+        .recap-questions { display: flex; flex-wrap: wrap; gap: 5px; }
 
         .recap-q {
-            width: 34px;
-            height: 34px;
+            width: 34px; height: 34px;
             border-radius: 7px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700; cursor: pointer;
         }
 
         .recap-q.vrai { background: #c8e6c9; color: #2e7d32; }
@@ -380,77 +402,47 @@
         .recap-q.vide { background: #fff9c4; color: #f57f17; border: 2px dashed #ffd54f; }
 
         .btn-valider {
-            width: 100%;
-            padding: 16px;
-            background: #1a237e;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 4px;
-            margin-bottom: 10px;
+            width: 100%; padding: 16px;
+            background: #1a237e; color: white;
+            border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 800;
+            cursor: pointer; text-transform: uppercase;
+            letter-spacing: 1px; margin-top: 4px; margin-bottom: 10px;
         }
 
         .btn-retour {
-            width: 100%;
-            padding: 13px;
-            background: #f0f2f7;
-            color: #555;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
+            width: 100%; padding: 13px;
+            background: #f0f2f7; color: #555;
+            border: none; border-radius: 12px;
+            font-size: 14px; font-weight: 700; cursor: pointer;
         }
 
         /* RESULTAT */
-        .resultat-header {
-            text-align: center;
-            padding: 28px 20px 20px;
-        }
-
+        .resultat-header { text-align: center; padding: 28px 20px 20px; }
         .resultat-emoji { font-size: 60px; margin-bottom: 8px; }
-
-        .resultat-score {
-            font-size: 68px;
-            font-weight: 800;
-            line-height: 1;
-            margin-bottom: 6px;
-        }
-
+        .resultat-score { font-size: 68px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
         .resultat-score.reussi { color: #2e7d32; }
         .resultat-score.echec { color: #c62828; }
-
-        .resultat-label {
-            font-size: 20px;
-            font-weight: 800;
-        }
-
+        .resultat-label { font-size: 20px; font-weight: 800; }
         .resultat-label.reussi { color: #2e7d32; }
         .resultat-label.echec { color: #c62828; }
 
         .theme-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #f5f5f5;
-            font-size: 14px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px;
         }
 
         .theme-row:last-child { border: none; }
         .theme-ok { color: #2e7d32; font-weight: 700; }
         .theme-ko { color: #c62828; font-weight: 700; }
 
-        .fin-msg {
-            text-align: center;
-            color: #aaa;
-            font-size: 13px;
-            padding: 20px;
+        .fin-msg { text-align: center; color: #aaa; font-size: 13px; padding: 20px; }
+
+        #timer {
+            display: none;
+            font-size: 18px;
+            font-weight: 800;
+            color: #64b5f6;
         }
     </style>
 </head>
@@ -459,12 +451,12 @@
 <!-- HEADER -->
 <div class="header">
     <div class="header-row1">
-    <div class="header-title">CACES® R.482 - Theorie</div>
-    <div style="display:flex; align-items:center; gap:16px;">
-        <div id="timer" style="display:none; font-size:18px; font-weight:800; color:#64b5f6;">⏱ 60:00</div>
-        <div class="header-candidat" id="header-candidat"></div>
+        <div class="header-title">CACES® R.482 - Theorie</div>
+        <div style="display:flex; align-items:center; gap:16px;">
+            <div id="timer"></div>
+            <div class="header-candidat" id="header-candidat"></div>
+        </div>
     </div>
-</div>
     <div class="progress-row" id="progress-section" style="display:none;">
         <div class="q-counter">Q <span id="q-num">1</span><small> / 100</small></div>
         <div class="progress-bar-wrap">
@@ -474,32 +466,97 @@
     </div>
 </div>
 
-<!-- ECRAN ACCUEIL -->
-<div class="screen" id="ecran-accueil">
-    <div class="accueil-logo">
-        <div class="accueil-logo-circle">📋</div>
-        <div class="accueil-titre">Test theorique</div>
-        <div class="accueil-sous-titre">CACES® R.482 — Engins de chantier</div>
+<!-- ECRAN 1 : SELECTION CANDIDAT (TESTEUR) -->
+<div class="screen" id="ecran-selection">
+    <div class="selection-logo">
+        <div class="selection-logo-circle">📋</div>
+        <div class="selection-titre">Test theorique</div>
+        <div class="selection-sous-titre">CACES® R.482 — Engins de chantier</div>
     </div>
 
     <div class="card">
-        <label class="field-label">Votre nom</label>
+        <label class="field-label">Selectionnez le candidat</label>
         <select id="select-candidat">
-            <option value="">-- Selectionnez votre nom --</option>
+            <option value="">-- Choisir le candidat --</option>
             {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
-            <option value="{{ sc.stagiaire_id }}">{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</option>
+            <option value="{{ sc.stagiaire_id }}"
+                data-nom="{{ sc.stagiaire.nom }}"
+                data-prenom="{{ sc.stagiaire.prenom }}"
+                data-naissance="{{ sc.stagiaire.date_naissance or '' }}">
+                {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
+            </option>
             {% endif %}{% endfor %}
         </select>
         <div class="grille-info">
             <span class="grille-badge">Grille n°{{ grille_numero }}</span>
-            <span class="grille-texte">100 questions · VRAI ou FAUX</span>
+            <span class="grille-texte">100 questions · VRAI ou FAUX · 60 minutes</span>
         </div>
     </div>
 
-    <button class="btn-commencer" onclick="commencer()">Commencer le test →</button>
+    <button class="btn-action" onclick="allerConfirmation()">Preparer le test →</button>
 </div>
 
-<!-- ECRAN QCM -->
+<!-- ECRAN 2 : CONFIRMATION IDENTITE (CANDIDAT) -->
+<div class="screen" id="ecran-identite" style="display:none;">
+    <div class="card">
+        <div style="text-align:center; margin-bottom:16px;">
+            <div style="font-size:48px;">👤</div>
+            <div style="font-size:14px; color:#666; margin-top:8px;">Etes-vous bien :</div>
+        </div>
+        <div class="identite-nom" id="identite-nom">—</div>
+        <div class="identite-info" id="identite-info">—</div>
+
+        <label class="checkbox-confirm">
+            <input type="checkbox" id="confirm-identite">
+            <span>Je certifie etre la personne designe ci-dessus et m'engage a repondre seul aux questions, sans aide exterieure ni support de cours.</span>
+        </label>
+    </div>
+
+    <button class="btn-action" onclick="allerConsignes()">Confirmer mon identite →</button>
+    <button class="btn-action-secondary" onclick="retourSelection()">← Ce n'est pas moi</button>
+</div>
+
+<!-- ECRAN 3 : CONSIGNES -->
+<div class="screen" id="ecran-consignes" style="display:none;">
+    <div class="card">
+        <div style="text-align:center; margin-bottom:8px;">
+            <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#888;">Duree du test</div>
+            <div class="timer-display">⏱ 60:00</div>
+        </div>
+
+        <div style="background:#e8eaf6; border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
+            <div style="font-size:14px; font-weight:800; color:#1a237e; margin-bottom:4px;">TEST THEORIQUE CACES® R.482</div>
+            <div style="font-size:13px; color:#3949ab;">100 questions VRAI / FAUX</div>
+        </div>
+
+        <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:12px;">Regles de l'epreuve</div>
+
+        <div class="consigne-item">
+            <span class="consigne-icon">📝</span>
+            <div><strong>100 questions</strong> a repondre par VRAI ou FAUX. Vous pouvez revenir en arriere a tout moment.</div>
+        </div>
+        <div class="consigne-item">
+            <span class="consigne-icon">⏱</span>
+            <div><strong>60 minutes maximum.</strong> Le test se soumet automatiquement a la fin du temps.</div>
+        </div>
+        <div class="consigne-item">
+            <span class="consigne-icon">📊</span>
+            <div><strong>5 themes notes independamment.</strong> Vous devez obtenir au moins <strong>50% dans chaque theme.</strong></div>
+        </div>
+        <div class="consigne-item">
+            <span class="consigne-icon">🎯</span>
+            <div>Note globale minimum : <strong>70 points sur 100</strong> pour obtenir la certification.</div>
+        </div>
+        <div class="consigne-item">
+            <span class="consigne-icon">🚫</span>
+            <div>Aucune aide exterieure autorisee. Travaillez <strong>seul et sans support de cours.</strong></div>
+        </div>
+    </div>
+
+    <button class="btn-action" onclick="demarrerTest()">▶ Commencer le test</button>
+</div>
+
+<!-- ECRAN 4 : QCM -->
 <div class="screen" id="ecran-qcm" style="display:none;">
     <div class="card">
         <div class="theme-badge" id="q-theme-label">Theme 1</div>
@@ -516,7 +573,7 @@
     </div>
 </div>
 
-<!-- ECRAN RECAP -->
+<!-- ECRAN 5 : RECAP -->
 <div class="screen" id="ecran-recap" style="display:none;">
     <div class="recap-header">
         <div class="recap-score-big" id="recap-nb">0</div>
@@ -540,7 +597,7 @@
     <button class="btn-retour" onclick="retourQcm()">← Continuer a repondre</button>
 </div>
 
-<!-- ECRAN RESULTAT -->
+<!-- ECRAN 6 : RESULTAT -->
 <div class="screen" id="ecran-resultat" style="display:none;">
     <div class="card">
         <div class="resultat-header">
@@ -550,7 +607,7 @@
         </div>
         <div id="res-themes"></div>
     </div>
-    <div class="fin-msg">Remettez la tablette au testeur</div>
+    <div class="fin-msg" id="fin-msg">Remettez la tablette au testeur</div>
 </div>
 
 <script>
@@ -590,7 +647,6 @@ function tickTimer() {
         clearInterval(timerInterval);
         timerEl.textContent = '⏱ 00:00';
         timerEl.style.color = '#f44336';
-        alert('⏰ Temps ecoule ! Vos reponses sont sauvegardees automatiquement.');
         valider(true);
     }
 }
@@ -629,22 +685,51 @@ async function chargerQuestions() {
 
 chargerQuestions();
 
-async function commencer() {
+// ECRAN 1 → 2
+function allerConfirmation() {
     const sel = document.getElementById('select-candidat');
     stagiaireId = sel.value;
-    if (!stagiaireId) { alert('Veuillez selectionner votre nom !'); return; }
-    
+    if (!stagiaireId) { alert('Veuillez selectionner un candidat !'); return; }
+
+    const opt = sel.options[sel.selectedIndex];
+    const nom = opt.getAttribute('data-nom') + ' ' + opt.getAttribute('data-prenom');
+    const naissance = opt.getAttribute('data-naissance');
+
+    document.getElementById('identite-nom').textContent = nom;
+    document.getElementById('identite-info').textContent = naissance ? 'Ne(e) le ' + naissance : '';
+    document.getElementById('header-candidat').textContent = nom;
+    document.getElementById('confirm-identite').checked = false;
+
+    document.getElementById('ecran-selection').style.display = 'none';
+    document.getElementById('ecran-identite').style.display = 'block';
+}
+
+// ECRAN 2 → retour
+function retourSelection() {
+    document.getElementById('ecran-identite').style.display = 'none';
+    document.getElementById('ecran-selection').style.display = 'block';
+}
+
+// ECRAN 2 → 3
+function allerConsignes() {
+    if (!document.getElementById('confirm-identite').checked) {
+        alert('Vous devez confirmer votre identite avant de continuer !');
+        return;
+    }
+    document.getElementById('ecran-identite').style.display = 'none';
+    document.getElementById('ecran-consignes').style.display = 'block';
+}
+
+// ECRAN 3 → 4 (timer démarre ici)
+async function demarrerTest() {
     if (questions.length === 0) {
         await chargerQuestions();
     }
-    
-    if (questions.length === 0) { 
-        alert('Erreur chargement des questions !'); 
-        return; 
+    if (questions.length === 0) {
+        alert('Erreur chargement des questions !');
+        return;
     }
-    const nom = sel.options[sel.selectedIndex].text;
-    document.getElementById('header-candidat').textContent = nom;
-    document.getElementById('ecran-accueil').style.display = 'none';
+    document.getElementById('ecran-consignes').style.display = 'none';
     document.getElementById('ecran-qcm').style.display = 'block';
     document.getElementById('progress-section').style.display = 'flex';
     afficherQuestion(0);
@@ -656,14 +741,12 @@ function afficherQuestion(idx) {
     const q = questions[idx];
     if (!q) return;
 
-    // Header progress
     document.getElementById('q-num').textContent = idx + 1;
     const pct = Math.round((idx + 1) / questions.length * 100);
     document.getElementById('q-pct').textContent = pct + '%';
     document.getElementById('progress-fill').style.width = pct + '%';
     document.getElementById('q-theme-label').textContent = q.theme_nom;
 
-    // Image
     const img = document.getElementById('q-image');
     if (q.image) {
         img.src = q.image;
@@ -672,10 +755,8 @@ function afficherQuestion(idx) {
         img.classList.remove('visible');
     }
 
-    // Texte
     document.getElementById('q-texte').textContent = q.texte;
 
-    // Boutons
     const btnV = document.getElementById('btn-vrai');
     const btnF = document.getElementById('btn-faux');
     btnV.classList.remove('selected');
@@ -683,7 +764,6 @@ function afficherQuestion(idx) {
     if (reponses[idx] === true) btnV.classList.add('selected');
     else if (reponses[idx] === false) btnF.classList.add('selected');
 
-    // Navigation
     document.getElementById('btn-precedent').disabled = idx === 0;
     const btnS = document.getElementById('btn-suivant');
     if (idx === questions.length - 1) {
@@ -704,22 +784,17 @@ function repondre(valeur) {
     if (valeur === true) btnV.classList.add('selected');
     else btnF.classList.add('selected');
 
-    // Mise à jour recap
     const q = questions[questionActuelle];
     const el = document.getElementById('rq-' + q.theme + '-' + q.idx_theme);
     if (el) el.className = 'recap-q ' + (valeur ? 'vrai' : 'faux');
 }
 
 function suivant() {
-    if (questionActuelle < questions.length - 1) {
-        afficherQuestion(questionActuelle + 1);
-    }
+    if (questionActuelle < questions.length - 1) afficherQuestion(questionActuelle + 1);
 }
 
 function precedent() {
-    if (questionActuelle > 0) {
-        afficherQuestion(questionActuelle - 1);
-    }
+    if (questionActuelle > 0) afficherQuestion(questionActuelle - 1);
 }
 
 function afficherRecap() {
@@ -773,12 +848,16 @@ async function valider(force = false) {
 }
 
 function afficherResultat(r) {
-    document.getElementById('ecran-accueil').style.display = 'none';
+    document.getElementById('ecran-accueil') && (document.getElementById('ecran-accueil').style.display = 'none');
+    document.getElementById('ecran-selection').style.display = 'none';
+    document.getElementById('ecran-identite').style.display = 'none';
+    document.getElementById('ecran-consignes').style.display = 'none';
     document.getElementById('ecran-qcm').style.display = 'none';
     document.getElementById('ecran-recap').style.display = 'none';
     document.getElementById('progress-section').style.display = 'none';
     document.getElementById('ecran-resultat').style.display = 'block';
     if (timerInterval) clearInterval(timerInterval);
+    document.getElementById('timer').style.display = 'none';
 
     const reussi = r.obtenue;
     document.getElementById('res-emoji').textContent = reussi ? '🎉' : '😔';
@@ -806,6 +885,10 @@ function afficherResultat(r) {
             '</span></div>';
     }
     document.getElementById('res-themes').innerHTML = html;
+
+    const nom = document.getElementById('header-candidat').textContent;
+    document.getElementById('fin-msg').innerHTML =
+        '<strong>' + nom + '</strong><br>Remettez la tablette au testeur';
 }
 </script>
 </body>
