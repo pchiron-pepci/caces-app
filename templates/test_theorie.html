@@ -713,10 +713,11 @@ async function valider() {
     }
 
     const reponsesParTheme = {};
-    questions.forEach((q, idx) => {
+    qquestions.forEach((q, idx) => {
         const t = q.theme.toString();
         if (!reponsesParTheme[t]) reponsesParTheme[t] = [];
         reponsesParTheme[t].push(reponses[idx] !== undefined ? reponses[idx] : null);
+    });
 
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/theorie/reponses', {
         method: 'POST',
