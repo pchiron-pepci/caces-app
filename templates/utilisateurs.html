@@ -76,37 +76,22 @@ async function chargerUsers() {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">Aucun utilisateur</td></tr>';
             return;
         }
-        tbody.innerHTML = users.map(u => `
-            <tr style="opacity:${u.actif ? '1' : '0.5'}">
+        tbody.innerHTML = users.map(u => {
+            const btnAction = u.actif 
+                ? `<button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="desactiverUser(${u.id})">Desactiver</button>`
+                : `<button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="reactiverUser(${u.id})">Reactiver</button>`;
+            
+            return `<tr style="opacity:${u.actif ? '1' : '0.5'}">
                 <td><strong>${u.nom} ${u.prenom}</strong></td>
                 <td>${u.email}</td>
+                <td>${u.role === 'admin' ? '<span class="badge blue">Admin</span>' : '<span class="badge green">Testeur</span>'}</td>
+                <td>${u.actif ? '<span class="badge green">Actif</span>' : '<span class="badge red">Inactif</span>'}</td>
                 <td>
-                    ${u.role === 'admin' 
-                        ? '<span class="badge blue">Admin</span>' 
-                        : '<span class="badge green">Testeur</span>'}
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="editerUser(${u.id}, '${u.nom}', '${u.prenom}', '${u.email}', '${u.role}')">Modifier</button>
+                    ${btnAction}
                 </td>
-                <td>
-                    ${u.actif 
-                        ? '<span class="badge green">Actif</span>' 
-                        : '<span class="badge red">Inactif</span>'}
-                </td>
-                <td>
-                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                        onclick="editerUser(${u.id}, '${u.nom}', '${u.prenom}', '${u.email}', '${u.role}')">
-                        Modifier
-                    </button>
-                    ${u.actif ? `
-                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                        onclick="desactiverUser(${u.id}, '${u.nom} ${u.prenom}')">
-                        Désactiver
-                    </button>` : `
-                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                        onclick="reactiverUser(${u.id})">
-                        Réactiver
-                    </button>`}
-                </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
     }
 }
 
@@ -171,19 +156,27 @@ async function sauvegarderUser() {
     }
 }
 
-async function desactiverUser(id, nom) {
-    if (!confirm('Désactiver ' + nom + ' ?')) return;
+async function desactiverUser(id) {
+    if (!confirm('Desactiver cet utilisateur ?')) return;
     const pin = prompt('Code PIN administrateur :');
     if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
-    const resp = await fetch('/api/auth/utilisateurs/' + id, { method: 'DELETE' });
+    const token = localStorage.getItem('token');
+    const resp = await fetch('/api/auth/utilisateurs/' + id, { 
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
     if (resp.ok) chargerUsers();
     else alert('Erreur !');
 }
 
 async function reactiverUser(id) {
+    const token = localStorage.getItem('token');
     const resp = await fetch('/api/auth/utilisateurs/' + id, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
         body: JSON.stringify({ actif: true })
     });
     if (resp.ok) chargerUsers();
