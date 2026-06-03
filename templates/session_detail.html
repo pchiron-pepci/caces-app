@@ -71,6 +71,7 @@
                     <thead>
                         <tr>
                             <th>Candidat</th>
+                            <th style="text-align:center; width:80px;">Identite</th>
                             <th style="text-align:center;">T1/12</th>
                             <th style="text-align:center;">T2/28</th>
                             <th style="text-align:center;">T3/44</th>
@@ -85,6 +86,12 @@
                         {% if sc.stagiaire_id in j.candidats_ids %}
                         <tr>
                             <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
+                            <td style="text-align:center;">
+                                <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
+                                    style="background:none; border:none; cursor:pointer; font-size:20px;">
+                                    {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
+                                </button>
+                            </td>
                             {% if sc.theorie_dispensee %}
                                 <td colspan="7" style="text-align:center;"><span class="badge orange">Dispense</span></td>
                             {% else %}
@@ -97,11 +104,11 @@
                                     <td style="text-align:center;"><span class="{{ 'badge green' if rt.theme5_ok else 'badge red' }}">{{ rt.note_theme5|int }}</span></td>
                                     <td style="text-align:center;"><strong>{{ rt.note_totale|int }}/100</strong></td>
                                     <td style="text-align:center;">
-                                    {% if rt.obtenue %}<span class="badge green">REUSSI</span>
-{% else %}<span class="badge red">ECHEC</span>{% endif %}
-<a href="/sessions/{{ session.id }}/theorie/{{ sc.stagiaire_id }}/detail?jour_id={{ j.id }}"
-    target="_blank"
-    style="font-size:11px; color:#1a237e; margin-left:6px;">Détail</a>
+                                        {% if rt.obtenue %}<span class="badge green">REUSSI</span>
+                                        {% else %}<span class="badge red">ECHEC</span>{% endif %}
+                                        <a href="/sessions/{{ session.id }}/theorie/{{ sc.stagiaire_id }}/detail?jour_id={{ j.id }}"
+                                            target="_blank"
+                                            style="font-size:11px; color:#1a237e; margin-left:6px;">Detail</a>
                                     </td>
                                 {% else %}
                                     <td colspan="6" style="text-align:center; color:#888;">En attente</td>
@@ -149,7 +156,6 @@
                         onclick="supprimerJour({{ j.id }})">X</button>
                 </div>
             </div>
-            <!-- RECAP UT -->
             <div style="display:flex; gap:24px; margin-top:10px; padding:10px 16px; background:#f0f2f7; border-radius:10px; font-size:13px;">
                 <div>
                     <span style="color:#888;">Total UT</span><br>
@@ -178,6 +184,32 @@
                     {% endif %}
                     {% endfor %}
                 </div>
+            </div>
+            <!-- Identites pratique -->
+            <div style="margin-top:10px;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Candidat</th>
+                            <th style="text-align:center; width:80px;">Identite</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sc in session_candidats %}
+                        {% if sc.stagiaire_id in j.candidats_ids %}
+                        <tr>
+                            <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
+                            <td style="text-align:center;">
+                                <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
+                                    style="background:none; border:none; cursor:pointer; font-size:20px;">
+                                    {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
+                                </button>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         {% endif %}
@@ -232,19 +264,19 @@
                                 {% endif %}
                             {% else %}
                                 {% set pratique_info = namespace(found=false, date='', testeur_id='') %}
-{% for j in jours_test %}
-{% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}
-{% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}
-{% set pratique_info.found = true %}
-{% set pratique_info.date = j.date %}
-{% set pratique_info.testeur_id = j.testeur_id %}
-{% endif %}
-{% endif %}
-{% endfor %}
-{% if pratique_info.found %}
-<button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px; color:#888;"
-    onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ pratique_info.date }}', '{{ pratique_info.testeur_id }}')">+</button>
-{% endif %}
+                                {% for j in jours_test %}
+                                {% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}
+                                {% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}
+                                {% set pratique_info.found = true %}
+                                {% set pratique_info.date = j.date %}
+                                {% set pratique_info.testeur_id = j.testeur_id %}
+                                {% endif %}
+                                {% endif %}
+                                {% endfor %}
+                                {% if pratique_info.found %}
+                                <button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px; color:#888;"
+                                    onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ pratique_info.date }}', '{{ pratique_info.testeur_id }}')">+</button>
+                                {% endif %}
                             {% endif %}
                         </td>
                         {% endfor %}
@@ -457,8 +489,6 @@
                 </select>
             </div>
         </div>
-
-        <!-- CANDIDATS AVEC CATEGORIES PAR CANDIDAT -->
         <div style="margin-top:16px;">
             <label style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; display:block; margin-bottom:12px;">
                 Candidats et categories *
@@ -489,14 +519,11 @@
                 {% endfor %}
             </div>
         </div>
-
-        <!-- RECAP UT -->
         <div id="recap-ut" style="background:#f0f2f7; border-radius:8px; padding:16px; margin-top:16px;">
             <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin-bottom:10px;">Recapitulatif UT ce jour</div>
             <div id="recap-ut-detail" style="font-size:13px; color:#333;"></div>
             <div id="recap-ut-total" style="font-size:15px; font-weight:800; color:#1a237e; margin-top:8px; border-top:1px solid #ddd; padding-top:8px;"></div>
         </div>
-
         <div class="form-actions">
             <button class="btn btn-primary" onclick="sauvegarderJourPratique()">Valider</button>
             <button class="btn btn-secondary" onclick="fermerModalJourPratique()">Annuler</button>
@@ -708,7 +735,16 @@ function calculerRecapUT() {
         '</div>';
 }
 
-// JOURS THEORIE
+async function toggleIdentite(jourId, stagiaireId, btn) {
+    const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId + '/identite', {
+        method: 'PUT'
+    });
+    if (resp.ok) {
+        const data = await resp.json();
+        btn.textContent = data.identite_verifiee ? '✅' : '⬜';
+    }
+}
+
 function ouvrirAjoutJourTheorie() {
     document.getElementById('jt-date').value = '';
     document.getElementById('jt-testeur').value = '';
@@ -755,7 +791,6 @@ async function sauvegarderJourTheorie() {
     }
 }
 
-// JOURS PRATIQUE
 function ouvrirAjoutJourPratique() {
     document.getElementById('jp-titre').textContent = 'Planifier jour de test pratique';
     document.getElementById('jp-jour-id').value = '';
@@ -841,7 +876,6 @@ async function supprimerJour(id) {
     else alert('Erreur !');
 }
 
-// AJOUT CANDIDAT JOUR THEORIE
 function ouvrirAjoutCandidatJour(jourId) {
     document.getElementById('acj-jour-id').value = jourId;
     document.querySelectorAll('[name="acj-candidat"]').forEach(cb => cb.checked = false);
@@ -869,7 +903,6 @@ async function sauvegarderCandidatJour() {
     else alert('Erreur !');
 }
 
-// RESULTAT PRATIQUE
 function saisirResultatPratique(stagiaireId, categorie, date, testeurId) {
     document.getElementById('pratique-stagiaire-id').value = stagiaireId;
     document.getElementById('pratique-categorie').value = categorie;
@@ -916,7 +949,6 @@ async function sauvegarderPratique() {
     else alert('Erreur !');
 }
 
-// CANDIDATS SESSION
 function ouvrirAjoutCandidat() {
     document.getElementById('candidat-title').textContent = 'Ajouter un candidat';
     document.getElementById('sc-id').value = '';
@@ -974,7 +1006,6 @@ function retirerCandidat(id, nom) {
     };
 }
 
-// EQUIPEMENTS
 function ouvrirAjoutEquipement() {
     document.getElementById('equip-title').textContent = 'Ajouter un equipement';
     document.getElementById('equip-id').value = '';

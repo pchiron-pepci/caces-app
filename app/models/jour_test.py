@@ -21,6 +21,7 @@ class JourTestCandidat(Base):
     stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
     categories = Column(String(100), nullable=True)
     actif = Column(Boolean, default=True)
+    identite_verifiee = Column(Boolean, default=False)
 
 class ResultatTheorie(Base):
     __tablename__ = "resultats_theorie"

@@ -20,7 +20,6 @@ from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationG
 
 from app.routers import stagiaires, testeurs, admin, sessions, upload
 
-
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -144,6 +143,14 @@ def page_admin(request: Request):
         }
     )
 
+@app.get("/admin/images")
+def page_admin_images(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_images.html",
+        context={"page": "admin"}
+    )
+
 @app.get("/sessions")
 def page_sessions(request: Request):
     db = SessionLocal()
@@ -246,6 +253,10 @@ def page_session_detail(request: Request, session_id: int):
         j.candidats_ids = [jtc.stagiaire_id for jtc in jtcs]
         j.candidats_categories = {
             jtc.stagiaire_id: jtc.categories.split(",") if jtc.categories else []
+            for jtc in jtcs
+        }
+        j.identites_verifiees = {
+            jtc.stagiaire_id: jtc.identite_verifiee
             for jtc in jtcs
         }
 
@@ -500,14 +511,6 @@ def reset_compteurs_grilles():
     db.commit()
     db.close()
     return {"message": f"{nb} utilisations supprimees"}
-
-@app.get("/admin/images")
-def page_admin_images(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="admin_images.html",
-        context={"page": "admin"}
-    )
 
 @app.get("/health")
 def health():

@@ -391,6 +391,19 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
         obtenue=data.obtenue,
         note_testeur=data.note_testeur
     )
+    
     db.add(e)
     db.commit()
     return {"message": "Epreuve ajoutee"}
+
+@router.put("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/identite")
+def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
+    jtc = db.query(JourTestCandidat).filter(
+        JourTestCandidat.jour_test_id == jour_id,
+        JourTestCandidat.stagiaire_id == stagiaire_id
+    ).first()
+    if not jtc:
+        raise HTTPException(status_code=404, detail="Candidat non trouve")
+    jtc.identite_verifiee = not jtc.identite_verifiee
+    db.commit()
+    return {"identite_verifiee": jtc.identite_verifiee}
