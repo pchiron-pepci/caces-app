@@ -19,6 +19,7 @@ class JourTestCandidat(Base):
     id = Column(Integer, primary_key=True, index=True)
     jour_test_id = Column(Integer, ForeignKey("jours_test.id"), nullable=False)
     stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
+    categories = Column(String(100), nullable=True)
     actif = Column(Boolean, default=True)
 
 class ResultatTheorie(Base):

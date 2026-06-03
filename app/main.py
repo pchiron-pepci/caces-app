@@ -1,3 +1,4 @@
+import math
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -203,7 +204,7 @@ def page_session_detail(request: Request, session_id: int):
         e.testeur_nom = f"{testeur.nom} {testeur.prenom}" if testeur else "?"
         epreuves_map[(e.stagiaire_id, e.categorie)] = e
 
-    # UT par candidat
+    # UT réalisées par candidat
     ut_candidat = {}
     for e in epreuves:
         ut_candidat[e.stagiaire_id] = ut_candidat.get(e.stagiaire_id, 0) + e.ut
@@ -242,14 +243,47 @@ def page_session_detail(request: Request, session_id: int):
             j.grille_numero = g.numero if g else "?"
         else:
             j.grille_numero = None
-        j.candidats_ids = [
-            jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
-                JourTestCandidat.jour_test_id == j.id,
-                JourTestCandidat.actif == True
-            ).all()
-        ]
 
-    # Résultats théorie par jour (pour affichage dans chaque bloc jour)
+        jtcs = db.query(JourTestCandidat).filter(
+            JourTestCandidat.jour_test_id == j.id,
+            JourTestCandidat.actif == True
+        ).all()
+        j.candidats_ids = [jtc.stagiaire_id for jtc in jtcs]
+        j.candidats_categories = {
+            jtc.stagiaire_id: jtc.categories.split(",") if jtc.categories else []
+            for jtc in jtcs
+        }
+
+        if j.type == 'pratique':
+            total_ut = 0
+            for jtc in jtcs:
+                cats = jtc.categories.split(",") if jtc.categories else []
+                for cat in cats:
+                    cat = cat.strip()
+                    if cat:
+                        total_ut += ut_par_cat.get(cat, 1.0)
+            nb_testeurs = math.ceil(total_ut / 6) if total_ut > 0 else 1
+            j.total_ut = round(total_ut, 1)
+            j.nb_testeurs = nb_testeurs
+            j.ut_libres = round((nb_testeurs * 6) - total_ut, 1)
+        else:
+            j.total_ut = 0
+            j.nb_testeurs = 0
+            j.ut_libres = 0
+
+    # UT planifiées par candidat
+    ut_planifie_candidat = {}
+    for j in jours_test:
+        if j.type == 'pratique':
+            for stagiaire_id, cats in j.candidats_categories.items():
+                for cat in cats:
+                    cat = cat.strip()
+                    if cat:
+                        ut_planifie_candidat[stagiaire_id] = round(
+                            ut_planifie_candidat.get(stagiaire_id, 0) + ut_par_cat.get(cat, 1.0), 1
+                        )
+
+    # Résultats théorie par jour
     resultats_theorie_par_jour = {}
     for j in jours_test:
         if j.type == 'theorie':
@@ -299,6 +333,7 @@ def page_session_detail(request: Request, session_id: int):
             "ut_par_cat": ut_par_cat,
             "epreuves_map": epreuves_map,
             "ut_candidat": ut_candidat,
+            "ut_planifie_candidat": ut_planifie_candidat,
             "ut_testeurs": ut_testeurs,
             "jours_test": jours_test,
             "resultats_theorie_par_jour": resultats_theorie_par_jour,

@@ -16,3 +16,4 @@ class Session(Base):
     annee = Column(Integer, default=datetime.now().year)
     note = Column(Text, nullable=True)
     date_creation = Column(DateTime, default=datetime.utcnow)
+    type = Column(String(20), default="caces", nullable=True)

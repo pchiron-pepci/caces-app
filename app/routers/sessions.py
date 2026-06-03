@@ -13,8 +13,9 @@ from app.models.grille_theorie import GrilleTheorie, ReponseGrille
 from app.services.tirage_grille import tirer_grille, calculer_resultat_theorie
 from pydantic import BaseModel
 from datetime import date
-from typing import Optional, List
+from typing import Optional, List, Dict
 import json
+import math
 
 router = APIRouter(prefix="/api/sessions", tags=["Sessions"])
 
@@ -59,6 +60,10 @@ class EquipementCreate(BaseModel):
     organisme_verification: Optional[str] = None
     proprietaire: Optional[str] = None
 
+class CandidatJourPratique(BaseModel):
+    stagiaire_id: int
+    categories: List[str] = []
+
 class JourTestCreate(BaseModel):
     session_id: int
     date: date
@@ -66,14 +71,26 @@ class JourTestCreate(BaseModel):
     testeur_id: Optional[int] = None
     note: Optional[str] = None
     candidats: List[int] = []
+    candidats_pratique: List[CandidatJourPratique] = []
 
 class AjoutCandidatsJour(BaseModel):
     candidats: List[int] = []
+    candidats_pratique: List[CandidatJourPratique] = []
 
 class ReponsesCandidatCreate(BaseModel):
     jour_test_id: int
     stagiaire_id: int
     reponses: dict
+
+class EpreuveCreate(BaseModel):
+    session_id: int
+    stagiaire_id: int
+    testeur_id: int
+    date: date
+    famille: str
+    categorie: str
+    obtenue: bool
+    note_testeur: Optional[str] = None
 
 @router.get("/", response_model=list[SessionResponse])
 def liste_sessions(db: DBSession = Depends(get_db)):
@@ -83,7 +100,6 @@ def liste_sessions(db: DBSession = Depends(get_db)):
 def create_session(data: SessionCreate, db: DBSession = Depends(get_db)):
     from datetime import datetime
     annee = datetime.now().year
-    # Générer référence auto si non fournie
     if not data.reference:
         nb = db.query(Session).filter(Session.annee == annee).count()
         data.reference = f"SESSION-{annee}-{str(nb + 1).zfill(3)}"
@@ -196,9 +212,21 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     db.add(jour)
     db.flush()
 
-    for stagiaire_id in data.candidats:
-        jtc = JourTestCandidat(jour_test_id=jour.id, stagiaire_id=stagiaire_id)
-        db.add(jtc)
+    if data.type == "theorie":
+        for stagiaire_id in data.candidats:
+            jtc = JourTestCandidat(
+                jour_test_id=jour.id,
+                stagiaire_id=stagiaire_id
+            )
+            db.add(jtc)
+    else:
+        for cp in data.candidats_pratique:
+            jtc = JourTestCandidat(
+                jour_test_id=jour.id,
+                stagiaire_id=cp.stagiaire_id,
+                categories=",".join(cp.categories)
+            )
+            db.add(jtc)
 
     db.commit()
     db.refresh(jour)
@@ -212,14 +240,32 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
 
 @router.post("/{session_id}/jours/{jour_id}/candidats")
 def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, db: DBSession = Depends(get_db)):
-    for stagiaire_id in data.candidats:
-        existing = db.query(JourTestCandidat).filter(
-            JourTestCandidat.jour_test_id == jour_id,
-            JourTestCandidat.stagiaire_id == stagiaire_id
-        ).first()
-        if not existing:
-            jtc = JourTestCandidat(jour_test_id=jour_id, stagiaire_id=stagiaire_id)
-            db.add(jtc)
+    jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
+
+    if jour and jour.type == "pratique":
+        for cp in data.candidats_pratique:
+            existing = db.query(JourTestCandidat).filter(
+                JourTestCandidat.jour_test_id == jour_id,
+                JourTestCandidat.stagiaire_id == cp.stagiaire_id
+            ).first()
+            if existing:
+                existing.categories = ",".join(cp.categories)
+            else:
+                jtc = JourTestCandidat(
+                    jour_test_id=jour_id,
+                    stagiaire_id=cp.stagiaire_id,
+                    categories=",".join(cp.categories)
+                )
+                db.add(jtc)
+    else:
+        for stagiaire_id in data.candidats:
+            existing = db.query(JourTestCandidat).filter(
+                JourTestCandidat.jour_test_id == jour_id,
+                JourTestCandidat.stagiaire_id == stagiaire_id
+            ).first()
+            if not existing:
+                jtc = JourTestCandidat(jour_test_id=jour_id, stagiaire_id=stagiaire_id)
+                db.add(jtc)
     db.commit()
     return {"message": "Candidats ajoutes"}
 
@@ -241,7 +287,6 @@ def sauvegarder_reponses(session_id: int, data: ReponsesCandidatCreate, db: DBSe
 
     resultat = calculer_resultat_theorie(data.reponses, jour.grille_id, db)
 
-  # Toujours créer un nouveau résultat pour la traçabilité
     rt = ResultatTheorie(
         jour_test_id=data.jour_test_id,
         session_id=session_id,
@@ -315,3 +360,28 @@ def get_grille_jour(session_id: int, jour_id: int, db: DBSession = Depends(get_d
         "famille": grille.famille if grille else None,
         "themes": themes
     }
+
+# EPREUVES PRATIQUES
+@router.post("/{session_id}/epreuves")
+def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(get_db)):
+    famille = db.query(Famille).filter(Famille.code == data.famille).first()
+    cat = db.query(Categorie).filter(
+        Categorie.famille_id == (famille.id if famille else 0),
+        Categorie.code == data.categorie
+    ).first()
+    ut = cat.ut_pratique if cat else 1.0
+
+    e = SessionEpreuve(
+        session_id=session_id,
+        stagiaire_id=data.stagiaire_id,
+        testeur_id=data.testeur_id,
+        date=data.date,
+        famille=data.famille,
+        categorie=data.categorie,
+        ut=ut,
+        obtenue=data.obtenue,
+        note_testeur=data.note_testeur
+    )
+    db.add(e)
+    db.commit()
+    return {"message": "Epreuve ajoutee"}
