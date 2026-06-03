@@ -65,7 +65,10 @@
 
 <script>
 async function chargerUsers() {
-    const resp = await fetch('/api/auth/utilisateurs');
+    const token = localStorage.getItem('token');
+    const resp = await fetch('/api/auth/utilisateurs', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
     if (resp.ok) {
         const users = await resp.json();
         const tbody = document.getElementById('tbody-users');
