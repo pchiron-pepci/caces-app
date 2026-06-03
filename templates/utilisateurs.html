@@ -173,6 +173,8 @@ async function sauvegarderUser() {
 
 async function desactiverUser(id, nom) {
     if (!confirm('Désactiver ' + nom + ' ?')) return;
+    const pin = prompt('Code PIN administrateur :');
+    if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
     const resp = await fetch('/api/auth/utilisateurs/' + id, { method: 'DELETE' });
     if (resp.ok) chargerUsers();
     else alert('Erreur !');
