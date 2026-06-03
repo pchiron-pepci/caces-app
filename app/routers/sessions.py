@@ -275,6 +275,15 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouve")
     j.actif = False
+    # Supprimer l'utilisation de la grille si jour théorique
+    if j.type == "theorie" and j.grille_id:
+        from app.models.grille_theorie import UtilisationGrille
+        uti = db.query(UtilisationGrille).filter(
+            UtilisationGrille.grille_id == j.grille_id,
+            UtilisationGrille.session_id == j.session_id
+        ).first()
+        if uti:
+            db.delete(uti)
     db.commit()
     return {"message": "Jour supprime"}
 
