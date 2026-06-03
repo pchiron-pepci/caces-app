@@ -47,12 +47,52 @@
         <div class="topbar">
             <h1 class="page-title">{% block title %}{% endblock %}</h1>
             <div class="topbar-right">
-                <span class="user-badge">👤 Patrice CHIRON</span>
+                <span class="user-badge">👤 <span id="user-nom">—</span></span>
+                <button onclick="seDeconnecter()"
+                    style="background:none; border:1px solid #ddd; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:12px; color:#666; margin-left:8px;">
+                    🚪 Deconnexion
+                </button>
             </div>
         </div>
         <div class="content">
             {% block content %}{% endblock %}
         </div>
     </div>
+
+    <script>
+    // Verification authentification
+    const token = localStorage.getItem('token');
+    const pageCourante = window.location.pathname;
+
+    if (!token && pageCourante !== '/login' && !pageCourante.startsWith('/test/')) {
+        window.location.href = '/login';
+    }
+
+    // Afficher le nom de l'utilisateur connecte
+    const nomUser = localStorage.getItem('nom');
+    if (nomUser) {
+        const el = document.getElementById('user-nom');
+        if (el) el.textContent = nomUser;
+    }
+
+    // Deconnexion
+    function seDeconnecter() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('nom');
+        window.location.href = '/login';
+    }
+
+    // Ajouter le token aux requetes fetch
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+        const token = localStorage.getItem('token');
+        if (token) {
+            options.headers = options.headers || {};
+            options.headers['Authorization'] = 'Bearer ' + token;
+        }
+        return originalFetch(url, options);
+    };
+    </script>
 </body>
 </html>

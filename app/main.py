@@ -18,7 +18,8 @@ from app.models.equipement import Equipement
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
 
-from app.routers import stagiaires, testeurs, admin, sessions, upload
+from app.routers import stagiaires, testeurs, admin, sessions, upload, auth
+from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
 
@@ -45,6 +46,7 @@ app.include_router(testeurs.router)
 app.include_router(admin.router)
 app.include_router(sessions.router)
 app.include_router(upload.router)
+app.include_router(auth.router)
 
 @app.get("/")
 def dashboard(request: Request):
@@ -515,3 +517,11 @@ def reset_compteurs_grilles():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/login")
+def page_login(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={}
+    )
