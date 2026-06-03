@@ -128,7 +128,8 @@ def calculer_resultat_theorie(reponses_candidat: dict, grille_id: int, db: Sessi
         # Vérifier si la réponse du candidat est correcte
         candidat_reponses = reponses_candidat.get(str(theme), [])
         if q_idx < len(candidat_reponses):
-            if candidat_reponses[q_idx] == r.reponse_correcte:
+            reponse = candidat_reponses[q_idx]
+            if reponse is not None and reponse == r.reponse_correcte:
                 notes_theme[theme] += r.points
 
     note_totale = sum(notes_theme.values())
