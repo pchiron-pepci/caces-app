@@ -486,10 +486,10 @@ def page_statistiques(request: Request):
             JourTest.grille_id == u.grille_id,
             JourTest.actif == True
         ).first()
-        historique_detail.append({
-            "grille_numero": g.numero if g else "?",
-            "session_ref": s.reference if s else "?",
-            "date": j.date if j else "?"
+        hhistorique_detail.append({
+            "grille_numero": g.numero if g else "—",
+            "session_ref": s.reference if s else "—",
+            "date": str(j.date) if j and j.date else "—"
         })
 @app.post("/api/statistiques/reset-grilles")
 def reset_compteurs_grilles():
