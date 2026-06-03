@@ -522,6 +522,14 @@ def page_profil(request: Request):
         context={"page": "profil"}
     )
 
+@app.get("/admin/utilisateurs")
+def page_utilisateurs(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="utilisateurs.html",
+        context={"page": "admin"}
+    )
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des utilisateurs{% endblock %}
+
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px;">Utilisateurs</h2>
+    <button class="btn btn-primary" onclick="ouvrirAjout()">+ Nouvel utilisateur</button>
+</div>
+
+<div class="card">
+    <table class="table" id="tableau-users">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tbody-users">
+            <tr><td colspan="5" style="text-align:center; color:#888;">Chargement...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL AJOUT/MODIF -->
+<div id="modal-user" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:500px; max-width:95vw;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;" id="modal-titre">Nouvel utilisateur</h2>
+        <input type="hidden" id="user-id">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>Nom *</label>
+                <input type="text" id="user-nom-input" placeholder="NOM">
+            </div>
+            <div class="form-field">
+                <label>Prenom *</label>
+                <input type="text" id="user-prenom" placeholder="Prenom">
+            </div>
+            <div class="form-field">
+                <label>Email *</label>
+                <input type="email" id="user-email" placeholder="email@pepci.fr">
+            </div>
+            <div class="form-field">
+                <label>Role *</label>
+                <select id="user-role">
+                    <option value="testeur">Testeur</option>
+                    <option value="admin">Administrateur</option>
+                </select>
+            </div>
+            <div class="form-field" style="grid-column:span 2;" id="field-mdp">
+                <label>Mot de passe *</label>
+                <input type="password" id="user-mdp" placeholder="••••••••">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="sauvegarderUser()">Sauvegarder</button>
+            <button class="btn btn-secondary" onclick="fermerModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function chargerUsers() {
+    const resp = await fetch('/api/auth/utilisateurs');
+    if (resp.ok) {
+        const users = await resp.json();
+        const tbody = document.getElementById('tbody-users');
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">Aucun utilisateur</td></tr>';
+            return;
+        }
+        tbody.innerHTML = users.map(u => `
+            <tr style="opacity:${u.actif ? '1' : '0.5'}">
+                <td><strong>${u.nom} ${u.prenom}</strong></td>
+                <td>${u.email}</td>
+                <td>
+                    ${u.role === 'admin' 
+                        ? '<span class="badge blue">Admin</span>' 
+                        : '<span class="badge green">Testeur</span>'}
+                </td>
+                <td>
+                    ${u.actif 
+                        ? '<span class="badge green">Actif</span>' 
+                        : '<span class="badge red">Inactif</span>'}
+                </td>
+                <td>
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                        onclick="editerUser(${u.id}, '${u.nom}', '${u.prenom}', '${u.email}', '${u.role}')">
+                        Modifier
+                    </button>
+                    ${u.actif ? `
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                        onclick="desactiverUser(${u.id}, '${u.nom} ${u.prenom}')">
+                        Désactiver
+                    </button>` : `
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                        onclick="reactiverUser(${u.id})">
+                        Réactiver
+                    </button>`}
+                </td>
+            </tr>
+        `).join('');
+    }
+}
+
+function ouvrirAjout() {
+    document.getElementById('modal-titre').textContent = 'Nouvel utilisateur';
+    document.getElementById('user-id').value = '';
+    document.getElementById('user-nom-input').value = '';
+    document.getElementById('user-prenom').value = '';
+    document.getElementById('user-email').value = '';
+    document.getElementById('user-role').value = 'testeur';
+    document.getElementById('user-mdp').value = '';
+    document.getElementById('field-mdp').style.display = 'block';
+    document.getElementById('modal-user').style.display = 'flex';
+}
+
+function editerUser(id, nom, prenom, email, role) {
+    document.getElementById('modal-titre').textContent = 'Modifier utilisateur';
+    document.getElementById('user-id').value = id;
+    document.getElementById('user-nom-input').value = nom;
+    document.getElementById('user-prenom').value = prenom;
+    document.getElementById('user-email').value = email;
+    document.getElementById('user-role').value = role;
+    document.getElementById('user-mdp').value = '';
+    document.getElementById('field-mdp').style.display = 'none';
+    document.getElementById('modal-user').style.display = 'flex';
+}
+
+function fermerModal() {
+    document.getElementById('modal-user').style.display = 'none';
+}
+
+async function sauvegarderUser() {
+    const id = document.getElementById('user-id').value;
+    const nom = document.getElementById('user-nom-input').value;
+    const prenom = document.getElementById('user-prenom').value;
+    const email = document.getElementById('user-email').value;
+    const role = document.getElementById('user-role').value;
+    const mdp = document.getElementById('user-mdp').value;
+
+    if (!nom || !prenom || !email) { alert('Nom, prenom et email obligatoires !'); return; }
+
+    if (id) {
+        const resp = await fetch('/api/auth/utilisateurs/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom, prenom, email, role })
+        });
+        if (resp.ok) { fermerModal(); chargerUsers(); }
+        else alert('Erreur !');
+    } else {
+        if (!mdp) { alert('Mot de passe obligatoire !'); return; }
+        const resp = await fetch('/api/auth/utilisateurs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom, prenom, email, role, mot_de_passe: mdp })
+        });
+        if (resp.ok) { fermerModal(); chargerUsers(); }
+        else {
+            const data = await resp.json();
+            alert('Erreur : ' + (data.detail || 'Inconnue'));
+        }
+    }
+}
+
+async function desactiverUser(id, nom) {
+    if (!confirm('Désactiver ' + nom + ' ?')) return;
+    const resp = await fetch('/api/auth/utilisateurs/' + id, { method: 'DELETE' });
+    if (resp.ok) chargerUsers();
+    else alert('Erreur !');
+}
+
+async function reactiverUser(id) {
+    const resp = await fetch('/api/auth/utilisateurs/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actif: true })
+    });
+    if (resp.ok) chargerUsers();
+    else alert('Erreur !');
+}
+
+chargerUsers();
+</script>
+
+{% endblock %}
