@@ -396,6 +396,15 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
     db.commit()
     return {"message": "Epreuve ajoutee"}
 
+@router.post("/{id}/reouvrir")
+def reouvrir_session(id: int, db: DBSession = Depends(get_db)):
+    s = db.query(Session).filter(Session.id == id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session non trouvee")
+    s.statut = "planifiee"
+    db.commit()
+    return {"message": "Session reuverte"}
+
 @router.put("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/identite")
 def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
     jtc = db.query(JourTestCandidat).filter(

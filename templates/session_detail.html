@@ -18,9 +18,12 @@
             <span class="badge blue">{{ lieu.nom if lieu else '—' }}</span>
         </div>
     </div>
-    <div style="display:flex; gap:8px;">
-        {% if session.statut != 'terminee' and session.statut != 'annulee' %}
-        <button class="btn btn-primary" onclick="cloturerSession()">Cloturer la session</button>
+    <div style="display:flex; gap:8px; align-items:center;">
+        {% if session.statut == 'terminee' %}
+            <span style="color:#2e7d32; font-size:13px;">🔒 Session verrouilee</span>
+            <button class="btn btn-secondary" onclick="reouvrirsession()">🔓 Reouvrir</button>
+        {% elif session.statut != 'annulee' %}
+            <button class="btn btn-primary" onclick="cloturerSession()">Cloturer la session</button>
         {% endif %}
     </div>
 </div>
@@ -39,7 +42,9 @@
     <div class="card" style="margin-bottom:16px;">
         <div class="card-header">
             <h2>Epreuve theorique</h2>
+            {% if session.statut != 'terminee' %}
             <button class="btn btn-primary" onclick="ouvrirAjoutJourTheorie()">+ Planifier test theorique</button>
+            {% endif %}
         </div>
         {% if jours_test %}
             {% for j in jours_test %}
@@ -57,14 +62,18 @@
                         {% endif %}
                     </div>
                     <div style="display:flex; gap:8px;">
+                        {% if session.statut != 'terminee' %}
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="ouvrirAjoutCandidatJour({{ j.id }})">+ Candidat</button>
+                        {% endif %}
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
                             class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
                             Tablette candidat
                         </a>
+                        {% if session.statut != 'terminee' %}
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                             onclick="supprimerJour({{ j.id }})">X</button>
+                        {% endif %}
                     </div>
                 </div>
                 <table class="table" style="margin-top:12px;">
@@ -87,10 +96,14 @@
                         <tr>
                             <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
                             <td style="text-align:center;">
+                                {% if session.statut != 'terminee' %}
                                 <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
                                     style="background:none; border:none; cursor:pointer; font-size:20px;">
                                     {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
                                 </button>
+                                {% else %}
+                                    {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
+                                {% endif %}
                             </td>
                             {% if sc.theorie_dispensee %}
                                 <td colspan="7" style="text-align:center;"><span class="badge orange">Dispense</span></td>
@@ -134,7 +147,9 @@
     <div class="card">
         <div class="card-header">
             <h2>Epreuves pratiques</h2>
+            {% if session.statut != 'terminee' %}
             <button class="btn btn-primary" onclick="ouvrirAjoutJourPratique()">+ Planifier jour pratique</button>
+            {% endif %}
         </div>
 
         {% for j in jours_test %}
@@ -148,12 +163,14 @@
                     <span style="margin-left:8px; color:#888; font-size:12px;">{{ j.candidats_ids|length }} candidat(s)</span>
                 </div>
                 <div style="display:flex; gap:8px;">
+                    {% if session.statut != 'terminee' %}
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                         onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.testeur_id }}', '{{ j.date }}')">
                         Modifier
                     </button>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                         onclick="supprimerJour({{ j.id }})">X</button>
+                    {% endif %}
                 </div>
             </div>
             <div style="display:flex; gap:24px; margin-top:10px; padding:10px 16px; background:#f0f2f7; border-radius:10px; font-size:13px;">
@@ -185,7 +202,6 @@
                     {% endfor %}
                 </div>
             </div>
-            <!-- Identites pratique -->
             <div style="margin-top:10px;">
                 <table class="table">
                     <thead>
@@ -200,10 +216,14 @@
                         <tr>
                             <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
                             <td style="text-align:center;">
+                                {% if session.statut != 'terminee' %}
                                 <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
                                     style="background:none; border:none; cursor:pointer; font-size:20px;">
                                     {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
                                 </button>
+                                {% else %}
+                                    {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
+                                {% endif %}
                             </td>
                         </tr>
                         {% endif %}
@@ -263,6 +283,7 @@
                                     <span style="font-size:10px; color:#555;">{{ epreuve.testeur_nom }}</span>
                                 {% endif %}
                             {% else %}
+                                {% if session.statut != 'terminee' %}
                                 {% set pratique_info = namespace(found=false, date='', testeur_id='') %}
                                 {% for j in jours_test %}
                                 {% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}
@@ -276,6 +297,7 @@
                                 {% if pratique_info.found %}
                                 <button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px; color:#888;"
                                     onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ pratique_info.date }}', '{{ pratique_info.testeur_id }}')">+</button>
+                                {% endif %}
                                 {% endif %}
                             {% endif %}
                         </td>
@@ -295,7 +317,9 @@
 <div id="tab-candidats" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <p style="color:#666; font-size:14px;">{{ session_candidats|length }} candidat(s) inscrit(s)</p>
+        {% if session.statut != 'terminee' %}
         <button class="btn btn-primary" onclick="ouvrirAjoutCandidat()">+ Ajouter un candidat</button>
+        {% endif %}
     </div>
     <div class="card">
         <table class="table">
@@ -307,7 +331,7 @@
                     <th>Employeur</th>
                     <th>RGPD</th>
                     <th>Theorie</th>
-                    <th>Actions</th>
+                    {% if session.statut != 'terminee' %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -337,12 +361,14 @@
                             {% endif %}
                         {% endif %}
                     </td>
+                    {% if session.statut != 'terminee' %}
                     <td>
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="editerCandidat({{ sc.id }}, {{ sc.stagiaire_id }}, {{ sc.theorie_dispensee | lower }}, {{ sc.rgpd_accepte | lower }}, {{ sc.photo_accepte | lower }})">Modifier</button>
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                             onclick="retirerCandidat({{ sc.id }}, '{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}')">Retirer</button>
                     </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
@@ -395,14 +421,17 @@
 <div id="tab-equipements" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <p style="color:#666; font-size:14px;">Equipements utilises lors de la session</p>
+        {% if session.statut != 'terminee' %}
         <button class="btn btn-primary" onclick="ouvrirAjoutEquipement()">+ Ajouter un equipement</button>
+        {% endif %}
     </div>
     <div class="card">
         <table class="table">
             <thead>
                 <tr>
                     <th>N</th><th>Designation</th><th>Marque</th><th>Type</th>
-                    <th>N Serie</th><th>Date VGP</th><th>Organisme</th><th>Proprietaire</th><th>Actions</th>
+                    <th>N Serie</th><th>Date VGP</th><th>Organisme</th><th>Proprietaire</th>
+                    {% if session.statut != 'terminee' %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -416,10 +445,12 @@
                     <td>{{ e.date_verification or '—' }}</td>
                     <td>{{ e.organisme_verification or '—' }}</td>
                     <td>{{ e.proprietaire or '—' }}</td>
+                    {% if session.statut != 'terminee' %}
                     <td>
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="editerEquipement({{ e.id }}, {{ e.numero }}, '{{ e.designation or '' }}', '{{ e.marque or '' }}', '{{ e.type_modele or '' }}', '{{ e.numero_serie or '' }}', '{{ e.date_verification or '' }}', '{{ e.organisme_verification or '' }}', '{{ e.proprietaire or '' }}')">Modifier</button>
                     </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
@@ -437,7 +468,7 @@
                 <input type="date" id="jt-date">
             </div>
             <div class="form-field">
-                <label>Testeur qui encadre (1 UT)</label>
+                <label>Testeur principal *</label>
                 <select id="jt-testeur">
                     <option value="">-- Choisir --</option>
                     {% for t in testeurs %}
@@ -772,7 +803,7 @@ async function sauvegarderJourTheorie() {
         session_id: SESSION_ID,
         date: date,
         type: 'theorie',
-        testeur_id: testeur_id ? parseInt(testeur_id) : null,
+        testeur_id: parseInt(testeur_id),
         candidats: candidats
     };
 
@@ -1057,8 +1088,17 @@ async function sauvegarderEquipement() {
 }
 
 async function cloturerSession() {
-    if (!confirm('Cloturer la session ?')) return;
+    if (!confirm('Cloturer la session ? Les resultats seront verrouilles.')) return;
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/cloturer', { method: 'POST' });
+    if (resp.ok) location.reload();
+    else alert('Erreur !');
+}
+
+async function reouvrirsession() {
+    const pin = prompt('Code PIN administrateur :');
+    if (!pin) return;
+    if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
+    const resp = await fetch('/api/sessions/' + SESSION_ID + '/reouvrir', { method: 'POST' });
     if (resp.ok) location.reload();
     else alert('Erreur !');
 }
