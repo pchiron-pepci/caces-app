@@ -486,7 +486,7 @@ def page_statistiques(request: Request):
             JourTest.grille_id == u.grille_id,
             JourTest.actif == True
         ).first()
-        hhistorique_detail.append({
+        historique_detail.append({
             "grille_numero": g.numero if g else "—",
             "session_ref": s.reference if s else "—",
             "date": str(j.date) if j and j.date else "—"
