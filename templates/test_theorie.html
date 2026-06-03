@@ -591,7 +591,7 @@ function tickTimer() {
         timerEl.textContent = '⏱ 00:00';
         timerEl.style.color = '#f44336';
         alert('⏰ Temps ecoule ! Vos reponses sont sauvegardees automatiquement.');
-        valider();
+        valider(true);
     }
 }
 
@@ -741,9 +741,9 @@ function retourQcm() {
     afficherQuestion(questionActuelle);
 }
 
-async function valider() {
+async function valider(force = false) {
     const nb = Object.keys(reponses).length;
-    if (nb < questions.length) {
+    if (!force && nb < questions.length) {
         if (!confirm((questions.length - nb) + ' question(s) sans reponse. Valider quand meme ?')) return;
     }
 
