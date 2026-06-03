@@ -18,7 +18,8 @@ from app.models.equipement import Equipement
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
 
-from app.routers import stagiaires, testeurs, admin, sessions
+from app.routers import stagiaires, testeurs, admin, sessions, upload
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -44,6 +45,7 @@ app.include_router(stagiaires.router)
 app.include_router(testeurs.router)
 app.include_router(admin.router)
 app.include_router(sessions.router)
+app.include_router(upload.router)
 
 @app.get("/")
 def dashboard(request: Request):
@@ -498,6 +500,14 @@ def reset_compteurs_grilles():
     db.commit()
     db.close()
     return {"message": f"{nb} utilisations supprimees"}
+
+@app.get("/admin/images")
+def page_admin_images(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_images.html",
+        context={"page": "admin"}
+    )
 
 @app.get("/health")
 def health():

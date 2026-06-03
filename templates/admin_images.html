@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des illustrations{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px;">
+        Illustrations des questions
+    </h2>
+    <p style="color:#666; font-size:14px;">
+        Nommez vos fichiers : <strong>g1_t2_q1.jpg</strong> (grille 1, thème 2, question 1)
+    </p>
+</div>
+
+<!-- UPLOAD -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+        <h2>Uploader des images</h2>
+    </div>
+    <div style="padding:24px;">
+        <div id="drop-zone" style="border:2px dashed #c0c0c0; border-radius:12px; padding:40px; text-align:center; cursor:pointer; background:#fafafa;"
+            onclick="document.getElementById('file-input').click()"
+            ondragover="event.preventDefault(); this.style.borderColor='#1a237e';"
+            ondragleave="this.style.borderColor='#c0c0c0';"
+            ondrop="handleDrop(event)">
+            <div style="font-size:40px; margin-bottom:12px;">📁</div>
+            <div style="font-size:16px; font-weight:700; color:#333;">Cliquez ou glissez vos images ici</div>
+            <div style="font-size:13px; color:#888; margin-top:8px;">JPG, PNG — Nommage : g1_t2_q1.jpg</div>
+        </div>
+        <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png" style="display:none" onchange="uploadFiles(this.files)">
+        
+        <div id="upload-status" style="margin-top:16px;"></div>
+        
+        <button class="btn btn-primary" style="margin-top:16px;" onclick="associerImages()">
+            🔗 Associer les images aux questions
+        </button>
+        <div id="assoc-status" style="margin-top:8px; font-size:13px; color:#2e7d32;"></div>
+    </div>
+</div>
+
+<!-- LISTE DES IMAGES -->
+<div class="card">
+    <div class="card-header">
+        <h2>Images uploadées</h2>
+        <button class="btn btn-secondary" onclick="chargerImages()">Rafraîchir</button>
+    </div>
+    <div id="liste-images" style="padding:16px; display:flex; flex-wrap:wrap; gap:12px;">
+        Chargement...
+    </div>
+</div>
+
+<script>
+async function uploadFiles(files) {
+    const status = document.getElementById('upload-status');
+    status.innerHTML = '<span style="color:#1a237e;">Upload en cours...</span>';
+    
+    const formData = new FormData();
+    for (const file of files) {
+        formData.append('files', file);
+    }
+    
+    const resp = await fetch('/api/upload/question-images', {
+        method: 'POST',
+        body: formData
+    });
+    
+    if (resp.ok) {
+        const data = await resp.json();
+        let html = `<span style="color:#2e7d32;">✅ ${data.uploaded.length} image(s) uploadée(s)</span>`;
+        if (data.errors.length > 0) {
+            html += `<br><span style="color:#c62828;">❌ Erreurs : ${data.errors.join(', ')}</span>`;
+        }
+        status.innerHTML = html;
+        chargerImages();
+    } else {
+        status.innerHTML = '<span style="color:#c62828;">❌ Erreur lors de l\'upload</span>';
+    }
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    document.getElementById('drop-zone').style.borderColor = '#c0c0c0';
+    uploadFiles(event.dataTransfer.files);
+}
+
+async function associerImages() {
+    const status = document.getElementById('assoc-status');
+    status.textContent = 'Association en cours...';
+    const resp = await fetch('/api/upload/associer-images', { method: 'POST' });
+    if (resp.ok) {
+        const data = await resp.json();
+        status.textContent = '✅ ' + data.message;
+    } else {
+        status.textContent = '❌ Erreur';
+    }
+}
+
+async function chargerImages() {
+    const resp = await fetch('/api/upload/liste-images');
+    if (resp.ok) {
+        const data = await resp.json();
+        const container = document.getElementById('liste-images');
+        if (data.images.length === 0) {
+            container.innerHTML = '<p style="color:#888;">Aucune image uploadée</p>';
+            return;
+        }
+        container.innerHTML = data.images.map(img => `
+            <div style="text-align:center; background:#f5f5f5; border-radius:8px; padding:8px; width:120px;">
+                <img src="/uploads/questions/${img}" style="width:100px; height:80px; object-fit:contain; border-radius:4px;">
+                <div style="font-size:11px; color:#555; margin-top:4px; word-break:break-all;">${img}</div>
+            </div>
+        `).join('');
+    }
+}
+
+chargerImages();
+</script>
+
+{% endblock %}
