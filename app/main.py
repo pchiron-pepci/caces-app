@@ -176,7 +176,6 @@ def page_session_detail(request: Request, session_id: int):
 
     lieu = db.query(Lieu).filter(Lieu.id == session.lieu_id).first()
 
-    # Candidats
     session_candidats = db.query(SessionCandidat).filter(
         SessionCandidat.session_id == session_id,
         SessionCandidat.actif == True
@@ -184,10 +183,8 @@ def page_session_detail(request: Request, session_id: int):
     for sc in session_candidats:
         sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
 
-    # Epreuves pratiques
     epreuves = db.query(SessionEpreuve).filter(SessionEpreuve.session_id == session_id).all()
 
-    # Catégories
     famille = db.query(Famille).filter(Famille.code == session.famille).first()
     categories_obj = db.query(Categorie).filter(
         Categorie.famille_id == (famille.id if famille else 0),
@@ -197,19 +194,16 @@ def page_session_detail(request: Request, session_id: int):
     categories = [c.code for c in categories_obj]
     ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
 
-    # Map épreuves
     epreuves_map = {}
     for e in epreuves:
         testeur = db.query(Testeur).filter(Testeur.id == e.testeur_id).first()
         e.testeur_nom = f"{testeur.nom} {testeur.prenom}" if testeur else "?"
         epreuves_map[(e.stagiaire_id, e.categorie)] = e
 
-    # UT réalisées par candidat
     ut_candidat = {}
     for e in epreuves:
         ut_candidat[e.stagiaire_id] = ut_candidat.get(e.stagiaire_id, 0) + e.ut
 
-    # UT par testeur
     ut_testeurs = {}
     for e in epreuves:
         if e.testeur_id not in ut_testeurs:
@@ -226,7 +220,6 @@ def page_session_detail(request: Request, session_id: int):
             ut_testeurs[e.testeur_id]["categories"][cat] = 0
         ut_testeurs[e.testeur_id]["categories"][cat] += 1
 
-    # Jours de test
     jours_test = db.query(JourTest).filter(
         JourTest.session_id == session_id,
         JourTest.actif == True
@@ -271,7 +264,6 @@ def page_session_detail(request: Request, session_id: int):
             j.nb_testeurs = 0
             j.ut_libres = 0
 
-    # UT planifiées par candidat
     ut_planifie_candidat = {}
     for j in jours_test:
         if j.type == 'pratique':
@@ -283,7 +275,6 @@ def page_session_detail(request: Request, session_id: int):
                             ut_planifie_candidat.get(stagiaire_id, 0) + ut_par_cat.get(cat, 1.0), 1
                         )
 
-    # Résultats théorie par jour
     resultats_theorie_par_jour = {}
     for j in jours_test:
         if j.type == 'theorie':
@@ -296,7 +287,6 @@ def page_session_detail(request: Request, session_id: int):
                 resultats_jour[sc.stagiaire_id] = rt
             resultats_theorie_par_jour[j.id] = resultats_jour
 
-    # Résultats théorie pour tableau pratique (meilleur résultat)
     resultats_theorie = {}
     for sc in session_candidats:
         rt = db.query(ResultatTheorie).filter(
@@ -311,7 +301,6 @@ def page_session_detail(request: Request, session_id: int):
             ).order_by(ResultatTheorie.id.desc()).first()
         resultats_theorie[sc.stagiaire_id] = rt
 
-    # Equipements
     equipements = db.query(Equipement).filter(
         Equipement.session_id == session_id,
         Equipement.actif == True
@@ -341,6 +330,68 @@ def page_session_detail(request: Request, session_id: int):
             "equipements": equipements,
             "stagiaires": stagiaires,
             "testeurs": testeurs_list
+        }
+    )
+
+@app.get("/sessions/{session_id}/theorie/{stagiaire_id}/detail")
+def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jour_id: int = None):
+    db = SessionLocal()
+
+    query = db.query(ResultatTheorie).filter(
+        ResultatTheorie.session_id == session_id,
+        ResultatTheorie.stagiaire_id == stagiaire_id
+    )
+    if jour_id:
+        query = query.filter(ResultatTheorie.jour_test_id == jour_id)
+    rt = query.order_by(ResultatTheorie.id.desc()).first()
+
+    if not rt:
+        db.close()
+        return {"error": "Resultat non trouve"}
+
+    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+
+    reponses_grille = db.query(ReponseGrille).filter(
+        ReponseGrille.grille_id == rt.grille_id
+    ).order_by(ReponseGrille.theme, ReponseGrille.numero_question).all()
+
+    import json
+    reponses_candidat = json.loads(rt.reponses_json) if rt.reponses_json else {}
+
+    detail_themes = {}
+    for r in reponses_grille:
+        t = str(r.theme)
+        if t not in detail_themes:
+            detail_themes[t] = []
+        candidat_reponses = reponses_candidat.get(t, [])
+        q_idx = r.numero_question - 1
+        reponse_candidat = candidat_reponses[q_idx] if q_idx < len(candidat_reponses) else None
+        correcte = reponse_candidat is not None and reponse_candidat == r.reponse_correcte
+        detail_themes[t].append({
+            "numero": r.numero_question,
+            "texte": r.texte_question,
+            "reponse_correcte": r.reponse_correcte,
+            "reponse_candidat": reponse_candidat,
+            "correcte": correcte,
+            "points": r.points
+        })
+
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="detail_theorie.html",
+        context={
+            "stagiaire": stagiaire,
+            "session_id": session_id,
+            "rt": rt,
+            "detail_themes": detail_themes,
+            "theme_noms": {
+                "1": "Connaissances generales",
+                "2": "Technologie et stabilite",
+                "3": "Exploitation",
+                "4": "Circulation",
+                "5": "Fin de poste"
+            }
         }
     )
 
@@ -378,76 +429,13 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
             "session_candidats": session_candidats
         }
     )
-@app.get("/sessions/{session_id}/theorie/{stagiaire_id}/detail")
-def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jour_id: int = None):
-    db = SessionLocal()
-    
-    query = db.query(ResultatTheorie).filter(
-        ResultatTheorie.session_id == session_id,
-        ResultatTheorie.stagiaire_id == stagiaire_id
-    )
-    if jour_id:
-        query = query.filter(ResultatTheorie.jour_test_id == jour_id)
-    rt = query.order_by(ResultatTheorie.id.desc()).first()
-    
-    if not rt:
-        db.close()
-        return {"error": "Resultat non trouve"}
-    
-    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
-    
-    from app.models.grille_theorie import ReponseGrille
-    reponses_grille = db.query(ReponseGrille).filter(
-        ReponseGrille.grille_id == rt.grille_id
-    ).order_by(ReponseGrille.theme, ReponseGrille.numero_question).all()
-    
-    import json
-    reponses_candidat = json.loads(rt.reponses_json) if rt.reponses_json else {}
-    
-    detail_themes = {}
-    for r in reponses_grille:
-        t = str(r.theme)
-        if t not in detail_themes:
-            detail_themes[t] = []
-        candidat_reponses = reponses_candidat.get(t, [])
-        q_idx = r.numero_question - 1
-        reponse_candidat = candidat_reponses[q_idx] if q_idx < len(candidat_reponses) else None
-        correcte = reponse_candidat is not None and reponse_candidat == r.reponse_correcte
-        detail_themes[t].append({
-            "numero": r.numero_question,
-            "texte": r.texte_question,
-            "reponse_correcte": r.reponse_correcte,
-            "reponse_candidat": reponse_candidat,
-            "correcte": correcte,
-            "points": r.points
-        })
-    
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="detail_theorie.html",
-        context={
-            "stagiaire": stagiaire,
-            "session_id": session_id,
-            "rt": rt,
-            "detail_themes": detail_themes,
-            "theme_noms": {
-                "1": "Connaissances generales",
-                "2": "Technologie et stabilite",
-                "3": "Exploitation",
-                "4": "Circulation",
-                "5": "Fin de poste"
-            }
-        }
-    )
+
 @app.get("/statistiques")
 def page_statistiques(request: Request):
     db = SessionLocal()
-    from app.models.grille_theorie import GrilleTheorie, UtilisationGrille
     from datetime import datetime
     annee = datetime.now().year
 
-    # Stats par grille
     grilles = db.query(GrilleTheorie).filter(GrilleTheorie.actif == True).all()
     total = db.query(UtilisationGrille).filter(UtilisationGrille.annee == annee).count()
 
@@ -471,7 +459,6 @@ def page_statistiques(request: Request):
             "statut": statut
         })
 
-    # Historique des tirages
     historique = db.query(UtilisationGrille).filter(
         UtilisationGrille.annee == annee
     ).order_by(UtilisationGrille.id.desc()).all()
@@ -480,26 +467,16 @@ def page_statistiques(request: Request):
     for u in historique:
         g = db.query(GrilleTheorie).filter(GrilleTheorie.id == u.grille_id).first()
         s = db.query(Session).filter(Session.id == u.session_id).first()
-        # Récupérer la date du jour théorique
         j = db.query(JourTest).filter(
             JourTest.session_id == u.session_id,
-            JourTest.grille_id == u.grille_id,
-            JourTest.actif == True
+            JourTest.grille_id == u.grille_id
         ).first()
         historique_detail.append({
-            "grille_numero": g.numero if g else "—",
-            "session_ref": s.reference if s else "—",
+            "grille_numero": str(g.numero) if g else "—",
+            "session_ref": str(s.reference) if s else "—",
             "date": str(j.date) if j and j.date else "—"
         })
-@app.post("/api/statistiques/reset-grilles")
-def reset_compteurs_grilles():
-    db = SessionLocal()
-    from app.models.grille_theorie import UtilisationGrille
-    nb = db.query(UtilisationGrille).count()
-    db.query(UtilisationGrille).delete()
-    db.commit()
-    db.close()
-    return {"message": f"{nb} utilisations supprimees"}
+
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -512,6 +489,16 @@ def reset_compteurs_grilles():
             "historique": historique_detail
         }
     )
+
+@app.post("/api/statistiques/reset-grilles")
+def reset_compteurs_grilles():
+    db = SessionLocal()
+    nb = db.query(UtilisationGrille).count()
+    db.query(UtilisationGrille).delete()
+    db.commit()
+    db.close()
+    return {"message": f"{nb} utilisations supprimees"}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

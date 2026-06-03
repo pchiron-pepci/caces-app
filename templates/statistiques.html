@@ -40,20 +40,9 @@
                     {% endif %}
                 </div>
             </div>
-            <div style="background:#f0f2f7; border-radius:10px; height:12px; position:relative;">
-                <div style="position:absolute; left:10%; width:20%; height:100%; background:rgba(46,125,50,0.15); border-radius:10px;"></div>
-                <div style="width:{{ [s.pct, 100]|min }}%; height:100%; border-radius:10px;
-                    background:{{ '#2e7d32' if s.statut == 'OK' else ('#e65100' if s.statut == 'SOUS' else '#c62828') }};">
-                </div>
-                <div style="position:absolute; left:10%; top:-4px; width:2px; height:20px; background:#2e7d32; opacity:0.5;"></div>
-                <div style="position:absolute; left:30%; top:-4px; width:2px; height:20px; background:#2e7d32; opacity:0.5;"></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:#aaa; margin-top:2px;">
-                <span>0%</span>
-                <span style="margin-left:10%;">10%</span>
-                <span style="margin-left:18%;">30%</span>
-                <span>100%</span>
-            </div>
+            <div style="background:#f0f2f7; border-radius:10px; height:12px;">
+    <div style="width:{{ s.pct }}%; height:12px; border-radius:10px; background:#2e7d32;"></div>
+</div>
         </div>
         {% endfor %}
     </div>
