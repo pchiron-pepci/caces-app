@@ -106,12 +106,25 @@ async function chargerImages() {
             return;
         }
         container.innerHTML = data.images.map(img => `
-            <div style="text-align:center; background:#f5f5f5; border-radius:8px; padding:8px; width:120px;">
-                <img src="/uploads/questions/${img}" style="width:100px; height:80px; object-fit:contain; border-radius:4px;">
-                <div style="font-size:11px; color:#555; margin-top:4px; word-break:break-all;">${img}</div>
-            </div>
-        `).join('');
+    <div style="text-align:center; background:#f5f5f5; border-radius:8px; padding:8px; width:120px;">
+        <img src="/uploads/questions/${img}" style="width:100px; height:80px; object-fit:contain; border-radius:4px;">
+        <div style="font-size:11px; color:#555; margin-top:4px; word-break:break-all;">${img}</div>
+        <button onclick="supprimerImage('${img}')" 
+            style="background:#ffebee; border:none; color:#c62828; border-radius:6px; padding:3px 8px; font-size:11px; cursor:pointer; margin-top:4px;">
+            🗑️ Supprimer
+        </button>
+    </div>
+`).join('');
     }
+}
+
+async function supprimerImage(filename) {
+    if (!confirm('Supprimer ' + filename + ' ?')) return;
+    const resp = await fetch('/api/upload/supprimer-image?filename=' + encodeURIComponent(filename), {
+        method: 'DELETE'
+    });
+    if (resp.ok) { alert('Image supprimee !'); chargerImages(); }
+    else alert('Erreur !');
 }
 
 chargerImages();

@@ -48,14 +48,17 @@ async def associer_images(db=None):
         # Parser le nom : g1_t2_q1.jpg
         try:
             name = filename.rsplit('.', 1)[0]
-            parts = name.split('_')
-            grille_num = int(parts[0][1:])
-            theme = int(parts[1][1:])
-            question = int(parts[2][1:])
+            parts = name.upper().split('-')
+            # Format : R482-G1-T2-Q1
+            famille = parts[0]  # R482
+            grille_num = int(parts[1][1:])  # G1 → 1
+            theme = int(parts[2][1:])  # T2 → 2
+            question = int(parts[3][1:])  # Q1 → 1
             
             from app.models.grille_theorie import GrilleTheorie
             grille = db.query(GrilleTheorie).filter(
-                GrilleTheorie.numero == grille_num
+                GrilleTheorie.numero == grille_num,
+                GrilleTheorie.famille == famille
             ).first()
             
             if grille:
@@ -81,3 +84,11 @@ def liste_images():
         return {"images": []}
     images = [f for f in os.listdir(UPLOAD_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
     return {"images": sorted(images)}
+
+@router.delete("/supprimer-image")
+def supprimer_image(filename: str):
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Image non trouvee")
+    os.remove(file_path)
+    return {"message": "Image supprimee"}
