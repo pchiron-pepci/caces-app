@@ -773,9 +773,12 @@ async function valider(force = false) {
 }
 
 function afficherResultat(r) {
+    document.getElementById('ecran-accueil').style.display = 'none';
+    document.getElementById('ecran-qcm').style.display = 'none';
     document.getElementById('ecran-recap').style.display = 'none';
     document.getElementById('progress-section').style.display = 'none';
     document.getElementById('ecran-resultat').style.display = 'block';
+    if (timerInterval) clearInterval(timerInterval);
 
     const reussi = r.obtenue;
     document.getElementById('res-emoji').textContent = reussi ? '🎉' : '😔';
