@@ -82,3 +82,21 @@ def get_me(current_user: Utilisateur = Depends(get_utilisateur_courant)):
         "email": current_user.email,
         "role": current_user.role
     }
+
+class ProfilUpdate(BaseModel):
+    email: Optional[str] = None
+    mot_de_passe_actuel: Optional[str] = None
+    nouveau_mot_de_passe: Optional[str] = None
+
+@router.put("/profil")
+def update_profil(data: ProfilUpdate, current_user: Utilisateur = Depends(get_utilisateur_courant), db: DBSession = Depends(get_db)):
+    if data.email:
+        current_user.email = data.email
+    if data.nouveau_mot_de_passe:
+        if not data.mot_de_passe_actuel:
+            raise HTTPException(status_code=400, detail="Mot de passe actuel requis")
+        if not verifier_mot_de_passe(data.mot_de_passe_actuel, current_user.mot_de_passe):
+            raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
+        current_user.mot_de_passe = hasher_mot_de_passe(data.nouveau_mot_de_passe)
+    db.commit()
+    return {"message": "Profil mis a jour"}

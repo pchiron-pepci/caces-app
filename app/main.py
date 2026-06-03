@@ -514,6 +514,14 @@ def reset_compteurs_grilles():
     db.close()
     return {"message": f"{nb} utilisations supprimees"}
 
+@app.get("/profil")
+def page_profil(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="profil.html",
+        context={"page": "profil"}
+    )
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
