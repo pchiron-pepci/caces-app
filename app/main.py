@@ -491,7 +491,15 @@ def page_statistiques(request: Request):
             "session_ref": s.reference if s else "?",
             "date": j.date if j else "?"
         })
-
+@app.post("/api/statistiques/reset-grilles")
+def reset_compteurs_grilles():
+    db = SessionLocal()
+    from app.models.grille_theorie import UtilisationGrille
+    nb = db.query(UtilisationGrille).count()
+    db.query(UtilisationGrille).delete()
+    db.commit()
+    db.close()
+    return {"message": f"{nb} utilisations supprimees"}
     db.close()
     return templates.TemplateResponse(
         request=request,

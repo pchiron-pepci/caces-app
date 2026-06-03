@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Statistiques grilles{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px;">
+        Statistiques des grilles
+    </h2>
+    <p style="color:#666; font-size:14px;">Année {{ annee }} — {{ total }} tirage(s) au total</p>
+</div>
+
+<!-- STATS PAR GRILLE -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+        <h2>Utilisation des grilles</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <span style="font-size:13px; color:#666;">Zone valide : entre 10% et 30%</span>
+            <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                onclick="resetCompteurs()">Remettre a zero</button>
+        </div>
+    </div>
+    <div style="padding:16px;">
+        {% for s in stats_grilles %}
+        <div style="margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div>
+                    <strong>Grille n°{{ s.numero }}</strong>
+                    <span style="color:#666; font-size:13px; margin-left:8px;">{{ s.famille }}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-size:14px; color:#666;">{{ s.count }} tirage(s)</span>
+                    {% if s.statut == 'OK' %}
+                        <span class="badge green">{{ s.pct }}% ✅</span>
+                    {% elif s.statut == 'SOUS' %}
+                        <span class="badge orange">{{ s.pct }}% ⚠️ Sous-utilisee</span>
+                    {% else %}
+                        <span class="badge red">{{ s.pct }}% ❌ Sur-utilisee</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="background:#f0f2f7; border-radius:10px; height:12px; position:relative;">
+                <div style="position:absolute; left:10%; width:20%; height:100%; background:rgba(46,125,50,0.15); border-radius:10px;"></div>
+                <div style="width:{{ [s.pct, 100]|min }}%; height:100%; border-radius:10px;
+                    background:{{ '#2e7d32' if s.statut == 'OK' else ('#e65100' if s.statut == 'SOUS' else '#c62828') }};">
+                </div>
+                <div style="position:absolute; left:10%; top:-4px; width:2px; height:20px; background:#2e7d32; opacity:0.5;"></div>
+                <div style="position:absolute; left:30%; top:-4px; width:2px; height:20px; background:#2e7d32; opacity:0.5;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:#aaa; margin-top:2px;">
+                <span>0%</span>
+                <span style="margin-left:10%;">10%</span>
+                <span style="margin-left:18%;">30%</span>
+                <span>100%</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- HISTORIQUE -->
+<div class="card">
+    <div class="card-header">
+        <h2>Historique des tirages {{ annee }}</h2>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Session</th>
+                <th style="text-align:center;">Grille tiree</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in historique %}
+            <tr>
+                <td>{{ h.date }}</td>
+                <td>{{ h.session_ref }}</td>
+                <td style="text-align:center;">
+                    <span class="badge blue">Grille n°{{ h.grille_numero }}</span>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not historique %}
+            <tr>
+                <td colspan="3" style="text-align:center; color:#888;">Aucun tirage cette annee</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+async function resetCompteurs() {
+    if (!confirm('Remettre tous les compteurs a zero ? Cette action est irreversible !')) return;
+    const pin = prompt('Code PIN :');
+    if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
+    const resp = await fetch('/api/statistiques/reset-grilles', { method: 'POST' });
+    if (resp.ok) { alert('Compteurs remis a zero !'); location.reload(); }
+    else alert('Erreur !');
+}
+</script>
+
+{% endblock %}
