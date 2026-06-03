@@ -459,9 +459,12 @@
 <!-- HEADER -->
 <div class="header">
     <div class="header-row1">
-        <div class="header-title">CACES® R.482 - Theorie</div>
+    <div class="header-title">CACES® R.482 - Theorie</div>
+    <div style="display:flex; align-items:center; gap:16px;">
+        <div id="timer" style="display:none; font-size:18px; font-weight:800; color:#64b5f6;">⏱ 60:00</div>
         <div class="header-candidat" id="header-candidat"></div>
     </div>
+</div>
     <div class="progress-row" id="progress-section" style="display:none;">
         <div class="q-counter">Q <span id="q-num">1</span><small> / 100</small></div>
         <div class="progress-bar-wrap">
@@ -559,7 +562,71 @@ let questions = [];
 let reponses = {};
 let questionActuelle = 0;
 let stagiaireId = null;
+let timerInterval = null;
+let tempsRestant = 60 * 60;
 
+function demarrerTimer() {
+    document.getElementById('timer').style.display = 'block';
+    timerInterval = setInterval(() => {
+        tempsRestant--;
+        const minutes = Math.floor(tempsRestant / 60);
+        const secondes = tempsRestant % 60;
+        const affichage = String(minutes).padStart(2, '0') + ':' + String(secondes).padStart(2, '0');
+        const timerEl = document.getElementById('timer');
+        timerEl.textContent = '⏱ ' + affichage;
+
+        if (tempsRestant === 600) {
+            timerEl.style.color = '#ff9800';
+            alert('⚠️ Il vous reste 10 minutes !');
+        }
+        if (tempsRestant === 300) {
+            timerEl.style.color = '#f44336';
+            alert('⚠️ Il vous reste 5 minutes !');
+        }
+        if (tempsRestant <= 0) {
+            clearInterval(timerInterval);
+            timerEl.textContent = '⏱ 00:00';
+            timerEl.style.color = '#f44336';
+            alert('⏰ Temps ecoule ! Vos reponses sont sauvegardees automatiquement.');
+            valider();
+        }
+    }, 1000);
+}
+let timerInterval = null;
+let tempsRestant = 60 * 60; // 60 minutes en secondes
+
+function demarrerTimer() {
+    document.getElementById('timer').style.display = 'block';
+    timerInterval = setInterval(() => {
+        tempsRestant--;
+        const minutes = Math.floor(tempsRestant / 60);
+        const secondes = tempsRestant % 60;
+        const affichage = String(minutes).padStart(2, '0') + ':' + String(secondes).padStart(2, '0');
+        const timerEl = document.getElementById('timer');
+        timerEl.textContent = '⏱ ' + affichage;
+
+        // Alerte à 10 minutes
+        if (tempsRestant === 600) {
+            timerEl.style.color = '#ff9800';
+            alert('⚠️ Il vous reste 10 minutes !');
+        }
+
+        // Alerte à 5 minutes
+        if (tempsRestant === 300) {
+            timerEl.style.color = '#f44336';
+            alert('⚠️ Il vous reste 5 minutes !');
+        }
+
+        // Temps écoulé
+        if (tempsRestant <= 0) {
+            clearInterval(timerInterval);
+            timerEl.textContent = '⏱ 00:00';
+            timerEl.style.color = '#f44336';
+            alert('⏰ Temps écoulé ! Vos réponses sont sauvegardées automatiquement.');
+            valider();
+        }
+    }, 1000);
+}
 const THEME_NOMS = {
     1: 'Theme 1 · Connaissances generales',
     2: 'Theme 2 · Technologie et stabilite',
@@ -599,7 +666,6 @@ async function commencer() {
     stagiaireId = sel.value;
     if (!stagiaireId) { alert('Veuillez selectionner votre nom !'); return; }
     
-    // Attendre que les questions soient chargées
     if (questions.length === 0) {
         await chargerQuestions();
     }
@@ -614,6 +680,7 @@ async function commencer() {
     document.getElementById('ecran-qcm').style.display = 'block';
     document.getElementById('progress-section').style.display = 'flex';
     afficherQuestion(0);
+    demarrerTimer();
 }
 
 function afficherQuestion(idx) {
