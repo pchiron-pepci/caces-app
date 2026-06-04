@@ -794,11 +794,7 @@
             <div class="form-field">
                 <label>Date fin session</label>
                 <input type="date" id="ms-fin">
-            </div>
-            <div class="form-field" style="grid-column:span 2;">
-                <label>Date théorie</label>
-                <input type="date" id="ms-theorie">
-            </div>
+            </div>            
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" onclick="sauvegarderModifierSession()">Sauvegarder</button>
@@ -1185,7 +1181,7 @@ async function sauvegarderModifierSession() {
     const responsable = document.getElementById('ms-responsable').value;
     const debut = document.getElementById('ms-debut').value;
     const fin = document.getElementById('ms-fin').value;
-    const theorie = document.getElementById('ms-theorie').value;
+    const theorie = '{{ session.date_theorie or "" }}';
 
     const joursHors = [];
     {% for j in jours_test %}
@@ -1207,7 +1203,6 @@ async function sauvegarderModifierSession() {
             responsable: responsable || null,
             date_pratique_debut: debut || null,
             date_pratique_fin: fin || null,
-            date_theorie: theorie || null
         })
     });
     if (resp.ok) { fermerModifierSession(); location.reload(); }
