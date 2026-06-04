@@ -561,6 +561,10 @@
     <div class="card">
         <div class="theme-badge" id="q-theme-label">Theme 1</div>
         <img id="q-image" class="question-image" src="" alt="">
+        <button onclick="relireQuestion()"
+            style="background:#e8eaf6; border:none; border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; margin-bottom:12px; color:#1a237e; font-weight:700;">
+            🔊 Relire la question
+        </button>
         <div class="question-text" id="q-texte">Chargement...</div>
         <div class="reponse-grid">
             <button class="btn-reponse btn-vrai" id="btn-vrai" onclick="repondre(true)">✅ VRAI</button>
@@ -757,6 +761,15 @@ function afficherQuestion(idx) {
 
     document.getElementById('q-texte').textContent = q.texte;
 
+// Lecture vocale automatique de la question
+if (window.speechSynthesis) {
+    window.speechSynthesis.cancel(); // Arrête la lecture précédente
+    const utterance = new SpeechSynthesisUtterance(q.texte);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.9; // Légèrement plus lent pour une meilleure compréhension
+    window.speechSynthesis.speak(utterance);
+}
+
     const btnV = document.getElementById('btn-vrai');
     const btnF = document.getElementById('btn-faux');
     btnV.classList.remove('selected');
@@ -791,6 +804,17 @@ function repondre(valeur) {
 
 function suivant() {
     if (questionActuelle < questions.length - 1) afficherQuestion(questionActuelle + 1);
+}
+
+function relireQuestion() {
+    const texte = document.getElementById('q-texte').textContent;
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(texte);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+    }
 }
 
 function precedent() {
