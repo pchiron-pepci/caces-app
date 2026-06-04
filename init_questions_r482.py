@@ -17,7 +17,7 @@ QUESTIONS = {
         "Le chef de chantier / signaleur / elingueur : question 8",
         "Les acteurs en prevention : question 9",
         "Les acteurs en prevention : question 10",
-        "Les types d'engins et categories CACES : question 11",
+        "Les types d'engins et catégories CACES : question 11",
         "Les types d'engins et categories CACES : question 12",
     ],
     2: [
@@ -122,9 +122,9 @@ QUESTIONS = {
 TEXTES_GRILLE = {
     1: {
         1: [
-            "Le constructeur est responsable du maintien en etat de conformite de l'engin",
-            "L'employeur doit realiser les VGP (verifications generales periodiques)",
-            "L'autorisation de conduite est delivree par le constructeur de l'engin",
+            "Le constructeur est responsable du maintien en état de conformité de l'engin",
+            "L'employeur doit realiser les VGP (vérifications générales périodiques)",
+            "L'autorisation de conduite est délivrée par le constructeur de l'engin",
             "Le conducteur doit s'assurer que l'engin est en bon etat lors de la prise de poste",
             "Le conducteur peut utiliser un engin sans autorisation de conduite",
             "Pour conduire un engin de chantier, il faut obligatoirement le permis B",
