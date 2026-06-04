@@ -125,7 +125,7 @@ TEXTES_GRILLE = {
             "Le constructeur est responsable du maintien en état de conformité de l'engin",
             "L'employeur doit réaliser les VGP (vérifications générales périodiques)",
             "L'autorisation de conduite est délivrée par le constructeur de l'engin",
-            "Le conducteur doit s'assurer que l'engin est en bon etat lors de la prise de poste",
+            "Le conducteur doit s'assurer que l'engin est en bon état lors de la prise de poste",
             "Le conducteur peut utiliser un engin sans autorisation de conduite",
             "Pour conduire un engin de chantier, il faut obligatoirement le permis B",
             "Le signaleur doit posséder une autorisation de conduite",
