@@ -158,8 +158,9 @@
                             class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
                             Tablette candidat
                         </a>
-                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-    onclick="ouvrirModifierJourTheorie({{ j.id }}, '{{ j.date.strftime('%Y-%m-%d') if j.date else '' }}', '{{ j.testeur_id or '' }}')">✏️</button>
+                        {% set date_str = j.date.strftime('%Y-%m-%d') if j.date else '' %}
+<button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+    onclick="ouvrirModifierJourTheorie({{ j.id }}, '{{ date_str }}', '{{ j.testeur_id or '' }}')">✏️</button>
 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
     onclick="supprimerJour({{ j.id }})">X</button>
                         {% endif %}
