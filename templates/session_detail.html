@@ -21,11 +21,7 @@
                 Du {{ session.date_pratique_debut.strftime('%d/%m/%Y') }}{% if session.date_pratique_fin %} au {{ session.date_pratique_fin.strftime('%d/%m/%Y') }}{% endif %}
             </span>
             {% endif %}
-            {% if session.date_theorie %}
-<span class="badge" style="background:#e8eaf6; color:#1a237e;">
-    Théorie : {{ session.date_theorie.strftime('%d/%m/%Y') }}
-</span>
-{% endif %}
+
 <span class="badge" style="background:#f0f2f7; color:#555;">
     Responsable : {{ session.responsable or 'Non défini' }}
 </span>
@@ -162,8 +158,10 @@
                             class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
                             Tablette candidat
                         </a>
-                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                            onclick="supprimerJour({{ j.id }})">X</button>
+                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+    onclick="ouvrirModifierJourTheorie({{ j.id }}, '{{ j.date }}', '{{ j.testeur_id }}')">✏️</button>
+<button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+    onclick="supprimerJour({{ j.id }})">X</button>
                         {% endif %}
                     </div>
                 </div>
@@ -752,6 +750,31 @@
     </div>
 </div>
 
+function ouvrirModifierJourTheorie(jourId, date, testeurId) {
+    document.getElementById('mjt-jour-id').value = jourId;
+    document.getElementById('mjt-date').value = date;
+    document.getElementById('mjt-testeur').value = testeurId || '';
+    document.getElementById('modal-modifier-jour-theorie').style.display = 'flex';
+}
+
+async function sauvegarderModifierJourTheorie() {
+    const jourId = document.getElementById('mjt-jour-id').value;
+    const date = document.getElementById('mjt-date').value;
+    const testeurId = document.getElementById('mjt-testeur').value;
+    if (!date) { alert('La date est obligatoire !'); return; }
+    const dateDebut = '{{ session.date_pratique_debut or "" }}';
+    const dateFin = '{{ session.date_pratique_fin or "" }}';
+    if (dateDebut && date < dateDebut) { alert('⚠️ Date antérieure au début de la session !'); return; }
+    if (dateFin && date > dateFin) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
+    const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/modifier', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, testeur_id: parseInt(testeurId) })
+    });
+    if (resp.ok) { document.getElementById('modal-modifier-jour-theorie').style.display = 'none'; location.reload(); }
+    else alert('Erreur !');
+}
+
 <!-- MODAL MODIFIER SESSION -->
 <div id="modal-modifier-session" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:32px; width:600px; max-width:95vw;">
@@ -1128,6 +1151,31 @@ function ouvrirModifierSession() {
 
 function fermerModifierSession() {
     document.getElementById('modal-modifier-session').style.display = 'none';
+}
+
+function ouvrirModifierJourTheorie(jourId, date, testeurId) {
+    document.getElementById('mjt-jour-id').value = jourId;
+    document.getElementById('mjt-date').value = date;
+    document.getElementById('mjt-testeur').value = testeurId || '';
+    document.getElementById('modal-modifier-jour-theorie').style.display = 'flex';
+}
+
+async function sauvegarderModifierJourTheorie() {
+    const jourId = document.getElementById('mjt-jour-id').value;
+    const date = document.getElementById('mjt-date').value;
+    const testeurId = document.getElementById('mjt-testeur').value;
+    if (!date) { alert('La date est obligatoire !'); return; }
+    const dateDebut = '{{ session.date_pratique_debut or "" }}';
+    const dateFin = '{{ session.date_pratique_fin or "" }}';
+    if (dateDebut && date < dateDebut) { alert('⚠️ Date antérieure au début de la session !'); return; }
+    if (dateFin && date > dateFin) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
+    const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/modifier', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, testeur_id: parseInt(testeurId) })
+    });
+    if (resp.ok) { document.getElementById('modal-modifier-jour-theorie').style.display = 'none'; location.reload(); }
+    else alert('Erreur !');
 }
 
 async function sauvegarderModifierSession() {
