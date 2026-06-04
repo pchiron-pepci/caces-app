@@ -32,6 +32,7 @@ class SessionCreate(BaseModel):
     date_pratique_debut: Optional[date] = None
     date_pratique_fin: Optional[date] = None
     note: Optional[str] = None
+    responsable: Optional[str] = None
 
 class SessionResponse(BaseModel):
     id: int
@@ -43,6 +44,7 @@ class SessionResponse(BaseModel):
     date_pratique_fin: Optional[date] = None
     statut: str
     annee: int
+    responsable: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -415,3 +417,16 @@ def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSess
     jtc.identite_verifiee = not jtc.identite_verifiee
     db.commit()
     return {"identite_verifiee": jtc.identite_verifiee}
+
+@router.put("/{id}")
+def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)):
+    s = db.query(Session).filter(Session.id == id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session non trouvee")
+    s.date_theorie = data.date_theorie
+    s.date_pratique_debut = data.date_pratique_debut
+    s.date_pratique_fin = data.date_pratique_fin
+    s.responsable = data.responsable
+    s.note = data.note
+    db.commit()
+    return {"message": "Session mise a jour"}

@@ -15,5 +15,6 @@ class Session(Base):
     statut = Column(String(20), default="planifiee")
     annee = Column(Integer, default=datetime.now().year)
     note = Column(Text, nullable=True)
+    responsable = Column(String(200), nullable=True)
     date_creation = Column(DateTime, default=datetime.utcnow)
     type = Column(String(20), default="caces", nullable=True)

@@ -22,10 +22,13 @@
             </span>
             {% endif %}
             {% if session.date_theorie %}
-            <span class="badge" style="background:#e8eaf6; color:#1a237e;">
-                Théorie : {{ session.date_theorie.strftime('%d/%m/%Y') }}
-            </span>
-            {% endif %}
+<span class="badge" style="background:#e8eaf6; color:#1a237e;">
+    Théorie : {{ session.date_theorie.strftime('%d/%m/%Y') }}
+</span>
+{% endif %}
+<span class="badge" style="background:#f0f2f7; color:#555;">
+    Responsable : {{ session.responsable or 'Non défini' }}
+</span>
         </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
@@ -33,8 +36,9 @@
             <span style="color:#2e7d32; font-size:13px;">🔒 Session verrouilee</span>
             <button class="btn btn-secondary" onclick="reouvrirsession()">🔓 Reouvrir</button>
         {% elif session.statut != 'annulee' %}
-            <button class="btn btn-primary" onclick="cloturerSession()">Cloturer la session</button>
-        {% endif %}
+    <button class="btn btn-secondary" onclick="ouvrirModifierSession()">✏️ Modifier</button>
+    <button class="btn btn-primary" onclick="cloturerSession()">Cloturer la session</button>
+{% endif %}
     </div>
 </div>
 
@@ -748,6 +752,35 @@
     </div>
 </div>
 
+<!-- MODAL MODIFIER SESSION -->
+<div id="modal-modifier-session" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:600px; max-width:95vw;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;">Modifier la session</h2>
+        <div class="form-grid">
+            <div class="form-field" style="grid-column:span 2;">
+                <label>Responsable</label>
+                <input type="text" id="ms-responsable" placeholder="Nom Prénom">
+            </div>
+            <div class="form-field">
+                <label>Date début session</label>
+                <input type="date" id="ms-debut">
+            </div>
+            <div class="form-field">
+                <label>Date fin session</label>
+                <input type="date" id="ms-fin">
+            </div>
+            <div class="form-field" style="grid-column:span 2;">
+                <label>Date théorie</label>
+                <input type="date" id="ms-theorie">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="sauvegarderModifierSession()">Sauvegarder</button>
+            <button class="btn btn-secondary" onclick="fermerModifierSession()">Annuler</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL PIN -->
 <div id="modal-pin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:32px; width:400px; text-align:center;">
@@ -1084,5 +1117,50 @@ async function reouvrirsession() {
 }
 
 function fermerPin() { document.getElementById('modal-pin').style.display = 'none'; }
+
+function ouvrirModifierSession() {
+    document.getElementById('ms-responsable').value = '{{ session.responsable or "" }}';
+    document.getElementById('ms-debut').value = '{{ session.date_pratique_debut or "" }}';
+    document.getElementById('ms-fin').value = '{{ session.date_pratique_fin or "" }}';
+    document.getElementById('ms-theorie').value = '{{ session.date_theorie or "" }}';
+    document.getElementById('modal-modifier-session').style.display = 'flex';
+}
+
+function fermerModifierSession() {
+    document.getElementById('modal-modifier-session').style.display = 'none';
+}
+
+async function sauvegarderModifierSession() {
+    const responsable = document.getElementById('ms-responsable').value;
+    const debut = document.getElementById('ms-debut').value;
+    const fin = document.getElementById('ms-fin').value;
+    const theorie = document.getElementById('ms-theorie').value;
+
+    const joursHors = [];
+    {% for j in jours_test %}
+    const dateJ{{ j.id }} = '{{ j.date }}';
+    if (debut && dateJ{{ j.id }} < debut) joursHors.push('{{ j.date.strftime("%d/%m/%Y") }} ({{ j.type }})');
+    else if (fin && dateJ{{ j.id }} > fin) joursHors.push('{{ j.date.strftime("%d/%m/%Y") }} ({{ j.type }})');
+    {% endfor %}
+
+    if (joursHors.length > 0) {
+        if (!confirm('⚠️ Ces jours sont hors du nouvel intervalle :\n' + joursHors.join('\n') + '\n\nContinuer quand même ?')) return;
+    }
+
+    const resp = await fetch('/api/sessions/' + SESSION_ID, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            famille: '{{ session.famille }}',
+            lieu_id: {{ session.lieu_id }},
+            responsable: responsable || null,
+            date_pratique_debut: debut || null,
+            date_pratique_fin: fin || null,
+            date_theorie: theorie || null
+        })
+    });
+    if (resp.ok) { fermerModifierSession(); location.reload(); }
+    else alert('Erreur !');
+}
 </script>
 {% endblock %}
