@@ -10,6 +10,7 @@ class JourTest(Base):
     type = Column(String(10), nullable=False)
     testeur_id = Column(Integer, ForeignKey("testeurs.id"), nullable=True)
     grille_id = Column(Integer, ForeignKey("grilles_theorie.id"), nullable=True)
+    tirage_themes_json = Column(Text, nullable=True)
     note = Column(Text, nullable=True)
     actif = Column(Boolean, default=True)
 
@@ -30,7 +31,7 @@ class ResultatTheorie(Base):
     jour_test_id = Column(Integer, ForeignKey("jours_test.id"), nullable=False)
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
     stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
-    grille_id = Column(Integer, ForeignKey("grilles_theorie.id"), nullable=False)
+    grille_id = Column(Integer, ForeignKey("grilles_theorie.id"), nullable=True)
     reponses_json = Column(Text, nullable=True)
     note_theme1 = Column(Float, nullable=True)
     note_theme2 = Column(Float, nullable=True)

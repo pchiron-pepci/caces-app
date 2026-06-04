@@ -1,23 +1,28 @@
 import os
 import cloudinary
 import cloudinary.uploader
+import cloudinary.api
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.database import SessionLocal
 
 router = APIRouter(prefix="/api/upload", tags=["Upload"])
 
-# Configuration Cloudinary depuis les variables d'environnement
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET")
-)
-
 UPLOAD_DIR = "uploads/questions"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+def configurer_cloudinary():
+    """Configure Cloudinary avec les variables d'environnement.
+    On appelle cette fonction à chaque requête pour être sûr
+    que les variables sont bien chargées."""
+    cloudinary.config(
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET")
+    )
+
 @router.post("/question-images")
 async def upload_question_images(files: list[UploadFile] = File(...)):
+    configurer_cloudinary()
     uploaded = []
     errors = []
     for file in files:
@@ -25,9 +30,9 @@ async def upload_question_images(files: list[UploadFile] = File(...)):
             errors.append(f"{file.filename}: format non supporte")
             continue
         try:
-            # Upload vers Cloudinary
             contents = await file.read()
-            # Nom public sans extension pour Cloudinary
+            # Le public_id est le nom du fichier sans extension
+            # ex: R482-G1-T2-Q1
             public_id = f"caces_questions/{file.filename.rsplit('.', 1)[0]}"
             result = cloudinary.uploader.upload(
                 contents,
@@ -45,12 +50,13 @@ async def upload_question_images(files: list[UploadFile] = File(...)):
 
 @router.post("/associer-images")
 async def associer_images():
+    configurer_cloudinary()
     from app.models.grille_theorie import ReponseGrille, GrilleTheorie
-    import cloudinary.api
     db = SessionLocal()
     updated = 0
     try:
-        # Lister toutes les images dans le dossier caces_questions sur Cloudinary
+        # On liste toutes les images stockées sur Cloudinary
+        # dans le dossier caces_questions
         result = cloudinary.api.resources(
             type="upload",
             prefix="caces_questions/",
@@ -58,17 +64,17 @@ async def associer_images():
         )
         resources = result.get("resources", [])
         for resource in resources:
-            # Extraire le nom du fichier depuis le public_id
-            # ex: caces_questions/R482-G1-T2-Q1
+            # Le public_id ressemble à "caces_questions/R482-G1-T2-Q1"
+            # On extrait juste le nom du fichier
             public_id = resource["public_id"]
             filename = public_id.split("/")[-1]  # R482-G1-T2-Q1
             url = resource["secure_url"]
             try:
                 parts = filename.upper().split("-")
-                famille = parts[0]       # R482
+                famille = parts[0]              # R482
                 grille_num = int(parts[1][1:])  # G1 → 1
-                theme = int(parts[2][1:])        # T2 → 2
-                question = int(parts[3][1:])     # Q1 → 1
+                theme = int(parts[2][1:])       # T2 → 2
+                question = int(parts[3][1:])    # Q1 → 1
 
                 grille = db.query(GrilleTheorie).filter(
                     GrilleTheorie.numero == grille_num,
@@ -94,8 +100,9 @@ async def associer_images():
 
 @router.delete("/supprimer-image")
 async def supprimer_image(filename: str):
+    configurer_cloudinary()
     try:
-        # Supprimer depuis Cloudinary
+        # On supprime l'image de Cloudinary via son public_id
         public_id = f"caces_questions/{filename.rsplit('.', 1)[0]}"
         cloudinary.uploader.destroy(public_id)
         return {"message": "Image supprimee"}
@@ -104,8 +111,8 @@ async def supprimer_image(filename: str):
 
 @router.get("/liste-images")
 def liste_images():
+    configurer_cloudinary()
     try:
-        import cloudinary.api
         result = cloudinary.api.resources(
             type="upload",
             prefix="caces_questions/",

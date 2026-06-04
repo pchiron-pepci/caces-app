@@ -10,7 +10,12 @@ from app.models.testeur import Testeur
 from app.models.categorie import Categorie, Famille
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille
-from app.services.tirage_grille import tirer_grille, calculer_resultat_theorie
+from app.services.tirage_grille import (
+    tirer_grille, calculer_resultat_theorie,
+    tirer_themes_phase2, enregistrer_tirage_themes,
+    get_questions_phase2, calculer_resultat_theorie_phase2,
+    tirage_to_json
+)
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional, List, Dict
@@ -191,22 +196,24 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     if not session:
         raise HTTPException(status_code=404, detail="Session non trouvee")
 
-    grille_id = None
+    tirage_json = None
     if data.type == "theorie":
         from datetime import datetime
         annee = datetime.now().year
         try:
-            grille = tirer_grille(session.famille, session_id, annee, db)
-            grille_id = grille.id
+            tirage = tirer_themes_phase2(session.famille, session_id, annee, db)
+            enregistrer_tirage_themes(session_id, session.famille, annee, tirage, db)
+            tirage_json = tirage_to_json(tirage)
         except ValueError:
-            grille_id = None
+            tirage_json = None
 
     jour = JourTest(
         session_id=session_id,
         date=data.date,
         type=data.type,
         testeur_id=data.testeur_id,
-        grille_id=grille_id,
+        grille_id=None,
+        tirage_themes_json=tirage_json,
         note=data.note
     )
     db.add(jour)
@@ -232,10 +239,8 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     db.refresh(jour)
 
     result = {"message": "Jour de test ajoute", "id": jour.id}
-    if grille_id:
-        grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == grille_id).first()
-        result["grille_numero"] = grille.numero
-        result["grille_id"] = grille_id
+    if tirage_json:
+        result["tirage"] = json.loads(tirage_json)
     return result
 
 @router.post("/{session_id}/jours/{jour_id}/candidats")
@@ -275,7 +280,7 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouve")
     j.actif = False
-    # Supprimer l'utilisation de la grille si jour théorique
+
     if j.type == "theorie" and j.grille_id:
         from app.models.grille_theorie import UtilisationGrille
         uti = db.query(UtilisationGrille).filter(
@@ -284,6 +289,13 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
         ).first()
         if uti:
             db.delete(uti)
+
+    if j.type == "theorie":
+        from app.models.utilisations_themes import UtilisationTheme
+        db.query(UtilisationTheme).filter(
+            UtilisationTheme.session_id == j.session_id
+        ).delete()
+
     db.commit()
     return {"message": "Jour supprime"}
 
@@ -291,16 +303,17 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
 @router.post("/{session_id}/theorie/reponses")
 def sauvegarder_reponses(session_id: int, data: ReponsesCandidatCreate, db: DBSession = Depends(get_db)):
     jour = db.query(JourTest).filter(JourTest.id == data.jour_test_id).first()
-    if not jour or not jour.grille_id:
-        raise HTTPException(status_code=404, detail="Jour de test ou grille non trouve")
+    if not jour:
+        raise HTTPException(status_code=404, detail="Jour de test non trouve")
 
-    resultat = calculer_resultat_theorie(data.reponses, jour.grille_id, db)
+    session = db.query(Session).filter(Session.id == session_id).first()
+    resultat = calculer_resultat_theorie_phase2(data.reponses, session_id, session.famille, db)
 
     rt = ResultatTheorie(
         jour_test_id=data.jour_test_id,
         session_id=session_id,
         stagiaire_id=data.stagiaire_id,
-        grille_id=jour.grille_id
+        grille_id=None
     )
     db.add(rt)
 
@@ -343,31 +356,18 @@ def get_resultat_theorie(session_id: int, stagiaire_id: int, db: DBSession = Dep
 @router.get("/{session_id}/jours/{jour_id}/grille")
 def get_grille_jour(session_id: int, jour_id: int, db: DBSession = Depends(get_db)):
     jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
-    if not jour or not jour.grille_id:
-        raise HTTPException(status_code=404, detail="Jour ou grille non trouve")
+    if not jour:
+        raise HTTPException(status_code=404, detail="Jour non trouve")
 
-    reponses = db.query(ReponseGrille).filter(
-        ReponseGrille.grille_id == jour.grille_id
-    ).order_by(ReponseGrille.theme, ReponseGrille.numero_question).all()
-
-    grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first()
-
-    themes = {}
-    for r in reponses:
-        if r.theme not in themes:
-            themes[r.theme] = []
-        themes[r.theme].append({
-            "numero": r.numero_question,
-            "points": r.points,
-            "texte": r.texte_question,
-            "image": r.image_url
-        })
+    session = db.query(Session).filter(Session.id == session_id).first()
+    data = get_questions_phase2(session_id, session.famille, db)
 
     return {
-        "grille_id": jour.grille_id,
-        "grille_numero": grille.numero if grille else None,
-        "famille": grille.famille if grille else None,
-        "themes": themes
+        "grille_id": None,
+        "grille_numero": None,
+        "famille": session.famille,
+        "tirage": data["tirage"],
+        "themes": data["themes"]
     }
 
 # EPREUVES PRATIQUES
@@ -391,7 +391,6 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
         obtenue=data.obtenue,
         note_testeur=data.note_testeur
     )
-    
     db.add(e)
     db.commit()
     return {"message": "Epreuve ajoutee"}

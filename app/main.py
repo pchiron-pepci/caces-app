@@ -18,7 +18,7 @@ from app.models.equipement import Equipement
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
 
-from app.routers import stagiaires, testeurs, admin, sessions, upload, auth
+from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
 from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
@@ -47,7 +47,7 @@ app.include_router(admin.router)
 app.include_router(sessions.router)
 app.include_router(upload.router)
 app.include_router(auth.router)
-
+app.include_router(statistiques.router)
 @app.get("/")
 def dashboard(request: Request):
     db = SessionLocal()
@@ -209,7 +209,13 @@ def page_session_detail(request: Request, session_id: int):
     for e in epreuves:
         testeur = db.query(Testeur).filter(Testeur.id == e.testeur_id).first()
         e.testeur_nom = f"{testeur.nom} {testeur.prenom}" if testeur else "?"
-        epreuves_map[(e.stagiaire_id, e.categorie)] = e
+        key = (e.stagiaire_id, e.categorie)
+        if key not in epreuves_map:
+            epreuves_map[key] = e
+        else:
+            # Priorité au réussi, sinon on garde le plus récent
+            if e.obtenue and not epreuves_map[key].obtenue:
+                epreuves_map[key] = e
 
     ut_candidat = {}
     for e in epreuves:
@@ -366,30 +372,38 @@ def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jo
 
     stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
 
-    reponses_grille = db.query(ReponseGrille).filter(
-        ReponseGrille.grille_id == rt.grille_id
-    ).order_by(ReponseGrille.theme, ReponseGrille.numero_question).all()
-
     import json
     reponses_candidat = json.loads(rt.reponses_json) if rt.reponses_json else {}
 
+    # Phase 2 : récupérer les questions via utilisations_themes
+    from app.models.utilisations_themes import UtilisationTheme
+    session_obj = db.query(Session).filter(Session.id == session_id).first()
+
+    tirages = db.query(UtilisationTheme).filter(
+        UtilisationTheme.session_id == session_id,
+        UtilisationTheme.famille == session_obj.famille
+    ).all()
+
     detail_themes = {}
-    for r in reponses_grille:
-        t = str(r.theme)
-        if t not in detail_themes:
-            detail_themes[t] = []
-        candidat_reponses = reponses_candidat.get(t, [])
-        q_idx = r.numero_question - 1
-        reponse_candidat = candidat_reponses[q_idx] if q_idx < len(candidat_reponses) else None
-        correcte = reponse_candidat is not None and reponse_candidat == r.reponse_correcte
-        detail_themes[t].append({
-            "numero": r.numero_question,
-            "texte": r.texte_question,
-            "reponse_correcte": r.reponse_correcte,
-            "reponse_candidat": reponse_candidat,
-            "correcte": correcte,
-            "points": r.points
-        })
+    for ut in tirages:
+        questions = db.query(ReponseGrille).filter(
+            ReponseGrille.grille_id == ut.grille_id,
+            ReponseGrille.theme == ut.theme
+        ).order_by(ReponseGrille.numero_question).all()
+
+        t = str(ut.theme)
+        detail_themes[t] = []
+        for r in questions:
+            reponse_candidat = reponses_candidat.get(str(r.numero_question))
+            correcte = reponse_candidat is not None and reponse_candidat == r.reponse_correcte
+            detail_themes[t].append({
+                "numero": r.numero_question,
+                "texte": r.texte_question,
+                "reponse_correcte": r.reponse_correcte,
+                "reponse_candidat": reponse_candidat,
+                "correcte": correcte,
+                "points": r.points
+            })
 
     db.close()
     return templates.TemplateResponse(
@@ -440,79 +454,11 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
             "session_id": session_id,
             "jour_id": jour_id,
             "grille_id": jour.grille_id,
-            "grille_numero": grille.numero if grille else "?",
+            "grille_numero": grille.numero if grille else "Phase 2",
             "session_candidats": session_candidats
         }
     )
 
-@app.get("/statistiques")
-def page_statistiques(request: Request):
-    db = SessionLocal()
-    from datetime import datetime
-    annee = datetime.now().year
-
-    grilles = db.query(GrilleTheorie).filter(GrilleTheorie.actif == True).all()
-    total = db.query(UtilisationGrille).filter(UtilisationGrille.annee == annee).count()
-
-    stats_grilles = []
-    for g in grilles:
-        count = db.query(UtilisationGrille).filter(
-            UtilisationGrille.grille_id == g.id,
-            UtilisationGrille.annee == annee
-        ).count()
-        pct = round(count / total * 100, 1) if total > 0 else 0
-        statut = "OK"
-        if pct < 10 and total > 0:
-            statut = "SOUS"
-        elif pct > 30:
-            statut = "SUR"
-        stats_grilles.append({
-            "numero": g.numero,
-            "famille": g.famille,
-            "count": count,
-            "pct": pct,
-            "statut": statut
-        })
-
-    historique = db.query(UtilisationGrille).filter(
-        UtilisationGrille.annee == annee
-    ).order_by(UtilisationGrille.id.desc()).all()
-
-    historique_detail = []
-    for u in historique:
-        g = db.query(GrilleTheorie).filter(GrilleTheorie.id == u.grille_id).first()
-        s = db.query(Session).filter(Session.id == u.session_id).first()
-        j = db.query(JourTest).filter(
-            JourTest.session_id == u.session_id,
-            JourTest.grille_id == u.grille_id
-        ).first()
-        historique_detail.append({
-            "grille_numero": str(g.numero) if g else "—",
-            "session_ref": str(s.reference) if s else "—",
-            "date": str(j.date) if j and j.date else "—"
-        })
-
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="statistiques.html",
-        context={
-            "page": "statistiques",
-            "annee": annee,
-            "total": total,
-            "stats_grilles": stats_grilles,
-            "historique": historique_detail
-        }
-    )
-
-@app.post("/api/statistiques/reset-grilles")
-def reset_compteurs_grilles():
-    db = SessionLocal()
-    nb = db.query(UtilisationGrille).count()
-    db.query(UtilisationGrille).delete()
-    db.commit()
-    db.close()
-    return {"message": f"{nb} utilisations supprimees"}
 
 @app.get("/profil")
 def page_profil(request: Request):

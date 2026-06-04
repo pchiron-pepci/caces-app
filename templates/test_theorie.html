@@ -488,7 +488,7 @@
             {% endif %}{% endfor %}
         </select>
         <div class="grille-info">
-            <span class="grille-badge">Grille n°{{ grille_numero }}</span>
+            <span class="grille-badge">Phase 2 — Tirage par thème</span>
             <span class="grille-texte">100 questions · VRAI ou FAUX · 60 minutes</span>
         </div>
     </div>
@@ -612,19 +612,23 @@
         <div id="res-themes"></div>
     </div>
     <div class="fin-msg" id="fin-msg">Remettez la tablette au testeur</div>
+<button onclick="location.reload()" 
+    style="display:block; margin:16px auto; padding:14px 28px; background:#1a237e; color:white; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer;">
+    ▶ Candidat suivant
+</button>
 </div>
 
 <script>
 const SESSION_ID = {{ session_id }};
 const JOUR_ID = {{ jour_id }};
-const GRILLE_ID = {{ grille_id }};
+const GRILLE_ID = {{ grille_id if grille_id else 'null' }};
 
 let questions = [];
 let reponses = {};
 let questionActuelle = 0;
 let stagiaireId = null;
 let timerInterval = null;
-let tempsRestant = 2 * 60;
+let tempsRestant = 60 * 60;
 
 function demarrerTimer() {
     document.getElementById('timer').style.display = 'block';
@@ -669,7 +673,7 @@ async function chargerQuestions() {
         const data = await resp.json();
         questions = [];
         for (let t = 1; t <= 5; t++) {
-            const qs = data.themes[t] || [];
+            const qs = data.themes[t] || data.themes[String(t)] || [];
             qs.forEach((q, idx) => {
                 questions.push({
                     theme: t,
@@ -694,6 +698,18 @@ function allerConfirmation() {
     const sel = document.getElementById('select-candidat');
     stagiaireId = sel.value;
     if (!stagiaireId) { alert('Veuillez selectionner un candidat !'); return; }
+
+    // RESET complet pour le nouveau candidat
+    reponses = {};
+    questionActuelle = 0;
+    questions.forEach((q, idx) => {
+        const el = document.getElementById('rq-' + q.theme + '-' + q.idx_theme);
+        if (el) el.className = 'recap-q vide';
+    });
+    tempsRestant = 60 * 60;
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    document.getElementById('timer').style.display = 'none';
+    document.getElementById('timer').style.color = '#64b5f6';
 
     const opt = sel.options[sel.selectedIndex];
     const nom = opt.getAttribute('data-nom') + ' ' + opt.getAttribute('data-prenom');
@@ -846,12 +862,12 @@ async function valider(force = false) {
         if (!confirm((questions.length - nb) + ' question(s) sans reponse. Valider quand meme ?')) return;
     }
 
-    const reponsesParTheme = {};
+    const reponsesFinales = {};
     questions.forEach((q, idx) => {
-        const t = q.theme.toString();
-        if (!reponsesParTheme[t]) reponsesParTheme[t] = [];
-        reponsesParTheme[t].push(reponses[idx] !== undefined ? reponses[idx] : null);
-    });
+    if (reponses[idx] !== undefined) {
+        reponsesFinales[String(q.numero)] = reponses[idx];
+    }
+});
 
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/theorie/reponses', {
         method: 'POST',
@@ -859,7 +875,7 @@ async function valider(force = false) {
         body: JSON.stringify({
             jour_test_id: JOUR_ID,
             stagiaire_id: parseInt(stagiaireId),
-            reponses: reponsesParTheme
+            reponses: reponsesFinales
         })
     });
 

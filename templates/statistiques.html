@@ -4,76 +4,191 @@
 
 {% block content %}
 
-<div style="margin-bottom:24px;">
-    <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px;">
-        Statistiques des grilles
-    </h2>
-    <p style="color:#666; font-size:14px;">Année {{ annee }} — {{ total }} tirage(s) au total</p>
+<div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:flex-end;">
+    <div>
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px; margin:0;">
+            Statistiques des grilles
+        </h2>
+        <p style="color:#666; font-size:14px; margin:4px 0 0;">
+            Année {{ annee }} — Tirage par thème (Phase 2 INRS, applicable jan 2029)
+        </p>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:12px; color:#666; background:#f0f2f7; padding:6px 10px; border-radius:6px;">
+            Zone valide : 10% – 30% par thème/grille
+        </span>
+        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+            onclick="resetCompteurs()">🗑 Remettre à zéro</button>
+    </div>
 </div>
 
-<!-- STATS PAR GRILLE -->
-<div class="card" style="margin-bottom:16px;">
+<!-- LÉGENDE -->
+<div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; gap:6px; font-size:13px;">
+        <div style="width:14px; height:14px; background:#2e7d32; border-radius:3px;"></div>
+        <span>Dans la zone (10-30%)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; font-size:13px;">
+        <div style="width:14px; height:14px; background:#e65100; border-radius:3px;"></div>
+        <span>Sous-utilisée (&lt;10%)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; font-size:13px;">
+        <div style="width:14px; height:14px; background:#c62828; border-radius:3px;"></div>
+        <span>Sur-utilisée (&gt;30%)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; font-size:13px;">
+        <div style="width:14px; height:14px; background:#d0d8e8; border-radius:3px;"></div>
+        <span>Jamais utilisée</span>
+    </div>
+</div>
+
+<!-- STATS PAR THÈME -->
+{% for famille, themes in stats_par_theme.items() %}
+<div class="card" style="margin-bottom:20px;">
     <div class="card-header">
-        <h2>Utilisation des grilles</h2>
-        <div style="display:flex; gap:8px; align-items:center;">
-            <span style="font-size:13px; color:#666;">Zone valide : entre 10% et 30%</span>
-            <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                onclick="resetCompteurs()">Remettre a zero</button>
-        </div>
+        <h2>{{ famille }} — Utilisation par thème</h2>
+        <span style="font-size:13px; color:#666;">{{ totaux_famille[famille] }} session(s) au total</span>
     </div>
     <div style="padding:16px;">
-        {% for s in stats_grilles %}
-        <div style="margin-bottom:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div>
-                    <strong>Grille n°{{ s.numero }}</strong>
-                    <span style="color:#666; font-size:13px; margin-left:8px;">{{ s.famille }}</span>
+
+        {% for theme_num, grilles in themes.items() %}
+        <div style="margin-bottom:24px;">
+            <div style="font-weight:600; font-size:14px; color:#1a3a8f; margin-bottom:10px; 
+                        padding-bottom:6px; border-bottom:2px solid #e8ecf4;">
+                {{ theme_noms[famille][theme_num] }}
+            </div>
+
+            {% for s in grilles %}
+            <div style="margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="font-size:13px; color:#444;">
+                        Grille n°{{ s.grille_numero }}
+                    </span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:12px; color:#888;">{{ s.count }} utilisation(s)</span>
+                        {% if s.count == 0 %}
+                            <span class="badge" style="background:#d0d8e8; color:#555; padding:2px 8px; border-radius:12px; font-size:11px;">
+                                Jamais utilisée
+                            </span>
+                        {% elif s.statut == 'OK' %}
+                            <span class="badge" style="background:#e8f5e9; color:#2e7d32; padding:2px 8px; border-radius:12px; font-size:11px;">
+                                {{ s.pct }}% ✅
+                            </span>
+                        {% elif s.statut == 'SOUS' %}
+                            <span class="badge" style="background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; font-size:11px;">
+                                {{ s.pct }}% ⚠️ Sous-utilisée
+                            </span>
+                        {% else %}
+                            <span class="badge" style="background:#ffebee; color:#c62828; padding:2px 8px; border-radius:12px; font-size:11px;">
+                                {{ s.pct }}% ❌ Sur-utilisée
+                            </span>
+                        {% endif %}
+                    </div>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-size:14px; color:#666;">{{ s.count }} tirage(s)</span>
-                    {% if s.statut == 'OK' %}
-                        <span class="badge green">{{ s.pct }}% ✅</span>
-                    {% elif s.statut == 'SOUS' %}
-                        <span class="badge orange">{{ s.pct }}% ⚠️ Sous-utilisee</span>
-                    {% else %}
-                        <span class="badge red">{{ s.pct }}% ❌ Sur-utilisee</span>
+                <!-- Barre de progression avec zones colorées -->
+                <div style="position:relative; background:#f0f2f7; border-radius:6px; height:10px;">
+                    <!-- Zone valide 10-30% en vert clair -->
+                    <div style="position:absolute; left:10%; width:20%; height:10%; background:rgba(46,125,50,0.15); 
+                                top:0; bottom:0; border-radius:6px;"></div>
+                    <!-- Marqueurs 10% et 30% -->
+                    <div style="position:absolute; left:10%; top:-4px; bottom:-4px; 
+                                width:1px; background:#2e7d32; opacity:0.4;"></div>
+                    <div style="position:absolute; left:30%; top:-4px; bottom:-4px; 
+                                width:1px; background:#2e7d32; opacity:0.4;"></div>
+                    <!-- Barre valeur -->
+                    {% if s.pct > 0 %}
+                    <div style="width:{{ [s.pct, 100]|min }}%; height:10px; border-radius:6px; 
+                                background:{% if s.statut == 'OK' %}#2e7d32{% elif s.statut == 'SOUS' %}#e65100{% else %}#c62828{% endif %};">
+                    </div>
                     {% endif %}
                 </div>
             </div>
-            <div style="background:#f0f2f7; border-radius:10px; height:12px;">
-    <div style="width:{{ s.pct }}%; height:12px; border-radius:10px; background:#2e7d32;"></div>
-</div>
+            {% endfor %}
         </div>
         {% endfor %}
+
     </div>
 </div>
+{% endfor %}
+
+<!-- ALERTE CONFORMITÉ -->
+{% if alertes %}
+<div class="card" style="margin-bottom:20px; border-left:4px solid #c62828;">
+    <div class="card-header" style="background:#ffebee;">
+        <h2 style="color:#c62828;">⚠️ Thèmes hors zone ({{ alertes|length }})</h2>
+    </div>
+    <div style="padding:16px;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Famille</th>
+                    <th>Thème</th>
+                    <th>Grille</th>
+                    <th>Taux</th>
+                    <th>Problème</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alertes %}
+                <tr>
+                    <td>{{ a.famille }}</td>
+                    <td>{{ a.theme_nom }}</td>
+                    <td>Grille n°{{ a.grille_numero }}</td>
+                    <td>{{ a.pct }}%</td>
+                    <td>
+                        {% if a.statut == 'SOUS' %}
+                            <span style="color:#e65100;">⚠️ Sous-utilisée (min 10%)</span>
+                        {% else %}
+                            <span style="color:#c62828;">❌ Sur-utilisée (max 30%)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 
 <!-- HISTORIQUE -->
 <div class="card">
     <div class="card-header">
         <h2>Historique des tirages {{ annee }}</h2>
+        <span style="font-size:13px; color:#666;">{{ historique|length }} tirage(s)</span>
     </div>
     <table class="table">
         <thead>
             <tr>
-                <th>Date</th>
                 <th>Session</th>
-                <th style="text-align:center;">Grille tiree</th>
+                <th>Famille</th>
+                <th style="text-align:center;">T1</th>
+                <th style="text-align:center;">T2</th>
+                <th style="text-align:center;">T3</th>
+                <th style="text-align:center;">T4</th>
+                <th style="text-align:center;">T5</th>
             </tr>
         </thead>
         <tbody>
             {% for h in historique %}
             <tr>
-                <td>{{ h.date }}</td>
-                <td>{{ h.session_ref }}</td>
+                <td><strong>{{ h.session_ref }}</strong></td>
+                <td><span class="badge blue">{{ h.famille }}</span></td>
+                {% for t in [1,2,3,4,5] %}
                 <td style="text-align:center;">
-                    <span class="badge blue">Grille n°{{ h.grille_numero }}</span>
+                    {% if t in h.themes %}
+                        <span class="badge blue" style="font-size:11px;">G{{ h.themes[t] }}</span>
+                    {% else %}
+                        <span style="color:#ccc;">—</span>
+                    {% endif %}
                 </td>
+                {% endfor %}
             </tr>
             {% endfor %}
             {% if not historique %}
             <tr>
-                <td colspan="3" style="text-align:center; color:#888;">Aucun tirage cette annee</td>
+                <td colspan="7" style="text-align:center; color:#888; padding:20px;">
+                    Aucun tirage Phase 2 cette année
+                </td>
             </tr>
             {% endif %}
         </tbody>
@@ -82,12 +197,13 @@
 
 <script>
 async function resetCompteurs() {
-    if (!confirm('Remettre tous les compteurs a zero ? Cette action est irreversible !')) return;
-    const pin = prompt('Code PIN :');
-    if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
-    const resp = await fetch('/api/statistiques/reset-grilles', { method: 'POST' });
-    if (resp.ok) { alert('Compteurs remis a zero !'); location.reload(); }
-    else alert('Erreur !');
+    if (!confirm('Remettre tous les compteurs à zéro ?\nCette action supprime tout l\'historique Phase 2 de l\'année en cours.')) return;
+    const pin = prompt('Code PIN administrateur :');
+    if (!pin) return;
+    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); return; }
+    const resp = await fetch(`/api/statistiques/reset-themes?pin=${pin}`, { method: 'POST' });
+    if (resp.ok) { alert('✅ Compteurs remis à zéro !'); location.reload(); }
+    else { const d = await resp.json(); alert('Erreur : ' + (d.detail || 'inconnue')); }
 }
 </script>
 

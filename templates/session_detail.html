@@ -10,12 +10,22 @@
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px; margin-top:4px;">
             {{ session.famille }} -- {{ session.reference or 'Session sans reference' }}
         </h2>
-        <div style="display:flex; gap:8px; margin-top:8px;">
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
             {% if session.statut == 'planifiee' %}<span class="badge blue">Planifiee</span>
             {% elif session.statut == 'en_cours' %}<span class="badge orange">En cours</span>
             {% elif session.statut == 'terminee' %}<span class="badge green">Terminee</span>
             {% else %}<span class="badge red">Annulee</span>{% endif %}
             <span class="badge blue">{{ lieu.nom if lieu else '—' }}</span>
+            {% if session.date_pratique_debut %}
+            <span class="badge" style="background:#f0f2f7; color:#555;">
+                Du {{ session.date_pratique_debut.strftime('%d/%m/%Y') }}{% if session.date_pratique_fin %} au {{ session.date_pratique_fin.strftime('%d/%m/%Y') }}{% endif %}
+            </span>
+            {% endif %}
+            {% if session.date_theorie %}
+            <span class="badge" style="background:#e8eaf6; color:#1a237e;">
+                Théorie : {{ session.date_theorie.strftime('%d/%m/%Y') }}
+            </span>
+            {% endif %}
         </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
@@ -28,12 +38,115 @@
     </div>
 </div>
 
-<div class="tabs">
-    <button class="tab active" onclick="showTab('sequencage', this)">Sequencage</button>
-    <button class="tab" onclick="showTab('candidats', this)">Candidats ({{ session_candidats|length }})</button>
-    <button class="tab" onclick="showTab('testeurs', this)">Testeurs & UT</button>
-    <button class="tab" onclick="showTab('equipements', this)">Equipements</button>
+<!-- RECAPITULATIF SESSION -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+        <h2>Récapitulatif session</h2>
+    </div>
+    <div style="overflow-x:auto; padding:8px;">
+        <table class="table" id="tableau-sequencage">
+            <thead>
+                <tr>
+                    <th style="min-width:150px;">Candidat</th>
+                    <th style="min-width:80px; text-align:center;">Théorie</th>
+                    {% for cat in categories %}
+                    <th style="min-width:100px; text-align:center;">
+                        {{ cat }}<br>
+                        <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }} UT</span>
+                    </th>
+                    {% endfor %}
+                    <th style="min-width:80px; text-align:center;">UT total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sc in session_candidats %}
+                <tr>
+                    <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
+                    <td style="text-align:center;">
+                        {% set rt = resultats_theorie.get(sc.stagiaire_id) %}
+                        {% if sc.theorie_dispensee %}
+                            <span class="badge orange" style="font-size:10px;">Dispense</span>
+                        {% elif rt %}
+                            {% if rt.obtenue %}
+                                <span class="badge green" style="font-size:10px;">{{ rt.note_totale|int }}/100</span>
+                            {% else %}
+                                <span class="badge red" style="font-size:10px;">{{ rt.note_totale|int }}/100</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="color:#888; font-size:11px;">—</span>
+                        {% endif %}
+                    </td>
+                    {% for cat in categories %}
+                    <td style="text-align:center;">
+                        {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
+                        {% if epreuve %}
+                            {% if epreuve.obtenue == True %}
+                                <span class="badge green" style="font-size:11px;">REUSSI</span><br>
+                                <span style="font-size:10px; color:#555;">{{ epreuve.testeur_nom }}</span>
+                            {% elif epreuve.obtenue == False %}
+                                <span class="badge red" style="font-size:11px;">ECHEC</span><br>
+                                <span style="font-size:10px; color:#555;">{{ epreuve.testeur_nom }}</span>
+                            {% else %}
+                                <span class="badge blue" style="font-size:11px;">Planifie</span>
+                            {% endif %}
+                        {% else %}
+                            {% if session.statut != 'terminee' %}
+                            {% set pratique_info = namespace(found=false, date='', testeur_id='') %}
+                            {% for j in jours_test %}
+                            {% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}
+                            {% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}
+                            {% set pratique_info.found = true %}
+                            {% set pratique_info.date = j.date %}
+                            {% set pratique_info.testeur_id = j.testeur_id %}
+                            {% endif %}
+                            {% endif %}
+                            {% endfor %}
+                            {% if pratique_info.found %}
+                            <button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px; color:#888;"
+                                onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ pratique_info.date }}', '{{ pratique_info.testeur_id }}')">+</button>
+                            {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td style="text-align:center;">
+                        <strong>{{ ut_candidat.get(sc.stagiaire_id, 0) }}</strong>/{{ ut_planifie_candidat.get(sc.stagiaire_id, 0) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<div style="display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
+    <button class="tab-btn active-tab" onclick="showTab('sequencage', this)">Sequencage</button>
+    <button class="tab-btn" onclick="showTab('candidats', this)">Candidats ({{ session_candidats|length }})</button>
+    <button class="tab-btn" onclick="showTab('testeurs', this)">Testeurs & UT</button>
+    <button class="tab-btn" onclick="showTab('equipements', this)">Equipements</button>
+</div>
+
+<style>
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    border-radius: 0;
+    transition: all 0.15s;
+}
+.tab-btn:hover { color: #1a237e; }
+.active-tab {
+    color: #1a237e !important;
+    border-bottom: 3px solid #1a237e !important;
+    background: none;
+}
+</style>
 
 <!-- TAB SEQUENCAGE -->
 <div id="tab-sequencage">
@@ -52,11 +165,8 @@
             <div style="padding:16px; border-bottom:1px solid #f0f2f7;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <strong>{{ j.date }}</strong>
+                        <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                         <span class="badge blue" style="margin-left:8px;">Theorie</span>
-                        {% if j.grille_numero %}
-                            <span class="badge green" style="margin-left:8px;">Grille n°{{ j.grille_numero }}</span>
-                        {% endif %}
                         {% if j.testeur_nom %}
                             <span style="margin-left:8px; color:#666; font-size:13px;">Testeur : {{ j.testeur_nom }}</span>
                         {% endif %}
@@ -65,14 +175,10 @@
                         {% if session.statut != 'terminee' %}
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="ouvrirAjoutCandidatJour({{ j.id }})">+ Candidat</button>
-                        {% endif %}
-                        {% if session.statut != 'terminee' %}
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
                             class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
                             Tablette candidat
                         </a>
-                        {% endif %}
-                        {% if session.statut != 'terminee' %}
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                             onclick="supprimerJour({{ j.id }})">X</button>
                         {% endif %}
@@ -157,9 +263,11 @@
         {% for j in jours_test %}
         {% if j.type == 'pratique' %}
         <div style="padding:12px 16px; border-bottom:1px solid #f0f2f7;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+
+            <!-- En-tête du jour -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <div>
-                    <strong>{{ j.date }}</strong>
+                    <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                     <span class="badge orange" style="margin-left:8px;">Pratique</span>
                     <span style="margin-left:8px; color:#666; font-size:13px;">Testeur : {{ j.testeur_nom }}</span>
                     <span style="margin-left:8px; color:#888; font-size:12px;">{{ j.candidats_ids|length }} candidat(s)</span>
@@ -175,143 +283,85 @@
                     {% endif %}
                 </div>
             </div>
-            <div style="display:flex; gap:24px; margin-top:10px; padding:10px 16px; background:#f0f2f7; border-radius:10px; font-size:13px;">
-                <div>
-                    <span style="color:#888;">Total UT</span><br>
-                    <strong style="font-size:18px; color:#1a237e;">{{ j.total_ut }}</strong>
-                </div>
-                <div style="border-left:1px solid #ddd; padding-left:24px;">
-                    <span style="color:#888;">Testeurs necessaires</span><br>
-                    <strong style="font-size:18px; color:#1a237e;">{{ j.nb_testeurs }}</strong>
-                </div>
-                <div style="border-left:1px solid #ddd; padding-left:24px;">
-                    <span style="color:#888;">UT libres</span><br>
-                    {% if j.ut_libres > 0 %}
-                    <strong style="font-size:18px; color:#2e7d32;">{{ j.ut_libres }}</strong>
-                    {% else %}
-                    <strong style="font-size:18px; color:#c62828;">{{ j.ut_libres }}</strong>
-                    {% endif %}
-                </div>
-                <div style="border-left:1px solid #ddd; padding-left:24px; flex:1;">
-                    <span style="color:#888;">Candidats / Categories</span><br>
-                    {% for sc in session_candidats %}
-                    {% if sc.stagiaire_id in j.candidats_ids %}
-                    <span style="font-size:12px;">
-                        <strong>{{ sc.stagiaire.nom }}</strong> :
-                        {{ j.candidats_categories.get(sc.stagiaire_id, [])|join(', ') }}
-                    </span><br>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            <div style="margin-top:10px;">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Candidat</th>
-                            <th style="text-align:center; width:80px;">Identite</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for sc in session_candidats %}
-                        {% if sc.stagiaire_id in j.candidats_ids %}
-                        <tr>
-                            <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
-                            <td style="text-align:center;">
-                                {% if session.statut != 'terminee' %}
-                                <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
-                                    style="background:none; border:none; cursor:pointer; font-size:20px;">
-                                    {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
-                                </button>
-                                {% else %}
-                                    {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% endif %}
-        {% endfor %}
 
-        <div style="overflow-x:auto;">
-            <table class="table" id="tableau-sequencage">
+            <!-- Tableau UT par candidat ce jour -->
+            <table class="table" style="margin-bottom:0;">
                 <thead>
                     <tr>
-                        <th style="min-width:150px;">Candidat</th>
-                        <th style="min-width:80px; text-align:center;">Theorie</th>
+                        <th>Candidat</th>
+                        <th style="text-align:center; width:60px;">Identité</th>
                         {% for cat in categories %}
-                        <th style="min-width:100px; text-align:center;">
+                        <th style="text-align:center; font-size:12px;">
                             {{ cat }}<br>
                             <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }} UT</span>
                         </th>
                         {% endfor %}
-                        <th style="min-width:80px; text-align:center;">UT total</th>
+                        <th style="text-align:center;">UT ce jour</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for sc in session_candidats %}
+                    {% if sc.stagiaire_id in j.candidats_ids %}
+                    {% set cats_jour = j.candidats_categories.get(sc.stagiaire_id, []) %}
                     <tr>
                         <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
                         <td style="text-align:center;">
-                            {% set rt = resultats_theorie.get(sc.stagiaire_id) %}
-                            {% if sc.theorie_dispensee %}
-                                <span class="badge orange" style="font-size:10px;">Dispense</span>
-                            {% elif rt %}
-                                {% if rt.obtenue %}
-                                    <span class="badge green" style="font-size:10px;">{{ rt.note_totale|int }}/100</span>
-                                {% else %}
-                                    <span class="badge red" style="font-size:10px;">{{ rt.note_totale|int }}/100</span>
-                                {% endif %}
+                            {% if session.statut != 'terminee' %}
+                            <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
+                                style="background:none; border:none; cursor:pointer; font-size:18px;">
+                                {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
+                            </button>
                             {% else %}
-                                <span style="color:#888; font-size:11px;">—</span>
+                                {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
                             {% endif %}
                         </td>
+                        {% set ut_jour = namespace(total=0) %}
                         {% for cat in categories %}
                         <td style="text-align:center;">
-                            {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
-                            {% if epreuve %}
-                                {% if epreuve.obtenue == True %}
-                                    <span class="badge green" style="font-size:11px;">REUSSI</span><br>
-                                    <span style="font-size:10px; color:#555;">{{ epreuve.testeur_nom }}</span>
-                                {% elif epreuve.obtenue == False %}
-                                    <span class="badge red" style="font-size:11px;">ECHEC</span><br>
-                                    <span style="font-size:10px; color:#555;">{{ epreuve.testeur_nom }}</span>
-                                {% else %}
-                                    <span class="badge blue" style="font-size:11px;">Planifie</span><br>
-                                    <span style="font-size:10px; color:#555;">{{ epreuve.testeur_nom }}</span>
-                                {% endif %}
+                            {% if cat in cats_jour %}
+                                <span style="font-size:12px; color:#1a237e; font-weight:600;">
+                                    {{ ut_par_cat.get(cat, 1) }} UT
+                                </span>
+                                {% set ut_jour.total = ut_jour.total + ut_par_cat.get(cat, 1) %}
                             {% else %}
-                                {% if session.statut != 'terminee' %}
-                                {% set pratique_info = namespace(found=false, date='', testeur_id='') %}
-                                {% for j in jours_test %}
-                                {% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}
-                                {% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}
-                                {% set pratique_info.found = true %}
-                                {% set pratique_info.date = j.date %}
-                                {% set pratique_info.testeur_id = j.testeur_id %}
-                                {% endif %}
-                                {% endif %}
-                                {% endfor %}
-                                {% if pratique_info.found %}
-                                <button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px; color:#888;"
-                                    onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ pratique_info.date }}', '{{ pratique_info.testeur_id }}')">+</button>
-                                {% endif %}
-                                {% endif %}
+                                <span style="color:#ddd;">—</span>
                             {% endif %}
                         </td>
                         {% endfor %}
                         <td style="text-align:center;">
-                            <strong>{{ ut_candidat.get(sc.stagiaire_id, 0) }}</strong>/{{ ut_planifie_candidat.get(sc.stagiaire_id, 0) }}
+                            <strong style="color:#1a237e;">{{ ut_jour.total }} UT</strong>
                         </td>
                     </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr style="background:#f0f2f7; font-size:12px;">
+                        <td colspan="2" style="font-weight:700; color:#555;">Total jour</td>
+                        {% for cat in categories %}
+                        <td style="text-align:center; color:#555;"></td>
+                        {% endfor %}
+                        <td style="text-align:center;">
+                            <strong style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %};">
+                                {{ j.total_ut }} UT
+                            </strong>
+                            — {{ j.nb_testeurs }} testeur(s)
+                            {% if j.ut_libres > 0 %}
+                                — <span style="color:#2e7d32;">{{ j.ut_libres }} UT libres</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
+        {% endif %}
+        {% endfor %}
+
+        {% if not jours_test or not (jours_test | selectattr('type', 'equalto', 'pratique') | list) %}
+        <div style="padding:24px; text-align:center; color:#888;">
+            Aucun jour pratique planifie. Cliquez sur "+ Planifier jour pratique".
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -328,7 +378,7 @@
             <thead>
                 <tr>
                     <th>Photo</th>
-                    <th>Nom / Prenom</th>
+                    <th>Nom / Prénom</th>
                     <th>Date naissance</th>
                     <th>Employeur</th>
                     <th>RGPD</th>
@@ -719,8 +769,8 @@ function showTab(name, btn) {
         document.getElementById('tab-' + t).style.display = 'none';
     });
     document.getElementById('tab-' + name).style.display = 'block';
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active-tab'));
+    btn.classList.add('active-tab');
 }
 
 function toggleCandidatPratique(stagiaireId) {
@@ -794,7 +844,14 @@ async function sauvegarderJourTheorie() {
     const testeur_id = document.getElementById('jt-testeur').value;
     if (!date) { alert('La date est obligatoire !'); return; }
     if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
-
+    const dateDebutSession = '{{ session.date_theorie or session.date_pratique_debut or "" }}';
+    const dateFinSession = '{{ session.date_pratique_fin or session.date_theorie or "" }}';
+    if (dateDebutSession && date < dateDebutSession) {
+        alert('⚠️ Date antérieure au début de la session (' + dateDebutSession + ') !'); return;
+    }
+    if (dateFinSession && date > dateFinSession) {
+        alert('⚠️ Date postérieure à la fin de la session (' + dateFinSession + ') !'); return;
+    }
     const candidats = [];
     document.querySelectorAll('[name="jt-candidat"]:checked').forEach(cb => {
         candidats.push(parseInt(cb.value));
@@ -818,7 +875,6 @@ async function sauvegarderJourTheorie() {
     if (resp.ok) {
         const result = await resp.json();
         fermerModalJourTheorie();
-        if (result.grille_numero) alert('Grille n°' + result.grille_numero + ' tiree !');
         location.reload();
     } else {
         alert('Erreur !');
@@ -860,7 +916,14 @@ async function sauvegarderJourPratique() {
     const jourId = document.getElementById('jp-jour-id').value;
     if (!date) { alert('La date est obligatoire !'); return; }
     if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
-
+    const dateDebutSession = '{{ session.date_theorie or session.date_pratique_debut or "" }}';
+    const dateFinSession = '{{ session.date_pratique_fin or session.date_theorie or "" }}';
+    if (dateDebutSession && date < dateDebutSession) {
+        alert('⚠️ Date antérieure au début de la session (' + dateDebutSession + ') !'); return;
+    }
+    if (dateFinSession && date > dateFinSession) {
+        alert('⚠️ Date postérieure à la fin de la session (' + dateFinSession + ') !'); return;
+    }
     const candidats_pratique = [];
     {% for sc in session_candidats %}
     if (document.getElementById('jp-cand-{{ sc.stagiaire_id }}') &&

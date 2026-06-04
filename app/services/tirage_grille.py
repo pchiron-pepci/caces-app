@@ -1,152 +1,305 @@
+"""
+app/services/tirage_grille.py
+Phase 2 INRS (applicable jan 2029) : tirage aléatoire par thème.
+Phase 1 conservée intacte pour les sessions existantes.
+"""
+
 import random
-from sqlalchemy.orm import Session
-from app.models.grille_theorie import GrilleTheorie, UtilisationGrille
+import json
+from collections import defaultdict
+from sqlalchemy.orm import Session as DBSession
+from sqlalchemy import func
 
-def tirer_grille(famille: str, session_id: int, annee: int, db: Session) -> GrilleTheorie:
-    """
-    Tire aléatoirement une grille pour une session en respectant
-    la contrainte 10%-30% d'utilisation par grille.
-    """
-    # 1. Récupérer toutes les grilles actives de la famille
-    grilles = db.query(GrilleTheorie).filter(
-        GrilleTheorie.famille == famille,
-        GrilleTheorie.actif == True
-    ).all()
+from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
+from app.models.utilisations_themes import UtilisationTheme
 
-    if not grilles:
-        raise ValueError(f"Aucune grille disponible pour la famille {famille}")
 
-    # 2. Compter le total de sessions de l'année
-    total_sessions = db.query(UtilisationGrille).filter(
-        UtilisationGrille.annee == annee
-    ).count()
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 2 — Tirage par thème
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    # 3. Calculer le % d'utilisation de chaque grille
-    stats = {}
-    for g in grilles:
-        count = db.query(UtilisationGrille).filter(
-            UtilisationGrille.grille_id == g.id,
-            UtilisationGrille.annee == annee
-        ).count()
-        pct = (count / total_sessions * 100) if total_sessions > 0 else 0
-        stats[g.id] = {"grille": g, "count": count, "pct": pct}
-
-    # 4. Catégoriser les grilles
-    sous_utilisees = [s["grille"] for s in stats.values() if s["pct"] < 10]
-    ok = [s["grille"] for s in stats.values() if 10 <= s["pct"] <= 30]
-    sur_utilisees = [s["grille"] for s in stats.values() if s["pct"] > 30]
-
-    # 5. Tirage avec priorité
-    if sous_utilisees:
-        # Priorité aux grilles sous-utilisées
-        grille_choisie = random.choice(sous_utilisees)
-        raison = f"sous-utilisée ({stats[grille_choisie.id]['pct']:.0f}%)"
-    elif ok:
-        # Tirage normal parmi les grilles ok
-        grille_choisie = random.choice(ok)
-        raison = f"dans les limites ({stats[grille_choisie.id]['pct']:.0f}%)"
-    else:
-        # Toutes sur-utilisées, on prend la moins utilisée
-        grille_choisie = min(stats.values(), key=lambda x: x["count"])["grille"]
-        raison = f"moins utilisée ({stats[grille_choisie.id]['pct']:.0f}%)"
-
-    # 6. Enregistrer l'utilisation
-    utilisation = UtilisationGrille(
-        grille_id=grille_choisie.id,
-        session_id=session_id,
-        annee=annee
+def get_themes_famille(famille: str, db: DBSession) -> list[int]:
+    rows = (
+        db.query(ReponseGrille.theme)
+        .join(GrilleTheorie)
+        .filter(GrilleTheorie.famille == famille, GrilleTheorie.actif == True)
+        .distinct()
+        .order_by(ReponseGrille.theme)
+        .all()
     )
-    db.add(utilisation)
+    return [r[0] for r in rows]
+
+
+def get_grilles_famille(famille: str, db: DBSession) -> list[GrilleTheorie]:
+    return (
+        db.query(GrilleTheorie)
+        .filter(GrilleTheorie.famille == famille, GrilleTheorie.actif == True)
+        .order_by(GrilleTheorie.numero)
+        .all()
+    )
+
+
+def _stats_utilisation_themes(famille: str, annee: int, db: DBSession) -> dict:
+    rows = (
+        db.query(
+            UtilisationTheme.theme,
+            UtilisationTheme.grille_id,
+            func.count(UtilisationTheme.id).label("cnt")
+        )
+        .filter(
+            UtilisationTheme.famille == famille,
+            UtilisationTheme.annee == annee
+        )
+        .group_by(UtilisationTheme.theme, UtilisationTheme.grille_id)
+        .all()
+    )
+    stats = defaultdict(lambda: defaultdict(int))
+    for theme, grille_id, cnt in rows:
+        stats[theme][grille_id] = cnt
+    return stats
+
+
+def tirer_themes_phase2(famille: str, session_id: int, annee: int, db: DBSession) -> dict:
+    grilles = get_grilles_famille(famille, db)
+    if not grilles:
+        raise ValueError(f"Aucune grille active pour la famille {famille}")
+
+    themes = get_themes_famille(famille, db)
+    if not themes:
+        raise ValueError(f"Aucun thème trouvé pour la famille {famille}")
+
+    stats = _stats_utilisation_themes(famille, annee, db)
+
+    tirage = {}
+    grilles_deja_utilisees = set()
+
+    for theme in themes:
+        usages = stats.get(theme, {})
+        total = sum(usages.values()) or 1
+
+        scored = []
+        for g in grilles:
+            taux = usages.get(g.id, 0) / total
+            penalite = 0.25 if g.id in grilles_deja_utilisees else 0.0
+            score = abs(taux - 0.20) + penalite
+            scored.append((score, random.random(), g))
+
+        scored.sort(key=lambda x: (x[0], x[1]))
+        choisie = scored[0][2]
+        tirage[theme] = choisie
+        grilles_deja_utilisees.add(choisie.id)
+
+    return tirage
+
+
+def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage: dict, db: DBSession) -> None:
+    for theme, grille in tirage.items():
+        existing = (
+            db.query(UtilisationTheme)
+            .filter(
+                UtilisationTheme.session_id == session_id,
+                UtilisationTheme.famille == famille,
+                UtilisationTheme.theme == theme
+            )
+            .first()
+        )
+        if existing:
+            existing.grille_id = grille.id
+            existing.annee = annee
+        else:
+            db.add(UtilisationTheme(
+                session_id=session_id,
+                famille=famille,
+                theme=theme,
+                grille_id=grille.id,
+                annee=annee,
+            ))
     db.commit()
 
-    print(f"Grille R482 n°{grille_choisie.numero} tirée ({raison})")
-    return grille_choisie
+
+def get_questions_phase2(session_id: int, famille: str, db: DBSession) -> dict:
+    tirages = (
+        db.query(UtilisationTheme)
+        .filter(
+            UtilisationTheme.session_id == session_id,
+            UtilisationTheme.famille == famille
+        )
+        .order_by(UtilisationTheme.theme)
+        .all()
+    )
+    if not tirages:
+        raise ValueError(f"Aucun tirage Phase 2 trouvé pour session {session_id}")
+
+    themes_data = {}
+    tirage_resume = {}
+
+    for ut in tirages:
+        grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == ut.grille_id).first()
+        questions = (
+            db.query(ReponseGrille)
+            .filter(
+                ReponseGrille.grille_id == ut.grille_id,
+                ReponseGrille.theme == ut.theme
+            )
+            .order_by(ReponseGrille.numero_question)
+            .all()
+        )
+        themes_data[ut.theme] = [
+            {
+                "numero": q.numero_question,
+                "points": q.points,
+                "texte": q.texte_question,
+                "image": q.image_url,
+                "grille_id": ut.grille_id,
+            }
+            for q in questions
+        ]
+        tirage_resume[ut.theme] = {
+            "grille_id": ut.grille_id,
+            "grille_numero": grille.numero if grille else None,
+        }
+
+    return {"tirage": tirage_resume, "themes": themes_data}
 
 
-def get_stats_grilles(famille: str, annee: int, db: Session) -> list:
-    """
-    Retourne les statistiques d'utilisation des grilles pour une famille.
-    """
-    grilles = db.query(GrilleTheorie).filter(
-        GrilleTheorie.famille == famille,
-        GrilleTheorie.actif == True
-    ).all()
+def calculer_resultat_theorie_phase2(reponses: dict, session_id: int, famille: str, db: DBSession) -> dict:
+    tirages = (
+        db.query(UtilisationTheme)
+        .filter(
+            UtilisationTheme.session_id == session_id,
+            UtilisationTheme.famille == famille
+        )
+        .all()
+    )
+    if not tirages:
+        raise ValueError(f"Aucun tirage Phase 2 pour session {session_id}")
 
-    total_sessions = db.query(UtilisationGrille).filter(
-        UtilisationGrille.annee == annee
-    ).count()
-
-    result = []
-    for g in grilles:
-        count = db.query(UtilisationGrille).filter(
-            UtilisationGrille.grille_id == g.id,
-            UtilisationGrille.annee == annee
-        ).count()
-        pct = (count / total_sessions * 100) if total_sessions > 0 else 0
-        statut = "OK"
-        if pct < 10:
-            statut = "SOUS-UTILISEE"
-        elif pct > 30:
-            statut = "SUR-UTILISEE"
-        result.append({
-            "grille_id": g.id,
-            "numero": g.numero,
-            "count": count,
-            "pct": round(pct, 1),
-            "statut": statut
-        })
-
-    return result
-
-
-def calculer_resultat_theorie(reponses_candidat: dict, grille_id: int, db: Session) -> dict:
-    """
-    Calcule le résultat théorique d'un candidat.
-    reponses_candidat = {theme: [True/False, ...]}
-    Retourne les notes par thème, note totale et obtention.
-    """
-    from app.models.grille_theorie import ReponseGrille
-
-    reponses_grille = db.query(ReponseGrille).filter(
-        ReponseGrille.grille_id == grille_id
-    ).order_by(ReponseGrille.theme, ReponseGrille.numero_question).all()
-
-    # Points max par thème
-    points_max = {}
-    for r in reponses_grille:
-        if r.theme not in points_max:
-            points_max[r.theme] = 0
-        points_max[r.theme] += r.points
-
-    # Calculer notes
-    notes_theme = {}
-    for r in reponses_grille:
-        theme = r.theme
-        q_idx = r.numero_question - 1
-        if theme not in notes_theme:
-            notes_theme[theme] = 0
-        # Vérifier si la réponse du candidat est correcte
-        candidat_reponses = reponses_candidat.get(str(theme), [])
-        if q_idx < len(candidat_reponses):
-            reponse = candidat_reponses[q_idx]
-            if reponse is not None and reponse == r.reponse_correcte:
-                notes_theme[theme] += r.points
-
-    note_totale = sum(notes_theme.values())
-
-    # Vérifier seuils par thème (>= moyenne de chaque thème)
+    notes_themes = {}
+    max_themes = {}
     themes_ok = {}
-    for theme, note in notes_theme.items():
-        max_theme = points_max.get(theme, 0)
-        moyenne_theme = max_theme / 2
-        themes_ok[theme] = note >= moyenne_theme
+    note_totale = 0.0
+    max_total = 0.0
 
-    obtenue = note_totale >= 70 and all(themes_ok.values())
+    for ut in tirages:
+        questions = (
+            db.query(ReponseGrille)
+            .filter(
+                ReponseGrille.grille_id == ut.grille_id,
+                ReponseGrille.theme == ut.theme
+            )
+            .order_by(ReponseGrille.numero_question)
+            .all()
+        )
+        note_theme = 0.0
+        max_theme = sum(q.points for q in questions)
+
+        for q in questions:
+            rep = reponses.get(str(q.numero_question), None)
+            if rep is not None and rep == q.reponse_correcte:
+                note_theme += q.points
+
+        max_total += max_theme
+        note_totale += note_theme
+
+        t_str = str(ut.theme)
+        notes_themes[t_str] = round(note_theme, 1)
+        max_themes[t_str] = round(max_theme, 1)
+        themes_ok[t_str] = note_theme >= (max_theme / 2)
+
+    pct_total = (note_totale / max_total * 100) if max_total else 0
+    obtenue = pct_total >= 70 and all(themes_ok.values())
 
     return {
-        "note_totale": round(note_totale),
-        "notes_themes": {str(t): round(n) for t, n in notes_theme.items()},
-        "points_max_themes": {str(t): round(p) for t, p in points_max.items()},
-        "themes_ok": {str(t): v for t, v in themes_ok.items()},
-        "obtenue": obtenue
+        "note_totale": round(note_totale, 1),
+        "max_total": round(max_total, 1),
+        "pct_total": round(pct_total, 1),
+        "notes_themes": notes_themes,
+        "max_themes": max_themes,
+        "themes_ok": themes_ok,
+        "obtenue": obtenue,
+    }
+
+
+def get_tirage_session(session_id: int, famille: str, db: DBSession) -> dict:
+    tirages = (
+        db.query(UtilisationTheme)
+        .filter(
+            UtilisationTheme.session_id == session_id,
+            UtilisationTheme.famille == famille
+        )
+        .all()
+    )
+    return {t.theme: t.grille_id for t in tirages}
+
+
+def tirage_to_json(tirage: dict) -> str:
+    return json.dumps({str(t): g.numero for t, g in tirage.items()})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 1 — Conservée intacte pour sessions existantes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def tirer_grille(famille: str, session_id: int, annee: int, db: DBSession) -> GrilleTheorie:
+    grilles = (
+        db.query(GrilleTheorie)
+        .filter(GrilleTheorie.famille == famille, GrilleTheorie.actif == True)
+        .all()
+    )
+    if not grilles:
+        raise ValueError(f"Aucune grille pour {famille}")
+
+    usages = (
+        db.query(UtilisationGrille.grille_id, func.count(UtilisationGrille.id))
+        .filter(UtilisationGrille.annee == annee)
+        .group_by(UtilisationGrille.grille_id)
+        .all()
+    )
+    usage_map = {g_id: cnt for g_id, cnt in usages}
+    total = sum(usage_map.values()) or 1
+
+    scored = []
+    for g in grilles:
+        taux = usage_map.get(g.id, 0) / total
+        scored.append((abs(taux - 0.20), random.random(), g))
+
+    scored.sort(key=lambda x: (x[0], x[1]))
+    choisie = scored[0][2]
+
+    db.add(UtilisationGrille(
+        grille_id=choisie.id,
+        session_id=session_id,
+        annee=annee
+    ))
+    db.commit()
+    return choisie
+
+
+def calculer_resultat_theorie(reponses: dict, grille_id: int, db: DBSession) -> dict:
+    questions = (
+        db.query(ReponseGrille)
+        .filter(ReponseGrille.grille_id == grille_id)
+        .all()
+    )
+    notes_themes = defaultdict(float)
+    max_themes = defaultdict(float)
+
+    for q in questions:
+        t = str(q.theme)
+        max_themes[t] += q.points
+        rep = reponses.get(str(q.numero_question), None)
+        if rep is not None and rep == q.reponse_correcte:
+            notes_themes[t] += q.points
+
+    themes_ok = {t: notes_themes[t] >= (max_themes[t] / 2) for t in max_themes}
+    note_totale = sum(notes_themes.values())
+    max_total = sum(max_themes.values())
+    pct = (note_totale / max_total * 100) if max_total else 0
+    obtenue = pct >= 70 and all(themes_ok.values())
+
+    return {
+        "note_totale": round(note_totale, 1),
+        "notes_themes": {t: round(v, 1) for t, v in notes_themes.items()},
+        "themes_ok": themes_ok,
+        "obtenue": obtenue,
     }

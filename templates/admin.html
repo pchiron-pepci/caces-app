@@ -9,12 +9,18 @@
     <a href="/admin/images" class="btn btn-secondary">🖼️ Gerer les illustrations</a>
 </div>
 
-<div class="tabs">
-    <button class="tab active" onclick="showTab('cartographie', this)">🗺️ Cartographie PEPCI</button>
-    <button class="tab" onclick="showTab('habilitations', this)">👨‍🏫 Habilitations testeurs</button>
-    <button class="tab" onclick="showTab('lieux', this)">📍 Lieux</button>
-    <button class="tab" onclick="showTab('parametres', this)">⚙️ Paramètres</button>
+<div style="display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
+    <button class="tab-btn active-tab" onclick="showTab('cartographie', this)">🗺️ Cartographie PEPCI</button>
+    <button class="tab-btn" onclick="showTab('habilitations', this)">👨‍🏫 Habilitations testeurs</button>
+    <button class="tab-btn" onclick="showTab('lieux', this)">📍 Lieux</button>
+    <button class="tab-btn" onclick="showTab('parametres', this)">⚙️ Paramètres</button>
 </div>
+
+<style>
+.tab-btn { padding:10px 20px; border:none; background:none; font-size:14px; font-weight:600; color:#888; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
+.tab-btn:hover { color:#1a237e; }
+.active-tab { color:#1a237e !important; border-bottom:3px solid #1a237e !important; }
+</style>
 
 <!-- TAB CARTOGRAPHIE -->
 <div id="tab-cartographie">
@@ -349,11 +355,11 @@ const FAMILLES = {{ familles | map(attribute='code') | list | tojson }};
 
 function showTab(name, btn) {
     ['cartographie','habilitations','lieux','parametres'].forEach(t => {
-        document.getElementById(`tab-${t}`).style.display = 'none';
+        document.getElementById('tab-' + t).style.display = 'none';
     });
-    document.getElementById(`tab-${name}`).style.display = 'block';
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
+    document.getElementById('tab-' + name).style.display = 'block';
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active-tab'));
+    btn.classList.add('active-tab');
 }
 
 function demanderPin(message, callback) {
