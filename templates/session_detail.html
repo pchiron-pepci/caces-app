@@ -1184,11 +1184,15 @@ async function sauvegarderModifierSession() {
     const theorie = '{{ session.date_theorie or "" }}';
 
     const joursHors = [];
+const tousJours = [
     {% for j in jours_test %}
-    const dateJ{{ j.id }} = '{{ j.date }}';
-    if (debut && dateJ{{ j.id }} < debut) joursHors.push('{{ j.date.strftime("%d/%m/%Y") }} ({{ j.type }})');
-    else if (fin && dateJ{{ j.id }} > fin) joursHors.push('{{ j.date.strftime("%d/%m/%Y") }} ({{ j.type }})');
+    { date: '{{ j.date }}', label: '{{ j.date.strftime("%d/%m/%Y") }} ({{ j.type }})' },
     {% endfor %}
+];
+tousJours.forEach(j => {
+    if (debut && j.date < debut) joursHors.push(j.label);
+    else if (fin && j.date > fin) joursHors.push(j.label);
+});
 
     if (joursHors.length > 0) {
         if (!confirm('⚠️ Ces jours sont hors du nouvel intervalle :\n' + joursHors.join('\n') + '\n\nContinuer quand même ?')) return;
