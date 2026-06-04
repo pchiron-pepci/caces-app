@@ -751,30 +751,32 @@
     </div>
 </div>
 
-function ouvrirModifierJourTheorie(jourId, date, testeurId) {
-    document.getElementById('mjt-jour-id').value = jourId;
-    document.getElementById('mjt-date').value = date;
-    document.getElementById('mjt-testeur').value = testeurId || '';
-    document.getElementById('modal-modifier-jour-theorie').style.display = 'flex';
-}
-
-async function sauvegarderModifierJourTheorie() {
-    const jourId = document.getElementById('mjt-jour-id').value;
-    const date = document.getElementById('mjt-date').value;
-    const testeurId = document.getElementById('mjt-testeur').value;
-    if (!date) { alert('La date est obligatoire !'); return; }
-    const dateDebut = '{{ session.date_pratique_debut or "" }}';
-    const dateFin = '{{ session.date_pratique_fin or "" }}';
-    if (dateDebut && date < dateDebut) { alert('⚠️ Date antérieure au début de la session !'); return; }
-    if (dateFin && date > dateFin) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
-    const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/modifier', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, testeur_id: parseInt(testeurId) })
-    });
-    if (resp.ok) { document.getElementById('modal-modifier-jour-theorie').style.display = 'none'; location.reload(); }
-    else alert('Erreur !');
-}
+<!-- MODAL MODIFIER JOUR THEORIE -->
+<div id="modal-modifier-jour-theorie" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:500px; max-width:95vw;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;">Modifier le jour théorique</h2>
+        <input type="hidden" id="mjt-jour-id">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>Date *</label>
+                <input type="date" id="mjt-date">
+            </div>
+            <div class="form-field">
+                <label>Testeur *</label>
+                <select id="mjt-testeur">
+                    <option value="">-- Choisir --</option>
+                    {% for t in testeurs %}
+                    <option value="{{ t.id }}">{{ t.nom }} {{ t.prenom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="sauvegarderModifierJourTheorie()">Sauvegarder</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('modal-modifier-jour-theorie').style.display='none'">Annuler</button>
+        </div>
+    </div>
+</div>
 
 <!-- MODAL MODIFIER SESSION -->
 <div id="modal-modifier-session" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
