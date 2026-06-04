@@ -38,7 +38,7 @@
     </div>
 </div>
 
-<!-- RECAPITULATIF SESSION -->
+<!-- RECAPITULATIF SESSION - lecture seule -->
 <div class="card" style="margin-bottom:16px;">
     <div class="card-header">
         <h2>Récapitulatif session</h2>
@@ -81,30 +81,25 @@
                         {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
                         {% if epreuve %}
                             {% if epreuve.obtenue == True %}
-                                <span class="badge green" style="font-size:11px;">REUSSI</span><br>
-                                <span style="font-size:10px; color:#555;">{{ epreuve.testeur_nom }}</span>
+                                <span class="badge green" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✓</span>
                             {% elif epreuve.obtenue == False %}
-                                <span class="badge red" style="font-size:11px;">ECHEC</span><br>
-                                <span style="font-size:10px; color:#555;">{{ epreuve.testeur_nom }}</span>
+                                <span class="badge red" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✗</span>
                             {% else %}
-                                <span class="badge blue" style="font-size:11px;">Planifie</span>
+                                <span class="badge blue" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT</span>
                             {% endif %}
                         {% else %}
-                            {% if session.statut != 'terminee' %}
-                            {% set pratique_info = namespace(found=false, date='', testeur_id='') %}
+                            {% set ns = namespace(planifie=false) %}
                             {% for j in jours_test %}
                             {% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}
                             {% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}
-                            {% set pratique_info.found = true %}
-                            {% set pratique_info.date = j.date %}
-                            {% set pratique_info.testeur_id = j.testeur_id %}
+                            {% set ns.planifie = true %}
                             {% endif %}
                             {% endif %}
                             {% endfor %}
-                            {% if pratique_info.found %}
-                            <button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px; color:#888;"
-                                onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ pratique_info.date }}', '{{ pratique_info.testeur_id }}')">+</button>
-                            {% endif %}
+                            {% if ns.planifie %}
+                                <span style="font-size:11px; color:#1a237e; font-weight:600;">{{ ut_par_cat.get(cat, 1) }} UT</span>
+                            {% else %}
+                                <span style="color:#ddd; font-size:11px;">—</span>
                             {% endif %}
                         {% endif %}
                     </td>
@@ -127,25 +122,9 @@
 </div>
 
 <style>
-.tab-btn {
-    padding: 10px 20px;
-    border: none;
-    background: none;
-    font-size: 14px;
-    font-weight: 600;
-    color: #888;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    border-radius: 0;
-    transition: all 0.15s;
-}
-.tab-btn:hover { color: #1a237e; }
-.active-tab {
-    color: #1a237e !important;
-    border-bottom: 3px solid #1a237e !important;
-    background: none;
-}
+.tab-btn { padding:10px 20px; border:none; background:none; font-size:14px; font-weight:600; color:#888; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; border-radius:0; transition:all 0.15s; }
+.tab-btn:hover { color:#1a237e; }
+.active-tab { color:#1a237e !important; border-bottom:3px solid #1a237e !important; background:none; }
 </style>
 
 <!-- TAB SEQUENCAGE -->
@@ -284,7 +263,7 @@
                 </div>
             </div>
 
-            <!-- Tableau UT par candidat ce jour -->
+            <!-- Tableau candidats × catégories avec résultats -->
             <table class="table" style="margin-bottom:0;">
                 <thead>
                     <tr>
@@ -319,10 +298,26 @@
                         {% for cat in categories %}
                         <td style="text-align:center;">
                             {% if cat in cats_jour %}
-                                <span style="font-size:12px; color:#1a237e; font-weight:600;">
-                                    {{ ut_par_cat.get(cat, 1) }} UT
-                                </span>
+                                {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
                                 {% set ut_jour.total = ut_jour.total + ut_par_cat.get(cat, 1) %}
+                                {% if epreuve and epreuve.obtenue == True %}
+                                    <span class="badge green" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✓</span>
+                                {% elif epreuve and epreuve.obtenue == False %}
+                                    <span class="badge red" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✗</span>
+                                    {% if session.statut != 'terminee' %}
+                                    <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
+                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ j.testeur_id }}')">Modifier</button>
+                                    {% endif %}
+                                {% else %}
+                                    {% if session.statut != 'terminee' %}
+                                    <button style="background:#e8eaf6; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:12px; color:#1a237e; font-weight:600;"
+                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ j.testeur_id }}')">
+                                        {{ ut_par_cat.get(cat, 1) }} UT +
+                                    </button>
+                                    {% else %}
+                                    <span style="font-size:12px; color:#1a237e; font-weight:600;">{{ ut_par_cat.get(cat, 1) }} UT</span>
+                                    {% endif %}
+                                {% endif %}
                             {% else %}
                                 <span style="color:#ddd;">—</span>
                             {% endif %}
@@ -339,7 +334,7 @@
                     <tr style="background:#f0f2f7; font-size:12px;">
                         <td colspan="2" style="font-weight:700; color:#555;">Total jour</td>
                         {% for cat in categories %}
-                        <td style="text-align:center; color:#555;"></td>
+                        <td></td>
                         {% endfor %}
                         <td style="text-align:center;">
                             <strong style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %};">
@@ -590,10 +585,7 @@
                     <div id="cats-{{ sc.stagiaire_id }}" style="display:flex; flex-wrap:wrap; gap:8px; padding-left:24px;">
                         {% for cat in categories %}
                         <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; padding:6px 10px; background:white; border-radius:8px;">
-                            <input type="checkbox"
-                                name="jp-cat-{{ sc.stagiaire_id }}"
-                                value="{{ cat }}" checked
-                                onchange="calculerRecapUT()">
+                            <input type="checkbox" name="jp-cat-{{ sc.stagiaire_id }}" value="{{ cat }}" checked onchange="calculerRecapUT()">
                             {{ cat }} ({{ ut_par_cat.get(cat, 1) }} UT)
                         </label>
                         {% endfor %}
@@ -783,7 +775,6 @@ function toggleCandidatPratique(stagiaireId) {
 function calculerRecapUT() {
     let html = '';
     let total = 0;
-
     {% for sc in session_candidats %}
     const cand{{ sc.stagiaire_id }} = document.getElementById('jp-cand-{{ sc.stagiaire_id }}');
     if (cand{{ sc.stagiaire_id }} && cand{{ sc.stagiaire_id }}.checked) {
@@ -798,15 +789,12 @@ function calculerRecapUT() {
         if (utCand > 0) {
             html += '<div style="display:flex; justify-content:space-between; padding:3px 0;">' +
                 '<span><strong>{{ sc.stagiaire.nom }}</strong> : ' + catsCand{{ sc.stagiaire_id }}.join(', ') + '</span>' +
-                '<span><strong>' + utCand.toFixed(1) + ' UT</strong></span>' +
-                '</div>';
+                '<span><strong>' + utCand.toFixed(1) + ' UT</strong></span></div>';
         }
     }
     {% endfor %}
-
     const nbTesteurs = total > 0 ? Math.ceil(total / 6) : 0;
     const utLibres = (nbTesteurs * 6) - total;
-
     document.getElementById('recap-ut-detail').innerHTML = html || '<span style="color:#888;">Aucun candidat selectionne</span>';
     const couleurTotal = total > 6 ? '#e65100' : '#1a237e';
     const couleurLibres = utLibres > 0 ? '#2e7d32' : '#888';
@@ -814,18 +802,12 @@ function calculerRecapUT() {
         '<div style="display:flex; gap:32px;">' +
         '<span>Total : <strong style="color:' + couleurTotal + '">' + total.toFixed(1) + ' UT</strong></span>' +
         '<span>Testeurs necessaires : <strong style="color:#1a237e;">' + nbTesteurs + '</strong></span>' +
-        '<span>UT libres : <strong style="color:' + couleurLibres + '">' + utLibres.toFixed(1) + '</strong></span>' +
-        '</div>';
+        '<span>UT libres : <strong style="color:' + couleurLibres + '">' + utLibres.toFixed(1) + '</strong></span></div>';
 }
 
 async function toggleIdentite(jourId, stagiaireId, btn) {
-    const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId + '/identite', {
-        method: 'PUT'
-    });
-    if (resp.ok) {
-        const data = await resp.json();
-        btn.textContent = data.identite_verifiee ? '✅' : '⬜';
-    }
+    const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId + '/identite', { method: 'PUT' });
+    if (resp.ok) { const data = await resp.json(); btn.textContent = data.identite_verifiee ? '✅' : '⬜'; }
 }
 
 function ouvrirAjoutJourTheorie() {
@@ -835,9 +817,7 @@ function ouvrirAjoutJourTheorie() {
     document.getElementById('modal-jour-theorie').style.display = 'flex';
 }
 
-function fermerModalJourTheorie() {
-    document.getElementById('modal-jour-theorie').style.display = 'none';
-}
+function fermerModalJourTheorie() { document.getElementById('modal-jour-theorie').style.display = 'none'; }
 
 async function sauvegarderJourTheorie() {
     const date = document.getElementById('jt-date').value;
@@ -846,39 +826,16 @@ async function sauvegarderJourTheorie() {
     if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
     const dateDebutSession = '{{ session.date_theorie or session.date_pratique_debut or "" }}';
     const dateFinSession = '{{ session.date_pratique_fin or session.date_theorie or "" }}';
-    if (dateDebutSession && date < dateDebutSession) {
-        alert('⚠️ Date antérieure au début de la session (' + dateDebutSession + ') !'); return;
-    }
-    if (dateFinSession && date > dateFinSession) {
-        alert('⚠️ Date postérieure à la fin de la session (' + dateFinSession + ') !'); return;
-    }
+    if (dateDebutSession && date < dateDebutSession) { alert('⚠️ Date antérieure au début de la session !'); return; }
+    if (dateFinSession && date > dateFinSession) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const candidats = [];
-    document.querySelectorAll('[name="jt-candidat"]:checked').forEach(cb => {
-        candidats.push(parseInt(cb.value));
-    });
+    document.querySelectorAll('[name="jt-candidat"]:checked').forEach(cb => candidats.push(parseInt(cb.value)));
     if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
-
-    const data = {
-        session_id: SESSION_ID,
-        date: date,
-        type: 'theorie',
-        testeur_id: parseInt(testeur_id),
-        candidats: candidats
-    };
-
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: SESSION_ID, date, type: 'theorie', testeur_id: parseInt(testeur_id), candidats })
     });
-
-    if (resp.ok) {
-        const result = await resp.json();
-        fermerModalJourTheorie();
-        location.reload();
-    } else {
-        alert('Erreur !');
-    }
+    if (resp.ok) { fermerModalJourTheorie(); location.reload(); } else alert('Erreur !');
 }
 
 function ouvrirAjoutJourPratique() {
@@ -886,10 +843,7 @@ function ouvrirAjoutJourPratique() {
     document.getElementById('jp-jour-id').value = '';
     document.getElementById('jp-date').value = '';
     document.getElementById('jp-testeur').value = '';
-    document.querySelectorAll('[name^="jp-cand-"], [name^="jp-cat-"]').forEach(cb => {
-        cb.checked = true;
-        cb.disabled = false;
-    });
+    document.querySelectorAll('[name^="jp-cand-"], [name^="jp-cat-"]').forEach(cb => { cb.checked = true; cb.disabled = false; });
     document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '1');
     document.getElementById('modal-jour-pratique').style.display = 'flex';
     calculerRecapUT();
@@ -906,9 +860,7 @@ function ouvrirModifierJourPratique(jourId, testeurId, date) {
     calculerRecapUT();
 }
 
-function fermerModalJourPratique() {
-    document.getElementById('modal-jour-pratique').style.display = 'none';
-}
+function fermerModalJourPratique() { document.getElementById('modal-jour-pratique').style.display = 'none'; }
 
 async function sauvegarderJourPratique() {
     const date = document.getElementById('jp-date').value;
@@ -918,59 +870,36 @@ async function sauvegarderJourPratique() {
     if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
     const dateDebutSession = '{{ session.date_theorie or session.date_pratique_debut or "" }}';
     const dateFinSession = '{{ session.date_pratique_fin or session.date_theorie or "" }}';
-    if (dateDebutSession && date < dateDebutSession) {
-        alert('⚠️ Date antérieure au début de la session (' + dateDebutSession + ') !'); return;
-    }
-    if (dateFinSession && date > dateFinSession) {
-        alert('⚠️ Date postérieure à la fin de la session (' + dateFinSession + ') !'); return;
-    }
+    if (dateDebutSession && date < dateDebutSession) { alert('⚠️ Date antérieure au début de la session !'); return; }
+    if (dateFinSession && date > dateFinSession) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const candidats_pratique = [];
     {% for sc in session_candidats %}
-    if (document.getElementById('jp-cand-{{ sc.stagiaire_id }}') &&
-        document.getElementById('jp-cand-{{ sc.stagiaire_id }}').checked) {
+    if (document.getElementById('jp-cand-{{ sc.stagiaire_id }}') && document.getElementById('jp-cand-{{ sc.stagiaire_id }}').checked) {
         const cats = [];
-        document.querySelectorAll('[name="jp-cat-{{ sc.stagiaire_id }}"]:checked').forEach(cb => {
-            cats.push(cb.value);
-        });
-        if (cats.length > 0) {
-            candidats_pratique.push({ stagiaire_id: {{ sc.stagiaire_id }}, categories: cats });
-        }
+        document.querySelectorAll('[name="jp-cat-{{ sc.stagiaire_id }}"]:checked').forEach(cb => cats.push(cb.value));
+        if (cats.length > 0) candidats_pratique.push({ stagiaire_id: {{ sc.stagiaire_id }}, categories: cats });
     }
     {% endfor %}
-
-    if (candidats_pratique.length === 0) { alert('Selectionnez au moins un candidat avec des categories !'); return; }
-
+    if (candidats_pratique.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     if (jourId) {
         const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/candidats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ candidats_pratique: candidats_pratique })
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ candidats_pratique })
         });
-        if (resp.ok) { fermerModalJourPratique(); location.reload(); }
-        else alert('Erreur !');
+        if (resp.ok) { fermerModalJourPratique(); location.reload(); } else alert('Erreur !');
     } else {
-        const data = {
-            session_id: SESSION_ID,
-            date: date,
-            type: 'pratique',
-            testeur_id: parseInt(testeur_id),
-            candidats_pratique: candidats_pratique
-        };
         const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: SESSION_ID, date, type: 'pratique', testeur_id: parseInt(testeur_id), candidats_pratique })
         });
-        if (resp.ok) { fermerModalJourPratique(); location.reload(); }
-        else alert('Erreur !');
+        if (resp.ok) { fermerModalJourPratique(); location.reload(); } else alert('Erreur !');
     }
 }
 
 async function supprimerJour(id) {
     if (!confirm('Supprimer ce jour de test ?')) return;
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + id, { method: 'DELETE' });
-    if (resp.ok) location.reload();
-    else alert('Erreur !');
+    if (resp.ok) location.reload(); else alert('Erreur !');
 }
 
 function ouvrirAjoutCandidatJour(jourId) {
@@ -979,25 +908,18 @@ function ouvrirAjoutCandidatJour(jourId) {
     document.getElementById('modal-candidat-jour').style.display = 'flex';
 }
 
-function fermerModalCandidatJour() {
-    document.getElementById('modal-candidat-jour').style.display = 'none';
-}
+function fermerModalCandidatJour() { document.getElementById('modal-candidat-jour').style.display = 'none'; }
 
 async function sauvegarderCandidatJour() {
     const jourId = document.getElementById('acj-jour-id').value;
     const candidats = [];
-    document.querySelectorAll('[name="acj-candidat"]:checked').forEach(cb => {
-        candidats.push(parseInt(cb.value));
-    });
+    document.querySelectorAll('[name="acj-candidat"]:checked').forEach(cb => candidats.push(parseInt(cb.value)));
     if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
-
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/candidats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidats: candidats })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidats })
     });
-    if (resp.ok) { fermerModalCandidatJour(); location.reload(); }
-    else alert('Erreur !');
+    if (resp.ok) { fermerModalCandidatJour(); location.reload(); } else alert('Erreur !');
 }
 
 function saisirResultatPratique(stagiaireId, categorie, date, testeurId) {
@@ -1011,9 +933,7 @@ function saisirResultatPratique(stagiaireId, categorie, date, testeurId) {
     document.getElementById('modal-pratique').style.display = 'flex';
 }
 
-function fermerModalPratique() {
-    document.getElementById('modal-pratique').style.display = 'none';
-}
+function fermerModalPratique() { document.getElementById('modal-pratique').style.display = 'none'; }
 
 async function sauvegarderPratique() {
     const stagiaireId = document.getElementById('pratique-stagiaire-id').value;
@@ -1021,29 +941,20 @@ async function sauvegarderPratique() {
     const testeurId = document.getElementById('pratique-testeur').value;
     const date = document.getElementById('pratique-date').value;
     const resultatEl = document.querySelector('[name="pratique-resultat"]:checked');
-
     if (!testeurId) { alert('Le testeur est obligatoire !'); return; }
     if (!date) { alert('La date est obligatoire !'); return; }
     if (!resultatEl) { alert('Le resultat est obligatoire !'); return; }
-
-    const data = {
-        session_id: SESSION_ID,
-        stagiaire_id: parseInt(stagiaireId),
-        testeur_id: parseInt(testeurId),
-        date: date,
-        famille: '{{ session.famille }}',
-        categorie: categorie,
-        obtenue: resultatEl.value === 'true',
-        note_testeur: document.getElementById('pratique-note').value || null
-    };
-
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/epreuves', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            session_id: SESSION_ID, stagiaire_id: parseInt(stagiaireId),
+            testeur_id: parseInt(testeurId), date,
+            famille: '{{ session.famille }}', categorie,
+            obtenue: resultatEl.value === 'true',
+            note_testeur: document.getElementById('pratique-note').value || null
+        })
     });
-    if (resp.ok) { fermerModalPratique(); location.reload(); }
-    else alert('Erreur !');
+    if (resp.ok) { fermerModalPratique(); location.reload(); } else alert('Erreur !');
 }
 
 function ouvrirAjoutCandidat() {
@@ -1068,9 +979,7 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, rgpd, photo) {
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
-function fermerModalCandidat() {
-    document.getElementById('modal-candidat').style.display = 'none';
-}
+function fermerModalCandidat() { document.getElementById('modal-candidat').style.display = 'none'; }
 
 async function sauvegarderCandidat() {
     const id = document.getElementById('sc-id').value;
@@ -1083,10 +992,8 @@ async function sauvegarderCandidat() {
     };
     if (!id && !data.stagiaire_id) { alert('Choisir un stagiaire !'); return; }
     const url = id ? '/api/sessions/' + SESSION_ID + '/candidats/' + id : '/api/sessions/' + SESSION_ID + '/candidats';
-    const method = id ? 'PUT' : 'POST';
-    const resp = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    if (resp.ok) { fermerModalCandidat(); location.reload(); }
-    else alert('Erreur !');
+    const resp = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (resp.ok) { fermerModalCandidat(); location.reload(); } else alert('Erreur !');
 }
 
 function retirerCandidat(id, nom) {
@@ -1107,9 +1014,7 @@ function ouvrirAjoutEquipement() {
     document.getElementById('equip-title').textContent = 'Ajouter un equipement';
     document.getElementById('equip-id').value = '';
     document.getElementById('equip-numero').value = {{ equipements|length + 1 }};
-    ['designation','marque','type','serie','organisme','proprietaire'].forEach(f => {
-        document.getElementById('equip-' + f).value = '';
-    });
+    ['designation','marque','type','serie','organisme','proprietaire'].forEach(f => document.getElementById('equip-' + f).value = '');
     document.getElementById('equip-date-verif').value = '';
     document.getElementById('modal-equipement').style.display = 'flex';
 }
@@ -1128,9 +1033,7 @@ function editerEquipement(id, numero, designation, marque, type, serie, dateVeri
     document.getElementById('modal-equipement').style.display = 'flex';
 }
 
-function fermerModalEquipement() {
-    document.getElementById('modal-equipement').style.display = 'none';
-}
+function fermerModalEquipement() { document.getElementById('modal-equipement').style.display = 'none'; }
 
 async function sauvegarderEquipement() {
     const id = document.getElementById('equip-id').value;
@@ -1146,17 +1049,14 @@ async function sauvegarderEquipement() {
         proprietaire: document.getElementById('equip-proprietaire').value || null
     };
     const url = id ? '/api/sessions/' + SESSION_ID + '/equipements/' + id : '/api/sessions/' + SESSION_ID + '/equipements';
-    const method = id ? 'PUT' : 'POST';
-    const resp = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    if (resp.ok) { fermerModalEquipement(); location.reload(); }
-    else alert('Erreur !');
+    const resp = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (resp.ok) { fermerModalEquipement(); location.reload(); } else alert('Erreur !');
 }
 
 async function cloturerSession() {
     if (!confirm('Cloturer la session ? Les resultats seront verrouilles.')) return;
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/cloturer', { method: 'POST' });
-    if (resp.ok) location.reload();
-    else alert('Erreur !');
+    if (resp.ok) location.reload(); else alert('Erreur !');
 }
 
 async function reouvrirsession() {
@@ -1164,12 +1064,9 @@ async function reouvrirsession() {
     if (!pin) return;
     if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/reouvrir', { method: 'POST' });
-    if (resp.ok) location.reload();
-    else alert('Erreur !');
+    if (resp.ok) location.reload(); else alert('Erreur !');
 }
 
-function fermerPin() {
-    document.getElementById('modal-pin').style.display = 'none';
-}
+function fermerPin() { document.getElementById('modal-pin').style.display = 'none'; }
 </script>
 {% endblock %}
