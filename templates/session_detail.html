@@ -842,24 +842,26 @@ function toggleCandidatPratique(stagiaireId) {
 function calculerRecapUT() {
     let html = '';
     let total = 0;
-    {% for sc in session_candidats %}
-    const cand{{ sc.stagiaire_id }} = document.getElementById('jp-cand-{{ sc.stagiaire_id }}');
-    if (cand{{ sc.stagiaire_id }} && cand{{ sc.stagiaire_id }}.checked) {
+
+    document.querySelectorAll('[name^="jp-candidat"]:checked, [id^="jp-cand-"]:checked').forEach(candCb => {
+        const stagiaireId = candCb.value;
+        const nom = candCb.closest('div').querySelector('label') ? 
+            candCb.closest('div').querySelector('label').textContent.trim() : stagiaireId;
         let utCand = 0;
-        const catsCand{{ sc.stagiaire_id }} = [];
-        document.querySelectorAll('[name="jp-cat-{{ sc.stagiaire_id }}"]:checked').forEach(cb => {
+        const cats = [];
+        document.querySelectorAll('[name="jp-cat-' + stagiaireId + '"]:checked').forEach(cb => {
             const ut = UT_PAR_CAT[cb.value] || 1.0;
             utCand += ut;
             total += ut;
-            catsCand{{ sc.stagiaire_id }}.push(cb.value);
+            cats.push(cb.value);
         });
         if (utCand > 0) {
             html += '<div style="display:flex; justify-content:space-between; padding:3px 0;">' +
-                '<span><strong>{{ sc.stagiaire.nom }}</strong> : ' + catsCand{{ sc.stagiaire_id }}.join(', ') + '</span>' +
+                '<span><strong>' + nom + '</strong> : ' + cats.join(', ') + '</span>' +
                 '<span><strong>' + utCand.toFixed(1) + ' UT</strong></span></div>';
         }
-    }
-    {% endfor %}
+    });
+
     const nbTesteurs = total > 0 ? Math.ceil(total / 6) : 0;
     const utLibres = (nbTesteurs * 6) - total;
     document.getElementById('recap-ut-detail').innerHTML = html || '<span style="color:#888;">Aucun candidat selectionne</span>';
