@@ -254,7 +254,11 @@
                 </div>
                 <div style="display:flex; gap:8px;">
                     {% if session.statut != 'terminee' %}
-                    <a href="/sessions/{{ session.id }}/jours/{{ j.id }}/modifier" class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">✏️</a>
+                    <a href="/sessions/{{ session.id }}/jours/{{ j.id }}/modifier" class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">✏️ Date/Testeur</a>
+<button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+    onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.testeur_id }}', '{{ j.date }}')">
+    👥 Candidats
+</button>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                         onclick="supprimerJour({{ j.id }})">X</button>
                     {% endif %}
