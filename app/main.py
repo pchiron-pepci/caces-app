@@ -35,14 +35,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 class CSPMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: StarletteRequest, call_next):
         response = await call_next(request)
@@ -51,6 +43,14 @@ class CSPMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(CSPMiddleware)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(stagiaires.router)
 app.include_router(testeurs.router)
 app.include_router(admin.router)
@@ -58,6 +58,7 @@ app.include_router(sessions.router)
 app.include_router(upload.router)
 app.include_router(auth.router)
 app.include_router(statistiques.router)
+
 @app.get("/")
 def dashboard(request: Request):
     db = SessionLocal()
