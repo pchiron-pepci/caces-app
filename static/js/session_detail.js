@@ -197,10 +197,6 @@ async function sauvegarderPratique() {
     const resultatEl = document.querySelector('[name="pratique-resultat"]:checked');
     if (!testeurId) { alert('Le testeur est obligatoire !'); return; }
     if (!resultatEl) { alert('Le resultat est obligatoire !'); return; }
-    const identiteCheck = document.getElementById('pratique-identite');
-    if (!identiteCheck || !identiteCheck.checked) {
-        alert('Vous devez confirmer avoir vérifié l\'identité du candidat !'); return;
-    }
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/epreuves', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
