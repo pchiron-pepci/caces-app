@@ -8,6 +8,11 @@ document.addEventListener('DOMContentLoaded', function() {
         window.NB_EQUIPEMENTS = parseInt(_d.dataset.nbEquipements);
         window.UT_PAR_CAT = JSON.parse(_d.dataset.utParCat);
     }
+
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-retirer-candidat-jour');
+        if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom);
+    });
 });
 
 function showTab(name, btn) {
