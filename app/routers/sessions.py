@@ -437,7 +437,7 @@ def modifier_jour(session_id: int, jour_id: int, data: dict, db: DBSession = Dep
     j = db.query(JourTest).filter(JourTest.id == jour_id).first()
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouve")
-    j.date = data.get("date")
-    j.testeur_id = data.get("testeur_id")
+    j.date = date_type.fromisoformat(data.get("date")) if data.get("date") else j.date
+    j.testeur_id = data.get("testeur_id") if data.get("testeur_id") else j.testeur_id
     db.commit()
     return {"message": "Jour modifie"}
