@@ -348,3 +348,12 @@ async function sauvegarderModifierJourTheorie() {
     if (resp.ok) { document.getElementById('modal-modifier-jour-theorie').style.display = 'none'; location.reload(); }
     else alert('Erreur !');
 }
+
+async function retirerCandidatJour(jourId, stagiaireId, nom) {
+    if (!confirm('Retirer ' + nom + ' de ce jour ?')) return;
+    const pin = prompt('Code PIN administrateur :');
+    if (!pin) return;
+    if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
+    const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId, { method: 'DELETE' });
+    if (resp.ok) location.reload(); else alert('Erreur !');
+}

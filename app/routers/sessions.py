@@ -447,3 +447,15 @@ def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSess
         j.testeur_id = data.testeur_id
     db.commit()
     return {"message": "Jour modifie"}
+
+@router.delete("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}")
+def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
+    jtc = db.query(JourTestCandidat).filter(
+        JourTestCandidat.jour_test_id == jour_id,
+        JourTestCandidat.stagiaire_id == stagiaire_id
+    ).first()
+    if not jtc:
+        raise HTTPException(status_code=404, detail="Candidat non trouve")
+    db.delete(jtc)
+    db.commit()
+    return {"message": "Candidat retire du jour"}
