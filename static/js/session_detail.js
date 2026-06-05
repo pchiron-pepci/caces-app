@@ -175,14 +175,19 @@ async function sauvegarderCandidatJour() {
     if (resp.ok) { fermerModalCandidatJour(); location.reload(); } else alert('Erreur !');
 }
 
-function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identiteVerifiee) {
+function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identiteVerifiee, obtenue, noteTesteur) {
     document.getElementById('pratique-stagiaire-id').value = stagiaireId;
     document.getElementById('pratique-categorie').value = categorie;
     document.getElementById('pratique-info').textContent = 'Categorie : ' + categorie;
     document.getElementById('pratique-testeur').value = testeurId || '';
     document.getElementById('pratique-date').value = date || '';
-    document.getElementById('pratique-note').value = '';
+    document.getElementById('pratique-note').value = noteTesteur || '';
     document.querySelectorAll('[name="pratique-resultat"]').forEach(r => r.checked = false);
+    if (obtenue === true || obtenue === 'true') {
+        document.querySelector('[name="pratique-resultat"][value="true"]').checked = true;
+    } else if (obtenue === false || obtenue === 'false') {
+        document.querySelector('[name="pratique-resultat"][value="false"]').checked = true;
+    }
     document.getElementById('modal-pratique').style.display = 'flex';
     document.getElementById('pratique-identite').checked = identiteVerifiee || false;
 }
