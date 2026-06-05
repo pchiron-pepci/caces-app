@@ -360,7 +360,7 @@ def page_session_detail(request: Request, session_id: int):
             "resultats_theorie": resultats_theorie,
             "equipements": equipements,
             "stagiaires": stagiaires,
-            "testeurs": testeurs_list
+            "testeurs": testeurs_list,
             "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date]
         }
     )
