@@ -924,6 +924,10 @@ async function sauvegarderJourPratique() {
     });
     if (candidats_pratique.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     if (jourId) {
+        await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/modifier', {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date, testeur_id: parseInt(testeur_id) })
+        });
         const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/candidats', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ candidats_pratique })
