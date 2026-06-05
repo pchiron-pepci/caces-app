@@ -61,7 +61,14 @@
             <tbody>
                 {% for sc in session_candidats %}
                 <tr>
-                    <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
+                    <td>
+    <strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong>
+    {% if session.statut != 'terminee' %}
+    <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}"
+        class="btn-retirer-candidat-jour"
+        style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
+    {% endif %}
+</td>
                     <td style="text-align:center;">
                         {% set rt = resultats_theorie.get(sc.stagiaire_id) %}
                         {% if sc.theorie_dispensee %}
