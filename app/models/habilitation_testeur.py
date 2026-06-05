@@ -5,7 +5,7 @@ from app.database import Base
 class HabilitationTesteur(Base):
     __tablename__ = "habilitations_testeurs"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     testeur_id = Column(Integer, ForeignKey("testeurs.id"), nullable=False)
     testeur = relationship("Testeur")
     famille = Column(String(10), nullable=False)
