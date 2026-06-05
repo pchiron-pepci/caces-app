@@ -301,45 +301,27 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
         db.query(UtilisationTheme).filter(
             UtilisationTheme.session_id == j.session_id
         ).delete()
+        # Supprimer résultats théorie
+        db.query(ResultatTheorie).filter(
+            ResultatTheorie.jour_test_id == j.id
+        ).delete()
+
+    if j.type == "pratique":
+        # Supprimer épreuves pratiques pour tous les candidats du jour
+        candidats_jour = db.query(JourTestCandidat).filter(
+            JourTestCandidat.jour_test_id == j.id
+        ).all()
+        for jtc in candidats_jour:
+            cats = jtc.categories.split(',') if jtc.categories else []
+            for cat in cats:
+                db.query(SessionEpreuve).filter(
+                    SessionEpreuve.session_id == session_id,
+                    SessionEpreuve.stagiaire_id == jtc.stagiaire_id,
+                    SessionEpreuve.categorie == cat
+                ).delete()
 
     db.commit()
     return {"message": "Jour supprime"}
-
-# RESULTATS THEORIE
-@router.post("/{session_id}/theorie/reponses")
-def sauvegarder_reponses(session_id: int, data: ReponsesCandidatCreate, db: DBSession = Depends(get_db)):
-    jour = db.query(JourTest).filter(JourTest.id == data.jour_test_id).first()
-    if not jour:
-        raise HTTPException(status_code=404, detail="Jour de test non trouve")
-
-    session = db.query(Session).filter(Session.id == session_id).first()
-    resultat = calculer_resultat_theorie_phase2(data.reponses, session_id, session.famille, db)
-
-    rt = ResultatTheorie(
-        jour_test_id=data.jour_test_id,
-        session_id=session_id,
-        stagiaire_id=data.stagiaire_id,
-        grille_id=None
-    )
-    db.add(rt)
-
-    rt.reponses_json = json.dumps(data.reponses)
-    rt.note_theme1 = resultat["notes_themes"].get("1")
-    rt.note_theme2 = resultat["notes_themes"].get("2")
-    rt.note_theme3 = resultat["notes_themes"].get("3")
-    rt.note_theme4 = resultat["notes_themes"].get("4")
-    rt.note_theme5 = resultat["notes_themes"].get("5")
-    rt.note_totale = resultat["note_totale"]
-    rt.theme1_ok = resultat["themes_ok"].get("1")
-    rt.theme2_ok = resultat["themes_ok"].get("2")
-    rt.theme3_ok = resultat["themes_ok"].get("3")
-    rt.theme4_ok = resultat["themes_ok"].get("4")
-    rt.theme5_ok = resultat["themes_ok"].get("5")
-    rt.obtenue = resultat["obtenue"]
-    db.commit()
-
-    return {"message": "Reponses sauvegardees", "resultat": resultat}
-
 @router.get("/{session_id}/theorie/{stagiaire_id}")
 def get_resultat_theorie(session_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
     rt = db.query(ResultatTheorie).filter(
@@ -457,11 +439,20 @@ def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: D
     if not jtc:
         raise HTTPException(status_code=404, detail="Candidat non trouve")
     
-    # Supprimer aussi les résultats théorie liés à ce jour
+    # Supprimer résultats théorie liés à ce jour
     db.query(ResultatTheorie).filter(
         ResultatTheorie.jour_test_id == jour_id,
         ResultatTheorie.stagiaire_id == stagiaire_id
     ).delete()
+    
+    # Supprimer épreuves pratiques liées aux catégories de ce jour
+    cats = jtc.categories.split(',') if jtc.categories else []
+    for cat in cats:
+        db.query(SessionEpreuve).filter(
+            SessionEpreuve.session_id == session_id,
+            SessionEpreuve.stagiaire_id == stagiaire_id,
+            SessionEpreuve.categorie == cat
+        ).delete()
     
     db.delete(jtc)
     db.commit()
