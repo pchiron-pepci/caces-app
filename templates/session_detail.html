@@ -147,7 +147,7 @@
                         <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                         <span class="badge blue" style="margin-left:8px;">Theorie</span>
                         {% if j.testeur_nom %}
-                            <span style="margin-left:8px; color:#666; font-size:13px;">Testeur : {{ j.testeur_nom }}</span>
+                            <span style="margin-left:8px; color:#666; font-size:13px;">Testeur principal : {{ j.testeur_nom }}</span>
                         {% endif %}
                     </div>
                     <div style="display:flex; gap:8px;">
@@ -244,26 +244,26 @@
         {% if j.type == 'pratique' %}
         <div style="padding:12px 16px; border-bottom:1px solid #f0f2f7;">
 
-            <!-- En-tête du jour -->
+<!-- En-tête du jour -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <div>
                     <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                     <span class="badge orange" style="margin-left:8px;">Pratique</span>
-                    <span style="margin-left:8px; color:#666; font-size:13px;">Testeur : {{ j.testeur_nom }}</span>
+                    <span style="margin-left:8px; color:#666; font-size:13px;">Testeur principal : {{ j.testeur_nom }}</span>
                     <span style="margin-left:8px; color:#888; font-size:12px;">{{ j.candidats_ids|length }} candidat(s)</span>
                 </div>
                 <div style="display:flex; gap:8px;">
                     {% if session.statut != 'terminee' %}
-                    <a href="/sessions/{{ session.id }}/jours/{{ j.id }}/modifier" class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">✏️ Date/Testeur</a>
-<button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-    onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.testeur_id }}', '{{ j.date }}')">
-    👥 Candidats
-</button>
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                        onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.testeur_id }}', '{{ j.date }}')">
+                        Modifier
+                    </button>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                         onclick="supprimerJour({{ j.id }})">X</button>
                     {% endif %}
                 </div>
             </div>
+                    
 
             <!-- Tableau candidats × catégories avec résultats -->
             <table class="table" style="margin-bottom:0;">
