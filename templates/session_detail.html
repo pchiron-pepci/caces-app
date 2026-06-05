@@ -647,19 +647,16 @@
         <p style="color:#666; font-size:14px; margin-bottom:24px;" id="pratique-info"></p>
         <input type="hidden" id="pratique-stagiaire-id">
         <input type="hidden" id="pratique-categorie">
+        <input type="hidden" id="pratique-date">
         <div class="form-grid">
-            <div class="form-field">
-                <label>Testeur *</label>
+            <div class="form-field" style="grid-column: span 2;">
+                <label>Testeur de l'épreuve *</label>
                 <select id="pratique-testeur">
                     <option value="">-- Choisir --</option>
                     {% for t in testeurs %}
                     <option value="{{ t.id }}">{{ t.nom }} {{ t.prenom }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div class="form-field">
-                <label>Date de l'epreuve *</label>
-                <input type="text" id="pratique-date" readonly style="background:#f0f2f7; color:#666; cursor:not-allowed;">
             </div>
             <div class="form-field" style="grid-column: span 2;">
                 <label>Resultat *</label>
