@@ -285,7 +285,14 @@
                     {% if sc.stagiaire_id in j.candidats_ids %}
                     {% set cats_jour = j.candidats_categories.get(sc.stagiaire_id, []) %}
                     <tr>
-                        <td><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong></td>
+                        <td>
+                            <strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</strong>
+                            {% if session.statut != 'terminee' %}
+                            <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}"
+                                class="btn-retirer-candidat-jour"
+                                style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
+                            {% endif %}
+                        </td>
                         <td style="text-align:center;">
                             {% if session.statut != 'terminee' %}
                             <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
@@ -438,14 +445,7 @@
                             {% endif %}
                         {% endif %}
                     </td>
-                    {% if session.statut != 'terminee' %}
-                    <td>
-                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                            onclick="editerCandidat({{ sc.id }}, {{ sc.stagiaire_id }}, {{ sc.theorie_dispensee | lower }}, {{ sc.rgpd_accepte | lower }}, {{ sc.photo_accepte | lower }})">Modifier</button>
-                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                            onclick="retirerCandidat({{ sc.id }}, '{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}')">Retirer</button>
-                    </td>
-                    {% endif %}
+
                 </tr>
                 {% endfor %}
             </tbody>
