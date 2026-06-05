@@ -942,13 +942,12 @@ async function sauvegarderJourPratique() {
     if (dateDebutSession && date < dateDebutSession) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (dateFinSession && date > dateFinSession) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const candidats_pratique = [];
-    {% for sc in session_candidats %}
-    if (document.getElementById('jp-cand-{{ sc.stagiaire_id }}') && document.getElementById('jp-cand-{{ sc.stagiaire_id }}').checked) {
+    document.querySelectorAll('[id^="jp-cand-"]:checked').forEach(candCb => {
+        const stagiaireId = parseInt(candCb.value);
         const cats = [];
-        document.querySelectorAll('[name="jp-cat-{{ sc.stagiaire_id }}"]:checked').forEach(cb => cats.push(cb.value));
-        if (cats.length > 0) candidats_pratique.push({ stagiaire_id: {{ sc.stagiaire_id }}, categories: cats });
-    }
-    {% endfor %}
+        document.querySelectorAll('[name="jp-cat-' + stagiaireId + '"]:checked').forEach(cb => cats.push(cb.value));
+        if (cats.length > 0) candidats_pratique.push({ stagiaire_id: stagiaireId, categories: cats });
+    });
     if (candidats_pratique.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     if (jourId) {
         const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + jourId + '/candidats', {
@@ -1186,11 +1185,7 @@ async function sauvegarderModifierSession() {
     const theorie = '{{ session.date_theorie or "" }}';
 
     const joursHors = [];
-const tousJours = [
-    {% for j in jours_test %}
-    { date: '{{ j.date }}', label: '{{ j.date.strftime("%d/%m/%Y") }} ({{ j.type }})' },
-    {% endfor %}
-];
+    const tousJours = {{ jours_dates | tojson }};
 tousJours.forEach(j => {
     if (debut && j.date < debut) joursHors.push(j.label);
     else if (fin && j.date > fin) joursHors.push(j.label);
