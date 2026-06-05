@@ -184,6 +184,33 @@ def page_sessions(request: Request):
         }
     )
 
+@app.get("/sessions/{session_id}/modifier")
+def page_modifier_session(request: Request, session_id: int):
+    db = SessionLocal()
+    session = db.query(Session).filter(Session.id == session_id).first()
+    lieux = db.query(Lieu).filter(Lieu.actif == True).all()
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="modifier_session.html",
+        context={"session": session, "lieux": lieux}
+    )
+
+@app.post("/sessions/{session_id}/modifier")
+def post_modifier_session(request: Request, session_id: int,
+    date_pratique_debut: str = None,
+    date_pratique_fin: str = None,
+    responsable: str = None,
+    db: DBSession = Depends(get_db)):
+    from datetime import date
+    s = db.query(Session).filter(Session.id == session_id).first()
+    s.date_pratique_debut = date.fromisoformat(date_pratique_debut) if date_pratique_debut else None
+    s.date_pratique_fin = date.fromisoformat(date_pratique_fin) if date_pratique_fin else None
+    s.responsable = responsable or None
+    db.commit()
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
+
 @app.get("/sessions/{session_id}")
 def page_session_detail(request: Request, session_id: int):
     db = SessionLocal()

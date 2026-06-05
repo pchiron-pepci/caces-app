@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier la session{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <a href="/sessions/{{ session.id }}" style="color:#666; text-decoration:none; font-size:13px;">← Retour à la session</a>
+    <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px; margin-top:4px;">
+        Modifier — {{ session.famille }} {{ session.reference }}
+    </h2>
+</div>
+
+<div class="card" style="max-width:600px;">
+    <div style="padding:32px;">
+        <form method="POST" action="/sessions/{{ session.id }}/modifier">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>Date début session</label>
+                    <input type="date" name="date_pratique_debut" 
+                        value="{{ session.date_pratique_debut or '' }}">
+                </div>
+                <div class="form-field">
+                    <label>Date fin session</label>
+                    <input type="date" name="date_pratique_fin"
+                        value="{{ session.date_pratique_fin or '' }}">
+                </div>
+                <div class="form-field" style="grid-column:span 2;">
+                    <label>Responsable</label>
+                    <input type="text" name="responsable"
+                        value="{{ session.responsable or '' }}"
+                        placeholder="Nom Prénom">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Sauvegarder</button>
+                <a href="/sessions/{{ session.id }}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
