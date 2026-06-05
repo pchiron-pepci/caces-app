@@ -1,11 +1,12 @@
 import math
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from app.database import engine, Base, SessionLocal
+from app.database import engine, Base, SessionLocal, get_db
+from sqlalchemy.orm import Session as DBSession
 
 from app.models.stagiaire import Stagiaire
 from app.models.testeur import Testeur
