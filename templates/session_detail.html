@@ -998,7 +998,8 @@ async function sauvegarderPratique() {
     if (!testeurId) { alert('Le testeur est obligatoire !'); return; }
     if (!date) { alert('La date est obligatoire !'); return; }
     if (!resultatEl) { alert('Le resultat est obligatoire !'); return; }
-    if (!document.getElementById('pratique-identite').checked) {
+    const identiteCheck = document.getElementById('pratique-identite');
+if (!identiteCheck || !identiteCheck.checked) {
     alert('Vous devez confirmer avoir vérifié l\'identité du candidat !'); return;
 }
     const resp = await fetch('/api/sessions/' + SESSION_ID + '/epreuves', {
