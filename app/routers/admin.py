@@ -17,14 +17,12 @@ class HabilitationCreate(BaseModel):
     categorie: str
     date_integration: date
     date_expiration: Optional[date] = None
-    date_prochain_controle: Optional[date] = None
     option_pe: bool = False
     option_tel: bool = False
 
 class HabilitationUpdate(BaseModel):
     date_integration: date
     date_expiration: Optional[date] = None
-    date_prochain_controle: Optional[date] = None
     option_pe: bool = False
     option_tel: bool = False
 
