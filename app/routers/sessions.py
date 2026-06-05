@@ -24,6 +24,10 @@ import math
 
 router = APIRouter(prefix="/api/sessions", tags=["Sessions"])
 
+class JourModifData(BaseModel):
+    date: Optional[str] = None
+    testeur_id: Optional[int] = None
+
 class SessionCreate(BaseModel):
     famille: str
     lieu_id: int
@@ -432,12 +436,14 @@ def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)
     return {"message": "Session mise a jour"}
 
 @router.put("/{session_id}/jours/{jour_id}/modifier")
-def modifier_jour(session_id: int, jour_id: int, data: dict, db: DBSession = Depends(get_db)):
+def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSession = Depends(get_db)):
     from datetime import date as date_type
     j = db.query(JourTest).filter(JourTest.id == jour_id).first()
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouve")
-    j.date = date_type.fromisoformat(data.get("date")) if data.get("date") else j.date
-    j.testeur_id = data.get("testeur_id") if data.get("testeur_id") else j.testeur_id
+    if data.date:
+        j.date = date_type.fromisoformat(data.date)
+    if data.testeur_id:
+        j.testeur_id = data.testeur_id
     db.commit()
     return {"message": "Jour modifie"}
