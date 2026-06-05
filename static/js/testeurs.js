@@ -1,21 +1,35 @@
+document.addEventListener('DOMContentLoaded', function() {
+
+    document.getElementById('search').addEventListener('keyup', filtrer);
+    document.getElementById('btn-nouveau-testeur').addEventListener('click', ouvrirFormulaire);
+    document.getElementById('btn-sauvegarder').addEventListener('click', sauvegarder);
+    document.getElementById('btn-fermer-modal').addEventListener('click', fermerModal);
+    document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
+
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        if (btn.dataset.action === 'editer') {
+            editer(btn.dataset.id, btn.dataset.nom, btn.dataset.prenom, btn.dataset.statut,
+                btn.dataset.entreprise, btn.dataset.inrs, btn.dataset.email, btn.dataset.tel,
+                btn.dataset.habilitation, btn.dataset.expiration, btn.dataset.visite,
+                btn.dataset.formation, btn.dataset.controle, btn.dataset.note);
+        }
+        if (btn.dataset.action === 'archiver') {
+            archiver(btn.dataset.id, btn.dataset.nom);
+        }
+    });
+});
+
 let idAArchiver = null;
 
 function ouvrirFormulaire() {
     document.getElementById('modal-title').textContent = 'Nouveau testeur';
     document.getElementById('testeur-id').value = '';
-    document.getElementById('f-nom').value = '';
-    document.getElementById('f-prenom').value = '';
+    ['nom','prenom','entreprise','email','tel','inrs','habilitation','expiration','visite','formation','controle','note'].forEach(f => {
+        document.getElementById('f-' + f).value = '';
+    });
     document.getElementById('f-statut').value = 'interne';
-    document.getElementById('f-entreprise').value = '';
-    document.getElementById('f-email').value = '';
-    document.getElementById('f-tel').value = '';
-    document.getElementById('f-inrs').value = '';
-    document.getElementById('f-habilitation').value = '';
-    document.getElementById('f-expiration').value = '';
-    document.getElementById('f-visite').value = '';
-    document.getElementById('f-formation').value = '';
-    document.getElementById('f-controle').value = '';
-    document.getElementById('f-note').value = '';
     document.getElementById('modal').style.display = 'flex';
 }
 
@@ -38,9 +52,7 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     document.getElementById('modal').style.display = 'flex';
 }
 
-function fermerModal() {
-    document.getElementById('modal').style.display = 'none';
-}
+function fermerModal() { document.getElementById('modal').style.display = 'none'; }
 
 async function sauvegarder() {
     const id = document.getElementById('testeur-id').value;
@@ -73,17 +85,16 @@ function archiver(id, nom) {
     document.getElementById('pin-input').value = '';
     document.getElementById('pin-error').style.display = 'none';
     document.getElementById('modal-pin').style.display = 'flex';
-    document.getElementById('pin-confirm-btn').onclick = async () => {
+    document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
         const pin = document.getElementById('pin-input').value;
         const resp = await fetch(`/api/testeurs/${idAArchiver}?pin=${pin}`, { method: 'DELETE' });
         if (resp.ok) { fermerPin(); location.reload(); }
         else document.getElementById('pin-error').style.display = 'block';
-    };
+        this.removeEventListener('click', handler);
+    });
 }
 
-function fermerPin() {
-    document.getElementById('modal-pin').style.display = 'none';
-}
+function fermerPin() { document.getElementById('modal-pin').style.display = 'none'; }
 
 function filtrer() {
     const q = document.getElementById('search').value.toLowerCase();
