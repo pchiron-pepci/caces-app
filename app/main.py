@@ -185,6 +185,50 @@ def page_sessions(request: Request):
         }
     )
 
+@app.get("/sessions/{session_id}/jours/{jour_id}/modifier")
+def page_modifier_jour(request: Request, session_id: int, jour_id: int):
+    db = SessionLocal()
+    session = db.query(Session).filter(Session.id == session_id).first()
+    jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
+    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="modifier_jour.html",
+        context={"session": session, "jour": jour, "testeurs": testeurs_list}
+    )
+
+@app.post("/sessions/{session_id}/jours/{jour_id}/modifier")
+async def post_modifier_jour(request: Request, session_id: int, jour_id: int):
+    from fastapi.responses import RedirectResponse
+    from datetime import date
+    form = await request.form()
+    db = SessionLocal()
+    j = db.query(JourTest).filter(JourTest.id == jour_id).first()
+    s = db.query(Session).filter(Session.id == session_id).first()
+    new_date = form.get("date")
+    testeur_id = form.get("testeur_id")
+    # Vérification intervalle session
+    erreur = None
+    if new_date:
+        if s.date_pratique_debut and new_date < str(s.date_pratique_debut):
+            erreur = f"⚠️ Date antérieure au début de la session ({s.date_pratique_debut.strftime('%d/%m/%Y')})"
+        elif s.date_pratique_fin and new_date > str(s.date_pratique_fin):
+            erreur = f"⚠️ Date postérieure à la fin de la session ({s.date_pratique_fin.strftime('%d/%m/%Y')})"
+    if erreur:
+        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+        db.close()
+        return templates.TemplateResponse(
+            request=request,
+            name="modifier_jour.html",
+            context={"session": s, "jour": j, "testeurs": testeurs_list, "erreur": erreur}
+        )
+    j.date = date.fromisoformat(new_date) if new_date else j.date
+    j.testeur_id = int(testeur_id) if testeur_id else j.testeur_id
+    db.commit()
+    db.close()
+    return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
+
 @app.get("/sessions/{session_id}/modifier")
 def page_modifier_session(request: Request, session_id: int):
     db = SessionLocal()
