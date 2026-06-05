@@ -198,18 +198,20 @@ def page_modifier_session(request: Request, session_id: int):
     )
 
 @app.post("/sessions/{session_id}/modifier")
-def post_modifier_session(request: Request, session_id: int,
-    date_pratique_debut: str = None,
-    date_pratique_fin: str = None,
-    responsable: str = None,
-    db: DBSession = Depends(get_db)):
+async def post_modifier_session(request: Request, session_id: int):
+    from fastapi.responses import RedirectResponse
     from datetime import date
+    form = await request.form()
+    db = SessionLocal()
     s = db.query(Session).filter(Session.id == session_id).first()
-    s.date_pratique_debut = date.fromisoformat(date_pratique_debut) if date_pratique_debut else None
-    s.date_pratique_fin = date.fromisoformat(date_pratique_fin) if date_pratique_fin else None
+    debut = form.get("date_pratique_debut")
+    fin = form.get("date_pratique_fin")
+    responsable = form.get("responsable")
+    s.date_pratique_debut = date.fromisoformat(debut) if debut else None
+    s.date_pratique_fin = date.fromisoformat(fin) if fin else None
     s.responsable = responsable or None
     db.commit()
-    from fastapi.responses import RedirectResponse
+    db.close()
     return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
 
 @app.get("/sessions/{session_id}")
