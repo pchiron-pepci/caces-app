@@ -336,23 +336,40 @@
                     {% endif %}
                     {% endfor %}
                 </tbody>
-                <tfoot>
-                    <tr style="background:#f0f2f7; font-size:12px;">
-                        <td colspan="2" style="font-weight:700; color:#555;">Total jour</td>
-                        {% for cat in categories %}
-                        <td></td>
-                        {% endfor %}
-                        <td style="text-align:center;">
-                            <strong style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %};">
-                                {{ j.total_ut }} UT
-                            </strong>
-                            — {{ j.nb_testeurs }} testeur(s)
-                            {% if j.ut_libres > 0 %}
-                                — <span style="color:#2e7d32;">{{ j.ut_libres }} UT libres</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                </tfoot>
+ <tfoot>
+    <tr style="background:#f0f2f7; font-size:12px;">
+        <td colspan="2" style="font-weight:700; color:#555;">Total jour</td>
+        {% for cat in categories %}
+        {% set ut_cat = namespace(total=0) %}
+        {% for sc in session_candidats %}
+        {% if sc.stagiaire_id in j.candidats_ids %}
+        {% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}
+        {% set ut_cat.total = ut_cat.total + ut_par_cat.get(cat, 1) %}
+        {% endif %}
+        {% endif %}
+        {% endfor %}
+        <td style="text-align:center;">
+            {% if ut_cat.total > 0 %}
+                {% if ut_cat.total > 7 %}
+    {% set nb_machines = ((ut_cat.total / 7) | round(0, 'ceil')) | int %}
+    <span style="color:#e65100; font-weight:700;" title="{{ nb_machines }} machines recommandées">⚠️ {{ ut_cat.total }} UT — {{ nb_machines }} machines</span>
+                {% else %}
+                    <span style="color:#555;">{{ ut_cat.total }} UT</span>
+                {% endif %}
+            {% endif %}
+        </td>
+        {% endfor %}
+        <td style="text-align:center;">
+            <strong style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %};">
+                {{ j.total_ut }} UT
+            </strong>
+            — {{ j.nb_testeurs }} testeur(s)
+            {% if j.ut_libres > 0 %}
+                — <span style="color:#2e7d32;">{{ j.ut_libres }} UT libres</span>
+            {% endif %}
+        </td>
+    </tr>
+</tfoot>
             </table>
         </div>
         {% endif %}
