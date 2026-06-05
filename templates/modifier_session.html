@@ -9,6 +9,11 @@
     <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px; margin-top:4px;">
         Modifier — {{ session.famille }} {{ session.reference }}
     </h2>
+    {% if erreur %}
+<div style="background:#ffebee; color:#c62828; padding:12px 16px; border-radius:8px; margin-bottom:16px;">
+    {{ erreur }}
+</div>
+{% endif %}
 </div>
 
 <div class="card" style="max-width:600px;">

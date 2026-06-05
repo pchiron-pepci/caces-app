@@ -207,6 +207,28 @@ async def post_modifier_session(request: Request, session_id: int):
     debut = form.get("date_pratique_debut")
     fin = form.get("date_pratique_fin")
     responsable = form.get("responsable")
+    # Vérification jours existants
+    if debut or fin:
+        jours = db.query(JourTest).filter(JourTest.session_id == session_id, JourTest.actif == True).all()
+        jours_hors = []
+        for j in jours:
+            if j.date:
+                if debut and str(j.date) < debut:
+                    jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
+                elif fin and str(j.date) > fin:
+                    jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
+        if jours_hors:
+            db.close()
+            jours_str = ", ".join(jours_hors)
+            return templates.TemplateResponse(
+                request=request,
+                name="modifier_session.html",
+                context={
+                    "session": s,
+                    "lieux": [],
+                    "erreur": f"⚠️ Ces jours sont hors de l'intervalle : {jours_str}"
+                }
+            )
     s.date_pratique_debut = date.fromisoformat(debut) if debut else None
     s.date_pratique_fin = date.fromisoformat(fin) if fin else None
     s.responsable = responsable or None
