@@ -1,3 +1,15 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const _d = document.getElementById('session-data');
+    if (_d) {
+        window.SESSION_ID = parseInt(_d.dataset.sessionId);
+        window.SESSION_FAMILLE = _d.dataset.famille;
+        window.DATE_DEBUT_SESSION = _d.dataset.debut;
+        window.DATE_FIN_SESSION = _d.dataset.fin;
+        window.NB_EQUIPEMENTS = parseInt(_d.dataset.nbEquipements);
+        window.UT_PAR_CAT = JSON.parse(_d.dataset.utParCat);
+    }
+});
+
 function showTab(name, btn) {
     ['sequencage','candidats','testeurs','equipements'].forEach(t => {
         document.getElementById('tab-' + t).style.display = 'none';
