@@ -303,21 +303,21 @@
                                 {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
                                 {% set ut_jour.total = ut_jour.total + ut_par_cat.get(cat, 1) %}
                                 {% if epreuve and epreuve.obtenue == True %}
-    <span class="badge green" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✓</span>
+<span class="badge green" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✓</span>
     {% if session.statut != 'terminee' %}
   <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
-        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ j.testeur_id }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }})">Modifier</button>
+        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }})">Modifier</button>
     {% endif %}
                                 {% elif epreuve and epreuve.obtenue == False %}
                                     <span class="badge red" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✗</span>
                                     {% if session.statut != 'terminee' %}
                                     <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
-                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ j.testeur_id }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }})">Modifier</button>
+                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }})">Modifier</button>
                                     {% endif %}
                                 {% else %}
                                     {% if session.statut != 'terminee' %}
                                     <button style="background:#e8eaf6; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:12px; color:#1a237e; font-weight:600;"
-                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ j.testeur_id }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }})">
+                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }})">
                                         {{ ut_par_cat.get(cat, 1) }} UT +
                                     </button>
                                     {% else %}
