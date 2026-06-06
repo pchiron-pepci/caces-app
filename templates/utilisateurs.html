@@ -89,6 +89,7 @@ let listeUsers = [];
 
 async function chargerUsers() {
     const token = localStorage.getItem('token');
+    console.log('[chargerUsers] token:', token);
     const resp = await fetch('/api/auth/utilisateurs', {
         headers: { 'Authorization': 'Bearer ' + token }
     });
@@ -170,6 +171,7 @@ async function sauvegarderUser() {
     const role_referent = document.getElementById('user-referent').value || null;
     const mdp = document.getElementById('user-mdp').value;
     const token = localStorage.getItem('token');
+    console.log('[sauvegarderUser] token:', token);
 
     if (!nom || !prenom || !email) { alert('Nom, prenom et email obligatoires !'); return; }
 
