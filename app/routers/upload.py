@@ -111,9 +111,12 @@ def derniere_association():
     from app.models.association_log import AssociationLog
     db = SessionLocal()
     try:
-        log = db.query(AssociationLog).order_by(AssociationLog.date_association.desc()).first()
-        configurer_cloudinary()
         try:
+            log = db.query(AssociationLog).order_by(AssociationLog.date_association.desc()).first()
+        except Exception:
+            log = None
+        try:
+            configurer_cloudinary()
             result = cloudinary.api.resources(
                 type="upload",
                 prefix="caces_questions/",

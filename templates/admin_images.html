@@ -88,17 +88,21 @@ function handleDrop(event) {
 }
 
 async function chargerDerniereAssociation() {
-    const resp = await fetch('/api/upload/derniere-association');
-    if (!resp.ok) return;
-    const data = await resp.json();
     const el = document.getElementById('derniere-assoc');
-    if (data.date) {
-        const detail = (data.total_cloudinary != null)
-            ? data.nb_images + ' / ' + data.total_cloudinary
-            : data.nb_images;
-        el.textContent = 'Dernière association : ' + data.date + ' (' + detail + ' images)';
-    } else {
-        el.textContent = 'Aucune association enregistrée';
+    try {
+        const resp = await fetch('/api/upload/derniere-association');
+        if (!resp.ok) { el.textContent = 'Erreur chargement (' + resp.status + ')'; return; }
+        const data = await resp.json();
+        if (data.date) {
+            const detail = (data.total_cloudinary != null)
+                ? data.nb_images + ' / ' + data.total_cloudinary
+                : data.nb_images;
+            el.textContent = 'Dernière association : ' + data.date + ' (' + detail + ' images)';
+        } else {
+            el.textContent = 'Aucune association enregistrée';
+        }
+    } catch (e) {
+        el.textContent = 'Erreur connexion';
     }
 }
 
