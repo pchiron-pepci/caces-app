@@ -2,6 +2,7 @@ import os
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+import cloudinary.utils
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.database import SessionLocal
 
@@ -219,28 +220,22 @@ def telecharger_document_officiel(type: str):
     if type not in TYPES_VALIDES:
         raise HTTPException(status_code=400, detail="Type invalide")
     from app.models.document_officiel import DocumentOfficiel
+    from fastapi.responses import RedirectResponse
     db = SessionLocal()
     try:
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if not doc or not doc.url:
             raise HTTPException(status_code=404, detail="Document non disponible")
-        url = doc.url
-        nom = doc.nom_fichier or f"{type}.pdf"
     finally:
         db.close()
-    import requests
-    from fastapi.responses import Response
-    try:
-        r = requests.get(url, timeout=30)
-        r.raise_for_status()
-        content = r.content
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erreur Cloudinary : {e}")
-    return Response(
-        content=content,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
+    configurer_cloudinary()
+    signed_url = cloudinary.utils.private_download_url(
+        f"caces_documents/{type}.pdf",
+        "",
+        resource_type="raw",
+        attachment=True
     )
+    return RedirectResponse(url=signed_url)
 
 
 @router.delete("/document-officiel/{type}")
@@ -327,28 +322,22 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
 @router.get("/carte-testeur/{testeur_id}/download")
 def telecharger_carte_testeur(testeur_id: int):
     from app.models.testeur import Testeur
+    from fastapi.responses import RedirectResponse
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t or not t.carte_url:
             raise HTTPException(status_code=404, detail="Carte non disponible")
-        url = t.carte_url
-        nom = t.carte_nom_fichier or f"carte_testeur_{testeur_id}.pdf"
     finally:
         db.close()
-    import requests
-    from fastapi.responses import Response
-    try:
-        r = requests.get(url, timeout=30)
-        r.raise_for_status()
-        content = r.content
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erreur Cloudinary : {e}")
-    return Response(
-        content=content,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
+    configurer_cloudinary()
+    signed_url = cloudinary.utils.private_download_url(
+        f"caces_testeurs/{testeur_id}.pdf",
+        "",
+        resource_type="raw",
+        attachment=True
     )
+    return RedirectResponse(url=signed_url)
 
 
 @router.get("/liste-images")
