@@ -366,6 +366,28 @@
     </div>
 </div>
 
+<!-- MODAL UPLOAD DOCUMENT -->
+<div id="modal-doc-upload" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:480px; max-width:95vw;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">📤 Uploader un document</h2>
+        <p id="doc-upload-nom" style="color:#555; font-size:14px; margin-bottom:20px;"></p>
+        <input type="hidden" id="doc-upload-type">
+        <div class="form-field" style="margin-bottom:16px;">
+            <label>Date de validité <span style="font-weight:400; color:#888;">(laisser vide si sans échéance)</span></label>
+            <input type="date" id="doc-validite-input">
+        </div>
+        <div class="form-field" style="margin-bottom:16px;">
+            <label>Code PIN administrateur</label>
+            <input type="password" id="doc-pin-input" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:8px;">
+        </div>
+        <p id="doc-pin-error" style="color:red; margin-top:-8px; margin-bottom:12px; display:none;">❌ Code PIN incorrect !</p>
+        <div style="display:flex; gap:12px; justify-content:center;">
+            <button class="btn btn-primary" onclick="confirmerUploadDoc()">📤 Uploader</button>
+            <button class="btn btn-secondary" onclick="fermerDocUpload()">Annuler</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const FAMILLES = {{ familles | map(attribute='code') | list | tojson }};
 
@@ -710,23 +732,39 @@ async function chargerDocuments() {
     document.getElementById('docs-liste').innerHTML = html;
 }
 
-async function uploadDocument(type, input) {
+let _docUploadInput = null;
+
+function uploadDocument(type, input) {
     const file = input.files[0];
     if (!file) return;
-    const pin = prompt('Code PIN administrateur :');
-    if (!pin) { input.value = ''; return; }
-    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); input.value = ''; return; }
-    const dateStr = prompt('Date de validité (JJ/MM/AAAA) — laisser vide si sans échéance :');
-    let dateValidite = '';
-    if (dateStr && dateStr.trim()) {
-        const parts = dateStr.trim().split('/');
-        if (parts.length === 3)
-            dateValidite = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    _docUploadInput = input;
+    document.getElementById('doc-upload-type').value = type;
+    document.getElementById('doc-upload-nom').textContent = `Fichier : ${file.name}`;
+    document.getElementById('doc-validite-input').value = '';
+    document.getElementById('doc-pin-input').value = '';
+    document.getElementById('doc-pin-error').style.display = 'none';
+    document.getElementById('modal-doc-upload').style.display = 'flex';
+}
+
+function fermerDocUpload() {
+    document.getElementById('modal-doc-upload').style.display = 'none';
+    if (_docUploadInput) { _docUploadInput.value = ''; _docUploadInput = null; }
+}
+
+async function confirmerUploadDoc() {
+    const pin = document.getElementById('doc-pin-input').value;
+    if (pin !== '1505') {
+        document.getElementById('doc-pin-error').style.display = 'block';
+        return;
     }
+    const type = document.getElementById('doc-upload-type').value;
+    const dateVal = document.getElementById('doc-validite-input').value;
+    const file = _docUploadInput.files[0];
     const formData = new FormData();
     formData.append('file', file);
     let url = `/api/upload/document-officiel?type=${encodeURIComponent(type)}&pin=${encodeURIComponent(pin)}`;
-    if (dateValidite) url += `&date_validite=${encodeURIComponent(dateValidite)}`;
+    if (dateVal) url += `&date_validite=${encodeURIComponent(dateVal)}`;
+    fermerDocUpload();
     const resp = await fetch(url, { method: 'POST', body: formData });
     if (resp.ok) {
         chargerDocuments();
@@ -734,23 +772,21 @@ async function uploadDocument(type, input) {
         const d = await resp.json().catch(() => ({}));
         alert('Erreur : ' + (d.detail || 'inconnue'));
     }
-    input.value = '';
 }
 
-async function supprimerDocument(type, nom) {
-    const pin = prompt(`Supprimer "${nom}" — Code PIN :`);
-    if (!pin) return;
-    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); return; }
-    const resp = await fetch(
-        `/api/upload/document-officiel/${encodeURIComponent(type)}?pin=${encodeURIComponent(pin)}`,
-        { method: 'DELETE' }
-    );
-    if (resp.ok) {
-        chargerDocuments();
-    } else {
-        const d = await resp.json().catch(() => ({}));
-        alert('Erreur : ' + (d.detail || 'inconnue'));
-    }
+function supprimerDocument(type, nom) {
+    demanderPin(`Supprimer "${nom}" définitivement ?`, async (pin) => {
+        const resp = await fetch(
+            `/api/upload/document-officiel/${encodeURIComponent(type)}?pin=${encodeURIComponent(pin)}`,
+            { method: 'DELETE' }
+        );
+        if (resp.ok) {
+            chargerDocuments();
+        } else {
+            const d = await resp.json().catch(() => ({}));
+            alert('Erreur : ' + (d.detail || 'inconnue'));
+        }
+    });
 }
 </script>
 {% endblock %}
