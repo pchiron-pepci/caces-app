@@ -49,7 +49,10 @@ async def upload_question_images(files: list[UploadFile] = File(...)):
     return {"uploaded": [u["filename"] for u in uploaded], "errors": errors}
 
 @router.post("/associer-images")
-async def associer_images():
+async def associer_images(pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
     configurer_cloudinary()
     from app.models.grille_theorie import ReponseGrille, GrilleTheorie
     db = SessionLocal()
@@ -99,7 +102,10 @@ async def associer_images():
     return {"message": f"{updated} images associees"}
 
 @router.delete("/supprimer-image")
-async def supprimer_image(filename: str):
+async def supprimer_image(filename: str, pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
     configurer_cloudinary()
     try:
         # On supprime l'image de Cloudinary via son public_id

@@ -85,9 +85,12 @@ function handleDrop(event) {
 }
 
 async function associerImages() {
+    const pin = prompt('Code PIN administrateur :');
+    if (!pin) return;
+    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); return; }
     const status = document.getElementById('assoc-status');
     status.textContent = 'Association en cours...';
-    const resp = await fetch('/api/upload/associer-images', { method: 'POST' });
+    const resp = await fetch('/api/upload/associer-images?pin=' + encodeURIComponent(pin), { method: 'POST' });
     if (resp.ok) {
         const data = await resp.json();
         status.textContent = '✅ ' + data.message;
@@ -119,8 +122,10 @@ async function chargerImages() {
 }
 
 async function supprimerImage(filename) {
-    if (!confirm('Supprimer ' + filename + ' ?')) return;
-    const resp = await fetch('/api/upload/supprimer-image?filename=' + encodeURIComponent(filename), {
+    const pin = prompt('Code PIN pour supprimer ' + filename + ' :');
+    if (!pin) return;
+    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); return; }
+    const resp = await fetch('/api/upload/supprimer-image?filename=' + encodeURIComponent(filename) + '&pin=' + encodeURIComponent(pin), {
         method: 'DELETE'
     });
     if (resp.ok) { chargerImages(); }
