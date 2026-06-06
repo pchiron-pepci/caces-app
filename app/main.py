@@ -164,7 +164,7 @@ def page_stagiaires(request: Request):
 def page_testeurs(request: Request):
     from datetime import date
     db = SessionLocal()
-    liste = db.query(Testeur).filter(Testeur.actif == True).all()
+    liste = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
     for t in liste:
         t.habilitations = db.query(HabilitationTesteur).filter(
             HabilitationTesteur.testeur_id == t.id,
