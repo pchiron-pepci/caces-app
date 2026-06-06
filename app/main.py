@@ -21,6 +21,7 @@ from app.models.equipement import Equipement
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
 from app.models.association_log import AssociationLog
+from app.models.document_officiel import DocumentOfficiel
 
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
 from app.models.utilisateur import Utilisateur
@@ -71,6 +72,8 @@ def dashboard(request: Request):
         "sessions": db.query(Session).count(),
         "expirations": 0
     }
+    docs_list = db.query(DocumentOfficiel).all()
+    docs_map = {d.type: d for d in docs_list}
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -78,7 +81,8 @@ def dashboard(request: Request):
         context={
             "page": "dashboard",
             "stats": stats,
-            "testeurs": testeurs_list
+            "testeurs": testeurs_list,
+            "docs": docs_map
         }
     )
 

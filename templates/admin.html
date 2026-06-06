@@ -14,6 +14,7 @@
     <button class="tab-btn" onclick="showTab('habilitations', this)">👨‍🏫 Habilitations testeurs</button>
     <button class="tab-btn" onclick="showTab('lieux', this)">📍 Lieux</button>
     <button class="tab-btn" onclick="showTab('parametres', this)">⚙️ Paramètres</button>
+    <button class="tab-btn" onclick="showTab('documents', this); chargerDocuments();">📄 Documents officiels</button>
 </div>
 
 <style>
@@ -229,6 +230,19 @@
     </div>
 </div>
 
+<!-- TAB DOCUMENTS OFFICIELS -->
+<div id="tab-documents" style="display:none;">
+    <div class="card">
+        <div class="card-header"><h2>📄 Documents officiels</h2></div>
+        <div style="padding:24px;">
+            <p style="color:#666; font-size:14px; margin-bottom:20px;">
+                Certificats et documents réglementaires PEPCI. Format PDF uniquement.
+            </p>
+            <div id="docs-liste">Chargement...</div>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL PIN -->
 <div id="modal-pin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:32px; width:400px; text-align:center;">
@@ -356,7 +370,7 @@
 const FAMILLES = {{ familles | map(attribute='code') | list | tojson }};
 
 function showTab(name, btn) {
-    ['cartographie','habilitations','lieux','parametres'].forEach(t => {
+    ['cartographie','habilitations','lieux','parametres','documents'].forEach(t => {
         document.getElementById('tab-' + t).style.display = 'none';
     });
     document.getElementById('tab-' + name).style.display = 'block';
@@ -630,6 +644,69 @@ function desactiverLieu(id, nom) {
 
 function sauvegarderParametres() {
     alert('Paramètres sauvegardés !');
+}
+
+const DOCUMENTS_TYPES = [
+    { type: 'certificat_organisme', label: 'Certificat organisme (DEKRA...)' },
+    { type: 'attestation_assurance', label: 'Attestation assurance' },
+    { type: 'procedure_interne', label: 'Procédure interne CACES' }
+];
+
+async function chargerDocuments() {
+    const resp = await fetch('/api/upload/documents-officiels');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const docsMap = {};
+    data.documents.forEach(d => { docsMap[d.type] = d; });
+
+    const html = DOCUMENTS_TYPES.map(t => {
+        const doc = docsMap[t.type];
+        const statut = doc
+            ? `<span style="color:#2e7d32; font-size:13px;">✅ ${doc.nom_fichier} <span style="color:#888;">(${doc.date_upload})</span></span>`
+            : `<span style="color:#888; font-size:13px;">— Non uploadé</span>`;
+        const btnDl = doc
+            ? `<a href="${doc.url}" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:4px 12px;">📥 Télécharger</a>`
+            : '';
+        return `
+            <div style="display:flex; align-items:center; gap:12px; padding:16px 0; border-bottom:1px solid #e8ecf4;">
+                <div style="flex:1;">
+                    <div style="font-weight:600; font-size:14px;">${t.label}</div>
+                    <div style="margin-top:4px;">${statut}</div>
+                </div>
+                ${btnDl}
+                <div>
+                    <input type="file" id="file-doc-${t.type}" accept=".pdf" style="display:none"
+                        onchange="uploadDocument('${t.type}', this)">
+                    <button class="btn btn-primary" style="font-size:12px; padding:4px 12px;"
+                        onclick="document.getElementById('file-doc-${t.type}').click()">
+                        📤 Uploader PDF
+                    </button>
+                </div>
+            </div>`;
+    }).join('');
+    document.getElementById('docs-liste').innerHTML = html;
+}
+
+async function uploadDocument(type, input) {
+    const file = input.files[0];
+    if (!file) return;
+    const pin = prompt('Code PIN administrateur :');
+    if (!pin) return;
+    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); return; }
+    const formData = new FormData();
+    formData.append('file', file);
+    const resp = await fetch(
+        `/api/upload/document-officiel?type=${encodeURIComponent(type)}&pin=${encodeURIComponent(pin)}`,
+        { method: 'POST', body: formData }
+    );
+    if (resp.ok) {
+        alert('✅ Document uploadé !');
+        chargerDocuments();
+    } else {
+        const d = await resp.json().catch(() => ({}));
+        alert('Erreur : ' + (d.detail || 'inconnue'));
+    }
+    input.value = '';
 }
 </script>
 {% endblock %}

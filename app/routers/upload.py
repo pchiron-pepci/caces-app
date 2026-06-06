@@ -149,6 +149,64 @@ async def supprimer_image(filename: str, pin: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/documents-officiels")
+def get_documents_officiels():
+    from app.models.document_officiel import DocumentOfficiel
+    db = SessionLocal()
+    try:
+        docs = db.query(DocumentOfficiel).all()
+        return {
+            "documents": [
+                {
+                    "type": d.type,
+                    "url": d.url,
+                    "nom_fichier": d.nom_fichier,
+                    "date_upload": d.date_upload.strftime("%d/%m/%Y %H:%M") if d.date_upload else None
+                }
+                for d in docs
+            ]
+        }
+    finally:
+        db.close()
+
+
+@router.post("/document-officiel")
+async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(...)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    TYPES_VALIDES = ["certificat_organisme", "attestation_assurance", "procedure_interne"]
+    if type not in TYPES_VALIDES:
+        raise HTTPException(status_code=400, detail="Type de document invalide")
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Format PDF uniquement")
+    configurer_cloudinary()
+    contents = await file.read()
+    public_id = f"caces_documents/{type}"
+    result = cloudinary.uploader.upload(
+        contents,
+        public_id=public_id,
+        resource_type="raw",
+        overwrite=True
+    )
+    url = result["secure_url"]
+    from app.models.document_officiel import DocumentOfficiel
+    from datetime import datetime
+    db = SessionLocal()
+    try:
+        doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
+        if doc:
+            doc.url = url
+            doc.nom_fichier = file.filename
+            doc.date_upload = datetime.utcnow()
+        else:
+            db.add(DocumentOfficiel(type=type, url=url, nom_fichier=file.filename, date_upload=datetime.utcnow()))
+        db.commit()
+    finally:
+        db.close()
+    return {"message": "Document uploade", "url": url}
+
+
 @router.get("/liste-images")
 def liste_images():
     configurer_cloudinary()

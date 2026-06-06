@@ -92,4 +92,44 @@
         </table>
     </div>
 </div>
+
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
+        <h2>📄 Documents officiels</h2>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Document</th>
+                <th>Fichier</th>
+                <th>Date</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set docs_types = [
+                ('certificat_organisme', 'Certificat organisme (DEKRA...)'),
+                ('attestation_assurance', 'Attestation assurance'),
+                ('procedure_interne', 'Procédure interne CACES')
+            ] %}
+            {% for type_key, type_label in docs_types %}
+            <tr>
+                <td><strong>{{ type_label }}</strong></td>
+                {% if docs.get(type_key) %}
+                <td>{{ docs[type_key].nom_fichier }}</td>
+                <td>{{ docs[type_key].date_upload.strftime('%d/%m/%Y') if docs[type_key].date_upload else '—' }}</td>
+                <td>
+                    <a href="{{ docs[type_key].url }}" target="_blank"
+                        class="btn btn-secondary" style="font-size:12px; padding:4px 10px;">
+                        📥 Télécharger
+                    </a>
+                </td>
+                {% else %}
+                <td colspan="3" style="color:#888; font-style:italic;">Non disponible</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}
