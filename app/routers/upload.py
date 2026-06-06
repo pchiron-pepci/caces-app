@@ -226,13 +226,10 @@ def telecharger_document_officiel(type: str):
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if not doc or not doc.url:
             raise HTTPException(status_code=404, detail="Document non disponible")
-        doc_url = doc.url
     finally:
         db.close()
-    public_id = _extraire_public_id(doc_url)
-    if not public_id:
-        raise HTTPException(status_code=500, detail="URL document invalide")
     configurer_cloudinary()
+    public_id = f"document_{type}.pdf"
     signed_url = cloudinary.utils.private_download_url(public_id, "", resource_type="raw", attachment=True)
     return RedirectResponse(url=signed_url)
 
@@ -336,13 +333,10 @@ def telecharger_carte_testeur(testeur_id: int):
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t or not t.carte_url:
             raise HTTPException(status_code=404, detail="Carte non disponible")
-        carte_url = t.carte_url
     finally:
         db.close()
-    public_id = _extraire_public_id(carte_url)
-    if not public_id:
-        raise HTTPException(status_code=500, detail="URL carte invalide")
     configurer_cloudinary()
+    public_id = f"testeur_{testeur_id}_carte.pdf"
     signed_url = cloudinary.utils.private_download_url(public_id, "", resource_type="raw", attachment=True)
     return RedirectResponse(url=signed_url)
 
@@ -390,24 +384,18 @@ async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestat
 @router.get("/attestation-prevention/{testeur_id}/download")
 def telecharger_attestation_prevention(testeur_id: int):
     from app.models.testeur import Testeur
-    from fastapi.responses import Response
-    import requests as req
+    from fastapi.responses import RedirectResponse
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t or not t.attestation_prevention_url:
             raise HTTPException(status_code=404, detail="Attestation non disponible")
-        url = t.attestation_prevention_url
-        nom_fichier = f"{t.nom}_{t.prenom}_{t.attestation_prevention_nom or 'attestation.pdf'}"
     finally:
         db.close()
-    r = req.get(url, timeout=10)
-    r.raise_for_status()
-    return Response(
-        content=r.content,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom_fichier}"'}
-    )
+    configurer_cloudinary()
+    public_id = f"testeur_{testeur_id}_prevention.pdf"
+    signed_url = cloudinary.utils.private_download_url(public_id, "", resource_type="raw", attachment=True)
+    return RedirectResponse(url=signed_url)
 
 
 @router.delete("/attestation-prevention/{testeur_id}")
