@@ -73,7 +73,7 @@ app/
 |---|---|---|
 | `testeurs.py` | `/api/testeurs` | CRUD testeurs |
 | `stagiaires.py` | `/api/stagiaires` | CRUD stagiaires |
-| `sessions.py` | `/api/sessions` | Gestion sessions CACES |
+| `sessions.py` | `/api/sessions` | Gestion sessions CACES® |
 | `admin.py` | `/admin` | Catégories, habilitations, lieux |
 | `auth.py` | `/auth` | Login JWT |
 | `upload.py` | — | Import fichiers |
@@ -120,7 +120,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 1. **UT testeur** : max 6 UT/testeur/jour
 2. **Machines** : alerte si > 7 UT/catégorie/jour → `ceil(UT/7)` machines recommandées
 3. **Résultats théorie** : jamais écrasés, traçabilité totale
-4. **Meilleur résultat réussi** affiché sur la carte CACES avec sa date
+4. **Meilleur résultat réussi** affiché sur la carte CACES® avec sa date
 5. **Grilles INRS** : règle 10-30% par thème, comptage sur jours actifs uniquement
 6. **Identité candidat** : case à cocher (non bloquante) dans la modal saisie résultat pratique
 7. **Suppression d'un jour** : supprime aussi les `ResultatTheorie` et `SessionEpreuve` liés
@@ -173,7 +173,7 @@ python init_questions_r482.py
 |---|---|---|
 | URGENT | Upgrader caces-db Render avant 05/07/2026 | en attente |
 | Haute | Suppression habilitation testeur — hard delete avec PIN (modal testeurs) | en cours |
-| Haute | Cartes CACES PDF (format CR80, reportlab) | à faire |
+| Haute | Cartes CACES® PDF (format CR80, reportlab) | à faire |
 | Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | à faire |
 | Haute | Jours de formation (nouveau type, UT personnalisés) | à faire |
 | Moyenne | Externaliser JS inline de admin.html (contrainte CSP) | à faire |
