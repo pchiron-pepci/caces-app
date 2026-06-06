@@ -652,6 +652,24 @@ const DOCUMENTS_TYPES = [
     { type: 'procedure_interne', label: 'Procédure interne CACES®' }
 ];
 
+function dlUrl(url, nom) {
+    if (!url) return '#';
+    return url.replace('/raw/upload/', `/raw/upload/fl_attachment:${encodeURIComponent(nom)}/`);
+}
+
+function badgeValidite(dateIso) {
+    if (!dateIso) return '';
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const d = new Date(dateIso + 'T00:00:00');
+    const delta = Math.round((d - today) / 86400000);
+    const dateLocale = d.toLocaleDateString('fr-FR');
+    if (delta < 0)
+        return `<span style="background:#ffebee;color:#c62828;padding:2px 8px;border-radius:12px;font-size:11px;">❌ Expiré le ${dateLocale}</span>`;
+    if (delta <= 30)
+        return `<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:12px;font-size:11px;">⚠️ Expire dans ${delta}j (${dateLocale})</span>`;
+    return `<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;">✅ Valide jusqu'au ${dateLocale}</span>`;
+}
+
 async function chargerDocuments() {
     const resp = await fetch('/api/upload/documents-officiels');
     if (!resp.ok) return;
@@ -661,23 +679,28 @@ async function chargerDocuments() {
 
     const html = DOCUMENTS_TYPES.map(t => {
         const doc = docsMap[t.type];
-        const statut = doc
-            ? `<span style="color:#2e7d32; font-size:13px;">✅ ${doc.nom_fichier} <span style="color:#888;">(${doc.date_upload})</span></span>`
-            : `<span style="color:#888; font-size:13px;">— Non uploadé</span>`;
-        const btnDl = doc
-            ? `<a href="${doc.url}" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:4px 12px;">📥 Télécharger</a>`
+        const fichierInfo = doc && doc.url
+            ? `<span style="font-size:13px;color:#444;">${doc.nom_fichier}</span> ${badgeValidite(doc.date_validite)}`
+            : `<span style="color:#888;font-size:13px;">— Non uploadé</span>`;
+        const btnDl = doc && doc.url
+            ? `<a href="${dlUrl(doc.url, doc.nom_fichier)}" class="btn btn-secondary" style="font-size:12px;padding:4px 12px;">📥 Télécharger</a>`
+            : '';
+        const btnSuppr = doc && doc.url
+            ? `<button class="btn btn-danger" style="font-size:12px;padding:4px 10px;background:#ffebee;color:#c62828;border:none;"
+                   onclick="supprimerDocument('${t.type}', '${doc.nom_fichier}')">🗑️</button>`
             : '';
         return `
-            <div style="display:flex; align-items:center; gap:12px; padding:16px 0; border-bottom:1px solid #e8ecf4;">
+            <div style="display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid #e8ecf4;">
                 <div style="flex:1;">
-                    <div style="font-weight:600; font-size:14px;">${t.label}</div>
-                    <div style="margin-top:4px;">${statut}</div>
+                    <div style="font-weight:600;font-size:14px;">${t.label}</div>
+                    <div style="margin-top:4px;">${fichierInfo}</div>
                 </div>
                 ${btnDl}
+                ${btnSuppr}
                 <div>
                     <input type="file" id="file-doc-${t.type}" accept=".pdf" style="display:none"
                         onchange="uploadDocument('${t.type}', this)">
-                    <button class="btn btn-primary" style="font-size:12px; padding:4px 12px;"
+                    <button class="btn btn-primary" style="font-size:12px;padding:4px 12px;"
                         onclick="document.getElementById('file-doc-${t.type}').click()">
                         📤 Uploader PDF
                     </button>
@@ -691,22 +714,43 @@ async function uploadDocument(type, input) {
     const file = input.files[0];
     if (!file) return;
     const pin = prompt('Code PIN administrateur :');
-    if (!pin) return;
-    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); return; }
+    if (!pin) { input.value = ''; return; }
+    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); input.value = ''; return; }
+    const dateStr = prompt('Date de validité (JJ/MM/AAAA) — laisser vide si sans échéance :');
+    let dateValidite = '';
+    if (dateStr && dateStr.trim()) {
+        const parts = dateStr.trim().split('/');
+        if (parts.length === 3)
+            dateValidite = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    }
     const formData = new FormData();
     formData.append('file', file);
-    const resp = await fetch(
-        `/api/upload/document-officiel?type=${encodeURIComponent(type)}&pin=${encodeURIComponent(pin)}`,
-        { method: 'POST', body: formData }
-    );
+    let url = `/api/upload/document-officiel?type=${encodeURIComponent(type)}&pin=${encodeURIComponent(pin)}`;
+    if (dateValidite) url += `&date_validite=${encodeURIComponent(dateValidite)}`;
+    const resp = await fetch(url, { method: 'POST', body: formData });
     if (resp.ok) {
-        alert('✅ Document uploadé !');
         chargerDocuments();
     } else {
         const d = await resp.json().catch(() => ({}));
         alert('Erreur : ' + (d.detail || 'inconnue'));
     }
     input.value = '';
+}
+
+async function supprimerDocument(type, nom) {
+    const pin = prompt(`Supprimer "${nom}" — Code PIN :`);
+    if (!pin) return;
+    if (pin !== '1505') { alert('❌ Code PIN incorrect !'); return; }
+    const resp = await fetch(
+        `/api/upload/document-officiel/${encodeURIComponent(type)}?pin=${encodeURIComponent(pin)}`,
+        { method: 'DELETE' }
+    );
+    if (resp.ok) {
+        chargerDocuments();
+    } else {
+        const d = await resp.json().catch(() => ({}));
+        alert('Erreur : ' + (d.detail || 'inconnue'));
+    }
 }
 </script>
 {% endblock %}

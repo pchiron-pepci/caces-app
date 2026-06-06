@@ -161,7 +161,7 @@ def get_documents_officiels():
                     "type": d.type,
                     "url": d.url,
                     "nom_fichier": d.nom_fichier,
-                    "date_upload": d.date_upload.strftime("%d/%m/%Y %H:%M") if d.date_upload else None
+                    "date_validite": d.date_validite.strftime("%Y-%m-%d") if d.date_validite else None
                 }
                 for d in docs
             ]
@@ -171,7 +171,7 @@ def get_documents_officiels():
 
 
 @router.post("/document-officiel")
-async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(...)):
+async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(...), date_validite: str = None):
     PIN_SECRET = "1505"
     if pin != PIN_SECRET:
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
@@ -182,7 +182,7 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     configurer_cloudinary()
     contents = await file.read()
-    public_id = f"caces_documents/{type}"
+    public_id = f"caces_documents/{type}.pdf"
     result = cloudinary.uploader.upload(
         contents,
         public_id=public_id,
@@ -194,17 +194,50 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
     from datetime import datetime
     db = SessionLocal()
     try:
+        dv = None
+        if date_validite:
+            try:
+                dv = datetime.strptime(date_validite, "%Y-%m-%d")
+            except ValueError:
+                pass
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if doc:
             doc.url = url
             doc.nom_fichier = file.filename
-            doc.date_upload = datetime.utcnow()
+            doc.date_validite = dv
         else:
-            db.add(DocumentOfficiel(type=type, url=url, nom_fichier=file.filename, date_upload=datetime.utcnow()))
+            db.add(DocumentOfficiel(type=type, url=url, nom_fichier=file.filename, date_validite=dv))
         db.commit()
     finally:
         db.close()
     return {"message": "Document uploade", "url": url}
+
+
+@router.delete("/document-officiel/{type}")
+def supprimer_document_officiel(type: str, pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    TYPES_VALIDES = ["certificat_organisme", "attestation_assurance", "procedure_interne"]
+    if type not in TYPES_VALIDES:
+        raise HTTPException(status_code=400, detail="Type de document invalide")
+    configurer_cloudinary()
+    try:
+        cloudinary.uploader.destroy(f"caces_documents/{type}.pdf", resource_type="raw")
+    except Exception:
+        pass
+    from app.models.document_officiel import DocumentOfficiel
+    db = SessionLocal()
+    try:
+        doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
+        if doc:
+            doc.url = None
+            doc.nom_fichier = None
+            doc.date_validite = None
+            db.commit()
+    finally:
+        db.close()
+    return {"message": "Document supprime"}
 
 
 @router.get("/liste-images")

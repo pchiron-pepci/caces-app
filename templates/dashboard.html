@@ -102,7 +102,7 @@
             <tr>
                 <th>Document</th>
                 <th>Fichier</th>
-                <th>Date</th>
+                <th>Validité</th>
                 <th></th>
             </tr>
         </thead>
@@ -113,19 +113,33 @@
                 ('procedure_interne', 'Procédure interne CACES®')
             ] %}
             {% for type_key, type_label in docs_types %}
+            {% set doc = docs.get(type_key) %}
             <tr>
                 <td><strong>{{ type_label }}</strong></td>
-                {% if docs.get(type_key) %}
-                <td>{{ docs[type_key].nom_fichier }}</td>
-                <td>{{ docs[type_key].date_upload.strftime('%d/%m/%Y') if docs[type_key].date_upload else '—' }}</td>
+                {% if doc and doc.url %}
+                <td>{{ doc.nom_fichier }}</td>
                 <td>
-                    <a href="{{ docs[type_key].url }}" target="_blank"
-                        class="btn btn-secondary" style="font-size:12px; padding:4px 10px;">
+                    {% if doc.date_validite %}
+                        {% set delta = (doc.date_validite.date() - today).days %}
+                        {% if delta < 0 %}
+                            <span class="badge" style="background:#ffebee;color:#c62828;">❌ Expiré le {{ doc.date_validite.strftime('%d/%m/%Y') }}</span>
+                        {% elif delta <= 30 %}
+                            <span class="badge" style="background:#fff3e0;color:#e65100;">⚠️ {{ delta }}j ({{ doc.date_validite.strftime('%d/%m/%Y') }})</span>
+                        {% else %}
+                            <span class="badge" style="background:#e8f5e9;color:#2e7d32;">✅ {{ doc.date_validite.strftime('%d/%m/%Y') }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span style="color:#888;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% set dl = doc.url.replace('/raw/upload/', '/raw/upload/fl_attachment:' + doc.nom_fichier + '/') %}
+                    <a href="{{ dl }}" class="btn btn-secondary" style="font-size:12px;padding:4px 10px;">
                         📥 Télécharger
                     </a>
                 </td>
                 {% else %}
-                <td colspan="3" style="color:#888; font-style:italic;">Non disponible</td>
+                <td colspan="3" style="color:#888;font-style:italic;">Non disponible</td>
                 {% endif %}
             </tr>
             {% endfor %}

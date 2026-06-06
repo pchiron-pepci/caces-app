@@ -23,10 +23,19 @@ from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationG
 from app.models.association_log import AssociationLog
 from app.models.document_officiel import DocumentOfficiel
 
+from sqlalchemy import text
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
 from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS date_validite TIMESTAMP"))
+        _conn.execute(text("ALTER TABLE document_officiel DROP COLUMN IF EXISTS date_upload"))
+        _conn.commit()
+except Exception:
+    pass
 
 app = FastAPI(
     title="CACES® Manager",
@@ -64,6 +73,7 @@ app.include_router(statistiques.router)
 
 @app.get("/")
 def dashboard(request: Request):
+    from datetime import date
     db = SessionLocal()
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
     stats = {
@@ -82,7 +92,8 @@ def dashboard(request: Request):
             "page": "dashboard",
             "stats": stats,
             "testeurs": testeurs_list,
-            "docs": docs_map
+            "docs": docs_map,
+            "today": date.today()
         }
     )
 
