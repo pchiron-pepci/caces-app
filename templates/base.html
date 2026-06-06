@@ -95,8 +95,12 @@ if (role !== 'admin') {
     }
 
     // Ajouter le token aux requetes fetch
+    // Ne pas toucher aux requetes FormData : le navigateur gere Content-Type+boundary automatiquement
     const originalFetch = window.fetch;
     window.fetch = function(url, options = {}) {
+        if (options.body instanceof FormData) {
+            return originalFetch(url, options);
+        }
         const token = localStorage.getItem('token');
         if (token) {
             options.headers = options.headers || {};
