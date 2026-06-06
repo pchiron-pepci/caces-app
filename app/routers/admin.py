@@ -84,7 +84,6 @@ def update_habilitation(id: int, data: HabilitationUpdate, db: Session = Depends
         raise HTTPException(status_code=404, detail="Habilitation non trouvee")
     h.date_integration = data.date_integration
     h.date_expiration = data.date_expiration
-    h.date_prochain_controle = data.date_prochain_controle
     h.option_pe = data.option_pe
     h.option_tel = data.option_tel
     db.commit()
