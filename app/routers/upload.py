@@ -280,7 +280,7 @@ async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = Fil
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     configurer_cloudinary()
     contents = await file.read()
-    public_id = f"caces_testeurs/{testeur_id}/{file.filename}"
+    public_id = f"caces_testeurs/{testeur_id}_{file.filename}"
     try:
         result = cloudinary.uploader.upload(
             contents,
