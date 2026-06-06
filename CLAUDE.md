@@ -179,6 +179,11 @@ python init_questions_r482.py
 | Moyenne | Externaliser JS inline de admin.html (contrainte CSP) | à faire |
 | Moyenne | Grilles R486, R489 (scripts init à créer) | à faire |
 | Moyenne | Multi-tenant (subdomain routing, database-per-tenant) | à faire |
+
+### Décision architecturale : multi-tenant Cloudinary
+**Option A retenue — un compte Cloudinary distinct par tenant.**
+- Credentials `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` stockés dans les variables d'environnement de chaque instance Render, ou dans une table `tenant_config` en base.
+- Au provisioning d'un nouveau tenant : créer un compte Cloudinary gratuit et renseigner les 3 credentials.
 | Basse | Responsive mobile (CSS media queries) | à faire |
 | Basse | UT options = 0 (actuellement 0.5 par défaut) | à faire |
 
