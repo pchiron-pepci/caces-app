@@ -113,7 +113,7 @@ def dashboard(request: Request):
     limite_5ans = today - timedelta(days=5*365)
     limite_4ans = today - timedelta(days=4*365)
     db = SessionLocal()
-    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
     for t in testeurs_list:
         t.habilitations = db.query(HabilitationTesteur).filter(
             HabilitationTesteur.testeur_id == t.id,
