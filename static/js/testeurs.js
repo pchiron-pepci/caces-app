@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
 
     document.getElementById('carte-file-input').addEventListener('change', function() {
+        console.log('[CARTE] change event, files:', this.files.length);
         if (this.files.length === 0) return;
         carteUploadFile = this.files[0];
         document.getElementById('carte-upload-nom').textContent = carteUploadFile.name;
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('carte-confirmer-btn').addEventListener('click', async function() {
+        console.log('[CARTE] confirmer click, file:', carteUploadFile, 'testeurId:', carteUploadTesteurId);
         if (!carteUploadFile || !carteUploadTesteurId) return;
         const pin = document.getElementById('carte-pin-input').value;
         const formData = new FormData();
