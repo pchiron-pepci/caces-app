@@ -697,13 +697,13 @@ async function chargerDocuments() {
 
     const html = DOCUMENTS_TYPES.map(t => {
         const doc = docsMap[t.type];
-        const fichierInfo = doc && doc.url
+        const fichierInfo = doc && doc.has_file
             ? `<span style="font-size:13px;color:#444;">${doc.nom_fichier}</span> ${badgeValidite(doc.date_validite)}`
             : `<span style="color:#888;font-size:13px;">— Non uploadé</span>`;
-        const btnDl = doc && doc.url
+        const btnDl = doc && doc.has_file
             ? `<a href="/api/upload/document-officiel/${t.type}/download" class="btn btn-secondary" style="font-size:12px;padding:4px 12px;">📥 Télécharger</a>`
             : '';
-        const btnSuppr = doc && doc.url
+        const btnSuppr = doc && doc.has_file
             ? `<button class="btn btn-danger" style="font-size:12px;padding:4px 10px;background:#ffebee;color:#c62828;border:none;"
                    onclick="supprimerDocument('${t.type}', '${doc.nom_fichier}')">🗑️</button>`
             : '';
