@@ -498,9 +498,11 @@ function activerHabTesteur(id, nom) {
 }
 
 function desactiverHabTesteur(id, nom) {
-    if (!confirm(`Désactiver l'habilitation : ${nom} ?`)) return;
-    fetch(`/admin/habilitation/${id}/desactiver`, { method: 'POST' })
-        .then(r => { if (r.ok) location.reload(); else alert('Erreur !'); });
+    demanderPin(`Désactiver l'habilitation : ${nom} ?`, async () => {
+        const resp = await fetch(`/admin/habilitation/${id}/desactiver`, { method: 'POST' });
+        if (resp.ok) location.reload();
+        else alert('Erreur !');
+    });
 }
 
 function supprimerHabTesteur(id, nom) {
