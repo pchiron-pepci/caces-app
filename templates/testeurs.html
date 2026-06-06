@@ -105,21 +105,21 @@
                     {% else %}
                         <span style="font-size:11px;color:#2e7d32;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</span>
                     {% endif %}
-                    <div style="margin-top:6px; display:flex; gap:4px; flex-wrap:wrap;">
+                {% else %}
+                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
+                {% endif %}
+                <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+                    {% if t.attestation_prevention_pdf %}
                         <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;">📥</a>
                         <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"
                             data-action="prevention-supprimer"
                             data-id="{{ t.id }}"
                             data-nom-fichier="{{ t.attestation_prevention_nom or 'attestation.pdf' }}">🗑️</button>
-                    </div>
-                {% else %}
-                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
-                {% endif %}
-                <div style="margin-top:8px;">
+                    {% endif %}
                     <input type="file" id="prev-file-{{ t.id }}" accept=".pdf" style="display:none"
                         onchange="ouvrirModalPrevention({{ t.id }}, this)">
                     <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;"
-                        onclick="document.getElementById('prev-file-{{ t.id }}').click()">📤 Uploader</button>
+                        onclick="document.getElementById('prev-file-{{ t.id }}').click()">📤</button>
                 </div>
             </div>
             <!-- Carte CACES® -->
@@ -127,21 +127,21 @@
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Carte CACES®</div>
                 {% if t.carte_pdf %}
                     <span style="font-size:11px; color:#2e7d32;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</span>
-                    <div style="margin-top:6px; display:flex; gap:4px; flex-wrap:wrap;">
+                {% else %}
+                    <span style="color:#888; font-size:12px;">—</span>
+                {% endif %}
+                <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+                    {% if t.carte_pdf %}
                         <a href="/api/upload/carte-testeur/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px; font-size:11px;">📥</a>
                         <button class="btn btn-danger" style="padding:3px 8px; font-size:11px;"
                             data-action="carte-supprimer"
                             data-id="{{ t.id }}"
                             data-nom-fichier="{{ t.carte_nom_fichier or 'carte.pdf' }}">🗑️</button>
-                    </div>
-                {% else %}
-                    <span style="color:#888; font-size:12px;">—</span>
-                {% endif %}
-                <div style="margin-top:8px;">
+                    {% endif %}
                     <input type="file" id="carte-file-{{ t.id }}" accept=".pdf" style="display:none"
                         onchange="uploadCarte({{ t.id }}, this)">
                     <button class="btn btn-secondary" style="padding:3px 8px; font-size:11px;"
-                        onclick="document.getElementById('carte-file-{{ t.id }}').click()">📤 Uploader</button>
+                        onclick="document.getElementById('carte-file-{{ t.id }}').click()">📤</button>
                 </div>
             </div>
         </div>
