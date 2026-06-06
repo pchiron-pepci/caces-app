@@ -93,7 +93,10 @@ async function chargerDerniereAssociation() {
     const data = await resp.json();
     const el = document.getElementById('derniere-assoc');
     if (data.date) {
-        el.textContent = 'Dernière association : ' + data.date + ' (' + data.nb_images + ' images)';
+        const detail = (data.total_cloudinary != null)
+            ? data.nb_images + ' / ' + data.total_cloudinary
+            : data.nb_images;
+        el.textContent = 'Dernière association : ' + data.date + ' (' + detail + ' images)';
     } else {
         el.textContent = 'Aucune association enregistrée';
     }

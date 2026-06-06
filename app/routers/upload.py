@@ -112,11 +112,22 @@ def derniere_association():
     db = SessionLocal()
     try:
         log = db.query(AssociationLog).order_by(AssociationLog.date_association.desc()).first()
+        configurer_cloudinary()
+        try:
+            result = cloudinary.api.resources(
+                type="upload",
+                prefix="caces_questions/",
+                max_results=500
+            )
+            total_cloudinary = len(result.get("resources", []))
+        except Exception:
+            total_cloudinary = None
         if not log:
-            return {"date": None, "nb_images": None}
+            return {"date": None, "nb_images": None, "total_cloudinary": total_cloudinary}
         return {
             "date": log.date_association.strftime("%d/%m/%Y %H:%M"),
-            "nb_images": log.nb_images
+            "nb_images": log.nb_images,
+            "total_cloudinary": total_cloudinary
         }
     finally:
         db.close()
