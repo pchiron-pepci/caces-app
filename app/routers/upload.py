@@ -331,16 +331,24 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
 @router.get("/carte-testeur/{testeur_id}/download")
 def telecharger_carte_testeur(testeur_id: int):
     from app.models.testeur import Testeur
-    from fastapi.responses import RedirectResponse
+    from fastapi.responses import Response
+    import requests as req
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t or not t.carte_url:
             raise HTTPException(status_code=404, detail="Carte non disponible")
         carte_url = t.carte_url
+        nom_fichier = t.carte_nom_fichier or "carte.pdf"
     finally:
         db.close()
-    return RedirectResponse(url=carte_url)
+    r = req.get(carte_url, timeout=10)
+    r.raise_for_status()
+    return Response(
+        content=r.content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom_fichier}"'}
+    )
 
 
 @router.get("/liste-images")
