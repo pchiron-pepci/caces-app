@@ -45,6 +45,10 @@
                 <input type="email" id="user-email" placeholder="email@pepci.fr">
             </div>
             <div class="form-field">
+                <label>Téléphone</label>
+                <input type="text" id="user-tel" placeholder="0612345678">
+            </div>
+            <div class="form-field">
                 <label>Role *</label>
                 <select id="user-role">
                     <option value="testeur">Testeur</option>
@@ -136,6 +140,7 @@ function editerUser(id) {
     document.getElementById('user-nom-input').value = u.nom;
     document.getElementById('user-prenom').value = u.prenom;
     document.getElementById('user-email').value = u.email;
+    document.getElementById('user-tel').value = u.telephone || '';
     document.getElementById('user-role').value = u.role;
     document.getElementById('user-referent').value = u.role_referent || '';
     document.getElementById('user-mdp').value = '';
@@ -149,6 +154,7 @@ function ouvrirAjout() {
     document.getElementById('user-nom-input').value = '';
     document.getElementById('user-prenom').value = '';
     document.getElementById('user-email').value = '';
+    document.getElementById('user-tel').value = '';
     document.getElementById('user-role').value = 'testeur';
     document.getElementById('user-referent').value = '';
     document.getElementById('user-mdp').value = '';
@@ -166,6 +172,7 @@ async function sauvegarderUser() {
     const prenom = document.getElementById('user-prenom').value;
     const email = document.getElementById('user-email').value;
     const role = document.getElementById('user-role').value;
+    const telephone = document.getElementById('user-tel').value || null;
     const role_referent = document.getElementById('user-referent').value || null;
     const mdp = document.getElementById('user-mdp').value;
     const token = localStorage.getItem('token');
@@ -177,7 +184,7 @@ async function sauvegarderUser() {
         const resp = await fetch('/api/auth/utilisateurs/' + id, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ nom, prenom, email, role, role_referent })
+            body: JSON.stringify({ nom, prenom, email, role, telephone, role_referent })
         });
         if (resp.ok) { fermerModal(); chargerUsers(); }
         else alert('Erreur lors de la modification !');
@@ -186,7 +193,7 @@ async function sauvegarderUser() {
         const resp = await fetch('/api/auth/utilisateurs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ nom, prenom, email, role, role_referent, mot_de_passe: mdp })
+            body: JSON.stringify({ nom, prenom, email, role, telephone, role_referent, mot_de_passe: mdp })
         });
         if (resp.ok) { fermerModal(); chargerUsers(); }
         else {

@@ -57,6 +57,7 @@ except Exception:
 try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS role_referent VARCHAR"))
+        _conn.execute(text("ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS telephone VARCHAR"))
         _conn.commit()
 except Exception:
     pass

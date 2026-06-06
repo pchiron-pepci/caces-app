@@ -109,6 +109,7 @@ class UtilisateurCreate(BaseModel):
     email: str
     mot_de_passe: str
     role: str = "testeur"
+    telephone: Optional[str] = None
     role_referent: Optional[str] = None
 
     @validator('role')
@@ -122,6 +123,7 @@ class UtilisateurUpdate(BaseModel):
     prenom: Optional[str] = None
     email: Optional[str] = None
     role: Optional[str] = None
+    telephone: Optional[str] = None
     role_referent: Optional[str] = None
     actif: Optional[bool] = None
 
@@ -150,6 +152,7 @@ def creer_utilisateur(data: UtilisateurCreate, current_user: Utilisateur = Depen
         email=data.email,
         mot_de_passe=hasher_mot_de_passe(data.mot_de_passe),
         role=data.role,
+        telephone=data.telephone,
         role_referent=data.role_referent,
         actif=True
     )
@@ -168,6 +171,7 @@ def modifier_utilisateur(id: int, data: UtilisateurUpdate, current_user: Utilisa
     if data.prenom: u.prenom = data.prenom
     if data.email: u.email = data.email
     if data.role: u.role = data.role
+    if data.telephone is not None: u.telephone = data.telephone or None
     if data.role_referent is not None: u.role_referent = data.role_referent or None
     if data.actif is not None: u.actif = data.actif
     db.commit()

@@ -169,13 +169,14 @@
             {% if referents %}
             <table class="table">
                 <thead>
-                    <tr><th>Nom</th><th>Rôle</th><th>Email</th></tr>
+                    <tr><th>Nom</th><th>Rôle</th><th>Téléphone</th><th>Email</th></tr>
                 </thead>
                 <tbody>
                     {% for r in referents %}
                     <tr>
                         <td><strong>{{ r.nom }} {{ r.prenom }}</strong></td>
                         <td style="font-size:12px;">{{ r.role_referent }}</td>
+                        <td style="font-size:12px;">{{ r.telephone or '—' }}</td>
                         <td style="font-size:12px;">{{ r.email }}</td>
                     </tr>
                     {% endfor %}
