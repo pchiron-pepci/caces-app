@@ -10,7 +10,7 @@ class Utilisateur(Base):
     prenom = Column(String(100), nullable=False)
     email = Column(String(200), unique=True, nullable=False)
     mot_de_passe = Column(String(200), nullable=False)
-    role = Column(String(20), default="testeur")  # admin, testeur
+    role = Column(String(20), default="testeur")  # admin, formateur, testeur, utilisateur
     role_referent = Column(String(200), nullable=True)
     actif = Column(Boolean, default=True)
     date_creation = Column(DateTime, default=datetime.utcnow)

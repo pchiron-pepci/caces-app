@@ -6,7 +6,7 @@ from app.models.utilisateur import Utilisateur
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Optional
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
@@ -101,6 +101,8 @@ def update_profil(data: ProfilUpdate, current_user: Utilisateur = Depends(get_ut
     db.commit()
     return {"message": "Profil mis a jour"}
 
+ROLES_VALIDES = {"admin", "formateur", "testeur", "utilisateur"}
+
 class UtilisateurCreate(BaseModel):
     nom: str
     prenom: str
@@ -109,6 +111,12 @@ class UtilisateurCreate(BaseModel):
     role: str = "testeur"
     role_referent: Optional[str] = None
 
+    @validator('role')
+    def role_valide(cls, v):
+        if v not in ROLES_VALIDES:
+            raise ValueError(f"Role invalide. Valeurs acceptées : {', '.join(ROLES_VALIDES)}")
+        return v
+
 class UtilisateurUpdate(BaseModel):
     nom: Optional[str] = None
     prenom: Optional[str] = None
@@ -116,6 +124,12 @@ class UtilisateurUpdate(BaseModel):
     role: Optional[str] = None
     role_referent: Optional[str] = None
     actif: Optional[bool] = None
+
+    @validator('role')
+    def role_valide(cls, v):
+        if v is not None and v not in ROLES_VALIDES:
+            raise ValueError(f"Role invalide. Valeurs acceptées : {', '.join(ROLES_VALIDES)}")
+        return v
 
 @router.get("/utilisateurs")
 def liste_utilisateurs(current_user: Utilisateur = Depends(get_utilisateur_courant), db: DBSession = Depends(get_db)):
