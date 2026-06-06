@@ -374,7 +374,7 @@ function demanderPin(message, callback) {
             return;
         }
         fermerPin();
-        await callback();
+        await callback(pin);
     };
 }
 
@@ -496,8 +496,8 @@ function activerHabTesteur(id, nom) {
 }
 
 function desactiverHabTesteur(id, nom) {
-    demanderPin(`Désactiver l'habilitation : ${nom} ?`, async () => {
-        const resp = await fetch(`/admin/habilitation/${id}`, { method: 'DELETE' });
+    demanderPin(`Supprimer l'habilitation : ${nom} ?`, async (pin) => {
+        const resp = await fetch(`/admin/habilitation/${id}?pin=${pin}`, { method: 'DELETE' });
         if (resp.ok) location.reload();
         else alert('Erreur !');
     });

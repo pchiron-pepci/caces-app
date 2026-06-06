@@ -99,13 +99,16 @@ def activer_habilitation(id: int, db: Session = Depends(get_db)):
     return {"message": "Habilitation activee"}
 
 @router.delete("/habilitation/{id}")
-def delete_habilitation(id: int, db: Session = Depends(get_db)):
+def delete_habilitation(id: int, pin: str, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
     h = db.query(HabilitationTesteur).filter(HabilitationTesteur.id == id).first()
     if not h:
         raise HTTPException(status_code=404, detail="Habilitation non trouvee")
-    h.actif = False
+    db.delete(h)
     db.commit()
-    return {"message": "Habilitation retiree"}
+    return {"message": "Habilitation supprimee"}
 
 @router.get("/lieu/{id}/habilitations")
 def get_lieu_habilitations(id: int, db: Session = Depends(get_db)):

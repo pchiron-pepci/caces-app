@@ -18,10 +18,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn.dataset.action === 'archiver') {
             archiver(btn.dataset.id, btn.dataset.nom);
         }
+        if (btn.dataset.action === 'supprimer-hab') {
+            supprimerHab(btn.dataset.habId, btn.dataset.habLabel);
+        }
     });
 });
 
 let idAArchiver = null;
+let idHabASupprimer = null;
 
 function ouvrirFormulaire() {
     document.getElementById('modal-title').textContent = 'Nouveau testeur';
@@ -49,6 +53,35 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     document.getElementById('f-formation').value = formation;
     document.getElementById('f-controle').value = controle;
     document.getElementById('f-note').value = note;
+
+    const habContainer = document.getElementById('modal-habs');
+    habContainer.innerHTML = '';
+    const habSource = document.getElementById('habs-' + id);
+    const sectionHabs = document.getElementById('section-habs-modal');
+    if (habSource && habSource.children.length > 0) {
+        Array.from(habSource.children).forEach(div => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px;';
+            const badge = document.createElement('span');
+            badge.className = 'badge blue';
+            badge.textContent = div.dataset.habLabel;
+            const btnDel = document.createElement('button');
+            btnDel.type = 'button';
+            btnDel.className = 'btn btn-danger';
+            btnDel.style.cssText = 'padding:4px 8px; font-size:12px;';
+            btnDel.textContent = '🗑️';
+            btnDel.dataset.action = 'supprimer-hab';
+            btnDel.dataset.habId = div.dataset.habId;
+            btnDel.dataset.habLabel = div.dataset.habLabel;
+            row.appendChild(badge);
+            row.appendChild(btnDel);
+            habContainer.appendChild(row);
+        });
+        sectionHabs.style.display = 'block';
+    } else {
+        sectionHabs.style.display = 'none';
+    }
+
     document.getElementById('modal').style.display = 'flex';
 }
 
@@ -88,6 +121,21 @@ function archiver(id, nom) {
     document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
         const pin = document.getElementById('pin-input').value;
         const resp = await fetch(`/api/testeurs/${idAArchiver}?pin=${pin}`, { method: 'DELETE' });
+        if (resp.ok) { fermerPin(); location.reload(); }
+        else document.getElementById('pin-error').style.display = 'block';
+        this.removeEventListener('click', handler);
+    });
+}
+
+function supprimerHab(habId, label) {
+    idHabASupprimer = habId;
+    document.getElementById('pin-message').textContent = `Supprimer l'habilitation "${label}" ?`;
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+    document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
+        const pin = document.getElementById('pin-input').value;
+        const resp = await fetch(`/admin/habilitation/${idHabASupprimer}?pin=${pin}`, { method: 'DELETE' });
         if (resp.ok) { fermerPin(); location.reload(); }
         else document.getElementById('pin-error').style.display = 'block';
         this.removeEventListener('click', handler);

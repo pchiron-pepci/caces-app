@@ -84,6 +84,14 @@
     </table>
 </div>
 
+{% for t in testeurs %}
+<div id="habs-{{ t.id }}" style="display:none;">
+    {% for h in t.habilitations %}
+    <div data-hab-id="{{ h.id }}" data-hab-label="{{ h.famille }} {{ h.categorie }}"></div>
+    {% endfor %}
+</div>
+{% endfor %}
+
 <!-- MODAL FORMULAIRE -->
 <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:32px; width:700px; max-width:95vw; max-height:90vh; overflow-y:auto;">
@@ -146,6 +154,10 @@
                 <label>Note</label>
                 <textarea id="f-note" rows="3" placeholder="Informations complémentaires..."></textarea>
             </div>
+        </div>
+        <div id="section-habs-modal" style="display:none; margin-top:16px;">
+            <label style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; display:block; margin-bottom:8px;">Habilitations</label>
+            <div id="modal-habs"></div>
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" id="btn-sauvegarder">💾 Sauvegarder</button>
