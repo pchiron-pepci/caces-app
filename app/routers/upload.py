@@ -228,11 +228,12 @@ def telecharger_document_officiel(type: str):
         nom = doc.nom_fichier or f"{type}.pdf"
     finally:
         db.close()
-    import urllib.request
+    import requests
     from fastapi.responses import Response
     try:
-        with urllib.request.urlopen(url, timeout=30) as r:
-            content = r.read()
+        r = requests.get(url, timeout=30)
+        r.raise_for_status()
+        content = r.content
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erreur Cloudinary : {e}")
     return Response(
