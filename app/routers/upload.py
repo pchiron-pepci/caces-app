@@ -268,7 +268,13 @@ def supprimer_document_officiel(type: str, pin: str):
 def _extraire_public_id(url: str) -> str | None:
     import re
     m = re.search(r'/raw/upload/(?:v\d+/)?(.+)$', url)
-    return m.group(1) if m else None
+    if not m:
+        return None
+    pid = m.group(1)
+    # Cloudinary raw avec format="pdf" : l'URL inclut .pdf mais le public_id non
+    if '.' in pid.split('/')[-1]:
+        pid = pid.rsplit('.', 1)[0]
+    return pid
 
 
 @router.post("/carte-testeur/{testeur_id}")
@@ -280,11 +286,13 @@ async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = Fil
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     configurer_cloudinary()
     contents = await file.read()
-    public_id = f"caces_testeurs/{testeur_id}_{file.filename}"
+    nom_sans_ext = os.path.splitext(file.filename)[0]
+    public_id = f"caces_testeurs/{testeur_id}_{nom_sans_ext}"
     try:
         result = cloudinary.uploader.upload(
             contents,
             public_id=public_id,
+            format="pdf",
             resource_type="raw",
             overwrite=True
         )
