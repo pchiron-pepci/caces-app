@@ -227,7 +227,7 @@ function uploadCarte(testeurId, input) {
 
 function filtrer() {
     const q = document.getElementById('search').value.toLowerCase();
-    document.querySelectorAll('#tbody tr').forEach(tr => {
-        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    document.querySelectorAll('.testeur-card').forEach(card => {
+        card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
 }

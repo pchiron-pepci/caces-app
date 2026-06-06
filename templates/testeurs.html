@@ -12,122 +12,138 @@
     </div>
 </div>
 
-<div class="card" style="margin-top: 20px;">
-    <table class="table" id="tableau">
-        <thead>
-            <tr>
-                <th>Nom / Prénom</th>
-                <th>Statut</th>
-                <th>N° INRS</th>
-                <th>Date habilitation</th>
-                <th>Date échéance</th>
-                <th>Prochain contrôle</th>
-                <th>Habilitations</th>
-                <th>Attestation prévention</th>
-                <th>Carte CACES®</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="tbody">
-            {% for t in testeurs %}
-            <tr>
-                <td><strong>{{ t.nom }} {{ t.prenom }}</strong></td>
-                <td>
-                    {% if t.statut == 'interne' %}
-                        <span class="badge blue">Interne</span>
-                    {% elif t.statut == 'independant' %}
-                        <span class="badge orange">Indépendant</span>
-                    {% else %}
-                        <span class="badge green">Entreprise</span>
-                    {% endif %}
-                </td>
-                <td>{{ t.numero_inrs or '—' }}</td>
-                <td>{{ t.date_habilitation or '—' }}</td>
-                <td>
+<div id="cards-container" style="margin-top:20px; display:flex; flex-direction:column; gap:12px;">
+    {% for t in testeurs %}
+    <div class="card testeur-card" style="padding:0;">
+        <!-- En-tête -->
+        <div style="display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid #e8ecf4;">
+            <div style="flex:1; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700;">{{ t.nom }} {{ t.prenom }}</span>
+                {% if t.statut == 'interne' %}
+                    <span class="badge blue">Interne</span>
+                {% elif t.statut == 'independant' %}
+                    <span class="badge orange">Indépendant</span>
+                {% else %}
+                    <span class="badge green">Entreprise</span>
+                {% endif %}
+                {% if t.numero_inrs %}
+                    <span style="font-size:12px; color:#666;">N° {{ t.numero_inrs }}</span>
+                {% endif %}
+            </div>
+            <div style="display:flex; gap:6px; flex-shrink:0;">
+                <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                    data-action="editer"
+                    data-id="{{ t.id }}"
+                    data-nom="{{ t.nom }}"
+                    data-prenom="{{ t.prenom }}"
+                    data-statut="{{ t.statut }}"
+                    data-entreprise="{{ t.entreprise or '' }}"
+                    data-inrs="{{ t.numero_inrs or '' }}"
+                    data-email="{{ t.email or '' }}"
+                    data-tel="{{ t.telephone or '' }}"
+                    data-habilitation="{{ t.date_habilitation or '' }}"
+                    data-expiration="{{ t.date_expiration_habilitation or '' }}"
+                    data-visite="{{ t.visite_medicale or '' }}"
+                    data-formation="{{ t.formation_continue or '' }}"
+                    data-controle="{{ t.date_prochain_controle or '' }}"
+                    data-note="{{ t.note or '' }}">✏️</button>
+                <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                    data-action="archiver"
+                    data-id="{{ t.id }}"
+                    data-nom="{{ t.nom }} {{ t.prenom }}">🗑️</button>
+            </div>
+        </div>
+        <!-- Corps : 4 colonnes -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; padding:16px 20px; gap:0;">
+            <!-- Dates -->
+            <div style="padding-right:16px; border-right:1px solid #e8ecf4;">
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Dates</div>
+                <div style="font-size:12px; margin-bottom:5px;">
+                    <span style="color:#888;">Habilitation</span><br>
+                    {{ t.date_habilitation.strftime('%d/%m/%Y') if t.date_habilitation else '—' }}
+                </div>
+                <div style="font-size:12px; margin-bottom:5px;">
+                    <span style="color:#888;">Échéance</span><br>
                     {% if t.date_expiration_habilitation %}
-                        <span class="badge orange">{{ t.date_expiration_habilitation }}</span>
+                        <span class="badge orange">{{ t.date_expiration_habilitation.strftime('%d/%m/%Y') }}</span>
                     {% else %}—{% endif %}
-                </td>
-                <td>
+                </div>
+                <div style="font-size:12px;">
+                    <span style="color:#888;">Prochain contrôle</span><br>
                     {% if t.date_prochain_controle %}
-                        <span class="badge orange">{{ t.date_prochain_controle }}</span>
+                        <span class="badge orange">{{ t.date_prochain_controle.strftime('%d/%m/%Y') }}</span>
                     {% else %}—{% endif %}
-                </td>
-                <td>
+                </div>
+            </div>
+            <!-- Habilitations -->
+            <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Habilitations</div>
+                {% if t.habilitations %}
                     {% for famille, habs in t.habilitations | groupby('famille') %}
                         <span class="badge blue" style="margin:2px;">{{ famille }} {{ habs | map(attribute='categorie') | join(', ') }}</span>
                     {% endfor %}
-                </td>
-                <td style="white-space:nowrap;">
-                    {% if t.attestation_prevention_pdf %}
-                        {% if t.attestation_prevention_date %}
-                            {% set age = (today - t.attestation_prevention_date).days %}
-                            {% if age < 1460 %}
-                                <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">✅ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
-                            {% elif age < 1825 %}
-                                <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">⚠️ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
-                            {% else %}
-                                <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
-                            {% endif %}
+                {% else %}
+                    <span style="color:#888; font-size:12px;">—</span>
+                {% endif %}
+            </div>
+            <!-- Attestation prévention -->
+            <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Attestation prévention</div>
+                {% if t.attestation_prevention_pdf %}
+                    {% if t.attestation_prevention_date %}
+                        {% set age = (today - t.attestation_prevention_date).days %}
+                        {% if age < 1460 %}
+                            <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">✅ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                        {% elif age < 1825 %}
+                            <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">⚠️ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
                         {% else %}
-                            <span style="font-size:11px;color:#2e7d32;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</span>
+                            <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
                         {% endif %}
-                        <br>
-                        <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-top:3px;">📥</a>
-                        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;margin-top:3px;"
+                    {% else %}
+                        <span style="font-size:11px;color:#2e7d32;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</span>
+                    {% endif %}
+                    <div style="margin-top:6px; display:flex; gap:4px; flex-wrap:wrap;">
+                        <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;">📥</a>
+                        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"
                             data-action="prevention-supprimer"
                             data-id="{{ t.id }}"
                             data-nom-fichier="{{ t.attestation_prevention_nom or 'attestation.pdf' }}">🗑️</button>
-                    {% else %}
-                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span><br>
-                    {% endif %}
+                    </div>
+                {% else %}
+                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
+                {% endif %}
+                <div style="margin-top:8px;">
                     <input type="file" id="prev-file-{{ t.id }}" accept=".pdf" style="display:none"
                         onchange="ouvrirModalPrevention({{ t.id }}, this)">
-                    <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-top:3px;"
-                        onclick="document.getElementById('prev-file-{{ t.id }}').click()">📤</button>
-                </td>
-                <td style="white-space:nowrap;">
-                    {% if t.carte_pdf %}
-                        <span style="font-size:11px; color:#2e7d32;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</span><br>
-                        <a href="/api/upload/carte-testeur/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px; font-size:11px; margin-top:3px;">📥</a>
-                        <button class="btn btn-danger" style="padding:3px 8px; font-size:11px; margin-top:3px;"
+                    <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;"
+                        onclick="document.getElementById('prev-file-{{ t.id }}').click()">📤 Uploader</button>
+                </div>
+            </div>
+            <!-- Carte CACES® -->
+            <div style="padding-left:16px;">
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Carte CACES®</div>
+                {% if t.carte_pdf %}
+                    <span style="font-size:11px; color:#2e7d32;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</span>
+                    <div style="margin-top:6px; display:flex; gap:4px; flex-wrap:wrap;">
+                        <a href="/api/upload/carte-testeur/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px; font-size:11px;">📥</a>
+                        <button class="btn btn-danger" style="padding:3px 8px; font-size:11px;"
                             data-action="carte-supprimer"
                             data-id="{{ t.id }}"
                             data-nom-fichier="{{ t.carte_nom_fichier or 'carte.pdf' }}">🗑️</button>
-                    {% else %}
-                        <span style="color:#888; font-size:12px;">—</span><br>
-                    {% endif %}
+                    </div>
+                {% else %}
+                    <span style="color:#888; font-size:12px;">—</span>
+                {% endif %}
+                <div style="margin-top:8px;">
                     <input type="file" id="carte-file-{{ t.id }}" accept=".pdf" style="display:none"
                         onchange="uploadCarte({{ t.id }}, this)">
-                    <button class="btn btn-secondary" style="padding:3px 8px; font-size:11px; margin-top:3px;"
-                        onclick="document.getElementById('carte-file-{{ t.id }}').click()">📤</button>
-                </td>
-                <td>
-                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                        data-action="editer"
-                        data-id="{{ t.id }}"
-                        data-nom="{{ t.nom }}"
-                        data-prenom="{{ t.prenom }}"
-                        data-statut="{{ t.statut }}"
-                        data-entreprise="{{ t.entreprise or '' }}"
-                        data-inrs="{{ t.numero_inrs or '' }}"
-                        data-email="{{ t.email or '' }}"
-                        data-tel="{{ t.telephone or '' }}"
-                        data-habilitation="{{ t.date_habilitation or '' }}"
-                        data-expiration="{{ t.date_expiration_habilitation or '' }}"
-                        data-visite="{{ t.visite_medicale or '' }}"
-                        data-formation="{{ t.formation_continue or '' }}"
-                        data-controle="{{ t.date_prochain_controle or '' }}"
-                        data-note="{{ t.note or '' }}">✏️</button>
-                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                        data-action="archiver"
-                        data-id="{{ t.id }}"
-                        data-nom="{{ t.nom }} {{ t.prenom }}">🗑️</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    <button class="btn btn-secondary" style="padding:3px 8px; font-size:11px;"
+                        onclick="document.getElementById('carte-file-{{ t.id }}').click()">📤 Uploader</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
 
 {% for t in testeurs %}
