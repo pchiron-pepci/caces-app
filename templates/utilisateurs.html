@@ -176,18 +176,28 @@ async function sauvegarderUser() {
     const role_referent = document.getElementById('user-referent').value || null;
     const mdp = document.getElementById('user-mdp').value;
     const token = localStorage.getItem('token');
-    console.log('[sauvegarderUser] token:', token);
 
     if (!nom || !prenom || !email) { alert('Nom, prenom et email obligatoires !'); return; }
 
     if (id) {
-        const resp = await fetch('/api/auth/utilisateurs/' + id, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ nom, prenom, email, role, telephone, role_referent })
-        });
-        if (resp.ok) { fermerModal(); chargerUsers(); }
-        else alert('Erreur lors de la modification !');
+        document.getElementById('pin-input-user').value = '';
+        document.getElementById('pin-error-user').style.display = 'none';
+        document.getElementById('modal-pin-user').style.display = 'flex';
+        document.getElementById('pin-confirm-user-btn').onclick = async () => {
+            const pin = document.getElementById('pin-input-user').value;
+            if (pin !== '1505') {
+                document.getElementById('pin-error-user').style.display = 'block';
+                return;
+            }
+            fermerPinUser();
+            const resp = await fetch('/api/auth/utilisateurs/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nom, prenom, email, role, telephone, role_referent })
+            });
+            if (resp.ok) { fermerModal(); chargerUsers(); }
+            else alert('Erreur lors de la modification !');
+        };
     } else {
         if (!mdp) { alert('Mot de passe obligatoire !'); return; }
         const resp = await fetch('/api/auth/utilisateurs', {
