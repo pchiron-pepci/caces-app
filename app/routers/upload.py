@@ -209,6 +209,7 @@ def telecharger_document_officiel(type: str):
     db = SessionLocal()
     try:
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
+        print(f"[DOC] type={type} doc={doc} contenu_pdf_len={len(doc.contenu_pdf) if doc and doc.contenu_pdf else 'NULL'}")
         if not doc or not doc.contenu_pdf:
             raise HTTPException(status_code=404, detail="Document non disponible")
         contenu = base64.b64decode(doc.contenu_pdf)
