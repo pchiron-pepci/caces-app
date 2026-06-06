@@ -268,13 +268,7 @@ def supprimer_document_officiel(type: str, pin: str):
 def _extraire_public_id(url: str) -> str | None:
     import re
     m = re.search(r'/raw/upload/(?:v\d+/)?(.+)$', url)
-    if not m:
-        return None
-    pid = m.group(1)
-    # Cloudinary raw avec format="pdf" : l'URL inclut .pdf mais le public_id non
-    if '.' in pid.split('/')[-1]:
-        pid = pid.rsplit('.', 1)[0]
-    return pid
+    return m.group(1) if m else None
 
 
 @router.post("/carte-testeur/{testeur_id}")
