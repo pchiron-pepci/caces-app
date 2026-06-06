@@ -267,22 +267,14 @@ def supprimer_document_officiel(type: str, pin: str):
 
 @router.post("/carte-testeur/{testeur_id}")
 async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = File(...)):
-    print(f"[CARTE] Début upload testeur_id={testeur_id} filename={file.filename}")
     PIN_SECRET = "1505"
     if pin != PIN_SECRET:
-        print("[CARTE] PIN incorrect")
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if not file.filename.lower().endswith(".pdf"):
-        print(f"[CARTE] Format invalide : {file.filename}")
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
-    print("[CARTE] Avant configurer_cloudinary()")
     configurer_cloudinary()
-    cfg = cloudinary.config()
-    print(f"[CARTE] Après configurer_cloudinary() — cloud_name={cfg.cloud_name} api_key={'OK' if cfg.api_key else 'MANQUANT'}")
     contents = await file.read()
-    print(f"[CARTE] Fichier lu — taille={len(contents)} octets")
-    public_id = f"caces_testeurs/{testeur_id}.pdf"
-    print(f"[CARTE] Avant cloudinary.uploader.upload() — public_id={public_id}")
+    public_id = f"caces_testeurs/{testeur_id}"
     try:
         result = cloudinary.uploader.upload(
             contents,
@@ -291,21 +283,17 @@ async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = Fil
             overwrite=True
         )
     except Exception as e:
-        print(f"[CARTE] ERREUR cloudinary.uploader.upload() : {e}")
         raise HTTPException(status_code=500, detail=f"Erreur Cloudinary upload : {e}")
     url = result["secure_url"]
-    print(f"[CARTE] Upload Cloudinary OK — url={url}")
     from app.models.testeur import Testeur
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t:
-            print(f"[CARTE] Testeur id={testeur_id} non trouvé en base")
             raise HTTPException(status_code=404, detail="Testeur non trouvé")
         t.carte_url = url
         t.carte_nom_fichier = file.filename
         db.commit()
-        print(f"[CARTE] DB mise à jour OK — testeur_id={testeur_id}")
     finally:
         db.close()
     return {"message": "Carte uploadée", "url": url}
@@ -318,7 +306,7 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     configurer_cloudinary()
     try:
-        cloudinary.uploader.destroy(f"caces_testeurs/{testeur_id}.pdf", resource_type="raw")
+        cloudinary.uploader.destroy(f"caces_testeurs/{testeur_id}", resource_type="raw")
     except Exception:
         pass
     from app.models.testeur import Testeur
@@ -347,7 +335,7 @@ def telecharger_carte_testeur(testeur_id: int):
         db.close()
     configurer_cloudinary()
     signed_url = cloudinary.utils.private_download_url(
-        f"caces_testeurs/{testeur_id}.pdf",
+        f"caces_testeurs/{testeur_id}",
         "",
         resource_type="raw",
         attachment=True
