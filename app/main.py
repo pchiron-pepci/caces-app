@@ -186,7 +186,7 @@ def page_admin(request: Request):
     db = SessionLocal()
     familles = db.query(Famille).filter(Famille.actif == True).all()
     categories_raw = db.query(Categorie).filter(Categorie.actif == True).all()
-    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
     lieux = db.query(Lieu).all()
     for t in testeurs_list:
         t.habilitations = db.query(HabilitationTesteur).filter(
