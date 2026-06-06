@@ -92,7 +92,7 @@
             <!-- Attestation prévention -->
             <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Attestation prévention</div>
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:8px;">
                     {% if t.attestation_prevention_pdf %}
                         {% if t.attestation_prevention_date %}
                             {% set age = (today - t.attestation_prevention_date).days %}
@@ -123,7 +123,7 @@
             <!-- Carte CACES® -->
             <div style="padding-left:16px;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Carte(s) CACES®</div>
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:8px;">
                     {% if t.carte_pdf %}
                         <span style="font-size:11px; color:#2e7d32;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</span>
                         <a href="/api/upload/carte-testeur/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px; font-size:11px;">📥</a>
