@@ -125,6 +125,8 @@
                         {% if h.actif %}
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                             onclick="desactiverHabTesteur({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')">🔒</button>
+                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                            onclick="supprimerHabTesteur({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')">🗑️</button>
                         {% else %}
                         <button class="btn btn-primary" style="padding:6px 12px; font-size:12px;"
                             onclick="activerHabTesteur({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')">✅</button>
@@ -496,7 +498,13 @@ function activerHabTesteur(id, nom) {
 }
 
 function desactiverHabTesteur(id, nom) {
-    demanderPin(`Supprimer l'habilitation : ${nom} ?`, async (pin) => {
+    if (!confirm(`Désactiver l'habilitation : ${nom} ?`)) return;
+    fetch(`/admin/habilitation/${id}/desactiver`, { method: 'POST' })
+        .then(r => { if (r.ok) location.reload(); else alert('Erreur !'); });
+}
+
+function supprimerHabTesteur(id, nom) {
+    demanderPin(`Supprimer définitivement : ${nom} ?`, async (pin) => {
         const resp = await fetch(`/admin/habilitation/${id}?pin=${pin}`, { method: 'DELETE' });
         if (resp.ok) location.reload();
         else alert('Erreur !');

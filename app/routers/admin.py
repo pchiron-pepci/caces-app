@@ -98,6 +98,15 @@ def activer_habilitation(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Habilitation activee"}
 
+@router.post("/habilitation/{id}/desactiver")
+def desactiver_habilitation(id: int, db: Session = Depends(get_db)):
+    h = db.query(HabilitationTesteur).filter(HabilitationTesteur.id == id).first()
+    if not h:
+        raise HTTPException(status_code=404, detail="Habilitation non trouvee")
+    h.actif = False
+    db.commit()
+    return {"message": "Habilitation desactivee"}
+
 @router.delete("/habilitation/{id}")
 def delete_habilitation(id: int, pin: str, db: Session = Depends(get_db)):
     PIN_SECRET = "1505"
