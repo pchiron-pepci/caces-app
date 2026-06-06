@@ -52,8 +52,8 @@
                     {% else %}—{% endif %}
                 </td>
                 <td>
-                    {% for h in t.habilitations %}
-                        <span class="badge blue" style="margin:2px;">{{ h.famille }} {{ h.categorie }}</span>
+                    {% for famille, habs in t.habilitations | groupby('famille') %}
+                        <span class="badge blue" style="margin:2px;">{{ famille }} {{ habs | map(attribute='categorie') | join(', ') }}</span>
                     {% endfor %}
                 </td>
                 <td>
