@@ -280,17 +280,11 @@ async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = Fil
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     configurer_cloudinary()
     contents = await file.read()
-    nom_sans_ext = os.path.splitext(file.filename)[0]
-    public_id = f"caces_testeurs/{testeur_id}_{nom_sans_ext}"
-    try:
-        cloudinary.api.create_folder("caces_testeurs")
-    except Exception:
-        pass
+    public_id = f"testeur_{testeur_id}_carte"
     try:
         result = cloudinary.uploader.upload(
             contents,
             public_id=public_id,
-            format="pdf",
             resource_type="raw",
             overwrite=True
         )
@@ -348,17 +342,7 @@ def telecharger_carte_testeur(testeur_id: int):
         carte_url = t.carte_url
     finally:
         db.close()
-    public_id = _extraire_public_id(carte_url)
-    if not public_id:
-        raise HTTPException(status_code=500, detail="URL carte invalide")
-    configurer_cloudinary()
-    signed_url = cloudinary.utils.private_download_url(
-        public_id,
-        "",
-        resource_type="raw",
-        attachment=True
-    )
-    return RedirectResponse(url=signed_url)
+    return RedirectResponse(url=carte_url)
 
 
 @router.get("/liste-images")
