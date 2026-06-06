@@ -64,7 +64,7 @@
             </div>
         </div>
         <!-- Corps : 4 colonnes -->
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; padding:16px 20px; gap:0;">
+        <div style="display:grid; grid-template-columns:180px 1fr 1fr 1fr; padding:16px 20px; gap:0;">
             <!-- Dates -->
             <div style="padding-right:16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Dates</div>
@@ -93,55 +93,55 @@
             <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Attestation prévention</div>
                 {% if t.attestation_prevention_pdf %}
-                    {% if t.attestation_prevention_date %}
-                        {% set age = (today - t.attestation_prevention_date).days %}
-                        {% if age < 1460 %}
-                            <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">✅ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
-                        {% elif age < 1825 %}
-                            <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">⚠️ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        {% if t.attestation_prevention_date %}
+                            {% set age = (today - t.attestation_prevention_date).days %}
+                            {% if age < 1460 %}
+                                <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">✅ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                            {% elif age < 1825 %}
+                                <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">⚠️ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                            {% else %}
+                                <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                            {% endif %}
                         {% else %}
-                            <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                            <span style="font-size:11px;color:#2e7d32;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</span>
                         {% endif %}
-                    {% else %}
-                        <span style="font-size:11px;color:#2e7d32;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</span>
-                    {% endif %}
-                {% else %}
-                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
-                {% endif %}
-                <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
-                    {% if t.attestation_prevention_pdf %}
                         <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;">📥</a>
                         <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"
                             data-action="prevention-supprimer"
                             data-id="{{ t.id }}"
                             data-nom-fichier="{{ t.attestation_prevention_nom or 'attestation.pdf' }}">🗑️</button>
-                    {% endif %}
+                    </div>
+                {% else %}
+                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
+                {% endif %}
+                <div style="margin-top:8px;">
                     <input type="file" id="prev-file-{{ t.id }}" accept=".pdf" style="display:none"
                         onchange="ouvrirModalPrevention({{ t.id }}, this)">
                     <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;"
-                        onclick="document.getElementById('prev-file-{{ t.id }}').click()">📤</button>
+                        onclick="document.getElementById('prev-file-{{ t.id }}').click()">📤 Uploader</button>
                 </div>
             </div>
             <!-- Carte CACES® -->
             <div style="padding-left:16px;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Carte CACES®</div>
                 {% if t.carte_pdf %}
-                    <span style="font-size:11px; color:#2e7d32;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</span>
-                {% else %}
-                    <span style="color:#888; font-size:12px;">—</span>
-                {% endif %}
-                <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
-                    {% if t.carte_pdf %}
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:11px; color:#2e7d32;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</span>
                         <a href="/api/upload/carte-testeur/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px; font-size:11px;">📥</a>
                         <button class="btn btn-danger" style="padding:3px 8px; font-size:11px;"
                             data-action="carte-supprimer"
                             data-id="{{ t.id }}"
                             data-nom-fichier="{{ t.carte_nom_fichier or 'carte.pdf' }}">🗑️</button>
-                    {% endif %}
+                    </div>
+                {% else %}
+                    <span style="color:#888; font-size:12px;">—</span>
+                {% endif %}
+                <div style="margin-top:8px;">
                     <input type="file" id="carte-file-{{ t.id }}" accept=".pdf" style="display:none"
                         onchange="uploadCarte({{ t.id }}, this)">
                     <button class="btn btn-secondary" style="padding:3px 8px; font-size:11px;"
-                        onclick="document.getElementById('carte-file-{{ t.id }}').click()">📤</button>
+                        onclick="document.getElementById('carte-file-{{ t.id }}').click()">📤 Uploader</button>
                 </div>
             </div>
         </div>
