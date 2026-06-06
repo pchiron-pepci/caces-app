@@ -339,7 +339,7 @@ def telecharger_carte_testeur(testeur_id: int):
         if not t or not t.carte_url:
             raise HTTPException(status_code=404, detail="Carte non disponible")
         carte_url = t.carte_url
-        nom_fichier = t.carte_nom_fichier or "carte.pdf"
+        nom_fichier = f"{t.nom}_{t.prenom}_{t.carte_nom_fichier or 'carte.pdf'}"
     finally:
         db.close()
     r = req.get(carte_url, timeout=10)
