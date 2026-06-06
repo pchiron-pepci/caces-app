@@ -59,7 +59,7 @@
                     {% endfor %}
                 </td>
                 <td style="white-space:nowrap;">
-                    {% if t.attestation_prevention_url %}
+                    {% if t.attestation_prevention_pdf %}
                         {% if t.attestation_prevention_date %}
                             {% set age = (today - t.attestation_prevention_date).days %}
                             {% if age < 1460 %}
@@ -87,7 +87,7 @@
                         onclick="document.getElementById('prev-file-{{ t.id }}').click()">📤</button>
                 </td>
                 <td style="white-space:nowrap;">
-                    {% if t.carte_url %}
+                    {% if t.carte_pdf %}
                         <span style="font-size:11px; color:#2e7d32;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</span><br>
                         <a href="/api/upload/carte-testeur/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px; font-size:11px; margin-top:3px;">📥</a>
                         <button class="btn btn-danger" style="padding:3px 8px; font-size:11px; margin-top:3px;"

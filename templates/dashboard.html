@@ -129,7 +129,7 @@
                 {% set doc = docs.get(type_key) %}
                 <tr>
                     <td><strong>{{ type_label }}</strong></td>
-                    {% if doc and doc.url %}
+                    {% if doc and doc.contenu_pdf %}
                     <td>{{ doc.nom_fichier }}</td>
                     <td>
                         {% if doc.date_validite %}

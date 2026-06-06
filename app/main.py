@@ -39,17 +39,27 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_url VARCHAR"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR"))
+        _conn.execute(text("ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS contenu_pdf TEXT"))
+        _conn.execute(text("ALTER TABLE document_officiel DROP COLUMN IF EXISTS url"))
         _conn.commit()
 except Exception:
     pass
 
 try:
     with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_url VARCHAR"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_pdf TEXT"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR"))
+        _conn.execute(text("ALTER TABLE testeurs DROP COLUMN IF EXISTS carte_url"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_pdf TEXT"))
         _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_nom VARCHAR"))
         _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_date DATE"))
+        _conn.execute(text("ALTER TABLE testeurs DROP COLUMN IF EXISTS attestation_prevention_url"))
         _conn.commit()
 except Exception:
     pass

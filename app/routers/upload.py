@@ -1,9 +1,10 @@
 import os
+import base64
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-import cloudinary.utils
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import Response
 from app.database import SessionLocal
 
 router = APIRouter(prefix="/api/upload", tags=["Upload"])
@@ -12,9 +13,6 @@ UPLOAD_DIR = "uploads/questions"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def configurer_cloudinary():
-    """Configure Cloudinary avec les variables d'environnement.
-    On appelle cette fonction à chaque requête pour être sûr
-    que les variables sont bien chargées."""
     cloudinary.config(
         cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
         api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -32,8 +30,6 @@ async def upload_question_images(files: list[UploadFile] = File(...)):
             continue
         try:
             contents = await file.read()
-            # Le public_id est le nom du fichier sans extension
-            # ex: R482-G1-T2-Q1
             public_id = f"caces_questions/{file.filename.rsplit('.', 1)[0]}"
             result = cloudinary.uploader.upload(
                 contents,
@@ -59,8 +55,6 @@ async def associer_images(pin: str):
     db = SessionLocal()
     updated = 0
     try:
-        # On liste toutes les images stockées sur Cloudinary
-        # dans le dossier caces_questions
         result = cloudinary.api.resources(
             type="upload",
             prefix="caces_questions/",
@@ -68,17 +62,15 @@ async def associer_images(pin: str):
         )
         resources = result.get("resources", [])
         for resource in resources:
-            # Le public_id ressemble à "caces_questions/R482-G1-T2-Q1"
-            # On extrait juste le nom du fichier
             public_id = resource["public_id"]
-            filename = public_id.split("/")[-1]  # R482-G1-T2-Q1
+            filename = public_id.split("/")[-1]
             url = resource["secure_url"]
             try:
                 parts = filename.upper().split("-")
-                famille = parts[0]              # R482
-                grille_num = int(parts[1][1:])  # G1 → 1
-                theme = int(parts[2][1:])       # T2 → 2
-                question = int(parts[3][1:])    # Q1 → 1
+                famille = parts[0]
+                grille_num = int(parts[1][1:])
+                theme = int(parts[2][1:])
+                question = int(parts[3][1:])
 
                 grille = db.query(GrilleTheorie).filter(
                     GrilleTheorie.numero == grille_num,
@@ -143,12 +135,14 @@ async def supprimer_image(filename: str, pin: str):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     configurer_cloudinary()
     try:
-        # On supprime l'image de Cloudinary via son public_id
         public_id = f"caces_questions/{filename.rsplit('.', 1)[0]}"
         cloudinary.uploader.destroy(public_id)
         return {"message": "Image supprimee"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Documents officiels (stockage base64 PostgreSQL) ---
 
 @router.get("/documents-officiels")
 def get_documents_officiels():
@@ -160,8 +154,8 @@ def get_documents_officiels():
             "documents": [
                 {
                     "type": d.type,
-                    "url": d.url,
                     "nom_fichier": d.nom_fichier,
+                    "has_file": bool(d.contenu_pdf),
                     "date_validite": d.date_validite.strftime("%Y-%m-%d") if d.date_validite else None
                 }
                 for d in docs
@@ -181,16 +175,8 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
         raise HTTPException(status_code=400, detail="Type de document invalide")
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
-    configurer_cloudinary()
     contents = await file.read()
-    public_id = f"document_{type}"
-    result = cloudinary.uploader.upload(
-        contents,
-        public_id=public_id,
-        resource_type="raw",
-        overwrite=True
-    )
-    url = result["secure_url"]
+    contenu_b64 = base64.b64encode(contents).decode()
     from app.models.document_officiel import DocumentOfficiel
     from datetime import datetime
     db = SessionLocal()
@@ -203,15 +189,15 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
                 pass
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if doc:
-            doc.url = url
+            doc.contenu_pdf = contenu_b64
             doc.nom_fichier = file.filename
             doc.date_validite = dv
         else:
-            db.add(DocumentOfficiel(type=type, url=url, nom_fichier=file.filename, date_validite=dv))
+            db.add(DocumentOfficiel(type=type, contenu_pdf=contenu_b64, nom_fichier=file.filename, date_validite=dv))
         db.commit()
     finally:
         db.close()
-    return {"message": "Document uploade", "url": url}
+    return {"message": "Document uploade"}
 
 
 @router.get("/document-officiel/{type}/download")
@@ -220,18 +206,20 @@ def telecharger_document_officiel(type: str):
     if type not in TYPES_VALIDES:
         raise HTTPException(status_code=400, detail="Type invalide")
     from app.models.document_officiel import DocumentOfficiel
-    from fastapi.responses import RedirectResponse
     db = SessionLocal()
     try:
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
-        if not doc or not doc.url:
+        if not doc or not doc.contenu_pdf:
             raise HTTPException(status_code=404, detail="Document non disponible")
+        contenu = base64.b64decode(doc.contenu_pdf)
+        nom = doc.nom_fichier or f"{type}.pdf"
     finally:
         db.close()
-    configurer_cloudinary()
-    public_id = f"document_{type}.pdf"
-    signed_url = cloudinary.utils.private_download_url(public_id, "", resource_type="raw", attachment=True)
-    return RedirectResponse(url=signed_url)
+    return Response(
+        content=contenu,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
+    )
 
 
 @router.delete("/document-officiel/{type}")
@@ -242,17 +230,12 @@ def supprimer_document_officiel(type: str, pin: str):
     TYPES_VALIDES = ["certificat_organisme", "attestation_assurance", "procedure_interne"]
     if type not in TYPES_VALIDES:
         raise HTTPException(status_code=400, detail="Type de document invalide")
-    configurer_cloudinary()
-    try:
-        cloudinary.uploader.destroy(f"document_{type}", resource_type="raw")
-    except Exception:
-        pass
     from app.models.document_officiel import DocumentOfficiel
     db = SessionLocal()
     try:
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if doc:
-            doc.url = None
+            doc.contenu_pdf = None
             doc.nom_fichier = None
             doc.date_validite = None
             db.commit()
@@ -261,11 +244,7 @@ def supprimer_document_officiel(type: str, pin: str):
     return {"message": "Document supprime"}
 
 
-def _extraire_public_id(url: str) -> str | None:
-    import re
-    m = re.search(r'/raw/upload/(?:v\d+/)?(.+)$', url)
-    return m.group(1) if m else None
-
+# --- Carte CACES® testeur (stockage base64 PostgreSQL) ---
 
 @router.post("/carte-testeur/{testeur_id}")
 async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = File(...)):
@@ -274,31 +253,39 @@ async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = Fil
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
-    configurer_cloudinary()
     contents = await file.read()
-    public_id = f"testeur_{testeur_id}_carte"
-    try:
-        result = cloudinary.uploader.upload(
-            contents,
-            public_id=public_id,
-            resource_type="raw",
-            overwrite=True
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur Cloudinary upload : {e}")
-    url = result["secure_url"]
+    contenu_b64 = base64.b64encode(contents).decode()
     from app.models.testeur import Testeur
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t:
             raise HTTPException(status_code=404, detail="Testeur non trouvé")
-        t.carte_url = url
+        t.carte_pdf = contenu_b64
         t.carte_nom_fichier = file.filename
         db.commit()
     finally:
         db.close()
-    return {"message": "Carte uploadée", "url": url}
+    return {"message": "Carte uploadée"}
+
+
+@router.get("/carte-testeur/{testeur_id}/download")
+def telecharger_carte_testeur(testeur_id: int):
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t or not t.carte_pdf:
+            raise HTTPException(status_code=404, detail="Carte non disponible")
+        contenu = base64.b64decode(t.carte_pdf)
+        nom = f"{t.nom}_{t.prenom}_{t.carte_nom_fichier or 'carte.pdf'}"
+    finally:
+        db.close()
+    return Response(
+        content=contenu,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
+    )
 
 
 @router.delete("/carte-testeur/{testeur_id}")
@@ -306,17 +293,12 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
     PIN_SECRET = "1505"
     if pin != PIN_SECRET:
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
-    configurer_cloudinary()
-    try:
-        cloudinary.uploader.destroy(f"testeur_{testeur_id}_carte", resource_type="raw")
-    except Exception:
-        pass
     from app.models.testeur import Testeur
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if t:
-            t.carte_url = None
+            t.carte_pdf = None
             t.carte_nom_fichier = None
             db.commit()
     finally:
@@ -324,22 +306,7 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
     return {"message": "Carte supprimée"}
 
 
-@router.get("/carte-testeur/{testeur_id}/download")
-def telecharger_carte_testeur(testeur_id: int):
-    from app.models.testeur import Testeur
-    from fastapi.responses import RedirectResponse
-    db = SessionLocal()
-    try:
-        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if not t or not t.carte_url:
-            raise HTTPException(status_code=404, detail="Carte non disponible")
-    finally:
-        db.close()
-    configurer_cloudinary()
-    public_id = f"testeur_{testeur_id}_carte.pdf"
-    signed_url = cloudinary.utils.private_download_url(public_id, "", resource_type="raw", attachment=True)
-    return RedirectResponse(url=signed_url)
-
+# --- Attestation prévention testeur (stockage base64 PostgreSQL) ---
 
 @router.post("/attestation-prevention/{testeur_id}")
 async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestation: str = None, file: UploadFile = File(...)):
@@ -348,19 +315,8 @@ async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestat
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
-    configurer_cloudinary()
     contents = await file.read()
-    public_id = f"testeur_{testeur_id}_prevention"
-    try:
-        result = cloudinary.uploader.upload(
-            contents,
-            public_id=public_id,
-            resource_type="raw",
-            overwrite=True
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur Cloudinary upload : {e}")
-    url = result["secure_url"]
+    contenu_b64 = base64.b64encode(contents).decode()
     from app.models.testeur import Testeur
     from datetime import datetime
     db = SessionLocal()
@@ -368,7 +324,7 @@ async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestat
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t:
             raise HTTPException(status_code=404, detail="Testeur non trouvé")
-        t.attestation_prevention_url = url
+        t.attestation_prevention_pdf = contenu_b64
         t.attestation_prevention_nom = file.filename
         if date_attestation:
             try:
@@ -378,24 +334,26 @@ async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestat
         db.commit()
     finally:
         db.close()
-    return {"message": "Attestation uploadée", "url": url}
+    return {"message": "Attestation uploadée"}
 
 
 @router.get("/attestation-prevention/{testeur_id}/download")
 def telecharger_attestation_prevention(testeur_id: int):
     from app.models.testeur import Testeur
-    from fastapi.responses import RedirectResponse
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if not t or not t.attestation_prevention_url:
+        if not t or not t.attestation_prevention_pdf:
             raise HTTPException(status_code=404, detail="Attestation non disponible")
+        contenu = base64.b64decode(t.attestation_prevention_pdf)
+        nom = f"{t.nom}_{t.prenom}_{t.attestation_prevention_nom or 'attestation.pdf'}"
     finally:
         db.close()
-    configurer_cloudinary()
-    public_id = f"testeur_{testeur_id}_prevention.pdf"
-    signed_url = cloudinary.utils.private_download_url(public_id, "", resource_type="raw", attachment=True)
-    return RedirectResponse(url=signed_url)
+    return Response(
+        content=contenu,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
+    )
 
 
 @router.delete("/attestation-prevention/{testeur_id}")
@@ -403,17 +361,12 @@ def supprimer_attestation_prevention(testeur_id: int, pin: str):
     PIN_SECRET = "1505"
     if pin != PIN_SECRET:
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
-    configurer_cloudinary()
-    try:
-        cloudinary.uploader.destroy(f"testeur_{testeur_id}_prevention", resource_type="raw")
-    except Exception:
-        pass
     from app.models.testeur import Testeur
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if t:
-            t.attestation_prevention_url = None
+            t.attestation_prevention_pdf = None
             t.attestation_prevention_nom = None
             t.attestation_prevention_date = None
             db.commit()
