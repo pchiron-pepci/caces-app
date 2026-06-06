@@ -109,16 +109,30 @@ def dashboard(request: Request):
     }
     docs_list = db.query(DocumentOfficiel).all()
     docs_map = {d.type: d for d in docs_list}
-    prevention_alerte = []
+    echeances = []
     for t in testeurs_list:
-        if not t.attestation_prevention_url:
-            prevention_alerte.append({"testeur": t, "statut": "absente"})
-        elif not t.attestation_prevention_date:
-            prevention_alerte.append({"testeur": t, "statut": "sans_date"})
-        elif t.attestation_prevention_date <= limite_5ans:
-            prevention_alerte.append({"testeur": t, "statut": "expiree"})
-        elif t.attestation_prevention_date <= limite_4ans:
-            prevention_alerte.append({"testeur": t, "statut": "bientot"})
+        if t.date_expiration_habilitation:
+            echeances.append({
+                "testeur": t,
+                "type": "Habilitation",
+                "date": t.date_expiration_habilitation,
+                "delta": (t.date_expiration_habilitation - today).days
+            })
+        if t.visite_medicale:
+            echeances.append({
+                "testeur": t,
+                "type": "Visite médicale",
+                "date": t.visite_medicale,
+                "delta": (t.visite_medicale - today).days
+            })
+        if t.date_prochain_controle:
+            echeances.append({
+                "testeur": t,
+                "type": "Contrôle",
+                "date": t.date_prochain_controle,
+                "delta": (t.date_prochain_controle - today).days
+            })
+    echeances.sort(key=lambda x: x["date"])
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -129,7 +143,7 @@ def dashboard(request: Request):
             "testeurs": testeurs_list,
             "docs": docs_map,
             "today": today,
-            "prevention_alerte": prevention_alerte
+            "echeances": echeances
         }
     )
 
