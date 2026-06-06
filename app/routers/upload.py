@@ -265,6 +265,12 @@ def supprimer_document_officiel(type: str, pin: str):
     return {"message": "Document supprime"}
 
 
+def _extraire_public_id(url: str) -> str | None:
+    import re
+    m = re.search(r'/raw/upload/(?:v\d+/)?(.+)$', url)
+    return m.group(1) if m else None
+
+
 @router.post("/carte-testeur/{testeur_id}")
 async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = File(...)):
     PIN_SECRET = "1505"
@@ -274,7 +280,7 @@ async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = Fil
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     configurer_cloudinary()
     contents = await file.read()
-    public_id = f"caces_testeurs/{testeur_id}"
+    public_id = f"caces_testeurs/{testeur_id}/{file.filename}"
     try:
         result = cloudinary.uploader.upload(
             contents,
@@ -304,16 +310,18 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
     PIN_SECRET = "1505"
     if pin != PIN_SECRET:
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
-    configurer_cloudinary()
-    try:
-        cloudinary.uploader.destroy(f"caces_testeurs/{testeur_id}", resource_type="raw")
-    except Exception:
-        pass
     from app.models.testeur import Testeur
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if t:
+        if t and t.carte_url:
+            configurer_cloudinary()
+            public_id = _extraire_public_id(t.carte_url)
+            if public_id:
+                try:
+                    cloudinary.uploader.destroy(public_id, resource_type="raw")
+                except Exception:
+                    pass
             t.carte_url = None
             t.carte_nom_fichier = None
             db.commit()
@@ -331,11 +339,15 @@ def telecharger_carte_testeur(testeur_id: int):
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t or not t.carte_url:
             raise HTTPException(status_code=404, detail="Carte non disponible")
+        carte_url = t.carte_url
     finally:
         db.close()
+    public_id = _extraire_public_id(carte_url)
+    if not public_id:
+        raise HTTPException(status_code=500, detail="URL carte invalide")
     configurer_cloudinary()
     signed_url = cloudinary.utils.private_download_url(
-        f"caces_testeurs/{testeur_id}",
+        public_id,
         "",
         resource_type="raw",
         attachment=True
