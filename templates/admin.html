@@ -674,10 +674,6 @@ const DOCUMENTS_TYPES = [
     { type: 'procedure_interne', label: 'Procédure interne CACES®' }
 ];
 
-function dlUrl(url, type) {
-    if (!url) return '#';
-    return url.replace('/raw/upload/', `/raw/upload/fl_attachment:${type}.pdf/`);
-}
 
 function badgeValidite(dateIso) {
     if (!dateIso) return '';
@@ -705,7 +701,7 @@ async function chargerDocuments() {
             ? `<span style="font-size:13px;color:#444;">${doc.nom_fichier}</span> ${badgeValidite(doc.date_validite)}`
             : `<span style="color:#888;font-size:13px;">— Non uploadé</span>`;
         const btnDl = doc && doc.url
-            ? `<a href="${dlUrl(doc.url, t.type)}" class="btn btn-secondary" style="font-size:12px;padding:4px 12px;">📥 Télécharger</a>`
+            ? `<a href="/api/upload/document-officiel/${t.type}/download" class="btn btn-secondary" style="font-size:12px;padding:4px 12px;">📥 Télécharger</a>`
             : '';
         const btnSuppr = doc && doc.url
             ? `<button class="btn btn-danger" style="font-size:12px;padding:4px 10px;background:#ffebee;color:#c62828;border:none;"

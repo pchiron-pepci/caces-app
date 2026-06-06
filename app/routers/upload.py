@@ -213,6 +213,35 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
     return {"message": "Document uploade", "url": url}
 
 
+@router.get("/document-officiel/{type}/download")
+def telecharger_document_officiel(type: str):
+    TYPES_VALIDES = ["certificat_organisme", "attestation_assurance", "procedure_interne"]
+    if type not in TYPES_VALIDES:
+        raise HTTPException(status_code=400, detail="Type invalide")
+    from app.models.document_officiel import DocumentOfficiel
+    db = SessionLocal()
+    try:
+        doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
+        if not doc or not doc.url:
+            raise HTTPException(status_code=404, detail="Document non disponible")
+        url = doc.url
+        nom = doc.nom_fichier or f"{type}.pdf"
+    finally:
+        db.close()
+    import urllib.request
+    from fastapi.responses import Response
+    try:
+        with urllib.request.urlopen(url, timeout=30) as r:
+            content = r.read()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur Cloudinary : {e}")
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
+    )
+
+
 @router.delete("/document-officiel/{type}")
 def supprimer_document_officiel(type: str, pin: str):
     PIN_SECRET = "1505"

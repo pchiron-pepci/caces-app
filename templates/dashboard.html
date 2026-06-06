@@ -133,8 +133,8 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% set dl = doc.url.replace('/raw/upload/', '/raw/upload/fl_attachment:' + type_key + '.pdf/') %}
-                    <a href="{{ dl }}" class="btn btn-secondary" style="font-size:12px;padding:4px 10px;">
+                    <a href="/api/upload/document-officiel/{{ type_key }}/download"
+                        class="btn btn-secondary" style="font-size:12px;padding:4px 10px;">
                         📥 Télécharger
                     </a>
                 </td>
