@@ -220,16 +220,24 @@ def telecharger_document_officiel(type: str):
     if type not in TYPES_VALIDES:
         raise HTTPException(status_code=400, detail="Type invalide")
     from app.models.document_officiel import DocumentOfficiel
-    from fastapi.responses import RedirectResponse
+    from fastapi.responses import Response
+    import requests as req
     db = SessionLocal()
     try:
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if not doc or not doc.url:
             raise HTTPException(status_code=404, detail="Document non disponible")
         doc_url = doc.url
+        nom_fichier = doc.nom_fichier or f"{type}.pdf"
     finally:
         db.close()
-    return RedirectResponse(url=doc_url)
+    r = req.get(doc_url, timeout=10)
+    r.raise_for_status()
+    return Response(
+        content=r.content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom_fichier}"'}
+    )
 
 
 @router.delete("/document-officiel/{type}")
