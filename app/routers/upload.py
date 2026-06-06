@@ -220,24 +220,21 @@ def telecharger_document_officiel(type: str):
     if type not in TYPES_VALIDES:
         raise HTTPException(status_code=400, detail="Type invalide")
     from app.models.document_officiel import DocumentOfficiel
-    from fastapi.responses import Response
-    import requests as req
+    from fastapi.responses import RedirectResponse
     db = SessionLocal()
     try:
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if not doc or not doc.url:
             raise HTTPException(status_code=404, detail="Document non disponible")
         doc_url = doc.url
-        nom_fichier = doc.nom_fichier or f"{type}.pdf"
     finally:
         db.close()
-    r = req.get(doc_url, timeout=10)
-    r.raise_for_status()
-    return Response(
-        content=r.content,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom_fichier}"'}
-    )
+    public_id = _extraire_public_id(doc_url)
+    if not public_id:
+        raise HTTPException(status_code=500, detail="URL document invalide")
+    configurer_cloudinary()
+    signed_url = cloudinary.utils.private_download_url(public_id, "", resource_type="raw", attachment=True)
+    return RedirectResponse(url=signed_url)
 
 
 @router.delete("/document-officiel/{type}")
@@ -333,24 +330,21 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
 @router.get("/carte-testeur/{testeur_id}/download")
 def telecharger_carte_testeur(testeur_id: int):
     from app.models.testeur import Testeur
-    from fastapi.responses import Response
-    import requests as req
+    from fastapi.responses import RedirectResponse
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t or not t.carte_url:
             raise HTTPException(status_code=404, detail="Carte non disponible")
         carte_url = t.carte_url
-        nom_fichier = f"{t.nom}_{t.prenom}_{t.carte_nom_fichier or 'carte.pdf'}"
     finally:
         db.close()
-    r = req.get(carte_url, timeout=10)
-    r.raise_for_status()
-    return Response(
-        content=r.content,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom_fichier}"'}
-    )
+    public_id = _extraire_public_id(carte_url)
+    if not public_id:
+        raise HTTPException(status_code=500, detail="URL carte invalide")
+    configurer_cloudinary()
+    signed_url = cloudinary.utils.private_download_url(public_id, "", resource_type="raw", attachment=True)
+    return RedirectResponse(url=signed_url)
 
 
 @router.post("/attestation-prevention/{testeur_id}")
