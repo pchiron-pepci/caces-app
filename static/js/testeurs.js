@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-sauvegarder').addEventListener('click', sauvegarder);
     document.getElementById('btn-fermer-modal').addEventListener('click', fermerModal);
     document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
+    document.getElementById('btn-fermer-prevention').addEventListener('click', fermerPrevention);
 
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action]');
@@ -20,6 +21,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (btn.dataset.action === 'supprimer-hab') {
             supprimerHab(btn.dataset.habId, btn.dataset.habLabel);
+        }
+        if (btn.dataset.action === 'prevention-supprimer') {
+            const testeurId = btn.dataset.id;
+            const nomFichier = btn.dataset.nomFichier;
+            document.getElementById('pin-message').textContent = `Supprimer l'attestation "${nomFichier}" ?`;
+            document.getElementById('pin-input').value = '';
+            document.getElementById('pin-error').style.display = 'none';
+            document.getElementById('modal-pin').style.display = 'flex';
+            document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
+                const pin = document.getElementById('pin-input').value;
+                const resp = await fetch(`/api/upload/attestation-prevention/${testeurId}?pin=${pin}`, { method: 'DELETE' });
+                if (resp.ok) { fermerPin(); location.reload(); }
+                else document.getElementById('pin-error').style.display = 'block';
+                this.removeEventListener('click', handler);
+            });
         }
         if (btn.dataset.action === 'carte-supprimer') {
             const testeurId = btn.dataset.id;
@@ -158,6 +174,35 @@ function supprimerHab(habId, label) {
 }
 
 function fermerPin() { document.getElementById('modal-pin').style.display = 'none'; }
+
+function ouvrirModalPrevention(testeurId, input) {
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    document.getElementById('prevention-message').textContent = `Uploader "${file.name}" pour ce testeur ?`;
+    document.getElementById('prevention-date').value = '';
+    document.getElementById('prevention-pin').value = '';
+    document.getElementById('prevention-error').style.display = 'none';
+    document.getElementById('modal-prevention').style.display = 'flex';
+    document.getElementById('prevention-confirm-btn').addEventListener('click', async function handler() {
+        const dateVal = document.getElementById('prevention-date').value;
+        const pin = document.getElementById('prevention-pin').value;
+        if (!dateVal) {
+            document.getElementById('prevention-error').style.display = 'block';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', file);
+        const resp = await fetch(`/api/upload/attestation-prevention/${testeurId}?pin=${pin}&date_attestation=${dateVal}`, {
+            method: 'POST',
+            body: formData
+        });
+        if (resp.ok) { fermerPrevention(); input.value = ''; location.reload(); }
+        else document.getElementById('prevention-error').style.display = 'block';
+        this.removeEventListener('click', handler);
+    });
+}
+
+function fermerPrevention() { document.getElementById('modal-prevention').style.display = 'none'; }
 
 function uploadCarte(testeurId, input) {
     if (!input.files || input.files.length === 0) return;

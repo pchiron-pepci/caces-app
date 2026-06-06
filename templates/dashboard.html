@@ -95,6 +95,48 @@
 
 <div class="card" style="margin-top:16px;">
     <div class="card-header">
+        <h2>🛡️ Attestations prévention des risques</h2>
+    </div>
+    {% if prevention_alerte %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Testeur</th>
+                <th>Statut</th>
+                <th>Date attestation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in prevention_alerte %}
+            <tr>
+                <td><strong>{{ item.testeur.nom }} {{ item.testeur.prenom }}</strong></td>
+                <td>
+                    {% if item.statut == 'absente' %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;">❌ Absente</span>
+                    {% elif item.statut == 'sans_date' %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;">⚠️ Date manquante</span>
+                    {% elif item.statut == 'expiree' %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;">❌ Expirée</span>
+                    {% elif item.statut == 'bientot' %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;">⚠️ Expire bientôt</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.testeur.attestation_prevention_date %}
+                        {{ item.testeur.attestation_prevention_date.strftime('%d/%m/%Y') }}
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#2e7d32; padding:16px;">✅ Tous les testeurs ont une attestation valide.</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
         <h2>📄 Documents officiels</h2>
     </div>
     <table class="table">

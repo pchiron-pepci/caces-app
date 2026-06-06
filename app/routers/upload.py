@@ -351,6 +351,93 @@ def telecharger_carte_testeur(testeur_id: int):
     )
 
 
+@router.post("/attestation-prevention/{testeur_id}")
+async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestation: str = None, file: UploadFile = File(...)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Format PDF uniquement")
+    configurer_cloudinary()
+    contents = await file.read()
+    public_id = f"testeur_{testeur_id}_prevention"
+    try:
+        result = cloudinary.uploader.upload(
+            contents,
+            public_id=public_id,
+            resource_type="raw",
+            overwrite=True
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur Cloudinary upload : {e}")
+    url = result["secure_url"]
+    from app.models.testeur import Testeur
+    from datetime import datetime
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t:
+            raise HTTPException(status_code=404, detail="Testeur non trouvé")
+        t.attestation_prevention_url = url
+        t.attestation_prevention_nom = file.filename
+        if date_attestation:
+            try:
+                t.attestation_prevention_date = datetime.strptime(date_attestation, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        db.commit()
+    finally:
+        db.close()
+    return {"message": "Attestation uploadée", "url": url}
+
+
+@router.get("/attestation-prevention/{testeur_id}/download")
+def telecharger_attestation_prevention(testeur_id: int):
+    from app.models.testeur import Testeur
+    from fastapi.responses import Response
+    import requests as req
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t or not t.attestation_prevention_url:
+            raise HTTPException(status_code=404, detail="Attestation non disponible")
+        url = t.attestation_prevention_url
+        nom_fichier = f"{t.nom}_{t.prenom}_{t.attestation_prevention_nom or 'attestation.pdf'}"
+    finally:
+        db.close()
+    r = req.get(url, timeout=10)
+    r.raise_for_status()
+    return Response(
+        content=r.content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom_fichier}"'}
+    )
+
+
+@router.delete("/attestation-prevention/{testeur_id}")
+def supprimer_attestation_prevention(testeur_id: int, pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    configurer_cloudinary()
+    try:
+        cloudinary.uploader.destroy(f"testeur_{testeur_id}_prevention", resource_type="raw")
+    except Exception:
+        pass
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if t:
+            t.attestation_prevention_url = None
+            t.attestation_prevention_nom = None
+            t.attestation_prevention_date = None
+            db.commit()
+    finally:
+        db.close()
+    return {"message": "Attestation supprimée"}
+
+
 @router.get("/liste-images")
 def liste_images():
     configurer_cloudinary()

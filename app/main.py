@@ -45,6 +45,15 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_url VARCHAR"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_nom VARCHAR"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_date DATE"))
+        _conn.commit()
+except Exception:
+    pass
+
 app = FastAPI(
     title="CACES® Manager",
     description="Gestion des certifications CACES® - PEPCI Formation",
@@ -81,7 +90,10 @@ app.include_router(statistiques.router)
 
 @app.get("/")
 def dashboard(request: Request):
-    from datetime import date
+    from datetime import date, timedelta
+    today = date.today()
+    limite_5ans = today - timedelta(days=5*365)
+    limite_4ans = today - timedelta(days=4*365)
     db = SessionLocal()
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
     stats = {
@@ -92,6 +104,16 @@ def dashboard(request: Request):
     }
     docs_list = db.query(DocumentOfficiel).all()
     docs_map = {d.type: d for d in docs_list}
+    prevention_alerte = []
+    for t in testeurs_list:
+        if not t.attestation_prevention_url:
+            prevention_alerte.append({"testeur": t, "statut": "absente"})
+        elif not t.attestation_prevention_date:
+            prevention_alerte.append({"testeur": t, "statut": "sans_date"})
+        elif t.attestation_prevention_date <= limite_5ans:
+            prevention_alerte.append({"testeur": t, "statut": "expiree"})
+        elif t.attestation_prevention_date <= limite_4ans:
+            prevention_alerte.append({"testeur": t, "statut": "bientot"})
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -101,7 +123,8 @@ def dashboard(request: Request):
             "stats": stats,
             "testeurs": testeurs_list,
             "docs": docs_map,
-            "today": date.today()
+            "today": today,
+            "prevention_alerte": prevention_alerte
         }
     )
 
@@ -121,6 +144,7 @@ def page_stagiaires(request: Request):
 
 @app.get("/testeurs")
 def page_testeurs(request: Request):
+    from datetime import date
     db = SessionLocal()
     liste = db.query(Testeur).filter(Testeur.actif == True).all()
     for t in liste:
@@ -134,7 +158,8 @@ def page_testeurs(request: Request):
         name="testeurs.html",
         context={
             "page": "testeurs",
-            "testeurs": liste
+            "testeurs": liste,
+            "today": date.today()
         }
     )
 

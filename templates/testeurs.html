@@ -23,6 +23,7 @@
                 <th>Date échéance</th>
                 <th>Prochain contrôle</th>
                 <th>Habilitations</th>
+                <th>Attestation prévention</th>
                 <th>Carte CACES®</th>
                 <th>Actions</th>
             </tr>
@@ -56,6 +57,34 @@
                     {% for famille, habs in t.habilitations | groupby('famille') %}
                         <span class="badge blue" style="margin:2px;">{{ famille }} {{ habs | map(attribute='categorie') | join(', ') }}</span>
                     {% endfor %}
+                </td>
+                <td style="white-space:nowrap;">
+                    {% if t.attestation_prevention_url %}
+                        {% if t.attestation_prevention_date %}
+                            {% set age = (today - t.attestation_prevention_date).days %}
+                            {% if age < 1460 %}
+                                <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">✅ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                            {% elif age < 1825 %}
+                                <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">⚠️ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                            {% else %}
+                                <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="font-size:11px;color:#2e7d32;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</span>
+                        {% endif %}
+                        <br>
+                        <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-top:3px;">📥</a>
+                        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;margin-top:3px;"
+                            data-action="prevention-supprimer"
+                            data-id="{{ t.id }}"
+                            data-nom-fichier="{{ t.attestation_prevention_nom or 'attestation.pdf' }}">🗑️</button>
+                    {% else %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span><br>
+                    {% endif %}
+                    <input type="file" id="prev-file-{{ t.id }}" accept=".pdf" style="display:none"
+                        onchange="ouvrirModalPrevention({{ t.id }}, this)">
+                    <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-top:3px;"
+                        onclick="document.getElementById('prev-file-{{ t.id }}').click()">📤</button>
                 </td>
                 <td style="white-space:nowrap;">
                     {% if t.carte_url %}
@@ -197,6 +226,27 @@
             <button class="btn btn-secondary" id="btn-fermer-pin">Annuler</button>
         </div>
         <p id="pin-error" style="color:red; margin-top:12px; display:none;">❌ Code PIN incorrect !</p>
+    </div>
+</div>
+
+<!-- MODAL ATTESTATION PRÉVENTION -->
+<div id="modal-prevention" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:420px; text-align:center;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">🛡️ Attestation prévention</h2>
+        <p style="color:#666; margin-bottom:16px;" id="prevention-message"></p>
+        <div class="form-field" style="margin-bottom:12px; text-align:left;">
+            <label>Date de l'attestation *</label>
+            <input type="date" id="prevention-date" style="width:100%;">
+        </div>
+        <div class="form-field" style="margin-bottom:16px;">
+            <label>Code PIN</label>
+            <input type="password" id="prevention-pin" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:8px;">
+        </div>
+        <div style="display:flex; gap:12px; justify-content:center;">
+            <button class="btn btn-primary" id="prevention-confirm-btn">Uploader</button>
+            <button class="btn btn-secondary" id="btn-fermer-prevention">Annuler</button>
+        </div>
+        <p id="prevention-error" style="color:red; margin-top:12px; display:none;">❌ Date requise ou code PIN incorrect</p>
     </div>
 </div>
 

@@ -24,3 +24,6 @@ class Testeur(Base):
     actif = Column(Boolean, default=True)
     carte_url = Column(String(500), nullable=True)
     carte_nom_fichier = Column(String(200), nullable=True)
+    attestation_prevention_url = Column(String(500), nullable=True)
+    attestation_prevention_nom = Column(String(200), nullable=True)
+    attestation_prevention_date = Column(Date, nullable=True)
