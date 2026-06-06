@@ -23,6 +23,7 @@
                 <th>Date échéance</th>
                 <th>Prochain contrôle</th>
                 <th>Habilitations</th>
+                <th>Carte CACES®</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -55,6 +56,21 @@
                     {% for famille, habs in t.habilitations | groupby('famille') %}
                         <span class="badge blue" style="margin:2px;">{{ famille }} {{ habs | map(attribute='categorie') | join(', ') }}</span>
                     {% endfor %}
+                </td>
+                <td style="white-space:nowrap;">
+                    {% if t.carte_url %}
+                        <span style="font-size:11px; color:#2e7d32;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</span><br>
+                        <a href="/api/upload/carte-testeur/{{ t.id }}/download" class="btn btn-secondary" style="padding:3px 8px; font-size:11px; margin-top:3px;">📥</a>
+                        <button class="btn btn-danger" style="padding:3px 8px; font-size:11px; margin-top:3px;"
+                            data-action="carte-supprimer"
+                            data-id="{{ t.id }}"
+                            data-nom-fichier="{{ t.carte_nom_fichier or 'carte.pdf' }}">🗑️</button>
+                    {% else %}
+                        <span style="color:#888; font-size:12px;">—</span><br>
+                    {% endif %}
+                    <button class="btn btn-secondary" style="padding:3px 8px; font-size:11px; margin-top:3px;"
+                        data-action="carte-upload"
+                        data-id="{{ t.id }}">📤</button>
                 </td>
                 <td>
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
@@ -165,6 +181,26 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL CARTE UPLOAD -->
+<div id="modal-carte-upload" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1100; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:420px; text-align:center;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">📤 Carte CACES® testeur</h2>
+        <p style="color:#666; margin-bottom:16px;">Fichier : <strong id="carte-upload-nom"></strong></p>
+        <div class="form-field" style="margin-bottom:16px;">
+            <label>Code PIN</label>
+            <input type="password" id="carte-pin-input" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:8px;">
+        </div>
+        <div style="display:flex; gap:12px; justify-content:center;">
+            <button class="btn btn-primary" id="carte-confirmer-btn">Confirmer</button>
+            <button class="btn btn-secondary" id="btn-fermer-carte">Annuler</button>
+        </div>
+        <p id="carte-pin-error" style="color:red; margin-top:12px; display:none;">❌ Code PIN incorrect !</p>
+    </div>
+</div>
+
+<!-- INPUT FICHIER CARTE (caché) -->
+<input type="file" id="carte-file-input" accept=".pdf" style="display:none;">
 
 <!-- MODAL PIN -->
 <div id="modal-pin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">

@@ -37,6 +37,14 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_url VARCHAR"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR"))
+        _conn.commit()
+except Exception:
+    pass
+
 app = FastAPI(
     title="CACES® Manager",
     description="Gestion des certifications CACES® - PEPCI Formation",

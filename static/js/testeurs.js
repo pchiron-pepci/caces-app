@@ -6,6 +6,40 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fermer-modal').addEventListener('click', fermerModal);
     document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
 
+    document.getElementById('carte-file-input').addEventListener('change', function() {
+        if (this.files.length === 0) return;
+        carteUploadFile = this.files[0];
+        document.getElementById('carte-upload-nom').textContent = carteUploadFile.name;
+        document.getElementById('carte-pin-input').value = '';
+        document.getElementById('carte-pin-error').style.display = 'none';
+        document.getElementById('modal-carte-upload').style.display = 'flex';
+    });
+
+    document.getElementById('btn-fermer-carte').addEventListener('click', function() {
+        document.getElementById('modal-carte-upload').style.display = 'none';
+        document.getElementById('carte-file-input').value = '';
+        carteUploadFile = null;
+    });
+
+    document.getElementById('carte-confirmer-btn').addEventListener('click', async function() {
+        if (!carteUploadFile || !carteUploadTesteurId) return;
+        const pin = document.getElementById('carte-pin-input').value;
+        const formData = new FormData();
+        formData.append('file', carteUploadFile);
+        const resp = await fetch(`/api/upload/carte-testeur/${carteUploadTesteurId}?pin=${pin}`, {
+            method: 'POST',
+            body: formData
+        });
+        if (resp.ok) {
+            document.getElementById('modal-carte-upload').style.display = 'none';
+            document.getElementById('carte-file-input').value = '';
+            carteUploadFile = null;
+            location.reload();
+        } else {
+            document.getElementById('carte-pin-error').style.display = 'block';
+        }
+    });
+
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
@@ -21,11 +55,32 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn.dataset.action === 'supprimer-hab') {
             supprimerHab(btn.dataset.habId, btn.dataset.habLabel);
         }
+        if (btn.dataset.action === 'carte-upload') {
+            carteUploadTesteurId = btn.dataset.id;
+            document.getElementById('carte-file-input').click();
+        }
+        if (btn.dataset.action === 'carte-supprimer') {
+            const testeurId = btn.dataset.id;
+            const nomFichier = btn.dataset.nomFichier;
+            document.getElementById('pin-message').textContent = `Supprimer la carte "${nomFichier}" ?`;
+            document.getElementById('pin-input').value = '';
+            document.getElementById('pin-error').style.display = 'none';
+            document.getElementById('modal-pin').style.display = 'flex';
+            document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
+                const pin = document.getElementById('pin-input').value;
+                const resp = await fetch(`/api/upload/carte-testeur/${testeurId}?pin=${pin}`, { method: 'DELETE' });
+                if (resp.ok) { fermerPin(); location.reload(); }
+                else document.getElementById('pin-error').style.display = 'block';
+                this.removeEventListener('click', handler);
+            });
+        }
     });
 });
 
 let idAArchiver = null;
 let idHabASupprimer = null;
+let carteUploadTesteurId = null;
+let carteUploadFile = null;
 
 function ouvrirFormulaire() {
     document.getElementById('modal-title').textContent = 'Nouveau testeur';

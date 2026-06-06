@@ -269,6 +269,86 @@ def supprimer_document_officiel(type: str, pin: str):
     return {"message": "Document supprime"}
 
 
+@router.post("/carte-testeur/{testeur_id}")
+async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = File(...)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Format PDF uniquement")
+    configurer_cloudinary()
+    contents = await file.read()
+    public_id = f"caces_testeurs/{testeur_id}.pdf"
+    result = cloudinary.uploader.upload(
+        contents,
+        public_id=public_id,
+        resource_type="raw",
+        overwrite=True
+    )
+    url = result["secure_url"]
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t:
+            raise HTTPException(status_code=404, detail="Testeur non trouvé")
+        t.carte_url = url
+        t.carte_nom_fichier = file.filename
+        db.commit()
+    finally:
+        db.close()
+    return {"message": "Carte uploadée", "url": url}
+
+
+@router.delete("/carte-testeur/{testeur_id}")
+def supprimer_carte_testeur(testeur_id: int, pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    configurer_cloudinary()
+    try:
+        cloudinary.uploader.destroy(f"caces_testeurs/{testeur_id}.pdf", resource_type="raw")
+    except Exception:
+        pass
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if t:
+            t.carte_url = None
+            t.carte_nom_fichier = None
+            db.commit()
+    finally:
+        db.close()
+    return {"message": "Carte supprimée"}
+
+
+@router.get("/carte-testeur/{testeur_id}/download")
+def telecharger_carte_testeur(testeur_id: int):
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t or not t.carte_url:
+            raise HTTPException(status_code=404, detail="Carte non disponible")
+        url = t.carte_url
+        nom = t.carte_nom_fichier or f"carte_testeur_{testeur_id}.pdf"
+    finally:
+        db.close()
+    import urllib.request
+    from fastapi.responses import Response
+    try:
+        with urllib.request.urlopen(url, timeout=30) as r:
+            content = r.read()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur Cloudinary : {e}")
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
+    )
+
+
 @router.get("/liste-images")
 def liste_images():
     configurer_cloudinary()
