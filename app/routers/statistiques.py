@@ -107,7 +107,7 @@ def _build_stats(famille, annee, db):
                 "statut": statut,
             })
 
-        stats_par_theme[str(theme)] = grilles_stats
+        stats_par_theme[theme] = grilles_stats
 
     return stats_par_theme, alertes, total_sessions
 
