@@ -310,18 +310,16 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
     PIN_SECRET = "1505"
     if pin != PIN_SECRET:
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    configurer_cloudinary()
+    try:
+        cloudinary.uploader.destroy(f"testeur_{testeur_id}_carte", resource_type="raw")
+    except Exception:
+        pass
     from app.models.testeur import Testeur
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if t and t.carte_url:
-            configurer_cloudinary()
-            public_id = _extraire_public_id(t.carte_url)
-            if public_id:
-                try:
-                    cloudinary.uploader.destroy(public_id, resource_type="raw")
-                except Exception:
-                    pass
+        if t:
             t.carte_url = None
             t.carte_nom_fichier = None
             db.commit()
