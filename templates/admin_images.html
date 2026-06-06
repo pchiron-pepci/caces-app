@@ -32,9 +32,12 @@
 
         <div id="upload-status" style="margin-top:16px;"></div>
 
-        <button class="btn btn-primary" style="margin-top:16px;" onclick="associerImages()">
-            🔗 Associer les images aux questions
-        </button>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="associerImages()">
+                🔗 Associer les images aux questions
+            </button>
+            <span id="derniere-assoc" style="font-size:12px; color:#888;"></span>
+        </div>
         <div id="assoc-status" style="margin-top:8px; font-size:13px; color:#2e7d32;"></div>
     </div>
 </div>
@@ -84,6 +87,18 @@ function handleDrop(event) {
     uploadFiles(event.dataTransfer.files);
 }
 
+async function chargerDerniereAssociation() {
+    const resp = await fetch('/api/upload/derniere-association');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const el = document.getElementById('derniere-assoc');
+    if (data.date) {
+        el.textContent = 'Dernière association : ' + data.date + ' (' + data.nb_images + ' images)';
+    } else {
+        el.textContent = 'Aucune association enregistrée';
+    }
+}
+
 async function associerImages() {
     const pin = prompt('Code PIN administrateur :');
     if (!pin) return;
@@ -94,6 +109,7 @@ async function associerImages() {
     if (resp.ok) {
         const data = await resp.json();
         status.textContent = '✅ ' + data.message;
+        chargerDerniereAssociation();
     } else {
         status.textContent = '❌ Erreur';
     }
@@ -133,6 +149,7 @@ async function supprimerImage(filename) {
 }
 
 chargerImages();
+chargerDerniereAssociation();
 </script>
 
 {% endblock %}

@@ -97,9 +97,29 @@ async def associer_images(pin: str):
                 print(f"Erreur parsing {filename}: {e}")
                 continue
         db.commit()
+        from app.models.association_log import AssociationLog
+        from datetime import datetime
+        db.add(AssociationLog(date_association=datetime.utcnow(), nb_images=updated))
+        db.commit()
     finally:
         db.close()
     return {"message": f"{updated} images associees"}
+
+
+@router.get("/derniere-association")
+def derniere_association():
+    from app.models.association_log import AssociationLog
+    db = SessionLocal()
+    try:
+        log = db.query(AssociationLog).order_by(AssociationLog.date_association.desc()).first()
+        if not log:
+            return {"date": None, "nb_images": None}
+        return {
+            "date": log.date_association.strftime("%d/%m/%Y %H:%M"),
+            "nb_images": log.nb_images
+        }
+    finally:
+        db.close()
 
 @router.delete("/supprimer-image")
 async def supprimer_image(filename: str, pin: str):

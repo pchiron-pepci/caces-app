@@ -20,6 +20,7 @@ from app.models.session_epreuve import SessionEpreuve
 from app.models.equipement import Equipement
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
+from app.models.association_log import AssociationLog
 
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
 from app.models.utilisateur import Utilisateur
