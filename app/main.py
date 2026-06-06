@@ -96,6 +96,11 @@ def dashboard(request: Request):
     limite_4ans = today - timedelta(days=4*365)
     db = SessionLocal()
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+    for t in testeurs_list:
+        t.habilitations = db.query(HabilitationTesteur).filter(
+            HabilitationTesteur.testeur_id == t.id,
+            HabilitationTesteur.actif == True
+        ).all()
     stats = {
         "stagiaires": db.query(Stagiaire).filter(Stagiaire.actif == 1).count(),
         "cartes": 0,

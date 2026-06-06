@@ -34,107 +34,6 @@
     </div>
 </div>
 
-<div class="dashboard-grid">
-    <div class="card">
-        <div class="card-header">
-            <h2>🗺️ Cartographie PEPCI</h2>
-            <span class="badge green">Valide jusqu'au 13/06/2028</span>
-        </div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Famille</th>
-                    <th>Catégories</th>
-                    <th>Statut</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>R482</strong> — Engins de chantier</td>
-                    <td>A, B1, C1, F</td>
-                    <td><span class="badge green">✅ Certifié</span></td>
-                </tr>
-                <tr>
-                    <td><strong>R486A</strong> — PEMP</td>
-                    <td>A, B</td>
-                    <td><span class="badge green">✅ Certifié</span></td>
-                </tr>
-                <tr>
-                    <td><strong>R489</strong> — Chariots</td>
-                    <td>1B, 3, 5</td>
-                    <td><span class="badge green">✅ Certifié</span></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2>👨‍🏫 Testeurs actifs</h2>
-        </div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Testeur</th>
-                    <th>Habilitations</th>
-                    <th>Statut</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for testeur in testeurs %}
-                <tr>
-                    <td><strong>{{ testeur.nom }} {{ testeur.prenom }}</strong></td>
-                    <td>{{ testeur.statut }}</td>
-                    <td><span class="badge green">✅ Actif</span></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card" style="margin-top:16px;">
-    <div class="card-header">
-        <h2>🛡️ Attestations prévention des risques</h2>
-    </div>
-    {% if prevention_alerte %}
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Testeur</th>
-                <th>Statut</th>
-                <th>Date attestation</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in prevention_alerte %}
-            <tr>
-                <td><strong>{{ item.testeur.nom }} {{ item.testeur.prenom }}</strong></td>
-                <td>
-                    {% if item.statut == 'absente' %}
-                        <span class="badge" style="background:#ffebee;color:#c62828;">❌ Absente</span>
-                    {% elif item.statut == 'sans_date' %}
-                        <span class="badge" style="background:#fff3e0;color:#e65100;">⚠️ Date manquante</span>
-                    {% elif item.statut == 'expiree' %}
-                        <span class="badge" style="background:#ffebee;color:#c62828;">❌ Expirée</span>
-                    {% elif item.statut == 'bientot' %}
-                        <span class="badge" style="background:#fff3e0;color:#e65100;">⚠️ Expire bientôt</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if item.testeur.attestation_prevention_date %}
-                        {{ item.testeur.attestation_prevention_date.strftime('%d/%m/%Y') }}
-                    {% else %}—{% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p style="color:#2e7d32; padding:16px;">✅ Tous les testeurs ont une attestation valide.</p>
-    {% endif %}
-</div>
-
 <div class="card" style="margin-top:16px;">
     <div class="card-header">
         <h2>📄 Documents officiels</h2>
@@ -187,5 +86,120 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+<div class="dashboard-grid" style="margin-top:16px;">
+    <div class="card">
+        <div class="card-header">
+            <h2>🗺️ Cartographie PEPCI</h2>
+            <span class="badge green">Valide jusqu'au 13/06/2028</span>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Famille</th>
+                    <th>Catégories</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>R482</strong> — Engins de chantier</td>
+                    <td>A, B1, C1, F</td>
+                    <td><span class="badge green">✅ Certifié</span></td>
+                </tr>
+                <tr>
+                    <td><strong>R486A</strong> — PEMP</td>
+                    <td>A, B</td>
+                    <td><span class="badge green">✅ Certifié</span></td>
+                </tr>
+                <tr>
+                    <td><strong>R489</strong> — Chariots</td>
+                    <td>1B, 3, 5</td>
+                    <td><span class="badge green">✅ Certifié</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>👨‍🏫 Testeurs actifs</h2>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nom / Prénom</th>
+                    <th>Type</th>
+                    <th>Habilitations</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for testeur in testeurs %}
+                <tr>
+                    <td><strong>{{ testeur.nom }} {{ testeur.prenom }}</strong></td>
+                    <td>
+                        {% if testeur.statut == 'interne' %}
+                            <span class="badge blue">Interne</span>
+                        {% elif testeur.statut == 'independant' %}
+                            <span class="badge orange">Indépendant</span>
+                        {% else %}
+                            <span class="badge green">Entreprise</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;">
+                        {% for famille, habs in testeur.habilitations | groupby('famille') %}
+                            <strong>{{ famille }}</strong> {{ habs | map(attribute='categorie') | join(',') }}{% if not loop.last %} / {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td><span class="badge green">✅ Actif</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
+        <h2>🛡️ Attestations prévention des risques</h2>
+    </div>
+    {% if prevention_alerte %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Testeur</th>
+                <th>Statut</th>
+                <th>Date attestation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in prevention_alerte %}
+            <tr>
+                <td><strong>{{ item.testeur.nom }} {{ item.testeur.prenom }}</strong></td>
+                <td>
+                    {% if item.statut == 'absente' %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;">❌ Absente</span>
+                    {% elif item.statut == 'sans_date' %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;">⚠️ Date manquante</span>
+                    {% elif item.statut == 'expiree' %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;">❌ Expirée</span>
+                    {% elif item.statut == 'bientot' %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;">⚠️ Expire bientôt</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.testeur.attestation_prevention_date %}
+                        {{ item.testeur.attestation_prevention_date.strftime('%d/%m/%Y') }}
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#2e7d32; padding:16px;">✅ Tous les testeurs ont une attestation valide.</p>
+    {% endif %}
 </div>
 {% endblock %}
