@@ -283,6 +283,10 @@ async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = Fil
     nom_sans_ext = os.path.splitext(file.filename)[0]
     public_id = f"caces_testeurs/{testeur_id}_{nom_sans_ext}"
     try:
+        cloudinary.api.create_folder("caces_testeurs")
+    except Exception:
+        pass
+    try:
         result = cloudinary.uploader.upload(
             contents,
             public_id=public_id,
