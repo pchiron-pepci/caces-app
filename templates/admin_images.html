@@ -90,7 +90,7 @@ function handleDrop(event) {
 async function chargerDerniereAssociation() {
     const el = document.getElementById('derniere-assoc');
     try {
-        const resp = await fetch('/api/upload/derniere-association');
+        const resp = await fetch('/api/upload/derniere-association', { cache: 'no-store' });
         if (!resp.ok) { el.textContent = 'Erreur chargement (' + resp.status + ')'; return; }
         const data = await resp.json();
         if (data.date) {
