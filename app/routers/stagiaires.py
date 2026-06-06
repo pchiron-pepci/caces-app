@@ -37,7 +37,7 @@ class StagiaireResponse(BaseModel):
 
 @router.get("/", response_model=list[StagiaireResponse])
 def liste_stagiaires(db: Session = Depends(get_db)):
-    return db.query(Stagiaire).filter(Stagiaire.actif == 1).all()
+    return db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
 
 @router.get("/{id}", response_model=StagiaireResponse)
 def get_stagiaire(id: int, db: Session = Depends(get_db)):

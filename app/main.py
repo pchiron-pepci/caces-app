@@ -149,7 +149,7 @@ def dashboard(request: Request):
 @app.get("/stagiaires")
 def page_stagiaires(request: Request):
     db = SessionLocal()
-    liste = db.query(Stagiaire).filter(Stagiaire.actif == 1).all()
+    liste = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -501,7 +501,7 @@ def page_session_detail(request: Request, session_id: int):
         Equipement.actif == True
     ).order_by(Equipement.numero).all()
 
-    stagiaires = db.query(Stagiaire).filter(Stagiaire.actif == 1).all()
+    stagiaires = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
 
     db.close()
