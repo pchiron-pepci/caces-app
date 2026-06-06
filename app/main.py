@@ -54,6 +54,13 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS role_referent VARCHAR"))
+        _conn.commit()
+except Exception:
+    pass
+
 app = FastAPI(
     title="CACES® Manager",
     description="Gestion des certifications CACES® - PEPCI Formation",
@@ -109,30 +116,11 @@ def dashboard(request: Request):
     }
     docs_list = db.query(DocumentOfficiel).all()
     docs_map = {d.type: d for d in docs_list}
-    echeances = []
-    for t in testeurs_list:
-        if t.date_expiration_habilitation:
-            echeances.append({
-                "testeur": t,
-                "type": "Habilitation",
-                "date": t.date_expiration_habilitation,
-                "delta": (t.date_expiration_habilitation - today).days
-            })
-        if t.visite_medicale:
-            echeances.append({
-                "testeur": t,
-                "type": "Visite médicale",
-                "date": t.visite_medicale,
-                "delta": (t.visite_medicale - today).days
-            })
-        if t.date_prochain_controle:
-            echeances.append({
-                "testeur": t,
-                "type": "Contrôle",
-                "date": t.date_prochain_controle,
-                "delta": (t.date_prochain_controle - today).days
-            })
-    echeances.sort(key=lambda x: x["date"])
+    referents = db.query(Utilisateur).filter(
+        Utilisateur.role_referent != None,
+        Utilisateur.role_referent != '',
+        Utilisateur.actif == True
+    ).all()
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -143,7 +131,7 @@ def dashboard(request: Request):
             "testeurs": testeurs_list,
             "docs": docs_map,
             "today": today,
-            "echeances": echeances
+            "referents": referents
         }
     )
 

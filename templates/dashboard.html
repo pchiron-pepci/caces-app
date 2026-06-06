@@ -162,42 +162,39 @@
 
     <div class="card">
         <div class="card-header">
-            <h2>⏰ Prochaines échéances</h2>
+            <h2>🏢 Organisation</h2>
         </div>
-        {% if echeances %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Testeur</th>
-                    <th>Type</th>
-                    <th>Date</th>
-                    <th>Dans</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for e in echeances %}
-                <tr>
-                    <td><strong>{{ e.testeur.nom }} {{ e.testeur.prenom }}</strong></td>
-                    <td style="font-size:12px;">{{ e.type }}</td>
-                    <td style="font-size:12px;">{{ e.date.strftime('%d/%m/%Y') }}</td>
-                    <td>
-                        {% if e.delta < 0 %}
-                            <span class="badge" style="background:#ffebee;color:#c62828;">Expiré</span>
-                        {% elif e.delta <= 30 %}
-                            <span class="badge" style="background:#fff3e0;color:#e65100;">{{ e.delta }}j</span>
-                        {% elif e.delta <= 180 %}
-                            <span class="badge" style="background:#fff8e1;color:#f57f17;">{{ e.delta }}j</span>
-                        {% else %}
-                            <span class="badge" style="background:#e8f5e9;color:#2e7d32;">{{ e.delta }}j</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="color:#2e7d32; padding:16px;">✅ Aucune échéance à venir.</p>
-        {% endif %}
+        <div style="padding:0 16px 8px;">
+            <h3 style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin:12px 0 8px;">Référents</h3>
+            {% if referents %}
+            <table class="table">
+                <thead>
+                    <tr><th>Nom</th><th>Rôle</th><th>Email</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in referents %}
+                    <tr>
+                        <td><strong>{{ r.nom }} {{ r.prenom }}</strong></td>
+                        <td style="font-size:12px;">{{ r.role_referent }}</td>
+                        <td style="font-size:12px;">{{ r.email }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color:#888; font-size:13px; padding:4px 0 8px;">Aucun référent renseigné</p>
+            {% endif %}
+        </div>
+        <div style="padding:0 16px 16px;">
+            <h3 style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin:12px 0 8px;">Prochains audits</h3>
+            <table class="table">
+                <tbody>
+                    <tr><td>Audit interne</td><td style="color:#888;">—</td></tr>
+                    <tr><td>Audit externe</td><td style="color:#888;">—</td></tr>
+                    <tr><td>Revue de direction</td><td style="color:#888;">—</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
