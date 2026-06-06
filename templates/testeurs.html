@@ -80,7 +80,7 @@
             </div>
             <!-- Habilitations -->
             <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
-                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Habilitations</div>
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Certifications CACES®</div>
                 {% if t.habilitations %}
                     {% for famille, habs in t.habilitations | groupby('famille') %}
                         <span class="badge blue" style="margin:2px;">{{ famille }} {{ habs | map(attribute='categorie') | join(', ') }}</span>
