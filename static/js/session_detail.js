@@ -154,10 +154,11 @@ async function sauvegarderJourPratique() {
     }
 }
 
-async function supprimerJour(id) {
-    if (!confirm('Supprimer ce jour de test ?')) return;
-    const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + id, { method: 'DELETE' });
-    if (resp.ok) location.reload(); else alert('Erreur !');
+function supprimerJour(id) {
+    demanderConfirmation('Supprimer ce jour de test ?', async () => {
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + id, { method: 'DELETE' });
+        if (resp.ok) location.reload(); else alert('Erreur !');
+    });
 }
 
 function ouvrirAjoutCandidatJour(jourId) {
@@ -316,21 +317,35 @@ async function sauvegarderEquipement() {
     if (resp.ok) { fermerModalEquipement(); location.reload(); } else alert('Erreur !');
 }
 
-async function cloturerSession() {
-    if (!confirm('Cloturer la session ? Les resultats seront verrouilles.')) return;
-    const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/cloturer', { method: 'POST' });
-    if (resp.ok) location.reload(); else alert('Erreur !');
+function cloturerSession() {
+    demanderConfirmation('Clôturer la session ? Les résultats seront verrouillés.', async () => {
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/cloturer', { method: 'POST' });
+        if (resp.ok) location.reload(); else alert('Erreur !');
+    });
 }
 
-async function reouvrirsession() {
-    const pin = prompt('Code PIN administrateur :');
-    if (!pin) return;
-    if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
-    const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/reouvrir', { method: 'POST' });
-    if (resp.ok) location.reload(); else alert('Erreur !');
+function reouvrirsession() {
+    document.getElementById('pin-message').textContent = 'Réouvrir la session ?';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+    document.getElementById('pin-confirm-btn').onclick = async () => {
+        const pin = document.getElementById('pin-input').value;
+        if (pin !== '1505') { document.getElementById('pin-error').style.display = 'block'; return; }
+        fermerPin();
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/reouvrir', { method: 'POST' });
+        if (resp.ok) location.reload(); else alert('Erreur !');
+    };
 }
 
 function fermerPin() { document.getElementById('modal-pin').style.display = 'none'; }
+
+function demanderConfirmation(message, callback) {
+    document.getElementById('confirm-message').textContent = message;
+    document.getElementById('modal-confirm').style.display = 'flex';
+    document.getElementById('confirm-ok-btn').onclick = () => { fermerConfirm(); callback(); };
+}
+function fermerConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
 
 function ouvrirModifierJourTheorie(jourId, date, testeurId) {
     document.getElementById('mjt-jour-id').value = jourId;
@@ -354,11 +369,16 @@ async function sauvegarderModifierJourTheorie() {
     else alert('Erreur !');
 }
 
-async function retirerCandidatJour(jourId, stagiaireId, nom) {
-    if (!confirm('Retirer ' + nom + ' de ce jour ?')) return;
-    const pin = prompt('Code PIN administrateur :');
-    if (!pin) return;
-    if (pin !== '1505') { alert('Code PIN incorrect !'); return; }
-    const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId, { method: 'DELETE' });
-    if (resp.ok) location.reload(); else alert('Erreur !');
+function retirerCandidatJour(jourId, stagiaireId, nom) {
+    document.getElementById('pin-message').textContent = 'Retirer ' + nom + ' de ce jour ?';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+    document.getElementById('pin-confirm-btn').onclick = async () => {
+        const pin = document.getElementById('pin-input').value;
+        if (pin !== '1505') { document.getElementById('pin-error').style.display = 'block'; return; }
+        fermerPin();
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId, { method: 'DELETE' });
+        if (resp.ok) location.reload(); else alert('Erreur !');
+    };
 }
