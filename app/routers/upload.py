@@ -183,7 +183,7 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     configurer_cloudinary()
     contents = await file.read()
-    public_id = f"caces_documents/{type}.pdf"
+    public_id = f"document_{type}"
     result = cloudinary.uploader.upload(
         contents,
         public_id=public_id,
@@ -226,16 +226,10 @@ def telecharger_document_officiel(type: str):
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if not doc or not doc.url:
             raise HTTPException(status_code=404, detail="Document non disponible")
+        doc_url = doc.url
     finally:
         db.close()
-    configurer_cloudinary()
-    signed_url = cloudinary.utils.private_download_url(
-        f"caces_documents/{type}.pdf",
-        "",
-        resource_type="raw",
-        attachment=True
-    )
-    return RedirectResponse(url=signed_url)
+    return RedirectResponse(url=doc_url)
 
 
 @router.delete("/document-officiel/{type}")
@@ -248,7 +242,7 @@ def supprimer_document_officiel(type: str, pin: str):
         raise HTTPException(status_code=400, detail="Type de document invalide")
     configurer_cloudinary()
     try:
-        cloudinary.uploader.destroy(f"caces_documents/{type}.pdf", resource_type="raw")
+        cloudinary.uploader.destroy(f"document_{type}", resource_type="raw")
     except Exception:
         pass
     from app.models.document_officiel import DocumentOfficiel
