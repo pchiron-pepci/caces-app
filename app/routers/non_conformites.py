@@ -98,6 +98,20 @@ def cloturer_nc(id: int, pin: str, db: Session = Depends(get_db)):
     return {"message": "Non-conformité clôturée"}
 
 
+@router.patch("/{id}/sans-objet")
+def sans_objet_nc(id: int, pin: str, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    nc = db.query(NonConformite).filter(NonConformite.id == id).first()
+    if not nc:
+        raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    nc.statut = "sans_objet"
+    nc.date_cloture = date.today()
+    db.commit()
+    return {"message": "Non-conformité classée sans objet"}
+
+
 @router.get("/{id}/justificatif")
 def download_justificatif(id: int, db: Session = Depends(get_db)):
     nc = db.query(NonConformite).filter(NonConformite.id == id).first()

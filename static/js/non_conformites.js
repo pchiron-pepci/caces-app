@@ -30,6 +30,21 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 
+    // ── Sans objet ─────────────────────────────────────────────────────────
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.nc-sans-objet-btn');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const pin = prompt('Code PIN administrateur requis pour classer sans objet :');
+        if (pin === null) return;
+        fetch('/api/non-conformites/' + id + '/sans-objet?pin=' + encodeURIComponent(pin), { method: 'PATCH' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.detail) { alert('Erreur : ' + data.detail); return; }
+                location.reload();
+            });
+    });
+
     // ── Modal helpers ──────────────────────────────────────────────────────
     const modal = document.getElementById('modal-nc');
     const today = new Date().toISOString().slice(0, 10);
