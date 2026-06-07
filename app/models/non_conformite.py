@@ -5,6 +5,7 @@ class NonConformite(Base):
     __tablename__ = "non_conformites"
 
     id = Column(Integer, primary_key=True, index=True)
+    reference = Column(String(20), nullable=True, unique=True)
     date = Column(Date, nullable=False)
     declarant_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=True)
     origine = Column(String(50), nullable=False)

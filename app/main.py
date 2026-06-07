@@ -177,6 +177,13 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE non_conformites ADD COLUMN IF NOT EXISTS reference VARCHAR(20) UNIQUE"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
         _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS carte_testeur (
                 id SERIAL PRIMARY KEY,
@@ -838,6 +845,7 @@ def page_non_conformites(request: Request):
     utilisateurs_map = {u.id: u for u in utilisateurs_list}
     nc_json = json.dumps([{
         "id": nc.id,
+        "reference": nc.reference or "",
         "date": nc.date.isoformat() if nc.date else "",
         "declarant_id": nc.declarant_id,
         "origine": nc.origine,

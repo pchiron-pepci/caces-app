@@ -45,13 +45,29 @@ class NonConformiteUpdate(BaseModel):
     stagiaire_id: Optional[int] = None
 
 
+def _generate_reference(db: Session, year: int) -> str:
+    prefix = f"NC-{year}-"
+    last = db.query(NonConformite).filter(
+        NonConformite.reference.like(f"{prefix}%")
+    ).order_by(NonConformite.reference.desc()).first()
+    if last and last.reference:
+        try:
+            n = int(last.reference.rsplit("-", 1)[-1]) + 1
+        except ValueError:
+            n = 1
+    else:
+        n = 1
+    return f"{prefix}{n:03d}"
+
+
 @router.post("")
 def create_nc(data: NonConformiteCreate, db: Session = Depends(get_db)):
     nc = NonConformite(**data.model_dump())
+    nc.reference = _generate_reference(db, data.date.year)
     db.add(nc)
     db.commit()
     db.refresh(nc)
-    return {"message": "Non-conformité créée", "id": nc.id}
+    return {"message": "Non-conformité créée", "id": nc.id, "reference": nc.reference}
 
 
 @router.put("/{id}")
