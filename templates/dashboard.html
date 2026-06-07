@@ -236,7 +236,7 @@
                 {% for nc in nc_ouvertes %}
                 <tr>
                     <td style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</td>
-                    <td style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; white-space:nowrap;">{{ nc.reference or '—' }}</td>
+                    <td style="white-space:nowrap;"><a href="/non-conformites#{{ nc.reference }}" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; text-decoration:none;">{{ nc.reference or '—' }}</a></td>
                     <td style="font-weight:600;">{{ nc.titre }}</td>
                     <td>
                         {% if nc.statut == 'ouvert' %}

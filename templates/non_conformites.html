@@ -26,7 +26,7 @@
 {% else %}
 
 {% for nc in non_conformites %}
-<div class="card nc-card" style="margin-bottom:10px; padding:0; overflow:hidden;"
+<div class="card nc-card" id="{{ nc.reference }}" style="margin-bottom:10px; padding:0; overflow:hidden;"
      data-search="{{ (nc.reference or '') ~ ' ' ~ nc.titre ~ ' ' ~ nc.origine ~ ' ' ~ nc.type_nc }}">
     <div class="nc-toggle-header" data-id="{{ nc.id }}"
          style="display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none;">
