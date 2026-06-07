@@ -193,11 +193,33 @@
         </div>
         <div style="padding:0 16px 16px;">
             <h3 style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin:12px 0 8px;">Prochains audits</h3>
+            {% set cfg = get_config_organisme() %}
+            {% set audit_rows = [
+                ('Audit interne', cfg.audit_interne_date if cfg else None),
+                ('Audit externe', cfg.audit_externe_date if cfg else None),
+                ('Revue de direction', cfg.revue_direction_date if cfg else None)
+            ] %}
             <table class="table">
                 <tbody>
-                    <tr><td>Audit interne</td><td style="color:#888;">—</td></tr>
-                    <tr><td>Audit externe</td><td style="color:#888;">—</td></tr>
-                    <tr><td>Revue de direction</td><td style="color:#888;">—</td></tr>
+                    {% for label, d in audit_rows %}
+                    <tr>
+                        <td>{{ label }}</td>
+                        <td>
+                            {% if d %}
+                                {% set delta = (d - today).days %}
+                                {% if delta < 0 %}
+                                    <span class="badge" style="background:#ffebee;color:#c62828;">❌ Dépassée le {{ d.strftime('%d/%m/%Y') }}</span>
+                                {% elif delta <= 30 %}
+                                    <span class="badge" style="background:#fff3e0;color:#e65100;">⚠️ Dans {{ delta }}j ({{ d.strftime('%d/%m/%Y') }})</span>
+                                {% else %}
+                                    <span class="badge" style="background:#e8f5e9;color:#2e7d32;">✅ {{ d.strftime('%d/%m/%Y') }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color:#bbb;">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>

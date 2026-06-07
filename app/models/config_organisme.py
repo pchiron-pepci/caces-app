@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String, Text, Date
 from app.database import Base
 
 class ConfigOrganisme(Base):
@@ -7,3 +7,6 @@ class ConfigOrganisme(Base):
     nom_organisme = Column(String(200), nullable=True)
     logo_base64 = Column(Text, nullable=True)
     logo_nom = Column(String(200), nullable=True)
+    audit_interne_date = Column(Date, nullable=True)
+    audit_externe_date = Column(Date, nullable=True)
+    revue_direction_date = Column(Date, nullable=True)

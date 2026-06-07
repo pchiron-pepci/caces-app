@@ -179,6 +179,9 @@ def desactiver_lieu(id: int, db: Session = Depends(get_db)):
 
 class ConfigOrganismeUpdate(BaseModel):
     nom_organisme: Optional[str] = None
+    audit_interne_date: Optional[date] = None
+    audit_externe_date: Optional[date] = None
+    revue_direction_date: Optional[date] = None
 
 @router.get("/config-organisme")
 def get_config_organisme(db: Session = Depends(get_db)):
@@ -191,7 +194,13 @@ def get_config_organisme(db: Session = Depends(get_db)):
         ext = config.logo_nom.rsplit('.', 1)[-1].lower()
         mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
         logo_data_uri = f"data:{mime};base64,{config.logo_base64}"
-    return {"nom_organisme": config.nom_organisme or "", "logo_data_uri": logo_data_uri}
+    return {
+        "nom_organisme": config.nom_organisme or "",
+        "logo_data_uri": logo_data_uri,
+        "audit_interne_date": config.audit_interne_date.isoformat() if config.audit_interne_date else "",
+        "audit_externe_date": config.audit_externe_date.isoformat() if config.audit_externe_date else "",
+        "revue_direction_date": config.revue_direction_date.isoformat() if config.revue_direction_date else "",
+    }
 
 @router.put("/config-organisme")
 def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session = Depends(get_db)):
@@ -204,6 +213,9 @@ def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session =
         config = ConfigOrganisme()
         db.add(config)
     config.nom_organisme = data.nom_organisme
+    config.audit_interne_date = data.audit_interne_date
+    config.audit_externe_date = data.audit_externe_date
+    config.revue_direction_date = data.revue_direction_date
     db.commit()
     return {"message": "Configuration mise à jour"}
 

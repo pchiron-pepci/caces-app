@@ -105,6 +105,15 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS audit_interne_date DATE"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS audit_externe_date DATE"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS revue_direction_date DATE"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
         _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS carte_testeur (
                 id SERIAL PRIMARY KEY,
@@ -161,9 +170,19 @@ def _get_numero_certificat():
     except Exception:
         return ""
 
+def _get_config_organisme():
+    try:
+        db = SessionLocal()
+        config = db.query(ConfigOrganisme).first()
+        db.close()
+        return config
+    except Exception:
+        return None
+
 templates.env.globals['nom_organisme'] = _get_nom_organisme
 templates.env.globals['logo_organisme'] = _get_logo_organisme
 templates.env.globals['numero_certificat'] = _get_numero_certificat
+templates.env.globals['get_config_organisme'] = _get_config_organisme
 
 class CSPMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: StarletteRequest, call_next):

@@ -249,6 +249,26 @@
                         onclick="supprimerLogoOrganisme()">🗑️ Supprimer le logo</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+        <div class="card-header"><h2>📅 Calendrier qualité</h2></div>
+        <div style="padding:24px;">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>Prochain audit interne</label>
+                    <input type="date" id="config-audit-interne">
+                </div>
+                <div class="form-field">
+                    <label>Prochain audit externe</label>
+                    <input type="date" id="config-audit-externe">
+                </div>
+                <div class="form-field">
+                    <label>Prochaine revue de direction</label>
+                    <input type="date" id="config-revue-direction">
+                </div>
+            </div>
             <div class="form-actions" style="margin-top:20px;">
                 <button class="btn btn-primary" onclick="sauvegarderConfigOrganisme()">💾 Sauvegarder</button>
             </div>
@@ -713,6 +733,9 @@ async function chargerConfigOrganisme() {
         preview.innerHTML = '<span style="color:#888; font-size:13px;">— Aucun logo</span>';
         btnSuppr.style.display = 'none';
     }
+    if (data.audit_interne_date) document.getElementById('config-audit-interne').value = data.audit_interne_date;
+    if (data.audit_externe_date) document.getElementById('config-audit-externe').value = data.audit_externe_date;
+    if (data.revue_direction_date) document.getElementById('config-revue-direction').value = data.revue_direction_date;
 }
 
 function sauvegarderConfigOrganisme() {
@@ -727,10 +750,16 @@ function sauvegarderConfigOrganisme() {
             });
             if (!respLogo.ok) { alert('Erreur upload logo'); return; }
         }
+        const payload = {
+            nom_organisme: nom,
+            audit_interne_date: document.getElementById('config-audit-interne').value || null,
+            audit_externe_date: document.getElementById('config-audit-externe').value || null,
+            revue_direction_date: document.getElementById('config-revue-direction').value || null,
+        };
         const respNom = await fetch(`/admin/config-organisme?pin=${encodeURIComponent(pin)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nom_organisme: nom })
+            body: JSON.stringify(payload)
         });
         if (respNom.ok) {
             document.getElementById('config-logo-file').value = '';
