@@ -33,11 +33,11 @@
                 {% if visite_date_affichee %}
                     {% set age_v = (today - visite_date_affichee).days %}
                     {% if age_v < 365 %}
-                        <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>
+                        {% if t.visite_medicale_pdf %}<a href="/api/upload/visite-medicale/{{ t.id }}/download" class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;text-decoration:none;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>{% endif %}
                     {% elif age_v < 730 %}
-                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>
+                        {% if t.visite_medicale_pdf %}<a href="/api/upload/visite-medicale/{{ t.id }}/download" class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;text-decoration:none;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>{% endif %}
                     {% else %}
-                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>
+                        {% if t.visite_medicale_pdf %}<a href="/api/upload/visite-medicale/{{ t.id }}/download" class="badge" style="background:#ffebee;color:#c62828;font-size:11px;text-decoration:none;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>{% endif %}
                     {% endif %}
                 {% else %}
                     <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite médicale : ❌</span>
