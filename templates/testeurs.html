@@ -29,18 +29,6 @@
                 {% if t.numero_inrs %}
                     <span style="font-size:12px; color:#666;">N° {{ t.numero_inrs }}</span>
                 {% endif %}
-                {% if t.date_prochain_controle %}
-                    {% set jours = (t.date_prochain_controle - today).days %}
-                    {% if jours < 0 %}
-                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Prochain contrôle : {{ t.date_prochain_controle.strftime('%d/%m/%Y') }}</span>
-                    {% elif jours <= 30 %}
-                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">Prochain contrôle : {{ t.date_prochain_controle.strftime('%d/%m/%Y') }}</span>
-                    {% else %}
-                        <span class="badge" style="background:#f5f5f5;color:#555;font-size:11px;">Prochain contrôle : {{ t.date_prochain_controle.strftime('%d/%m/%Y') }}</span>
-                    {% endif %}
-                {% endif %}
-                <button data-action="controle-editer" data-id="{{ t.id }}" data-controle="{{ t.date_prochain_controle or '' }}"
-                    style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:#888;" title="Modifier prochain contrôle">✏️</button>
                 {% set visite_date_affichee = t.visite_medicale_date or t.visite_medicale %}
                 {% if visite_date_affichee %}
                     {% set age_v = (today - visite_date_affichee).days %}
@@ -54,6 +42,18 @@
                 {% else %}
                     <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite médicale : ❌</span>
                 {% endif %}
+                {% if t.date_prochain_controle %}
+                    {% set jours = (t.date_prochain_controle - today).days %}
+                    {% if jours < 0 %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Prochain contrôle : {{ t.date_prochain_controle.strftime('%d/%m/%Y') }}</span>
+                    {% elif jours <= 30 %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">Prochain contrôle : {{ t.date_prochain_controle.strftime('%d/%m/%Y') }}</span>
+                    {% else %}
+                        <span class="badge" style="background:#f5f5f5;color:#555;font-size:11px;">Prochain contrôle : {{ t.date_prochain_controle.strftime('%d/%m/%Y') }}</span>
+                    {% endif %}
+                {% endif %}
+                <button data-action="controle-editer" data-id="{{ t.id }}" data-controle="{{ t.date_prochain_controle or '' }}"
+                    style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:#888;" title="Modifier prochain contrôle">✏️</button>
             </div>
             <div style="display:flex; gap:6px; flex-shrink:0;">
                 <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
