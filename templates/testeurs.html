@@ -60,9 +60,7 @@
                     data-controle="{{ t.date_prochain_controle or '' }}"
                     data-note="{{ t.note or '' }}"
                     data-has-prev="{{ 'true' if t.attestation_prevention_pdf else 'false' }}"
-                    data-prev-nom="{{ t.attestation_prevention_nom or '' }}"
-                    data-has-carte="{{ 'true' if t.carte_pdf else 'false' }}"
-                    data-carte-nom="{{ t.carte_nom_fichier or '' }}">✏️</button>
+                    data-prev-nom="{{ t.attestation_prevention_nom or '' }}">✏️</button>
                 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                     data-action="archiver"
                     data-id="{{ t.id }}"
@@ -104,16 +102,21 @@
                     {% endif %}
                 </div>
             </div>
-            <!-- Carte CACES® -->
+            <!-- Carte(s) CACES® -->
             <div style="padding-left:16px;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Carte(s) CACES®</div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    {% if t.carte_pdf %}
-                        <a href="/api/upload/carte-testeur/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</a>
-                    {% else %}
-                        <span style="color:#888; font-size:12px;">—</span>
-                    {% endif %}
-                </div>
+                {% if t.cartes %}
+                    {% for c in t.cartes %}
+                    <div style="margin-bottom:4px;">
+                        <a href="/api/upload/carte/{{ c.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">{{ c.famille }} : {{ c.nom_fichier }}</a>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color:#888; font-size:12px; margin-bottom:4px;">—</div>
+                {% endif %}
+                <button class="btn btn-secondary" style="margin-top:4px; padding:3px 8px; font-size:11px;"
+                    data-action="carte-ajouter"
+                    data-id="{{ t.id }}">+ Ajouter</button>
             </div>
         </div>
         {% if t.note %}
@@ -129,6 +132,14 @@
 <div id="habs-{{ t.id }}" style="display:none;">
     {% for h in t.habilitations %}
     <div data-hab-id="{{ h.id }}" data-hab-label="{{ h.famille }} {{ h.categorie }}"></div>
+    {% endfor %}
+</div>
+{% endfor %}
+
+{% for t in testeurs %}
+<div id="cartes-{{ t.id }}" style="display:none;">
+    {% for c in t.cartes %}
+    <div data-carte-id="{{ c.id }}" data-famille="{{ c.famille }}" data-nom="{{ c.nom_fichier }}"></div>
     {% endfor %}
 </div>
 {% endfor %}
@@ -195,12 +206,8 @@
                 </div>
                 <div>
                     <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Carte(s) CACES®</div>
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span id="modal-carte-info" style="font-size:12px; color:#666;">Aucune carte</span>
-                        <button class="btn btn-danger" id="btn-suppr-carte" style="padding:4px 10px; font-size:11px; display:none;">🗑️ Supprimer</button>
-                        <input type="file" id="modal-carte-file" accept=".pdf" style="display:none;">
-                        <button class="btn btn-secondary" id="btn-upload-carte" style="padding:4px 10px; font-size:11px;">📤 Uploader</button>
-                    </div>
+                    <div id="modal-cartes-list" style="display:flex; flex-direction:column; gap:5px; margin-bottom:4px;"></div>
+                    <p style="font-size:11px; color:#e65100; margin:4px 0 0;">⚠️ Pensez à archiver ce document avant de supprimer.</p>
                 </div>
             </div>
         </div>
@@ -258,6 +265,39 @@
             <button class="btn btn-primary" id="controle-confirm-btn">Sauvegarder</button>
             <button class="btn btn-secondary" id="btn-fermer-controle">Annuler</button>
         </div>
+    </div>
+</div>
+
+<!-- MODAL AJOUTER CARTE -->
+<div id="modal-ajouter-carte" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1001; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:420px; max-width:95vw;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:20px;">📄 Ajouter une carte CACES®</h2>
+        <div class="form-field" style="margin-bottom:14px;">
+            <label>Famille</label>
+            <select id="ajouter-carte-famille" style="width:100%;">
+                <option value="R482">R482</option>
+                <option value="R483">R483</option>
+                <option value="R484">R484</option>
+                <option value="R485">R485</option>
+                <option value="R486">R486</option>
+                <option value="R487">R487</option>
+                <option value="R489">R489</option>
+                <option value="R490">R490</option>
+            </select>
+        </div>
+        <div class="form-field" style="margin-bottom:14px;">
+            <label>Fichier PDF</label>
+            <input type="file" id="ajouter-carte-file" accept=".pdf" style="width:100%;">
+        </div>
+        <div class="form-field" style="margin-bottom:16px;">
+            <label>Code PIN</label>
+            <input type="password" id="ajouter-carte-pin" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:8px;">
+        </div>
+        <div style="display:flex; gap:12px; justify-content:center;">
+            <button class="btn btn-primary" id="ajouter-carte-confirm">📤 Uploader</button>
+            <button class="btn btn-secondary" id="btn-fermer-ajouter-carte">Annuler</button>
+        </div>
+        <p id="ajouter-carte-error" style="color:red; margin-top:12px; text-align:center; display:none;">❌ PIN incorrect ou fichier invalide</p>
     </div>
 </div>
 

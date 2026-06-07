@@ -307,6 +307,94 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
     return {"message": "Carte supprimée"}
 
 
+# --- CarteTesteur multi-cartes (stockage base64 PostgreSQL) ---
+
+FAMILLES_VALIDES = ["R482", "R483", "R484", "R485", "R486", "R487", "R489", "R490"]
+
+@router.get("/cartes-testeur/{testeur_id}")
+def liste_cartes_testeur(testeur_id: int):
+    from app.models.carte_testeur import CarteTesteur
+    db = SessionLocal()
+    try:
+        cartes = db.query(CarteTesteur).filter(
+            CarteTesteur.testeur_id == testeur_id,
+            CarteTesteur.actif == True
+        ).order_by(CarteTesteur.famille).all()
+        return [
+            {"id": c.id, "famille": c.famille, "nom_fichier": c.nom_fichier,
+             "date_upload": c.date_upload.strftime("%d/%m/%Y") if c.date_upload else None}
+            for c in cartes
+        ]
+    finally:
+        db.close()
+
+
+@router.post("/cartes-testeur/{testeur_id}")
+async def upload_nouvelle_carte_testeur(testeur_id: int, pin: str, famille: str, file: UploadFile = File(...)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if famille not in FAMILLES_VALIDES:
+        raise HTTPException(status_code=400, detail="Famille invalide")
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Format PDF uniquement")
+    contents = await file.read()
+    contenu_b64 = base64.b64encode(contents).decode()
+    from app.models.carte_testeur import CarteTesteur
+    from datetime import datetime
+    db = SessionLocal()
+    try:
+        carte = CarteTesteur(
+            testeur_id=testeur_id,
+            famille=famille,
+            nom_fichier=file.filename,
+            contenu_pdf=contenu_b64,
+            date_upload=datetime.utcnow()
+        )
+        db.add(carte)
+        db.commit()
+        db.refresh(carte)
+        return {"message": "Carte uploadée", "id": carte.id}
+    finally:
+        db.close()
+
+
+@router.get("/carte/{carte_id}/download")
+def telecharger_carte(carte_id: int):
+    from app.models.carte_testeur import CarteTesteur
+    db = SessionLocal()
+    try:
+        c = db.query(CarteTesteur).filter(CarteTesteur.id == carte_id).first()
+        if not c or not c.contenu_pdf:
+            raise HTTPException(status_code=404, detail="Carte non disponible")
+        contenu = base64.b64decode(c.contenu_pdf)
+        nom = c.nom_fichier
+    finally:
+        db.close()
+    return Response(
+        content=contenu,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
+    )
+
+
+@router.delete("/carte/{carte_id}")
+def supprimer_carte(carte_id: int, pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.carte_testeur import CarteTesteur
+    db = SessionLocal()
+    try:
+        c = db.query(CarteTesteur).filter(CarteTesteur.id == carte_id).first()
+        if c:
+            c.actif = False
+            db.commit()
+    finally:
+        db.close()
+    return {"message": "Carte supprimée"}
+
+
 # --- Attestation prévention testeur (stockage base64 PostgreSQL) ---
 
 @router.post("/attestation-prevention/{testeur_id}")

@@ -7,20 +7,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
     document.getElementById('btn-fermer-prevention').addEventListener('click', fermerPrevention);
     document.getElementById('btn-fermer-controle').addEventListener('click', fermerControle);
+    document.getElementById('btn-fermer-ajouter-carte').addEventListener('click', function() {
+        document.getElementById('modal-ajouter-carte').style.display = 'none';
+    });
 
     document.getElementById('btn-upload-prevention').addEventListener('click', function() {
         document.getElementById('modal-prev-file').click();
     });
-    document.getElementById('btn-upload-carte').addEventListener('click', function() {
-        document.getElementById('modal-carte-file').click();
-    });
     document.getElementById('modal-prev-file').addEventListener('change', function() {
         const testeurId = document.getElementById('testeur-id').value;
         ouvrirModalPrevention(testeurId, this);
-    });
-    document.getElementById('modal-carte-file').addEventListener('change', function() {
-        const testeurId = document.getElementById('testeur-id').value;
-        uploadCarte(testeurId, this);
     });
 
     document.getElementById('btn-suppr-prev').addEventListener('click', function() {
@@ -39,37 +35,69 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.getElementById('btn-suppr-carte').addEventListener('click', function() {
-        const testeurId = document.getElementById('testeur-id').value;
-        const nomFichier = document.getElementById('modal-carte-info').textContent;
-        document.getElementById('pin-message').textContent = `Supprimer la carte "${nomFichier}" ?`;
-        document.getElementById('pin-input').value = '';
-        document.getElementById('pin-error').style.display = 'none';
-        document.getElementById('modal-pin').style.display = 'flex';
-        document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
-            const pin = document.getElementById('pin-input').value;
-            const resp = await fetch(`/api/upload/carte-testeur/${testeurId}?pin=${pin}`, { method: 'DELETE' });
-            if (resp.ok) { fermerPin(); location.reload(); }
-            else document.getElementById('pin-error').style.display = 'block';
-            this.removeEventListener('click', handler);
-        });
+    document.getElementById('ajouter-carte-confirm').addEventListener('click', async function() {
+        const famille = document.getElementById('ajouter-carte-famille').value;
+        const pin = document.getElementById('ajouter-carte-pin').value;
+        const fileInput = document.getElementById('ajouter-carte-file');
+        const errEl = document.getElementById('ajouter-carte-error');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            errEl.textContent = '❌ Sélectionnez un fichier PDF.';
+            errEl.style.display = 'block';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        const resp = await fetch(
+            `/api/upload/cartes-testeur/${carteAjouterTesteurId}?pin=${encodeURIComponent(pin)}&famille=${famille}`,
+            { method: 'POST', body: formData }
+        );
+        if (resp.ok) {
+            document.getElementById('modal-ajouter-carte').style.display = 'none';
+            location.reload();
+        } else {
+            errEl.textContent = '❌ PIN incorrect ou fichier invalide.';
+            errEl.style.display = 'block';
+        }
     });
 
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
+
         if (btn.dataset.action === 'editer') {
             editer(btn.dataset.id, btn.dataset.nom, btn.dataset.prenom, btn.dataset.statut,
                 btn.dataset.entreprise, btn.dataset.inrs, btn.dataset.email, btn.dataset.tel,
                 btn.dataset.habilitation, btn.dataset.expiration, btn.dataset.visite,
                 btn.dataset.formation, btn.dataset.controle, btn.dataset.note,
-                btn.dataset.hasPrev, btn.dataset.prevNom, btn.dataset.hasCarte, btn.dataset.carteNom);
+                btn.dataset.hasPrev, btn.dataset.prevNom);
         }
         if (btn.dataset.action === 'archiver') {
             archiver(btn.dataset.id, btn.dataset.nom);
         }
         if (btn.dataset.action === 'supprimer-hab') {
             supprimerHab(btn.dataset.habId, btn.dataset.habLabel);
+        }
+        if (btn.dataset.action === 'carte-ajouter') {
+            carteAjouterTesteurId = btn.dataset.id;
+            document.getElementById('ajouter-carte-famille').value = 'R482';
+            document.getElementById('ajouter-carte-file').value = '';
+            document.getElementById('ajouter-carte-pin').value = '';
+            document.getElementById('ajouter-carte-error').style.display = 'none';
+            document.getElementById('modal-ajouter-carte').style.display = 'flex';
+        }
+        if (btn.dataset.action === 'carte-modal-supprimer') {
+            const carteId = btn.dataset.carteId;
+            document.getElementById('pin-message').textContent = 'Supprimer définitivement cette carte CACES® ?';
+            document.getElementById('pin-input').value = '';
+            document.getElementById('pin-error').style.display = 'none';
+            document.getElementById('modal-pin').style.display = 'flex';
+            document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
+                const pin = document.getElementById('pin-input').value;
+                const resp = await fetch(`/api/upload/carte/${carteId}?pin=${pin}`, { method: 'DELETE' });
+                if (resp.ok) { fermerPin(); location.reload(); }
+                else document.getElementById('pin-error').style.display = 'block';
+                this.removeEventListener('click', handler);
+            });
         }
         if (btn.dataset.action === 'controle-editer') {
             const testeurId = btn.dataset.id;
@@ -106,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 let idAArchiver = null;
 let idHabASupprimer = null;
+let carteAjouterTesteurId = null;
 
 function ouvrirFormulaire() {
     document.getElementById('modal-title').textContent = 'Nouveau testeur';
@@ -116,11 +145,10 @@ function ouvrirFormulaire() {
     document.getElementById('f-statut').value = 'interne';
     document.getElementById('section-documents').style.display = 'none';
     document.getElementById('modal-prev-file').value = '';
-    document.getElementById('modal-carte-file').value = '';
     document.getElementById('modal').style.display = 'flex';
 }
 
-function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasCarte, carteNom) {
+function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom) {
     document.getElementById('modal-title').textContent = 'Modifier testeur';
     document.getElementById('testeur-id').value = id;
     document.getElementById('f-nom').value = nom;
@@ -139,7 +167,6 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
 
     document.getElementById('section-documents').style.display = 'block';
     document.getElementById('modal-prev-file').value = '';
-    document.getElementById('modal-carte-file').value = '';
 
     if (hasPrev === 'true') {
         document.getElementById('modal-prev-info').textContent = prevNom || 'attestation.pdf';
@@ -149,12 +176,22 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
         document.getElementById('btn-suppr-prev').style.display = 'none';
     }
 
-    if (hasCarte === 'true') {
-        document.getElementById('modal-carte-info').textContent = carteNom || 'carte.pdf';
-        document.getElementById('btn-suppr-carte').style.display = '';
+    const cartesList = document.getElementById('modal-cartes-list');
+    cartesList.innerHTML = '';
+    const cartesContainer = document.getElementById('cartes-' + id);
+    const cartesDivs = cartesContainer ? cartesContainer.querySelectorAll('[data-carte-id]') : [];
+    if (cartesDivs.length === 0) {
+        cartesList.innerHTML = '<span style="font-size:12px;color:#888;">Aucune carte</span>';
     } else {
-        document.getElementById('modal-carte-info').textContent = 'Aucune carte';
-        document.getElementById('btn-suppr-carte').style.display = 'none';
+        cartesDivs.forEach(function(c) {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px;';
+            row.innerHTML =
+                '<span style="font-size:12px;color:#2e7d32;">' + c.dataset.famille + ' : ' + c.dataset.nom + '</span>' +
+                '<button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"' +
+                ' data-action="carte-modal-supprimer" data-carte-id="' + c.dataset.carteId + '">🗑️</button>';
+            cartesList.appendChild(row);
+        });
     }
 
     document.getElementById('modal').style.display = 'flex';
@@ -249,27 +286,6 @@ function ouvrirModalPrevention(testeurId, input) {
 function fermerPrevention() { document.getElementById('modal-prevention').style.display = 'none'; }
 
 function fermerControle() { document.getElementById('modal-controle').style.display = 'none'; }
-
-function uploadCarte(testeurId, input) {
-    if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    document.getElementById('pin-message').textContent = `Uploader "${file.name}" pour ce testeur ?`;
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-error').style.display = 'none';
-    document.getElementById('modal-pin').style.display = 'flex';
-    document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
-        const pin = document.getElementById('pin-input').value;
-        const formData = new FormData();
-        formData.append('file', file);
-        const resp = await fetch(`/api/upload/carte-testeur/${testeurId}?pin=${pin}`, {
-            method: 'POST',
-            body: formData
-        });
-        if (resp.ok) { fermerPin(); input.value = ''; location.reload(); }
-        else document.getElementById('pin-error').style.display = 'block';
-        this.removeEventListener('click', handler);
-    });
-}
 
 function filtrer() {
     const q = document.getElementById('search').value.toLowerCase();

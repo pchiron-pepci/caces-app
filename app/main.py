@@ -22,6 +22,7 @@ from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
 from app.models.association_log import AssociationLog
 from app.models.document_officiel import DocumentOfficiel
+from app.models.carte_testeur import CarteTesteur
 
 from sqlalchemy import text
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
@@ -68,6 +69,23 @@ try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS role_referent VARCHAR"))
         _conn.execute(text("ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS telephone VARCHAR"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS carte_testeur (
+                id SERIAL PRIMARY KEY,
+                testeur_id INTEGER NOT NULL REFERENCES testeurs(id),
+                famille VARCHAR(50) NOT NULL,
+                nom_fichier VARCHAR(200) NOT NULL,
+                contenu_pdf TEXT,
+                date_upload TIMESTAMP DEFAULT NOW(),
+                actif BOOLEAN DEFAULT TRUE
+            )
+        """))
         _conn.commit()
 except Exception:
     pass
@@ -170,6 +188,10 @@ def page_testeurs(request: Request):
             HabilitationTesteur.testeur_id == t.id,
             HabilitationTesteur.actif == True
         ).all()
+        t.cartes = db.query(CarteTesteur).filter(
+            CarteTesteur.testeur_id == t.id,
+            CarteTesteur.actif == True
+        ).order_by(CarteTesteur.famille).all()
     db.close()
     return templates.TemplateResponse(
         request=request,
