@@ -13,7 +13,7 @@
     <button class="tab-btn active-tab" onclick="showTab('cartographie', this)">🗺️ Cartographie PEPCI</button>
     <button class="tab-btn" onclick="showTab('habilitations', this)">👨‍🏫 Habilitations testeurs</button>
     <button class="tab-btn" onclick="showTab('lieux', this)">📍 Lieux</button>
-    <button class="tab-btn" onclick="showTab('parametres', this)">⚙️ Paramètres</button>
+    <button class="tab-btn" onclick="showTab('parametres', this); chargerConfigOrganisme();">⚙️ Paramètres</button>
     <button class="tab-btn" onclick="showTab('documents', this); chargerDocuments();">📄 Documents officiels</button>
 </div>
 
@@ -226,6 +226,33 @@
             <div class="form-actions">
                 <button class="btn btn-primary" onclick="sauvegarderParametres()">💾 Sauvegarder</button>
             </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+        <div class="card-header"><h2>🏢 Identité de l'organisme</h2></div>
+        <div style="padding:24px;">
+            <div class="form-grid">
+                <div class="form-field" style="grid-column:span 2;">
+                    <label>Nom de l'organisme</label>
+                    <input type="text" id="config-nom" placeholder="PEPCI Formation">
+                </div>
+            </div>
+            <div style="margin-top:16px;">
+                <div style="font-size:13px; color:#666; font-weight:500; margin-bottom:8px;">Logo actuel</div>
+                <div id="config-logo-preview" style="margin-bottom:12px;">
+                    <span style="color:#888; font-size:13px;">— Aucun logo</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <input type="file" id="config-logo-file" accept="image/*">
+                    <button class="btn btn-danger" id="btn-suppr-logo" style="padding:4px 10px; font-size:12px; display:none;"
+                        onclick="supprimerLogoOrganisme()">🗑️ Supprimer le logo</button>
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top:20px;">
+                <button class="btn btn-primary" onclick="sauvegarderConfigOrganisme()">💾 Sauvegarder</button>
+            </div>
+            <p id="config-organisme-msg" style="display:none; margin-top:8px; font-size:13px; color:#2e7d32;"></p>
         </div>
     </div>
 </div>
@@ -666,6 +693,59 @@ function desactiverLieu(id, nom) {
 
 function sauvegarderParametres() {
     alert('Paramètres sauvegardés !');
+}
+
+async function chargerConfigOrganisme() {
+    const resp = await fetch('/admin/config-organisme');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    document.getElementById('config-nom').value = data.nom_organisme || '';
+    const preview = document.getElementById('config-logo-preview');
+    const btnSuppr = document.getElementById('btn-suppr-logo');
+    if (data.logo_data_uri) {
+        preview.innerHTML = `<img src="${data.logo_data_uri}" style="max-height:64px; border:1px solid #e8ecf4; border-radius:8px; padding:4px;">`;
+        btnSuppr.style.display = '';
+    } else {
+        preview.innerHTML = '<span style="color:#888; font-size:13px;">— Aucun logo</span>';
+        btnSuppr.style.display = 'none';
+    }
+}
+
+function sauvegarderConfigOrganisme() {
+    demanderPin("Sauvegarder la configuration de l'organisme ?", async (pin) => {
+        const nom = document.getElementById('config-nom').value;
+        const file = document.getElementById('config-logo-file').files[0];
+        if (file) {
+            const fd = new FormData();
+            fd.append('file', file);
+            const respLogo = await fetch(`/admin/config-organisme/logo?pin=${encodeURIComponent(pin)}`, {
+                method: 'POST', body: fd
+            });
+            if (!respLogo.ok) { alert('Erreur upload logo'); return; }
+        }
+        const respNom = await fetch(`/admin/config-organisme?pin=${encodeURIComponent(pin)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom_organisme: nom })
+        });
+        if (respNom.ok) {
+            document.getElementById('config-logo-file').value = '';
+            const msg = document.getElementById('config-organisme-msg');
+            msg.textContent = '✅ Configuration sauvegardée — rechargement...';
+            msg.style.display = 'block';
+            setTimeout(() => location.reload(), 800);
+        } else {
+            alert('Erreur lors de la sauvegarde');
+        }
+    });
+}
+
+function supprimerLogoOrganisme() {
+    demanderPin('Supprimer le logo ?', async (pin) => {
+        const resp = await fetch(`/admin/config-organisme/logo?pin=${encodeURIComponent(pin)}`, { method: 'DELETE' });
+        if (resp.ok) location.reload();
+        else alert('Erreur suppression logo');
+    });
 }
 
 const DOCUMENTS_TYPES = [

@@ -23,6 +23,7 @@ from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationG
 from app.models.association_log import AssociationLog
 from app.models.document_officiel import DocumentOfficiel
 from app.models.carte_testeur import CarteTesteur
+from app.models.config_organisme import ConfigOrganisme
 
 from sqlalchemy import text
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
@@ -90,6 +91,20 @@ except Exception:
 try:
     with engine.connect() as _conn:
         _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS config_organisme (
+                id SERIAL PRIMARY KEY,
+                nom_organisme VARCHAR(200),
+                logo_base64 TEXT,
+                logo_nom VARCHAR(200)
+            )
+        """))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS carte_testeur (
                 id SERIAL PRIMARY KEY,
                 testeur_id INTEGER NOT NULL REFERENCES testeurs(id),
@@ -113,6 +128,31 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
+
+def _get_nom_organisme():
+    try:
+        db = SessionLocal()
+        config = db.query(ConfigOrganisme).first()
+        db.close()
+        return config.nom_organisme if config and config.nom_organisme else "PEPCI Formation"
+    except Exception:
+        return "PEPCI Formation"
+
+def _get_logo_organisme():
+    try:
+        db = SessionLocal()
+        config = db.query(ConfigOrganisme).first()
+        db.close()
+        if config and config.logo_base64 and config.logo_nom:
+            ext = config.logo_nom.rsplit('.', 1)[-1].lower()
+            mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
+            return f"data:{mime};base64,{config.logo_base64}"
+        return ""
+    except Exception:
+        return ""
+
+templates.env.globals['nom_organisme'] = _get_nom_organisme
+templates.env.globals['logo_organisme'] = _get_logo_organisme
 
 class CSPMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: StarletteRequest, call_next):

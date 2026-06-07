@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+import base64
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.categorie import Categorie, Famille
@@ -172,3 +173,69 @@ def desactiver_lieu(id: int, db: Session = Depends(get_db)):
     l.actif = False
     db.commit()
     return {"message": "Lieu desactive"}
+
+
+# --- Config organisme ---
+
+class ConfigOrganismeUpdate(BaseModel):
+    nom_organisme: Optional[str] = None
+
+@router.get("/config-organisme")
+def get_config_organisme(db: Session = Depends(get_db)):
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if not config:
+        return {"nom_organisme": "", "logo_data_uri": ""}
+    logo_data_uri = ""
+    if config.logo_base64 and config.logo_nom:
+        ext = config.logo_nom.rsplit('.', 1)[-1].lower()
+        mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
+        logo_data_uri = f"data:{mime};base64,{config.logo_base64}"
+    return {"nom_organisme": config.nom_organisme or "", "logo_data_uri": logo_data_uri}
+
+@router.put("/config-organisme")
+def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if not config:
+        config = ConfigOrganisme()
+        db.add(config)
+    config.nom_organisme = data.nom_organisme
+    db.commit()
+    return {"message": "Configuration mise à jour"}
+
+@router.post("/config-organisme/logo")
+async def upload_logo_organisme(pin: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
+        raise HTTPException(status_code=400, detail="Format image invalide (png, jpg, gif, webp)")
+    contents = await file.read()
+    logo_b64 = base64.b64encode(contents).decode()
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if not config:
+        config = ConfigOrganisme()
+        db.add(config)
+    config.logo_base64 = logo_b64
+    config.logo_nom = file.filename
+    db.commit()
+    return {"message": "Logo mis à jour"}
+
+@router.delete("/config-organisme/logo")
+def supprimer_logo_organisme(pin: str, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if config:
+        config.logo_base64 = None
+        config.logo_nom = None
+        db.commit()
+    return {"message": "Logo supprimé"}

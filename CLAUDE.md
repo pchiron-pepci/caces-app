@@ -144,6 +144,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete |
 | `Testeur` | `testeurs` | soft delete (`actif`) ; docs PDF en base64 : `attestation_prevention_pdf/nom/date`, `visite_medicale_pdf/nom/visite_medicale_date`, `evaluation_pdf/nom/evaluation_date`, `autorisation_conduite_pdf/nom`, `carte_pdf/carte_nom_fichier` (legacy) |
 | `CarteTesteur` | `carte_testeur` | multi-cartes par testeur, soft delete (`actif`) ; champs : `famille`, `nom_fichier`, `contenu_pdf` base64, `date_upload` |
+| `ConfigOrganisme` | `config_organisme` | singleton (1 ligne) ; `nom_organisme`, `logo_base64` (image base64), `logo_nom` ; affiché dans sidebar via globals Jinja2 `nom_organisme()` et `logo_organisme()` |
 | `Stagiaire` | `stagiaires` | soft delete (`actif`) |
 | `GrilleTheorie` | `grilles_theorie` | grilles INRS |
 | `ReponseGrille` | `reponses_grille` | questions par grille |
