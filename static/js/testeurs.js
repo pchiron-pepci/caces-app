@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('search').addEventListener('keyup', filtrer);
+    document.getElementById('btn-changer-etat').addEventListener('click', changerEtatTesteur);
     document.getElementById('btn-nouveau-testeur').addEventListener('click', ouvrirFormulaire);
     document.getElementById('btn-sauvegarder').addEventListener('click', sauvegarder);
     document.getElementById('btn-fermer-modal').addEventListener('click', fermerModal);
@@ -146,7 +147,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.dataset.hasVisite, btn.dataset.visiteNom,
                 btn.dataset.hasEval, btn.dataset.evalNom, btn.dataset.evalDate,
                 btn.dataset.visiteDate,
-                btn.dataset.hasAutorisation, btn.dataset.autorisationNom);
+                btn.dataset.hasAutorisation, btn.dataset.autorisationNom,
+                btn.dataset.etat);
         }
         if (btn.dataset.action === 'archiver') {
             archiver(btn.dataset.id, btn.dataset.nom);
@@ -225,7 +227,7 @@ function ouvrirFormulaire() {
     document.getElementById('modal').style.display = 'flex';
 }
 
-function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasVisite, visiteNom, hasEval, evalNom, evalDate, visiteDate, hasAutorisation, autorisationNom) {
+function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasVisite, visiteNom, hasEval, evalNom, evalDate, visiteDate, hasAutorisation, autorisationNom, etat) {
     document.getElementById('modal-title').textContent = 'Modifier testeur';
     document.getElementById('testeur-id').value = id;
     document.getElementById('f-nom').value = nom;
@@ -241,6 +243,7 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     document.getElementById('f-formation').value = formation;
     document.getElementById('f-controle').value = controle;
     document.getElementById('f-note').value = note;
+    document.getElementById('f-etat').value = etat || 'actif';
 
     document.getElementById('section-documents').style.display = 'block';
     document.getElementById('modal-prev-file').value = '';
@@ -384,6 +387,17 @@ function ouvrirModalPrevention(testeurId, input) {
 function fermerPrevention() { document.getElementById('modal-prevention').style.display = 'none'; }
 
 function fermerControle() { document.getElementById('modal-controle').style.display = 'none'; }
+
+function changerEtatTesteur() {
+    const id = document.getElementById('testeur-id').value;
+    const etat = document.getElementById('f-etat').value;
+    const labels = { actif: '✅ Actif', suspendu: '⚠️ Suspendu', annule: '❌ Annulé' };
+    ouvrirPinAction(`Changer l'état en "${labels[etat]}" ?`, async function(pin) {
+        return fetch(`/api/testeurs/${id}/etat?pin=${encodeURIComponent(pin)}&etat=${encodeURIComponent(etat)}`, {
+            method: 'PUT'
+        });
+    });
+}
 
 function filtrer() {
     const q = document.getElementById('search').value.toLowerCase();

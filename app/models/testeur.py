@@ -22,6 +22,7 @@ class Testeur(Base):
     note = Column(Text, nullable=True)
     date_creation = Column(DateTime, default=datetime.utcnow)
     actif = Column(Boolean, default=True)
+    etat = Column(String(20), default="actif")
     carte_pdf = Column(Text, nullable=True)
     carte_nom_fichier = Column(String(200), nullable=True)
     attestation_prevention_pdf = Column(Text, nullable=True)

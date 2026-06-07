@@ -90,6 +90,13 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS etat VARCHAR(20) DEFAULT 'actif'"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
         _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS config_organisme (
                 id SERIAL PRIMARY KEY,

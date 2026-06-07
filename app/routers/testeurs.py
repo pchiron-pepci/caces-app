@@ -13,6 +13,7 @@ class TesteurCreate(BaseModel):
     nom: str
     prenom: str
     statut: str = "interne"
+    etat: str = "actif"
     entreprise: Optional[str] = None
     email: Optional[str] = None
     telephone: Optional[str] = None
@@ -70,11 +71,24 @@ def update_testeur(id: int, data: TesteurCreate, db: Session = Depends(get_db)):
     t = db.query(Testeur).filter(Testeur.id == id).first()
     if not t:
         raise HTTPException(status_code=404, detail="Testeur non trouve")
-    for key, value in data.model_dump().items():
+    for key, value in data.model_dump(exclude={'etat'}).items():
         setattr(t, key, value)
     db.commit()
     db.refresh(t)
     return t
+
+@router.put("/{id}/etat")
+def update_etat_testeur(id: int, pin: str, etat: str, db: Session = Depends(get_db)):
+    if pin != "1505":
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if etat not in ("actif", "suspendu", "annule"):
+        raise HTTPException(status_code=400, detail="État invalide")
+    t = db.query(Testeur).filter(Testeur.id == id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Testeur non trouve")
+    t.etat = etat
+    db.commit()
+    return {"message": "État mis à jour"}
 
 @router.delete("/{id}")
 def delete_testeur(id: int, pin: str, db: Session = Depends(get_db)):

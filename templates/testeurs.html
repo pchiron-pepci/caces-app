@@ -26,6 +26,13 @@
                 {% else %}
                     <span class="badge green">Entreprise{% if t.entreprise %} | {{ t.entreprise }}{% endif %}</span>
                 {% endif %}
+                {% if t.etat == 'suspendu' %}
+                    <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">⚠️ Suspendu</span>
+                {% elif t.etat == 'annule' %}
+                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Annulé</span>
+                {% else %}
+                    <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">✅ Actif</span>
+                {% endif %}
                 {% if t.numero_inrs %}
                     <span style="font-size:12px; color:#666;">N° {{ t.numero_inrs }}</span>
                 {% endif %}
@@ -81,7 +88,8 @@
                     data-eval-date="{{ t.evaluation_date or '' }}"
                     data-visite-date="{{ t.visite_medicale_date or '' }}"
                     data-has-autorisation="{{ 'true' if t.autorisation_conduite_pdf else 'false' }}"
-                    data-autorisation-nom="{{ t.autorisation_conduite_nom or '' }}">✏️</button>
+                    data-autorisation-nom="{{ t.autorisation_conduite_nom or '' }}"
+                    data-etat="{{ t.etat or 'actif' }}">✏️</button>
                 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                     data-action="archiver"
                     data-id="{{ t.id }}"
@@ -207,6 +215,17 @@
                     <option value="independant">Indépendant</option>
                     <option value="entreprise">Entreprise</option>
                 </select>
+            </div>
+            <div class="form-field">
+                <label>État</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <select id="f-etat">
+                        <option value="actif">✅ Actif</option>
+                        <option value="suspendu">⚠️ Suspendu</option>
+                        <option value="annule">❌ Annulé</option>
+                    </select>
+                    <button type="button" class="btn btn-secondary" id="btn-changer-etat" style="font-size:12px;padding:4px 10px;">💾 Appliquer</button>
+                </div>
             </div>
             <div class="form-field">
                 <label>Entreprise</label>
