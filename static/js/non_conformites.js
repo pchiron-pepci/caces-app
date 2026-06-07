@@ -2,6 +2,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const NC_DATA = JSON.parse(document.getElementById('nc-data').textContent);
 
+    // ── Recherche ──────────────────────────────────────────────────────────
+    const searchInput = document.getElementById('nc-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('.nc-card').forEach(function (card) {
+                const hay = (card.dataset.search || '').toLowerCase();
+                card.style.display = hay.includes(q) ? '' : 'none';
+            });
+        });
+    }
+
     // ── Toggle expand/collapse ─────────────────────────────────────────────
     document.addEventListener('click', function (e) {
         const header = e.target.closest('.nc-toggle-header');
