@@ -342,9 +342,10 @@ def page_admin(request: Request):
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
     lieux = db.query(Lieu).all()
     for t in testeurs_list:
-        t.habilitations = db.query(HabilitationTesteur).filter(
-            HabilitationTesteur.testeur_id == t.id
-        ).all()
+        t.habilitations = sorted(
+            db.query(HabilitationTesteur).filter(HabilitationTesteur.testeur_id == t.id).all(),
+            key=lambda h: (h.famille, h.categorie)
+        )
     for l in lieux:
         habs = db.query(LieuHabilitation).filter(
             LieuHabilitation.lieu_id == l.id,

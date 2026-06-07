@@ -99,9 +99,12 @@
                 </tr>
             </thead>
             <tbody>
+                {% set ns = namespace(prev_famille='') %}
                 {% for h in t.habilitations %}
                 {% set h_opts = options_habs.get(h.id, []) %}
-                <tr style="{{ 'opacity:0.5;' if not h.actif else '' }}">
+                {% set sep = 'border-top:2px solid #e8ecf4;' if ns.prev_famille and ns.prev_famille != h.famille else '' %}
+                {% set ns.prev_famille = h.famille %}
+                <tr style="{{ 'opacity:0.5;' if not h.actif else '' }}{{ sep }}">
                     <td><strong>{{ h.famille }}</strong></td>
                     <td><span class="badge blue">{{ h.categorie }}</span></td>
                     <td>
