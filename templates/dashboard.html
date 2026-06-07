@@ -254,4 +254,77 @@
         {% endif %}
     </div>
 </div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:16px;">
+
+    <!-- Sessions non clôturées -->
+    <div class="card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>📋 Sessions non clôturées</h2>
+            <a href="/sessions" class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Voir tout</a>
+        </div>
+        {% if sessions_actives %}
+        <table class="table">
+            <tbody>
+                {% for s in sessions_actives %}
+                {% set date_s = s.date_theorie or s.date_pratique_debut %}
+                <tr>
+                    <td style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; white-space:nowrap;">{{ s.reference or '—' }}</td>
+                    <td style="font-size:13px; color:#444;">{{ s.famille }}</td>
+                    <td style="font-size:12px; color:#888; white-space:nowrap;">{{ date_s.strftime('%d/%m/%Y') if date_s else '—' }}</td>
+                    <td>
+                        {% if s.statut == 'planifiee' %}
+                            <span class="badge" style="background:#e3f2fd;color:#1565c0;">Planifiée</span>
+                        {% else %}
+                            <span class="badge" style="background:#fff3e0;color:#e65100;">En cours</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding:20px 16px; color:#2e7d32; font-size:14px;">✅ Aucune session en cours</div>
+        {% endif %}
+    </div>
+
+    <!-- Alertes testeurs -->
+    <div class="card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>🔔 Alertes testeurs</h2>
+            <a href="/testeurs" class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Voir tout</a>
+        </div>
+        {% if alertes_testeurs %}
+        <div style="padding:0 16px 12px;">
+            {% for item in alertes_testeurs %}
+            <div style="padding:10px 0; border-bottom:1px solid #f0f0f0;">
+                <div style="font-weight:600; font-size:13px; color:#1a237e; margin-bottom:6px;">{{ item.testeur.nom }} {{ item.testeur.prenom }}</div>
+                <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                    {% for alerte in item.alertes %}
+                    {% if alerte.couleur == 'rouge' %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">{{ alerte.label }}</span>
+                    {% else %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">{{ alerte.label }}</span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="padding:20px 16px; color:#2e7d32; font-size:14px;">✅ Aucune alerte</div>
+        {% endif %}
+    </div>
+
+    <!-- Statistiques (placeholder) -->
+    <div class="card">
+        <div class="card-header">
+            <h2>📊 Statistiques</h2>
+        </div>
+        <div style="padding:32px 16px; text-align:center; color:#aaa; font-style:italic; font-size:14px;">
+            Indicateurs à venir
+        </div>
+    </div>
+
+</div>
 {% endblock %}

@@ -295,8 +295,8 @@ app.include_router(non_conformites.router)
 def dashboard(request: Request):
     from datetime import date, timedelta
     today = date.today()
-    limite_5ans = today - timedelta(days=5*365)
     limite_4ans = today - timedelta(days=4*365)
+    limite_2ans = today - timedelta(days=2*365)
     db = SessionLocal()
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
     for t in testeurs_list:
@@ -320,6 +320,24 @@ def dashboard(request: Request):
     nc_ouvertes = db.query(NonConformite).filter(
         NonConformite.statut.in_(["ouvert", "en_cours"])
     ).order_by(NonConformite.date.desc()).all()
+    sessions_actives = db.query(Session).filter(
+        Session.statut.in_(["planifiee", "en_cours"])
+    ).order_by(Session.date_theorie, Session.date_pratique_debut).all()
+    alertes_testeurs = []
+    for t in testeurs_list:
+        alertes = []
+        if not t.attestation_prevention_pdf:
+            alertes.append({"label": "Attestation prévention manquante", "couleur": "rouge"})
+        elif t.attestation_prevention_date and t.attestation_prevention_date < limite_4ans:
+            alertes.append({"label": "Attestation prévention > 4 ans", "couleur": "orange"})
+        if not t.visite_medicale_pdf:
+            alertes.append({"label": "Visite médicale manquante", "couleur": "rouge"})
+        elif t.visite_medicale_date and t.visite_medicale_date < limite_2ans:
+            alertes.append({"label": "Visite médicale > 2 ans", "couleur": "orange"})
+        if t.date_prochain_controle and t.date_prochain_controle < today:
+            alertes.append({"label": "Prochain contrôle dépassé", "couleur": "rouge"})
+        if alertes:
+            alertes_testeurs.append({"testeur": t, "alertes": alertes})
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -332,6 +350,8 @@ def dashboard(request: Request):
             "today": today,
             "referents": referents,
             "nc_ouvertes": nc_ouvertes,
+            "sessions_actives": sessions_actives,
+            "alertes_testeurs": alertes_testeurs,
         }
     )
 
