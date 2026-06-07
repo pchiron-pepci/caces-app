@@ -42,7 +42,7 @@
                 {% for c in categories %}{% if c.pepci_habilite and not c.est_option %}
                 {% set is_new1 = ns1.prev_famille and ns1.prev_famille != c.famille_code %}
                 {% set ns1.prev_famille = c.famille_code %}
-                <tr style="{{ 'border-top:2px solid #1a237e;' if is_new1 else '' }}{{ 'background-color:#eef0fb;' if is_new1 else '' }}">
+                <tr style="{{ 'border-top:2px solid #1a237e;' if is_new1 else '' }}">
                     <td><strong>{{ c.famille_code }}</strong></td>
                     <td><span class="badge blue">{{ c.code }}</span></td>
                     <td>{{ c.libelle }}</td>
@@ -66,7 +66,7 @@
                     {% for c in categories %}{% if not c.pepci_habilite and not c.est_option %}
                     {% set is_new2 = ns2.prev_famille and ns2.prev_famille != c.famille_code %}
                     {% set ns2.prev_famille = c.famille_code %}
-                    <tr style="{{ 'border-top:2px solid #1a237e;' if is_new2 else '' }}{{ 'background-color:#eef0fb;' if is_new2 else '' }}">
+                    <tr style="{{ 'border-top:2px solid #1a237e;' if is_new2 else '' }}">
                         <td><strong>{{ c.famille_code }}</strong></td>
                         <td><span class="badge orange">{{ c.code }}</span></td>
                         <td>{{ c.libelle }}</td>
@@ -110,7 +110,7 @@
                 {% set h_opts = options_habs.get(h.id, []) %}
                 {% set is_new_famille = ns.prev_famille and ns.prev_famille != h.famille %}
                 {% set ns.prev_famille = h.famille %}
-                <tr style="{{ 'opacity:0.5;' if not h.actif else '' }}{{ 'border-top:2px solid #1a237e;' if is_new_famille else '' }}{{ 'background-color:#eef0fb;' if is_new_famille else '' }}">
+                <tr style="{{ 'opacity:0.5;' if not h.actif else '' }}{{ 'border-top:2px solid #1a237e;' if is_new_famille else '' }}">
                     <td><strong>{{ h.famille }}</strong></td>
                     <td><span class="badge blue">{{ h.categorie }}</span></td>
                     <td>
