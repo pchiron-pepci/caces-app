@@ -75,6 +75,8 @@ def update_nc(id: int, data: NonConformiteUpdate, db: Session = Depends(get_db))
     nc = db.query(NonConformite).filter(NonConformite.id == id).first()
     if not nc:
         raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    if nc.statut in ("cloture", "sans_objet"):
+        raise HTTPException(status_code=403, detail="Une non-conformité clôturée ou classée sans objet ne peut pas être modifiée. Rouvrez-la d'abord.")
     update_data = data.model_dump(exclude_none=True, exclude={"statut"})
     for key, value in update_data.items():
         setattr(nc, key, value)
