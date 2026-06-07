@@ -4,7 +4,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from app.database import engine, Base, SessionLocal, get_db
 from sqlalchemy.orm import Session as DBSession
 
@@ -137,7 +136,7 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-templates = Jinja2Templates(directory="templates")
+from app.templates_instance import templates
 
 def _get_nom_organisme():
     try:

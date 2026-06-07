@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import func
 from datetime import datetime
@@ -10,9 +9,9 @@ from app.database import get_db
 from app.models.grille_theorie import GrilleTheorie
 from app.models.utilisations_themes import UtilisationTheme
 from app.models.session import Session as SessionModel
+from app.templates_instance import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 THEME_NOMS = {
     "R482": {
