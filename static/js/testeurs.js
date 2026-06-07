@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fermer-ajouter-carte').addEventListener('click', function() {
         document.getElementById('modal-ajouter-carte').style.display = 'none';
     });
+    document.getElementById('btn-modal-ajouter-carte').addEventListener('click', function() {
+        carteAjouterTesteurId = document.getElementById('testeur-id').value;
+        document.getElementById('ajouter-carte-famille').value = 'R482';
+        document.getElementById('ajouter-carte-file').value = '';
+        document.getElementById('ajouter-carte-pin').value = '';
+        document.getElementById('ajouter-carte-error').style.display = 'none';
+        document.getElementById('modal-ajouter-carte').style.display = 'flex';
+    });
 
     document.getElementById('btn-upload-prevention').addEventListener('click', function() {
         document.getElementById('modal-prev-file').click();
@@ -188,6 +196,7 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
             row.style.cssText = 'display:flex; align-items:center; gap:8px;';
             row.innerHTML =
                 '<span style="font-size:12px;color:#2e7d32;">' + c.dataset.famille + ' : ' + c.dataset.nom + '</span>' +
+                '<a href="/api/upload/carte/' + c.dataset.carteId + '/download" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;" target="_blank">📥</a>' +
                 '<button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"' +
                 ' data-action="carte-modal-supprimer" data-carte-id="' + c.dataset.carteId + '">🗑️</button>';
             cartesList.appendChild(row);
