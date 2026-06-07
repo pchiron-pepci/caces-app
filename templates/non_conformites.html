@@ -61,28 +61,30 @@
         <div style="display:grid; grid-template-columns:210px 1fr; gap:32px; align-items:start;">
 
             <!-- Colonne gauche : métadonnées -->
-            <div style="display:flex; flex-direction:column; gap:16px;">
-                <div>
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:4px;">Origine</div>
-                    <div style="font-size:14px;color:#333;">{% if nc.origine == 'interne' %}Interne{% elif nc.origine == 'reclamation_client' %}Réclamation client{% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant{% elif nc.origine == 'audit' %}Audit{% else %}{{ nc.origine }}{% endif %}</div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                {% set lbl = "font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;white-space:nowrap;" %}
+                {% set val = "font-size:14px;color:#333;" %}
+                <div style="display:flex;align-items:baseline;gap:8px;">
+                    <div style="{{ lbl }}">Origine</div>
+                    <div style="{{ val }}">{% if nc.origine == 'interne' %}Interne{% elif nc.origine == 'reclamation_client' %}Réclamation client{% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant{% elif nc.origine == 'audit' %}Audit{% else %}{{ nc.origine }}{% endif %}</div>
                 </div>
-                <div>
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:4px;">Type</div>
-                    <div style="font-size:14px;color:#333;">{% if nc.type_nc == 'incident' %}Incident{% elif nc.type_nc == 'non-conformite' %}Non-conformité{% elif nc.type_nc == 'observation' %}Observation{% else %}{{ nc.type_nc }}{% endif %}</div>
+                <div style="display:flex;align-items:baseline;gap:8px;">
+                    <div style="{{ lbl }}">Type</div>
+                    <div style="{{ val }}">{% if nc.type_nc == 'incident' %}Incident{% elif nc.type_nc == 'non-conformite' %}Non-conformité{% elif nc.type_nc == 'observation' %}Observation{% else %}{{ nc.type_nc }}{% endif %}</div>
                 </div>
-                <div>
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:4px;">Déclarant</div>
-                    <div style="font-size:14px;color:#333;">{% if nc.declarant_id and nc.declarant_id in utilisateurs %}{{ utilisateurs[nc.declarant_id].nom }} {{ utilisateurs[nc.declarant_id].prenom }}{% else %}—{% endif %}</div>
+                <div style="display:flex;align-items:baseline;gap:8px;">
+                    <div style="{{ lbl }}">Déclarant</div>
+                    <div style="{{ val }}">{% if nc.declarant_id and nc.declarant_id in utilisateurs %}{{ utilisateurs[nc.declarant_id].nom }} {{ utilisateurs[nc.declarant_id].prenom }}{% else %}—{% endif %}</div>
                 </div>
-                <div>
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:4px;">Date clôture</div>
-                    <div style="font-size:14px;color:#333;">{% if nc.date_cloture %}{{ nc.date_cloture.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</div>
+                <div style="display:flex;align-items:baseline;gap:8px;">
+                    <div style="{{ lbl }}">Date clôture</div>
+                    <div style="{{ val }}">{% if nc.date_cloture %}{{ nc.date_cloture.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</div>
                 </div>
                 {% if nc.justificatif_nom %}
-                <div>
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Justificatif</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="{{ lbl }}">Justificatif</div>
                     <a href="/api/non-conformites/{{ nc.id }}/justificatif" target="_blank"
-                       class="btn btn-secondary" style="font-size:12px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px;">
+                       class="btn btn-secondary" style="font-size:12px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;">
                         📄 {{ nc.justificatif_nom }}
                     </a>
                 </div>
@@ -91,15 +93,15 @@
 
             <!-- Colonne droite : contenus -->
             <div style="display:flex; flex-direction:column; gap:20px;">
-                <div>
+                <div style="border-left:3px solid #c62828;padding-left:14px;">
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Description</div>
                     <div style="white-space:pre-wrap;color:{% if nc.description %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.description or '—' }}</div>
                 </div>
-                <div style="border-left:3px solid #1a237e;padding-left:14px;">
+                <div style="border-left:3px solid #1565c0;padding-left:14px;">
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Action préventive</div>
                     <div style="white-space:pre-wrap;color:{% if nc.action_preventive %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.action_preventive or '—' }}</div>
                 </div>
-                <div style="border-left:3px solid #f59e0b;padding-left:14px;">
+                <div style="border-left:3px solid #2e7d32;padding-left:14px;">
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Action corrective</div>
                     <div style="white-space:pre-wrap;color:{% if nc.action_corrective %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.action_corrective or '—' }}</div>
                 </div>
