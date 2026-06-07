@@ -7,6 +7,20 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
     document.getElementById('btn-fermer-prevention').addEventListener('click', fermerPrevention);
     document.getElementById('btn-fermer-controle').addEventListener('click', fermerControle);
+    document.getElementById('btn-upload-prevention').addEventListener('click', function() {
+        document.getElementById('modal-prev-file').click();
+    });
+    document.getElementById('btn-upload-carte').addEventListener('click', function() {
+        document.getElementById('modal-carte-file').click();
+    });
+    document.getElementById('modal-prev-file').addEventListener('change', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        ouvrirModalPrevention(testeurId, this);
+    });
+    document.getElementById('modal-carte-file').addEventListener('change', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        uploadCarte(testeurId, this);
+    });
 
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action]');
@@ -96,6 +110,9 @@ function ouvrirFormulaire() {
         document.getElementById('f-' + f).value = '';
     });
     document.getElementById('f-statut').value = 'interne';
+    document.getElementById('section-documents').style.display = 'none';
+    document.getElementById('modal-prev-file').value = '';
+    document.getElementById('modal-carte-file').value = '';
     document.getElementById('modal').style.display = 'flex';
 }
 
@@ -115,6 +132,9 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     document.getElementById('f-formation').value = formation;
     document.getElementById('f-controle').value = controle;
     document.getElementById('f-note').value = note;
+    document.getElementById('section-documents').style.display = 'block';
+    document.getElementById('modal-prev-file').value = '';
+    document.getElementById('modal-carte-file').value = '';
     document.getElementById('modal').style.display = 'flex';
 }
 
