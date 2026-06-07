@@ -225,4 +225,32 @@
         </div>
     </div>
 </div>
+
+<div class="card" style="margin-top:16px;">
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>⚠️ Non-conformités ouvertes</h2>
+        <a href="/non-conformites" class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Voir tout</a>
+    </div>
+    {% if nc_ouvertes %}
+    <table class="table">
+        <tbody>
+            {% for nc in nc_ouvertes %}
+            <tr>
+                <td style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</td>
+                <td style="font-weight:600;">{{ nc.titre }}</td>
+                <td>
+                    {% if nc.statut == 'ouvert' %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;">Ouvert</span>
+                    {% else %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;">En cours</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding:20px 16px; color:#2e7d32; font-size:14px;">✅ Aucune non-conformité ouverte</div>
+    {% endif %}
+</div>
 {% endblock %}

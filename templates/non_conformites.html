@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Non-conformités{% endblock %}
+
+{% block content %}
+
+<script type="application/json" id="nc-data">{{ nc_json | safe }}</script>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h1 style="font-size:1.5rem; font-weight:700; color:#1a237e;">⚠️ Journal des non-conformités</h1>
+    <button class="btn btn-primary" id="btn-nouvelle-nc">➕ Nouvelle non-conformité</button>
+</div>
+
+{% if not non_conformites %}
+<div class="card" style="text-align:center; padding:48px 40px; color:#888;">
+    <div style="font-size:2.5rem; margin-bottom:12px;">✅</div>
+    <p style="font-size:1rem;">Aucune non-conformité enregistrée.</p>
+</div>
+{% else %}
+
+{% for nc in non_conformites %}
+<div class="card" style="margin-bottom:10px; padding:0; overflow:hidden;">
+    <div class="nc-toggle-header" data-id="{{ nc.id }}"
+         style="display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none;">
+        <span class="nc-arrow" style="color:#1a237e; font-size:12px; transition:transform 0.2s; display:inline-block;">▶</span>
+        <span style="color:#888; font-size:13px; min-width:85px; flex-shrink:0;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
+        <span style="flex:1; font-weight:600; color:#1a237e;">{{ nc.titre }}</span>
+        <span style="font-size:12px; color:#666; margin-right:4px; flex-shrink:0;">
+            {% if nc.origine == 'interne' %}Interne
+            {% elif nc.origine == 'reclamation_client' %}Réclamation client
+            {% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant
+            {% elif nc.origine == 'audit' %}Audit
+            {% else %}{{ nc.origine }}{% endif %}
+            ·
+            {% if nc.type_nc == 'incident' %}Incident
+            {% elif nc.type_nc == 'non-conformite' %}Non-conformité
+            {% elif nc.type_nc == 'observation' %}Observation
+            {% else %}{{ nc.type_nc }}{% endif %}
+        </span>
+        {% if nc.statut == 'ouvert' %}
+            <span class="badge" style="background:#ffebee;color:#c62828;flex-shrink:0;">Ouvert</span>
+        {% elif nc.statut == 'en_cours' %}
+            <span class="badge" style="background:#fff3e0;color:#e65100;flex-shrink:0;">En cours</span>
+        {% else %}
+            <span class="badge" style="background:#e8f5e9;color:#2e7d32;flex-shrink:0;">Clôturé</span>
+        {% endif %}
+    </div>
+
+    <div class="nc-body" id="nc-body-{{ nc.id }}" style="display:none; border-top:1px solid #e8ecf4; padding:20px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div>
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Origine</div>
+                <div>{% if nc.origine == 'interne' %}Interne
+                    {% elif nc.origine == 'reclamation_client' %}Réclamation client
+                    {% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant
+                    {% elif nc.origine == 'audit' %}Audit
+                    {% else %}{{ nc.origine }}{% endif %}</div>
+            </div>
+            <div>
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Type</div>
+                <div>{% if nc.type_nc == 'incident' %}Incident
+                    {% elif nc.type_nc == 'non-conformite' %}Non-conformité
+                    {% elif nc.type_nc == 'observation' %}Observation
+                    {% else %}{{ nc.type_nc }}{% endif %}</div>
+            </div>
+            <div>
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Déclarant</div>
+                <div>{% if nc.declarant_id and nc.declarant_id in utilisateurs %}
+                    {{ utilisateurs[nc.declarant_id].nom }} {{ utilisateurs[nc.declarant_id].prenom }}
+                    {% else %}—{% endif %}</div>
+            </div>
+            {% if nc.date_cloture %}
+            <div>
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Date clôture</div>
+                <div>{{ nc.date_cloture.strftime('%d/%m/%Y') }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if nc.description %}
+        <div style="margin-bottom:12px;">
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Description</div>
+            <div style="white-space:pre-wrap; color:#333; font-size:14px; line-height:1.5;">{{ nc.description }}</div>
+        </div>
+        {% endif %}
+
+        {% if nc.action_preventive %}
+        <div style="margin-bottom:12px; background:#f0f4ff; border-left:3px solid #1a237e; padding:10px 12px; border-radius:0 6px 6px 0;">
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#1a237e; margin-bottom:4px;">Action préventive</div>
+            <div style="white-space:pre-wrap; color:#333; font-size:14px; line-height:1.5;">{{ nc.action_preventive }}</div>
+        </div>
+        {% endif %}
+
+        {% if nc.action_corrective %}
+        <div style="margin-bottom:12px; background:#fff8e1; border-left:3px solid #f59e0b; padding:10px 12px; border-radius:0 6px 6px 0;">
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#b45309; margin-bottom:4px;">Action corrective</div>
+            <div style="white-space:pre-wrap; color:#333; font-size:14px; line-height:1.5;">{{ nc.action_corrective }}</div>
+        </div>
+        {% endif %}
+
+        {% if nc.justificatif_nom %}
+        <div style="margin-bottom:12px;">
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:6px;">Justificatif</div>
+            <a href="/api/non-conformites/{{ nc.id }}/justificatif" target="_blank"
+               class="btn btn-secondary" style="font-size:12px; padding:5px 12px; display:inline-flex; align-items:center; gap:6px;">
+                📄 {{ nc.justificatif_nom }}
+            </a>
+        </div>
+        {% endif %}
+
+        <div style="display:flex; gap:8px; margin-top:4px;">
+            <button class="btn btn-secondary nc-edit-btn" data-id="{{ nc.id }}" style="font-size:13px;">✏️ Modifier</button>
+            {% if nc.statut != 'cloture' %}
+            <button class="btn btn-danger nc-cloturer-btn" data-id="{{ nc.id }}" style="font-size:13px; background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7;">✅ Clôturer</button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- MODAL Nouvelle / Modifier NC -->
+<div id="modal-nc" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; overflow-y:auto;">
+    <div style="background:white; margin:40px auto 60px; padding:32px; border-radius:12px; max-width:660px; position:relative; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <button id="btn-fermer-nc" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#888;">✕</button>
+        <h2 id="modal-nc-titre" style="margin-bottom:24px; color:#1a237e;">Nouvelle non-conformité</h2>
+        <input type="hidden" id="nc-id" value="">
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Date *</label>
+                <input type="date" id="nc-date" class="form-control">
+            </div>
+            <div>
+                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Statut</label>
+                <select id="nc-statut" class="form-control">
+                    <option value="ouvert">Ouvert</option>
+                    <option value="en_cours">En cours</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Origine *</label>
+                <select id="nc-origine" class="form-control">
+                    <option value="interne">Interne</option>
+                    <option value="reclamation_client">Réclamation client</option>
+                    <option value="reclamation_apprenant">Réclamation apprenant</option>
+                    <option value="audit">Audit</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Type *</label>
+                <select id="nc-type" class="form-control">
+                    <option value="incident">Incident</option>
+                    <option value="non-conformite">Non-conformité</option>
+                    <option value="observation">Observation</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Titre *</label>
+            <input type="text" id="nc-titre-input" class="form-control" placeholder="Titre court et descriptif">
+        </div>
+
+        <div style="margin-top:12px;">
+            <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Description</label>
+            <textarea id="nc-description" class="form-control" rows="3" placeholder="Description détaillée..."></textarea>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Action préventive</label>
+            <textarea id="nc-action-preventive" class="form-control" rows="2" placeholder="Mesures préventives..."></textarea>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Action corrective</label>
+            <textarea id="nc-action-corrective" class="form-control" rows="2" placeholder="Mesures correctives..."></textarea>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Justificatif PDF</label>
+            <input type="file" id="nc-justificatif-file" accept=".pdf" class="form-control">
+            <div id="nc-justificatif-actuel" style="font-size:12px; color:#666; margin-top:4px;"></div>
+        </div>
+
+        <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn btn-secondary" id="btn-annuler-nc">Annuler</button>
+            <button class="btn btn-primary" id="btn-sauvegarder-nc">💾 Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/non_conformites.js"></script>
+{% endblock %}

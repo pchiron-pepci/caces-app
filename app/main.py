@@ -24,9 +24,11 @@ from app.models.document_officiel import DocumentOfficiel
 from app.models.carte_testeur import CarteTesteur
 from app.models.config_organisme import ConfigOrganisme
 from app.models.habilitation_option import HabilitationOption
+from app.models.non_conformite import NonConformite
 
 from sqlalchemy import text
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
+from app.routers import non_conformites
 from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
@@ -150,6 +152,32 @@ except Exception:
 try:
     with engine.connect() as _conn:
         _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS non_conformites (
+                id SERIAL PRIMARY KEY,
+                date DATE NOT NULL,
+                declarant_id INTEGER REFERENCES utilisateurs(id),
+                origine VARCHAR(50) NOT NULL,
+                type_nc VARCHAR(30) NOT NULL,
+                titre VARCHAR(200) NOT NULL,
+                description TEXT,
+                action_preventive TEXT,
+                action_corrective TEXT,
+                justificatif_pdf TEXT,
+                justificatif_nom VARCHAR(200),
+                statut VARCHAR(20) NOT NULL DEFAULT 'ouvert',
+                date_cloture DATE,
+                session_id INTEGER REFERENCES sessions(id),
+                testeur_id INTEGER REFERENCES testeurs(id),
+                stagiaire_id INTEGER REFERENCES stagiaires(id)
+            )
+        """))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS carte_testeur (
                 id SERIAL PRIMARY KEY,
                 testeur_id INTEGER NOT NULL REFERENCES testeurs(id),
@@ -254,6 +282,7 @@ app.include_router(sessions.router)
 app.include_router(upload.router)
 app.include_router(auth.router)
 app.include_router(statistiques.router)
+app.include_router(non_conformites.router)
 
 @app.get("/")
 def dashboard(request: Request):
@@ -281,6 +310,9 @@ def dashboard(request: Request):
         Utilisateur.role_referent != '',
         Utilisateur.actif == True
     ).all()
+    nc_ouvertes = db.query(NonConformite).filter(
+        NonConformite.statut.in_(["ouvert", "en_cours"])
+    ).order_by(NonConformite.date.desc()).all()
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -291,7 +323,8 @@ def dashboard(request: Request):
             "testeurs": testeurs_list,
             "docs": docs_map,
             "today": today,
-            "referents": referents
+            "referents": referents,
+            "nc_ouvertes": nc_ouvertes,
         }
     )
 
@@ -794,6 +827,39 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
         }
     )
 
+
+@app.get("/non-conformites")
+def page_non_conformites(request: Request):
+    import json
+    db = SessionLocal()
+    nc_list = db.query(NonConformite).order_by(NonConformite.date.desc()).all()
+    utilisateurs_list = db.query(Utilisateur).all()
+    db.close()
+    utilisateurs_map = {u.id: u for u in utilisateurs_list}
+    nc_json = json.dumps([{
+        "id": nc.id,
+        "date": nc.date.isoformat() if nc.date else "",
+        "declarant_id": nc.declarant_id,
+        "origine": nc.origine,
+        "type_nc": nc.type_nc,
+        "titre": nc.titre,
+        "description": nc.description or "",
+        "action_preventive": nc.action_preventive or "",
+        "action_corrective": nc.action_corrective or "",
+        "justificatif_nom": nc.justificatif_nom or "",
+        "statut": nc.statut,
+        "date_cloture": nc.date_cloture.isoformat() if nc.date_cloture else "",
+    } for nc in nc_list])
+    return templates.TemplateResponse(
+        request=request,
+        name="non_conformites.html",
+        context={
+            "page": "non_conformites",
+            "non_conformites": nc_list,
+            "utilisateurs": utilisateurs_map,
+            "nc_json": nc_json,
+        }
+    )
 
 @app.get("/caces-obtenus")
 def page_caces_obtenus(request: Request):
