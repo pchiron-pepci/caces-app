@@ -41,6 +41,18 @@
                 {% endif %}
                 <button data-action="controle-editer" data-id="{{ t.id }}" data-controle="{{ t.date_prochain_controle or '' }}"
                     style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:#888;" title="Modifier prochain contrôle">✏️</button>
+                {% if t.visite_medicale %}
+                    {% set age_v = (today - t.visite_medicale).days %}
+                    {% if age_v < 365 %}
+                        <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">Visite : {{ t.visite_medicale.strftime('%d/%m/%Y') }}</span>
+                    {% elif age_v < 730 %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">Visite : {{ t.visite_medicale.strftime('%d/%m/%Y') }}</span>
+                    {% else %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite : {{ t.visite_medicale.strftime('%d/%m/%Y') }}</span>
+                    {% endif %}
+                {% else %}
+                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite : ❌</span>
+                {% endif %}
             </div>
             <div style="display:flex; gap:6px; flex-shrink:0;">
                 <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
@@ -60,15 +72,20 @@
                     data-controle="{{ t.date_prochain_controle or '' }}"
                     data-note="{{ t.note or '' }}"
                     data-has-prev="{{ 'true' if t.attestation_prevention_pdf else 'false' }}"
-                    data-prev-nom="{{ t.attestation_prevention_nom or '' }}">✏️</button>
+                    data-prev-nom="{{ t.attestation_prevention_nom or '' }}"
+                    data-has-visite="{{ 'true' if t.visite_medicale_pdf else 'false' }}"
+                    data-visite-nom="{{ t.visite_medicale_nom or '' }}"
+                    data-has-eval="{{ 'true' if t.evaluation_pdf else 'false' }}"
+                    data-eval-nom="{{ t.evaluation_nom or '' }}"
+                    data-eval-date="{{ t.evaluation_date or '' }}">✏️</button>
                 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                     data-action="archiver"
                     data-id="{{ t.id }}"
                     data-nom="{{ t.nom }} {{ t.prenom }}">🗑️</button>
             </div>
         </div>
-        <!-- Corps : 3 colonnes -->
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; padding:16px 20px; gap:0;">
+        <!-- Corps : 4 colonnes -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; padding:16px 20px; gap:0;">
             <!-- Certifications CACES® -->
             <div style="padding-right:16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Certifications CACES®</div>
@@ -103,7 +120,7 @@
                 </div>
             </div>
             <!-- Carte(s) CACES® -->
-            <div style="padding-left:16px;">
+            <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Carte(s) CACES®</div>
                 {% if t.cartes %}
                     {% for c in t.cartes %}
@@ -113,6 +130,26 @@
                     {% endfor %}
                 {% else %}
                     <div style="color:#888; font-size:12px;">—</div>
+                {% endif %}
+            </div>
+            <!-- Dernière évaluation -->
+            <div style="padding-left:16px;">
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Dernière évaluation</div>
+                {% if t.evaluation_pdf %}
+                    {% if t.evaluation_date %}
+                        {% set age_e = (today - t.evaluation_date).days %}
+                        {% if age_e < 365 %}
+                            <a href="/api/upload/evaluation/{{ t.id }}/download" class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;text-decoration:none;">✅ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</a>
+                        {% elif age_e < 730 %}
+                            <a href="/api/upload/evaluation/{{ t.id }}/download" class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;text-decoration:none;">⚠️ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</a>
+                        {% else %}
+                            <a href="/api/upload/evaluation/{{ t.id }}/download" class="badge" style="background:#ffebee;color:#c62828;font-size:11px;text-decoration:none;">❌ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="/api/upload/evaluation/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.evaluation_nom or 'evaluation.pdf' }}</a>
+                    {% endif %}
+                {% else %}
+                    <span style="color:#888; font-size:12px;">—</span>
                 {% endif %}
             </div>
         </div>
@@ -208,6 +245,32 @@
                     <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Carte(s) CACES®</div>
                     <div id="modal-cartes-list" style="display:flex; flex-direction:column; gap:5px; margin-bottom:6px;"></div>
                     <button class="btn btn-secondary" id="btn-modal-ajouter-carte" style="padding:4px 10px; font-size:11px;">+ Ajouter une carte</button>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Visite médicale</div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+                        <span id="modal-visite-info" style="font-size:12px; color:#666;">Aucune visite</span>
+                        <a id="modal-visite-dl" href="#" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;display:none;" target="_blank">📥</a>
+                        <button class="btn btn-danger" id="btn-suppr-visite" style="padding:4px 10px;font-size:11px;display:none;">🗑️ Supprimer</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="date" id="modal-visite-date" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:12px;">
+                        <input type="file" id="modal-visite-file" accept=".pdf" style="display:none;">
+                        <button class="btn btn-secondary" id="btn-upload-visite" style="padding:4px 10px;font-size:11px;">📤 Uploader</button>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Dernière évaluation</div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+                        <span id="modal-eval-info" style="font-size:12px; color:#666;">Aucune évaluation</span>
+                        <a id="modal-eval-dl" href="#" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;display:none;" target="_blank">📥</a>
+                        <button class="btn btn-danger" id="btn-suppr-eval" style="padding:4px 10px;font-size:11px;display:none;">🗑️ Supprimer</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="date" id="modal-eval-date" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:12px;">
+                        <input type="file" id="modal-eval-file" accept=".pdf" style="display:none;">
+                        <button class="btn btn-secondary" id="btn-upload-eval" style="padding:4px 10px;font-size:11px;">📤 Uploader</button>
+                    </div>
                 </div>
             </div>
         </div>

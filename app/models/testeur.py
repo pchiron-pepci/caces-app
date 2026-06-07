@@ -27,3 +27,9 @@ class Testeur(Base):
     attestation_prevention_pdf = Column(Text, nullable=True)
     attestation_prevention_nom = Column(String(200), nullable=True)
     attestation_prevention_date = Column(Date, nullable=True)
+    visite_medicale_pdf = Column(Text, nullable=True)
+    visite_medicale_nom = Column(String(200), nullable=True)
+    # visite_medicale (Date) déjà présent — réutilisé comme date du PDF
+    evaluation_pdf = Column(Text, nullable=True)
+    evaluation_nom = Column(String(200), nullable=True)
+    evaluation_date = Column(Date, nullable=True)

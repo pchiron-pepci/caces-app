@@ -464,6 +464,137 @@ def supprimer_attestation_prevention(testeur_id: int, pin: str):
     return {"message": "Attestation supprimée"}
 
 
+# --- Visite médicale testeur (stockage base64 PostgreSQL) ---
+
+@router.post("/visite-medicale/{testeur_id}")
+async def upload_visite_medicale(testeur_id: int, pin: str, date_visite: str = None, file: UploadFile = File(...)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Format PDF uniquement")
+    contents = await file.read()
+    contenu_b64 = base64.b64encode(contents).decode()
+    from app.models.testeur import Testeur
+    from datetime import datetime, date as date_type
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t:
+            raise HTTPException(status_code=404, detail="Testeur non trouvé")
+        t.visite_medicale_pdf = contenu_b64
+        t.visite_medicale_nom = file.filename
+        if date_visite:
+            try:
+                t.visite_medicale = datetime.strptime(date_visite, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        db.commit()
+    finally:
+        db.close()
+    return {"message": "Visite médicale uploadée"}
+
+
+@router.get("/visite-medicale/{testeur_id}/download")
+def telecharger_visite_medicale(testeur_id: int):
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t or not t.visite_medicale_pdf:
+            raise HTTPException(status_code=404, detail="Visite non disponible")
+        contenu = base64.b64decode(t.visite_medicale_pdf)
+        nom = t.visite_medicale_nom or "visite.pdf"
+    finally:
+        db.close()
+    return Response(content=contenu, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'})
+
+
+@router.delete("/visite-medicale/{testeur_id}")
+def supprimer_visite_medicale(testeur_id: int, pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if t:
+            t.visite_medicale_pdf = None
+            t.visite_medicale_nom = None
+            db.commit()
+    finally:
+        db.close()
+    return {"message": "Visite supprimée"}
+
+
+# --- Évaluation testeur (stockage base64 PostgreSQL) ---
+
+@router.post("/evaluation/{testeur_id}")
+async def upload_evaluation(testeur_id: int, pin: str, date_evaluation: str = None, file: UploadFile = File(...)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Format PDF uniquement")
+    contents = await file.read()
+    contenu_b64 = base64.b64encode(contents).decode()
+    from app.models.testeur import Testeur
+    from datetime import datetime
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t:
+            raise HTTPException(status_code=404, detail="Testeur non trouvé")
+        t.evaluation_pdf = contenu_b64
+        t.evaluation_nom = file.filename
+        if date_evaluation:
+            try:
+                t.evaluation_date = datetime.strptime(date_evaluation, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        db.commit()
+    finally:
+        db.close()
+    return {"message": "Évaluation uploadée"}
+
+
+@router.get("/evaluation/{testeur_id}/download")
+def telecharger_evaluation(testeur_id: int):
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t or not t.evaluation_pdf:
+            raise HTTPException(status_code=404, detail="Évaluation non disponible")
+        contenu = base64.b64decode(t.evaluation_pdf)
+        nom = t.evaluation_nom or "evaluation.pdf"
+    finally:
+        db.close()
+    return Response(content=contenu, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'})
+
+
+@router.delete("/evaluation/{testeur_id}")
+def supprimer_evaluation(testeur_id: int, pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if t:
+            t.evaluation_pdf = None
+            t.evaluation_nom = None
+            t.evaluation_date = None
+            db.commit()
+    finally:
+        db.close()
+    return {"message": "Évaluation supprimée"}
+
+
 @router.get("/liste-images")
 def liste_images():
     configurer_cloudinary()

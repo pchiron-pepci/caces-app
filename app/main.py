@@ -75,6 +75,17 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_pdf TEXT"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_nom VARCHAR"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_pdf TEXT"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_nom VARCHAR"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_date DATE"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
         _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS carte_testeur (
                 id SERIAL PRIMARY KEY,

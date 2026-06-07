@@ -10,6 +10,73 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fermer-ajouter-carte').addEventListener('click', function() {
         document.getElementById('modal-ajouter-carte').style.display = 'none';
     });
+
+    // --- Attestation prévention ---
+    document.getElementById('btn-upload-prevention').addEventListener('click', function() {
+        document.getElementById('modal-prev-file').click();
+    });
+    document.getElementById('modal-prev-file').addEventListener('change', function() {
+        ouvrirModalPrevention(document.getElementById('testeur-id').value, this);
+    });
+    document.getElementById('btn-suppr-prev').addEventListener('click', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        const nom = document.getElementById('modal-prev-info').textContent;
+        ouvrirPinAction(`Supprimer l'attestation "${nom}" ?`, async function(pin) {
+            return fetch(`/api/upload/attestation-prevention/${testeurId}?pin=${pin}`, { method: 'DELETE' });
+        });
+    });
+
+    // --- Visite médicale ---
+    document.getElementById('btn-upload-visite').addEventListener('click', function() {
+        const dateVal = document.getElementById('modal-visite-date').value;
+        if (!dateVal) { alert('Veuillez saisir une date de visite.'); return; }
+        document.getElementById('modal-visite-file').click();
+    });
+    document.getElementById('modal-visite-file').addEventListener('change', function() {
+        if (!this.files || this.files.length === 0) return;
+        const file = this.files[0];
+        const testeurId = document.getElementById('testeur-id').value;
+        const dateVal = document.getElementById('modal-visite-date').value;
+        ouvrirPinAction(`Uploader "${file.name}" comme visite médicale ?`, async function(pin) {
+            const fd = new FormData();
+            fd.append('file', file);
+            return fetch(`/api/upload/visite-medicale/${testeurId}?pin=${encodeURIComponent(pin)}&date_visite=${dateVal}`, { method: 'POST', body: fd });
+        });
+    });
+    document.getElementById('btn-suppr-visite').addEventListener('click', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        const nom = document.getElementById('modal-visite-info').textContent;
+        ouvrirPinAction(`Supprimer "${nom}" ?`, async function(pin) {
+            return fetch(`/api/upload/visite-medicale/${testeurId}?pin=${pin}`, { method: 'DELETE' });
+        });
+    });
+
+    // --- Évaluation ---
+    document.getElementById('btn-upload-eval').addEventListener('click', function() {
+        const dateVal = document.getElementById('modal-eval-date').value;
+        if (!dateVal) { alert('Veuillez saisir une date d\'évaluation.'); return; }
+        document.getElementById('modal-eval-file').click();
+    });
+    document.getElementById('modal-eval-file').addEventListener('change', function() {
+        if (!this.files || this.files.length === 0) return;
+        const file = this.files[0];
+        const testeurId = document.getElementById('testeur-id').value;
+        const dateVal = document.getElementById('modal-eval-date').value;
+        ouvrirPinAction(`Uploader "${file.name}" comme évaluation ?`, async function(pin) {
+            const fd = new FormData();
+            fd.append('file', file);
+            return fetch(`/api/upload/evaluation/${testeurId}?pin=${encodeURIComponent(pin)}&date_evaluation=${dateVal}`, { method: 'POST', body: fd });
+        });
+    });
+    document.getElementById('btn-suppr-eval').addEventListener('click', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        const nom = document.getElementById('modal-eval-info').textContent;
+        ouvrirPinAction(`Supprimer "${nom}" ?`, async function(pin) {
+            return fetch(`/api/upload/evaluation/${testeurId}?pin=${pin}`, { method: 'DELETE' });
+        });
+    });
+
+    // --- Cartes CACES® ---
     document.getElementById('btn-modal-ajouter-carte').addEventListener('click', function() {
         carteAjouterTesteurId = document.getElementById('testeur-id').value;
         document.getElementById('ajouter-carte-famille').value = 'R482';
@@ -18,31 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('ajouter-carte-error').style.display = 'none';
         document.getElementById('modal-ajouter-carte').style.display = 'flex';
     });
-
-    document.getElementById('btn-upload-prevention').addEventListener('click', function() {
-        document.getElementById('modal-prev-file').click();
-    });
-    document.getElementById('modal-prev-file').addEventListener('change', function() {
-        const testeurId = document.getElementById('testeur-id').value;
-        ouvrirModalPrevention(testeurId, this);
-    });
-
-    document.getElementById('btn-suppr-prev').addEventListener('click', function() {
-        const testeurId = document.getElementById('testeur-id').value;
-        const nomFichier = document.getElementById('modal-prev-info').textContent;
-        document.getElementById('pin-message').textContent = `Supprimer l'attestation "${nomFichier}" ?`;
-        document.getElementById('pin-input').value = '';
-        document.getElementById('pin-error').style.display = 'none';
-        document.getElementById('modal-pin').style.display = 'flex';
-        document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
-            const pin = document.getElementById('pin-input').value;
-            const resp = await fetch(`/api/upload/attestation-prevention/${testeurId}?pin=${pin}`, { method: 'DELETE' });
-            if (resp.ok) { fermerPin(); location.reload(); }
-            else document.getElementById('pin-error').style.display = 'block';
-            this.removeEventListener('click', handler);
-        });
-    });
-
     document.getElementById('ajouter-carte-confirm').addEventListener('click', async function() {
         const famille = document.getElementById('ajouter-carte-famille').value;
         const pin = document.getElementById('ajouter-carte-pin').value;
@@ -53,11 +95,11 @@ document.addEventListener('DOMContentLoaded', function() {
             errEl.style.display = 'block';
             return;
         }
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        const fd = new FormData();
+        fd.append('file', fileInput.files[0]);
         const resp = await fetch(
             `/api/upload/cartes-testeur/${carteAjouterTesteurId}?pin=${encodeURIComponent(pin)}&famille=${famille}`,
-            { method: 'POST', body: formData }
+            { method: 'POST', body: fd }
         );
         if (resp.ok) {
             document.getElementById('modal-ajouter-carte').style.display = 'none';
@@ -68,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // --- Délégation globale ---
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
@@ -77,7 +120,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.dataset.entreprise, btn.dataset.inrs, btn.dataset.email, btn.dataset.tel,
                 btn.dataset.habilitation, btn.dataset.expiration, btn.dataset.visite,
                 btn.dataset.formation, btn.dataset.controle, btn.dataset.note,
-                btn.dataset.hasPrev, btn.dataset.prevNom);
+                btn.dataset.hasPrev, btn.dataset.prevNom,
+                btn.dataset.hasVisite, btn.dataset.visiteNom,
+                btn.dataset.hasEval, btn.dataset.evalNom, btn.dataset.evalDate);
         }
         if (btn.dataset.action === 'archiver') {
             archiver(btn.dataset.id, btn.dataset.nom);
@@ -95,16 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (btn.dataset.action === 'carte-modal-supprimer') {
             const carteId = btn.dataset.carteId;
-            document.getElementById('pin-message').textContent = 'Supprimer définitivement cette carte CACES® ?';
-            document.getElementById('pin-input').value = '';
-            document.getElementById('pin-error').style.display = 'none';
-            document.getElementById('modal-pin').style.display = 'flex';
-            document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
-                const pin = document.getElementById('pin-input').value;
-                const resp = await fetch(`/api/upload/carte/${carteId}?pin=${pin}`, { method: 'DELETE' });
-                if (resp.ok) { fermerPin(); location.reload(); }
-                else document.getElementById('pin-error').style.display = 'block';
-                this.removeEventListener('click', handler);
+            ouvrirPinAction('Supprimer définitivement cette carte CACES® ?', async function(pin) {
+                return fetch(`/api/upload/carte/${carteId}?pin=${pin}`, { method: 'DELETE' });
             });
         }
         if (btn.dataset.action === 'controle-editer') {
@@ -119,19 +156,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        nom: d.nom || '',
-                        prenom: d.prenom || '',
-                        statut: d.statut || 'interne',
-                        entreprise: d.entreprise || null,
-                        email: d.email || null,
-                        telephone: d.tel || null,
-                        numero_inrs: d.inrs || null,
-                        date_habilitation: d.habilitation || null,
+                        nom: d.nom || '', prenom: d.prenom || '',
+                        statut: d.statut || 'interne', entreprise: d.entreprise || null,
+                        email: d.email || null, telephone: d.tel || null,
+                        numero_inrs: d.inrs || null, date_habilitation: d.habilitation || null,
                         date_expiration_habilitation: d.expiration || null,
-                        visite_medicale: d.visite || null,
-                        formation_continue: d.formation || null,
-                        date_prochain_controle: dateVal,
-                        note: d.note || null
+                        visite_medicale: d.visite || null, formation_continue: d.formation || null,
+                        date_prochain_controle: dateVal, note: d.note || null
                     })
                 });
                 if (resp.ok) { fermerControle(); location.reload(); }
@@ -143,6 +174,20 @@ document.addEventListener('DOMContentLoaded', function() {
 let idAArchiver = null;
 let idHabASupprimer = null;
 let carteAjouterTesteurId = null;
+
+function ouvrirPinAction(message, actionFn) {
+    document.getElementById('pin-message').textContent = message;
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+    document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
+        const pin = document.getElementById('pin-input').value;
+        const resp = await actionFn(pin);
+        if (resp.ok) { fermerPin(); location.reload(); }
+        else document.getElementById('pin-error').style.display = 'block';
+        this.removeEventListener('click', handler);
+    });
+}
 
 function ouvrirFormulaire() {
     document.getElementById('modal-title').textContent = 'Nouveau testeur';
@@ -156,7 +201,7 @@ function ouvrirFormulaire() {
     document.getElementById('modal').style.display = 'flex';
 }
 
-function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom) {
+function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasVisite, visiteNom, hasEval, evalNom, evalDate) {
     document.getElementById('modal-title').textContent = 'Modifier testeur';
     document.getElementById('testeur-id').value = id;
     document.getElementById('f-nom').value = nom;
@@ -176,6 +221,7 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     document.getElementById('section-documents').style.display = 'block';
     document.getElementById('modal-prev-file').value = '';
 
+    // Attestation prévention
     if (hasPrev === 'true') {
         document.getElementById('modal-prev-info').textContent = prevNom || 'attestation.pdf';
         document.getElementById('btn-suppr-prev').style.display = '';
@@ -184,6 +230,33 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
         document.getElementById('btn-suppr-prev').style.display = 'none';
     }
 
+    // Visite médicale
+    document.getElementById('modal-visite-date').value = visite || '';
+    if (hasVisite === 'true') {
+        document.getElementById('modal-visite-info').textContent = visiteNom || 'visite.pdf';
+        document.getElementById('modal-visite-dl').href = `/api/upload/visite-medicale/${id}/download`;
+        document.getElementById('modal-visite-dl').style.display = '';
+        document.getElementById('btn-suppr-visite').style.display = '';
+    } else {
+        document.getElementById('modal-visite-info').textContent = 'Aucune visite';
+        document.getElementById('modal-visite-dl').style.display = 'none';
+        document.getElementById('btn-suppr-visite').style.display = 'none';
+    }
+
+    // Évaluation
+    document.getElementById('modal-eval-date').value = evalDate || '';
+    if (hasEval === 'true') {
+        document.getElementById('modal-eval-info').textContent = evalNom || 'evaluation.pdf';
+        document.getElementById('modal-eval-dl').href = `/api/upload/evaluation/${id}/download`;
+        document.getElementById('modal-eval-dl').style.display = '';
+        document.getElementById('btn-suppr-eval').style.display = '';
+    } else {
+        document.getElementById('modal-eval-info').textContent = 'Aucune évaluation';
+        document.getElementById('modal-eval-dl').style.display = 'none';
+        document.getElementById('btn-suppr-eval').style.display = 'none';
+    }
+
+    // Cartes CACES®
     const cartesList = document.getElementById('modal-cartes-list');
     cartesList.innerHTML = '';
     const cartesContainer = document.getElementById('cartes-' + id);
@@ -235,31 +308,15 @@ async function sauvegarder() {
 
 function archiver(id, nom) {
     idAArchiver = id;
-    document.getElementById('pin-message').textContent = `Archiver "${nom}" ?`;
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-error').style.display = 'none';
-    document.getElementById('modal-pin').style.display = 'flex';
-    document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
-        const pin = document.getElementById('pin-input').value;
-        const resp = await fetch(`/api/testeurs/${idAArchiver}?pin=${pin}`, { method: 'DELETE' });
-        if (resp.ok) { fermerPin(); location.reload(); }
-        else document.getElementById('pin-error').style.display = 'block';
-        this.removeEventListener('click', handler);
+    ouvrirPinAction(`Archiver "${nom}" ?`, async function(pin) {
+        return fetch(`/api/testeurs/${idAArchiver}?pin=${pin}`, { method: 'DELETE' });
     });
 }
 
 function supprimerHab(habId, label) {
     idHabASupprimer = habId;
-    document.getElementById('pin-message').textContent = `Supprimer l'habilitation "${label}" ?`;
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-error').style.display = 'none';
-    document.getElementById('modal-pin').style.display = 'flex';
-    document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
-        const pin = document.getElementById('pin-input').value;
-        const resp = await fetch(`/admin/habilitation/${idHabASupprimer}?pin=${pin}`, { method: 'DELETE' });
-        if (resp.ok) { fermerPin(); location.reload(); }
-        else document.getElementById('pin-error').style.display = 'block';
-        this.removeEventListener('click', handler);
+    ouvrirPinAction(`Supprimer l'habilitation "${label}" ?`, async function(pin) {
+        return fetch(`/admin/habilitation/${idHabASupprimer}?pin=${pin}`, { method: 'DELETE' });
     });
 }
 
@@ -276,16 +333,10 @@ function ouvrirModalPrevention(testeurId, input) {
     document.getElementById('prevention-confirm-btn').addEventListener('click', async function handler() {
         const dateVal = document.getElementById('prevention-date').value;
         const pin = document.getElementById('prevention-pin').value;
-        if (!dateVal) {
-            document.getElementById('prevention-error').style.display = 'block';
-            return;
-        }
-        const formData = new FormData();
-        formData.append('file', file);
-        const resp = await fetch(`/api/upload/attestation-prevention/${testeurId}?pin=${pin}&date_attestation=${dateVal}`, {
-            method: 'POST',
-            body: formData
-        });
+        if (!dateVal) { document.getElementById('prevention-error').style.display = 'block'; return; }
+        const fd = new FormData();
+        fd.append('file', file);
+        const resp = await fetch(`/api/upload/attestation-prevention/${testeurId}?pin=${pin}&date_attestation=${dateVal}`, { method: 'POST', body: fd });
         if (resp.ok) { fermerPrevention(); input.value = ''; location.reload(); }
         else document.getElementById('prevention-error').style.display = 'block';
         this.removeEventListener('click', handler);
