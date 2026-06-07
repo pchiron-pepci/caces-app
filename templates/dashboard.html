@@ -173,10 +173,10 @@
         </table>
     </div>
 
-    <!-- Ligne 4 : Testeurs actifs (suite) -->
+    <!-- Ligne 4 : Testeurs opérationnels -->
     <div class="card">
         <div class="card-header">
-            <h2>👨‍🏫 Testeurs actifs</h2>
+            <h2>👨‍🏫 Testeurs opérationnels</h2>
         </div>
         <table class="table">
             <thead>
@@ -184,13 +184,19 @@
                     <th>Nom / Prénom</th>
                     <th>Type</th>
                     <th>Habilitations</th>
-                    <th>Statut</th>
                 </tr>
             </thead>
             <tbody>
                 {% for testeur in testeurs %}
                 <tr>
-                    <td><strong>{{ testeur.nom }} {{ testeur.prenom }}</strong></td>
+                    <td>
+                        <strong>{{ testeur.nom }} {{ testeur.prenom }}</strong>
+                        {% if testeur.etat == 'suspendu' %}
+                            <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;margin-left:6px;">⚠️ Suspendu</span>
+                        {% else %}
+                            <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;margin-left:6px;">✅ Actif</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if testeur.statut == 'interne' %}
                             <span class="badge blue">Interne</span>
@@ -205,7 +211,6 @@
                             <strong>{{ famille }}</strong> {{ habs | map(attribute='categorie') | join(',') }}{% if not loop.last %} / {% endif %}
                         {% endfor %}
                     </td>
-                    <td><span class="badge green">✅ Actif</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
