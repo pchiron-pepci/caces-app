@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('nc-action-corrective').value = nc ? nc.action_corrective : '';
         document.getElementById('nc-justificatif-file').value = '';
         const actuelDiv = document.getElementById('nc-justificatif-actuel');
-        actuelDiv.textContent = nc && nc.justificatif_nom ? '📎 Fichier actuel : ' + nc.justificatif_nom : '';
+        actuelDiv.textContent = nc && nc.justificatif_nom ? nc.justificatif_nom : '';
         modal.style.display = 'block';
     }
 
@@ -63,6 +63,15 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btn-annuler-nc').addEventListener('click', fermerModal);
     modal.addEventListener('click', function (e) {
         if (e.target === modal) fermerModal();
+    });
+
+    // ── Bouton choisir fichier PDF ─────────────────────────────────────────
+    document.getElementById('btn-choisir-pdf').addEventListener('click', function () {
+        document.getElementById('nc-justificatif-file').click();
+    });
+    document.getElementById('nc-justificatif-file').addEventListener('change', function () {
+        const actuelDiv = document.getElementById('nc-justificatif-actuel');
+        actuelDiv.textContent = this.files.length > 0 ? this.files[0].name : '';
     });
 
     // ── Bouton Modifier ────────────────────────────────────────────────────
