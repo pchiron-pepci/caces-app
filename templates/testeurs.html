@@ -65,23 +65,10 @@
                     data-nom="{{ t.nom }} {{ t.prenom }}">🗑️</button>
             </div>
         </div>
-        <!-- Corps : 4 colonnes -->
-        <div style="display:grid; grid-template-columns:180px 1fr 1fr 1fr; padding:16px 20px; gap:0;">
-            <!-- Dates -->
+        <!-- Corps : 3 colonnes -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; padding:16px 20px; gap:0;">
+            <!-- Certifications CACES® -->
             <div style="padding-right:16px; border-right:1px solid #e8ecf4;">
-                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Dates</div>
-                <div style="font-size:12px; margin-bottom:6px;">
-                    <span style="color:#888;">Habilitation :</span> {{ t.date_habilitation.strftime('%d/%m/%Y') if t.date_habilitation else '—' }}
-                </div>
-                <div style="font-size:12px;">
-                    <span style="color:#888;">Échéance :</span>
-                    {% if t.date_expiration_habilitation %}
-                        <span class="badge orange">{{ t.date_expiration_habilitation.strftime('%d/%m/%Y') }}</span>
-                    {% else %}—{% endif %}
-                </div>
-            </div>
-            <!-- Habilitations -->
-            <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Certifications CACES®</div>
                 {% if t.habilitations %}
                     {% for famille, habs in t.habilitations | groupby('famille') %}
