@@ -21,8 +21,8 @@
                 <span style="font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700;">{{ t.nom }} {{ t.prenom }}</span>
                 {% if t.etat == 'suspendu' %}
                     <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;margin-left:12px;margin-right:12px;">⚠️ Suspendu</span>
-                {% elif t.etat == 'annule' %}
-                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;margin-left:12px;margin-right:12px;">❌ Annulé</span>
+                {% elif t.etat == 'sorti' %}
+                    <span class="badge" style="background:#f5f5f5;color:#757575;font-size:11px;margin-left:12px;margin-right:12px;">🚪 Sorti</span>
                 {% else %}
                     <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;margin-left:12px;margin-right:12px;">✅ Actif</span>
                 {% endif %}
@@ -222,7 +222,7 @@
                     <select id="f-etat">
                         <option value="actif">✅ Actif</option>
                         <option value="suspendu">⚠️ Suspendu</option>
-                        <option value="annule">❌ Annulé</option>
+                        <option value="sorti">🚪 Sorti</option>
                     </select>
                     <button type="button" class="btn btn-secondary" id="btn-changer-etat" style="font-size:12px;padding:4px 10px;">💾 Appliquer</button>
                 </div>

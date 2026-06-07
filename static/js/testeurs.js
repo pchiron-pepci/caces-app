@@ -391,7 +391,7 @@ function fermerControle() { document.getElementById('modal-controle').style.disp
 function changerEtatTesteur() {
     const id = document.getElementById('testeur-id').value;
     const etat = document.getElementById('f-etat').value;
-    const labels = { actif: '✅ Actif', suspendu: '⚠️ Suspendu', annule: '❌ Annulé' };
+    const labels = { actif: '✅ Actif', suspendu: '⚠️ Suspendu', sorti: '🚪 Sorti' };
     ouvrirPinAction(`Changer l'état en "${labels[etat]}" ?`, async function(pin) {
         return fetch(`/api/testeurs/${id}/etat?pin=${encodeURIComponent(pin)}&etat=${encodeURIComponent(etat)}`, {
             method: 'PUT'

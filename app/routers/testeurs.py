@@ -81,7 +81,7 @@ def update_testeur(id: int, data: TesteurCreate, db: Session = Depends(get_db)):
 def update_etat_testeur(id: int, pin: str, etat: str, db: Session = Depends(get_db)):
     if pin != "1505":
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
-    if etat not in ("actif", "suspendu", "annule"):
+    if etat not in ("actif", "suspendu", "sorti"):
         raise HTTPException(status_code=400, detail="État invalide")
     t = db.query(Testeur).filter(Testeur.id == id).first()
     if not t:
