@@ -27,7 +27,7 @@
 <div id="tab-cartographie">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <div>
-            <strong>Certificat DEKRA N° D-552-06</strong>
+            <strong>Certificat DEKRA{% if numero_certificat() %} N° {{ numero_certificat() }}{% endif %}</strong>
             <span class="badge green" style="margin-left:8px;">Valide jusqu'au 13/06/2028</span>
         </div>
     </div>
@@ -399,6 +399,10 @@
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">📤 Uploader un document</h2>
         <p id="doc-upload-nom" style="color:#555; font-size:14px; margin-bottom:20px;"></p>
         <input type="hidden" id="doc-upload-type">
+        <div class="form-field" style="margin-bottom:16px;" id="doc-numero-row" style="display:none;">
+            <label>Numéro de certificat</label>
+            <input type="text" id="doc-numero-input" placeholder="Ex : D-552-06">
+        </div>
         <div class="form-field" style="margin-bottom:16px;">
             <label>Date de validité <span style="font-weight:400; color:#888;">(laisser vide si sans échéance)</span></label>
             <input type="date" id="doc-validite-input">
@@ -775,11 +779,23 @@ async function chargerDocuments() {
     const docsMap = {};
     data.documents.forEach(d => { docsMap[d.type] = d; });
 
+    _certNumero = (docsMap['certificat_organisme'] && docsMap['certificat_organisme'].numero_certificat) || '';
+
     const html = DOCUMENTS_TYPES.map(t => {
         const doc = docsMap[t.type];
+        const isCert = t.type === 'certificat_organisme';
+        const numCert = isCert && doc && doc.numero_certificat ? doc.numero_certificat : '';
         const fichierInfo = doc && doc.has_file
             ? `<span style="font-size:13px;color:#444;">${doc.nom_fichier}</span> ${badgeValidite(doc.date_validite)}`
             : `<span style="color:#888;font-size:13px;">— Non uploadé</span>`;
+        const numeroInfo = isCert ? `
+            <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <input type="text" id="input-num-cert" placeholder="N° certificat…"
+                    value="${numCert}"
+                    style="padding:4px 8px; border:1px solid #ddd; border-radius:6px; font-size:12px; width:160px;">
+                <button class="btn btn-secondary" style="font-size:12px;padding:4px 10px;"
+                    onclick="enregistrerNumeroCertificat()">💾 Enregistrer le numéro</button>
+            </div>` : '';
         const btnDl = doc && doc.has_file
             ? `<a href="/api/upload/document-officiel/${t.type}/download" class="btn btn-secondary" style="font-size:12px;padding:4px 12px;">📥 Télécharger</a>`
             : '';
@@ -792,6 +808,7 @@ async function chargerDocuments() {
                 <div style="flex:1;">
                     <div style="font-weight:600;font-size:14px;">${t.label}</div>
                     <div style="margin-top:4px;">${fichierInfo}</div>
+                    ${numeroInfo}
                 </div>
                 ${btnDl}
                 ${btnSuppr}
@@ -809,6 +826,7 @@ async function chargerDocuments() {
 }
 
 let _docUploadInput = null;
+let _certNumero = '';
 
 function uploadDocument(type, input) {
     const file = input.files[0];
@@ -819,6 +837,14 @@ function uploadDocument(type, input) {
     document.getElementById('doc-validite-input').value = '';
     document.getElementById('doc-pin-input').value = '';
     document.getElementById('doc-pin-error').style.display = 'none';
+    const numRow = document.getElementById('doc-numero-row');
+    if (type === 'certificat_organisme') {
+        numRow.style.display = 'block';
+        document.getElementById('doc-numero-input').value = _certNumero || '';
+    } else {
+        numRow.style.display = 'none';
+        document.getElementById('doc-numero-input').value = '';
+    }
     document.getElementById('modal-doc-upload').style.display = 'flex';
 }
 
@@ -835,11 +861,13 @@ async function confirmerUploadDoc() {
     }
     const type = document.getElementById('doc-upload-type').value;
     const dateVal = document.getElementById('doc-validite-input').value;
+    const numCert = document.getElementById('doc-numero-input').value;
     const file = _docUploadInput.files[0];
     const formData = new FormData();
     formData.append('file', file);
     let url = `/api/upload/document-officiel?type=${encodeURIComponent(type)}&pin=${encodeURIComponent(pin)}`;
     if (dateVal) url += `&date_validite=${encodeURIComponent(dateVal)}`;
+    if (type === 'certificat_organisme' && numCert) url += `&numero_certificat=${encodeURIComponent(numCert)}`;
     fermerDocUpload();
     const resp = await fetch(url, { method: 'POST', body: formData });
     if (resp.ok) {
@@ -862,6 +890,18 @@ function supprimerDocument(type, nom) {
             const d = await resp.json().catch(() => ({}));
             alert('Erreur : ' + (d.detail || 'inconnue'));
         }
+    });
+}
+
+function enregistrerNumeroCertificat() {
+    const num = document.getElementById('input-num-cert').value;
+    demanderPin('Enregistrer le numéro de certificat ?', async (pin) => {
+        const resp = await fetch(
+            `/api/upload/document-officiel/certificat_organisme/numero?pin=${encodeURIComponent(pin)}&numero_certificat=${encodeURIComponent(num)}`,
+            { method: 'PUT' }
+        );
+        if (resp.ok) { chargerDocuments(); }
+        else alert('Erreur lors de l\'enregistrement');
     });
 }
 </script>

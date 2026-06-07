@@ -35,6 +35,7 @@ try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS date_validite TIMESTAMP"))
         _conn.execute(text("ALTER TABLE document_officiel DROP COLUMN IF EXISTS date_upload"))
+        _conn.execute(text("ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS numero_certificat VARCHAR(100)"))
         _conn.commit()
 except Exception:
     pass
@@ -151,8 +152,18 @@ def _get_logo_organisme():
     except Exception:
         return ""
 
+def _get_numero_certificat():
+    try:
+        db = SessionLocal()
+        doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == 'certificat_organisme').first()
+        db.close()
+        return doc.numero_certificat if doc and doc.numero_certificat else ""
+    except Exception:
+        return ""
+
 templates.env.globals['nom_organisme'] = _get_nom_organisme
 templates.env.globals['logo_organisme'] = _get_logo_organisme
+templates.env.globals['numero_certificat'] = _get_numero_certificat
 
 class CSPMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: StarletteRequest, call_next):

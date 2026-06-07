@@ -156,7 +156,8 @@ def get_documents_officiels():
                     "type": d.type,
                     "nom_fichier": d.nom_fichier,
                     "has_file": bool(d.contenu_pdf),
-                    "date_validite": d.date_validite.strftime("%Y-%m-%d") if d.date_validite else None
+                    "date_validite": d.date_validite.strftime("%Y-%m-%d") if d.date_validite else None,
+                    "numero_certificat": d.numero_certificat or ""
                 }
                 for d in docs
             ]
@@ -165,8 +166,28 @@ def get_documents_officiels():
         db.close()
 
 
+@router.put("/document-officiel/{type}/numero")
+def enregistrer_numero_certificat(type: str, pin: str, numero_certificat: str = None):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if type != "certificat_organisme":
+        raise HTTPException(status_code=400, detail="Numéro applicable au certificat organisme uniquement")
+    from app.models.document_officiel import DocumentOfficiel
+    db = SessionLocal()
+    try:
+        doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
+        if not doc:
+            db.add(DocumentOfficiel(type=type, numero_certificat=numero_certificat))
+        else:
+            doc.numero_certificat = numero_certificat
+        db.commit()
+    finally:
+        db.close()
+    return {"message": "Numéro enregistré"}
+
 @router.post("/document-officiel")
-async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(...), date_validite: str = None):
+async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(...), date_validite: str = None, numero_certificat: str = None):
     PIN_SECRET = "1505"
     if pin != PIN_SECRET:
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
@@ -192,8 +213,10 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
             doc.contenu_pdf = contenu_b64
             doc.nom_fichier = file.filename
             doc.date_validite = dv
+            if numero_certificat is not None:
+                doc.numero_certificat = numero_certificat
         else:
-            db.add(DocumentOfficiel(type=type, contenu_pdf=contenu_b64, nom_fichier=file.filename, date_validite=dv))
+            db.add(DocumentOfficiel(type=type, contenu_pdf=contenu_b64, nom_fichier=file.filename, date_validite=dv, numero_certificat=numero_certificat))
         db.commit()
     finally:
         db.close()

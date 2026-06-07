@@ -9,3 +9,4 @@ class DocumentOfficiel(Base):
     contenu_pdf = Column(Text, nullable=True)
     nom_fichier = Column(String, nullable=True)
     date_validite = Column(DateTime, nullable=True)
+    numero_certificat = Column(String(100), nullable=True)

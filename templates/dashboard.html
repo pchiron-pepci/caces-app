@@ -128,7 +128,12 @@
                 {% for type_key, type_label in docs_types %}
                 {% set doc = docs.get(type_key) %}
                 <tr>
-                    <td><strong>{{ type_label }}</strong></td>
+                    <td>
+                        <strong>{{ type_label }}</strong>
+                        {% if type_key == 'certificat_organisme' and doc and doc.numero_certificat %}
+                            <div style="font-size:12px; color:#666; margin-top:2px;">N° {{ doc.numero_certificat }}</div>
+                        {% endif %}
+                    </td>
                     {% if doc and doc.contenu_pdf %}
                     <td>{{ doc.nom_fichier }}</td>
                     <td>

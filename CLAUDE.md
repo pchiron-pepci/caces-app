@@ -146,6 +146,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `CarteTesteur` | `carte_testeur` | multi-cartes par testeur, soft delete (`actif`) ; champs : `famille`, `nom_fichier`, `contenu_pdf` base64, `date_upload` |
 | `ConfigOrganisme` | `config_organisme` | singleton (1 ligne) ; `nom_organisme`, `logo_base64` (image base64), `logo_nom` ; affiché dans sidebar via globals Jinja2 `nom_organisme()` et `logo_organisme()` |
 | `Stagiaire` | `stagiaires` | soft delete (`actif`) |
+| `DocumentOfficiel` | `document_officiel` | singleton par type (`certificat_organisme`, `attestation_assurance`, `procedure_interne`) ; champs : `contenu_pdf` base64, `nom_fichier`, `date_validite`, `numero_certificat` (certificat_organisme uniquement) |
 | `GrilleTheorie` | `grilles_theorie` | grilles INRS |
 | `ReponseGrille` | `reponses_grille` | questions par grille |
 

@@ -40,8 +40,9 @@
                 ⚙️ Administration
             </a>
         </nav>
+        {% set _num_cert = numero_certificat() %}
         <div class="sidebar-footer">
-            <div class="cert-badge">N° D-552-06</div>
+            {% if _num_cert %}<div class="cert-badge">N° {{ _num_cert }}</div>{% endif %}
             <div class="cert-date">Valide jusqu'au 13/06/2028</div>
         </div>
     </div>
