@@ -42,6 +42,21 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 
+    // ── Rouvrir ────────────────────────────────────────────────────────────
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.nc-rouvrir-btn');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const pin = prompt('Code PIN administrateur requis pour rouvrir :');
+        if (pin === null) return;
+        fetch('/api/non-conformites/' + id + '/rouvrir?pin=' + encodeURIComponent(pin), { method: 'PATCH' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.detail) { alert('Erreur : ' + data.detail); return; }
+                location.reload();
+            });
+    });
+
     // ── Sans objet ─────────────────────────────────────────────────────────
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.nc-sans-objet-btn');

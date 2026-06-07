@@ -119,11 +119,13 @@
         </div>
         {% endif %}
 
-        <div style="display:flex; gap:8px; margin-top:4px;">
+        <div style="display:flex; gap:8px; margin-top:4px; flex-wrap:wrap;">
             <button class="btn btn-secondary nc-edit-btn" data-id="{{ nc.id }}" style="font-size:13px;">✏️ Modifier</button>
             {% if nc.statut not in ['cloture', 'sans_objet'] %}
             <button class="btn btn-secondary nc-cloturer-btn" data-id="{{ nc.id }}" style="font-size:13px; background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7;">✅ Clôturer</button>
             <button class="btn btn-secondary nc-sans-objet-btn" data-id="{{ nc.id }}" style="font-size:13px; background:#f5f5f5; color:#757575; border-color:#ddd;">— Sans objet</button>
+            {% else %}
+            <button class="btn btn-secondary nc-rouvrir-btn" data-id="{{ nc.id }}" style="font-size:13px; background:#e8eaf6; color:#1a237e; border-color:#9fa8da;">🔄 Rouvrir</button>
             {% endif %}
         </div>
     </div>

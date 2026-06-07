@@ -98,6 +98,20 @@ def cloturer_nc(id: int, pin: str, db: Session = Depends(get_db)):
     return {"message": "Non-conformité clôturée"}
 
 
+@router.patch("/{id}/rouvrir")
+def rouvrir_nc(id: int, pin: str, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    nc = db.query(NonConformite).filter(NonConformite.id == id).first()
+    if not nc:
+        raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    nc.statut = "ouvert"
+    nc.date_cloture = None
+    db.commit()
+    return {"message": "Non-conformité réouverte"}
+
+
 @router.patch("/{id}/sans-objet")
 def sans_objet_nc(id: int, pin: str, db: Session = Depends(get_db)):
     PIN_SECRET = "1505"
