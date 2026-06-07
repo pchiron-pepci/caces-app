@@ -38,8 +38,11 @@
                 <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Date habilitation</th><th>Actions</th></tr>
             </thead>
             <tbody>
+                {% set ns1 = namespace(prev_famille='') %}
                 {% for c in categories %}{% if c.pepci_habilite and not c.est_option %}
-                <tr>
+                {% set is_new1 = ns1.prev_famille and ns1.prev_famille != c.famille_code %}
+                {% set ns1.prev_famille = c.famille_code %}
+                <tr style="{{ 'border-top:2px solid #1a237e;' if is_new1 else '' }}{{ 'background-color:#eef0fb;' if is_new1 else '' }}">
                     <td><strong>{{ c.famille_code }}</strong></td>
                     <td><span class="badge blue">{{ c.code }}</span></td>
                     <td>{{ c.libelle }}</td>
@@ -59,8 +62,11 @@
                     <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
+                    {% set ns2 = namespace(prev_famille='') %}
                     {% for c in categories %}{% if not c.pepci_habilite and not c.est_option %}
-                    <tr>
+                    {% set is_new2 = ns2.prev_famille and ns2.prev_famille != c.famille_code %}
+                    {% set ns2.prev_famille = c.famille_code %}
+                    <tr style="{{ 'border-top:2px solid #1a237e;' if is_new2 else '' }}{{ 'background-color:#eef0fb;' if is_new2 else '' }}">
                         <td><strong>{{ c.famille_code }}</strong></td>
                         <td><span class="badge orange">{{ c.code }}</span></td>
                         <td>{{ c.libelle }}</td>
@@ -102,9 +108,9 @@
                 {% set ns = namespace(prev_famille='') %}
                 {% for h in t.habilitations %}
                 {% set h_opts = options_habs.get(h.id, []) %}
-                {% set sep = 'border-top:2px solid #e8ecf4;' if ns.prev_famille and ns.prev_famille != h.famille else '' %}
+                {% set is_new_famille = ns.prev_famille and ns.prev_famille != h.famille %}
                 {% set ns.prev_famille = h.famille %}
-                <tr style="{{ 'opacity:0.5;' if not h.actif else '' }}{{ sep }}">
+                <tr style="{{ 'opacity:0.5;' if not h.actif else '' }}{{ 'border-top:2px solid #1a237e;' if is_new_famille else '' }}{{ 'background-color:#eef0fb;' if is_new_famille else '' }}">
                     <td><strong>{{ h.famille }}</strong></td>
                     <td><span class="badge blue">{{ h.categorie }}</span></td>
                     <td>
