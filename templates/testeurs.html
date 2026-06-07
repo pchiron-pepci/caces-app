@@ -20,11 +20,14 @@
             <div style="flex:1; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                 <span style="font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700;">{{ t.nom }} {{ t.prenom }}</span>
                 {% if t.statut == 'interne' %}
-                    <span class="badge blue">Interne{% if t.entreprise %} | {{ t.entreprise }}{% endif %}</span>
+                    <span class="badge blue">Interne</span>
                 {% elif t.statut == 'independant' %}
-                    <span class="badge orange">Indépendant{% if t.entreprise %} | {{ t.entreprise }}{% endif %}</span>
+                    <span class="badge orange">Indépendant</span>
                 {% else %}
-                    <span class="badge green">Entreprise{% if t.entreprise %} | {{ t.entreprise }}{% endif %}</span>
+                    <span class="badge green">Entreprise</span>
+                {% endif %}
+                {% if t.entreprise %}
+                    <span style="font-size:13px; color:#888;">{{ t.entreprise }}</span>
                 {% endif %}
                 {% if t.numero_inrs %}
                     <span style="font-size:12px; color:#666;">N° {{ t.numero_inrs }}</span>
