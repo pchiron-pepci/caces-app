@@ -20,11 +20,11 @@
             <div style="flex:1; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                 <span style="font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700;">{{ t.nom }} {{ t.prenom }}</span>
                 {% if t.etat == 'suspendu' %}
-                    <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">⚠️ Suspendu</span>
+                    <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;margin-left:12px;margin-right:12px;">⚠️ Suspendu</span>
                 {% elif t.etat == 'annule' %}
-                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Annulé</span>
+                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;margin-left:12px;margin-right:12px;">❌ Annulé</span>
                 {% else %}
-                    <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">✅ Actif</span>
+                    <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;margin-left:12px;margin-right:12px;">✅ Actif</span>
                 {% endif %}
                 {% if t.statut == 'interne' %}
                     <span class="badge blue">Interne{% if t.entreprise %} | {{ t.entreprise }}{% endif %}</span>
