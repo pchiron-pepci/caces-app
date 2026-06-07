@@ -92,7 +92,7 @@ let idHabASupprimer = null;
 function ouvrirFormulaire() {
     document.getElementById('modal-title').textContent = 'Nouveau testeur';
     document.getElementById('testeur-id').value = '';
-    ['nom','prenom','entreprise','email','tel','inrs','expiration','note','habilitation','visite','formation','controle'].forEach(f => {
+    ['nom','prenom','entreprise','email','tel','inrs','note','habilitation','expiration','visite','formation','controle'].forEach(f => {
         document.getElementById('f-' + f).value = '';
     });
     document.getElementById('f-statut').value = 'interne';
