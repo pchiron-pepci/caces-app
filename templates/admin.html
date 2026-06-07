@@ -363,13 +363,6 @@
                 <label>Date échéance</label>
                 <input type="date" id="hab-date-exp">
             </div>
-            <div class="form-field" style="grid-column: span 2;">
-                <label>Options</label>
-                <div style="display:flex; gap:16px; margin-top:8px;">
-                    <label style="text-transform:none; font-size:14px;"><input type="checkbox" id="hab-pe"> Porte-Engins</label>
-                    <label style="text-transform:none; font-size:14px;"><input type="checkbox" id="hab-tel"> Télécommande</label>
-                </div>
-            </div>
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" onclick="sauvegarderHabilitation()">💾 Sauvegarder</button>
@@ -533,12 +526,10 @@ function ouvrirHabilitation(testeurId, nom) {
     document.getElementById('hab-categorie').disabled = false;
     document.getElementById('hab-date').value = '';
     document.getElementById('hab-date-exp').value = '';
-    document.getElementById('hab-pe').checked = false;
-    document.getElementById('hab-tel').checked = false;
     document.getElementById('modal-hab').style.display = 'flex';
 }
 
-async function editerHabilitation(id, famille, categorie, dateInt, dateExp, pe, tel) {
+async function editerHabilitation(id, famille, categorie, dateInt, dateExp) {
     document.getElementById('hab-title').textContent = `Modifier — ${famille} ${categorie}`;
     document.getElementById('hab-id').value = id;
     document.getElementById('hab-testeur-id').value = '';
@@ -549,8 +540,6 @@ async function editerHabilitation(id, famille, categorie, dateInt, dateExp, pe, 
     document.getElementById('hab-categorie').disabled = true;
     document.getElementById('hab-date').value = dateInt;
     document.getElementById('hab-date-exp').value = dateExp;
-    document.getElementById('hab-pe').checked = pe;
-    document.getElementById('hab-tel').checked = tel;
     document.getElementById('modal-hab').style.display = 'flex';
 }
 
@@ -567,9 +556,7 @@ async function sauvegarderHabilitation() {
     if (habId) {
         const data = {
             date_integration: document.getElementById('hab-date').value,
-            date_expiration: document.getElementById('hab-date-exp').value || null,
-            option_pe: document.getElementById('hab-pe').checked,
-            option_tel: document.getElementById('hab-tel').checked
+            date_expiration: document.getElementById('hab-date-exp').value || null
         };
         if (!data.date_integration) { alert('Date intégration obligatoire !'); return; }
         const resp = await fetch(`/admin/habilitation/${habId}`, {
@@ -585,9 +572,7 @@ async function sauvegarderHabilitation() {
             famille: document.getElementById('hab-famille').value,
             categorie: document.getElementById('hab-categorie').value,
             date_integration: document.getElementById('hab-date').value,
-            date_expiration: document.getElementById('hab-date-exp').value || null,
-            option_pe: document.getElementById('hab-pe').checked,
-            option_tel: document.getElementById('hab-tel').checked
+            date_expiration: document.getElementById('hab-date-exp').value || null
         };
         if (!data.famille || !data.categorie || !data.date_integration) {
             alert('Famille, catégorie et date intégration sont obligatoires !'); return;
