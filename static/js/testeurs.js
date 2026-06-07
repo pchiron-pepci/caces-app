@@ -76,6 +76,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // --- Autorisation de conduite ---
+    document.getElementById('btn-upload-autorisation').addEventListener('click', function() {
+        document.getElementById('modal-autorisation-file').click();
+    });
+    document.getElementById('modal-autorisation-file').addEventListener('change', function() {
+        if (!this.files || this.files.length === 0) return;
+        const file = this.files[0];
+        const testeurId = document.getElementById('testeur-id').value;
+        ouvrirPinAction(`Uploader "${file.name}" comme autorisation de conduite ?`, async function(pin) {
+            const fd = new FormData();
+            fd.append('file', file);
+            return fetch(`/api/upload/autorisation-conduite/${testeurId}?pin=${encodeURIComponent(pin)}`, { method: 'POST', body: fd });
+        });
+    });
+    document.getElementById('btn-suppr-autorisation').addEventListener('click', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        const nom = document.getElementById('modal-autorisation-info').textContent;
+        ouvrirPinAction(`Supprimer "${nom}" ?`, async function(pin) {
+            return fetch(`/api/upload/autorisation-conduite/${testeurId}?pin=${pin}`, { method: 'DELETE' });
+        });
+    });
+
     // --- Cartes CACES® ---
     document.getElementById('btn-modal-ajouter-carte').addEventListener('click', function() {
         carteAjouterTesteurId = document.getElementById('testeur-id').value;
@@ -122,7 +144,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.dataset.formation, btn.dataset.controle, btn.dataset.note,
                 btn.dataset.hasPrev, btn.dataset.prevNom,
                 btn.dataset.hasVisite, btn.dataset.visiteNom,
-                btn.dataset.hasEval, btn.dataset.evalNom, btn.dataset.evalDate);
+                btn.dataset.hasEval, btn.dataset.evalNom, btn.dataset.evalDate,
+                btn.dataset.visiteDate,
+                btn.dataset.hasAutorisation, btn.dataset.autorisationNom);
         }
         if (btn.dataset.action === 'archiver') {
             archiver(btn.dataset.id, btn.dataset.nom);
@@ -201,7 +225,7 @@ function ouvrirFormulaire() {
     document.getElementById('modal').style.display = 'flex';
 }
 
-function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasVisite, visiteNom, hasEval, evalNom, evalDate) {
+function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasVisite, visiteNom, hasEval, evalNom, evalDate, visiteDate, hasAutorisation, autorisationNom) {
     document.getElementById('modal-title').textContent = 'Modifier testeur';
     document.getElementById('testeur-id').value = id;
     document.getElementById('f-nom').value = nom;
@@ -231,7 +255,7 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     }
 
     // Visite médicale
-    document.getElementById('modal-visite-date').value = visite || '';
+    document.getElementById('modal-visite-date').value = visiteDate || '';
     if (hasVisite === 'true') {
         document.getElementById('modal-visite-info').textContent = visiteNom || 'visite.pdf';
         document.getElementById('modal-visite-dl').href = `/api/upload/visite-medicale/${id}/download`;
@@ -254,6 +278,18 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
         document.getElementById('modal-eval-info').textContent = 'Aucune évaluation';
         document.getElementById('modal-eval-dl').style.display = 'none';
         document.getElementById('btn-suppr-eval').style.display = 'none';
+    }
+
+    // Autorisation de conduite
+    if (hasAutorisation === 'true') {
+        document.getElementById('modal-autorisation-info').textContent = autorisationNom || 'autorisation.pdf';
+        document.getElementById('modal-autorisation-dl').href = `/api/upload/autorisation-conduite/${id}/download`;
+        document.getElementById('modal-autorisation-dl').style.display = '';
+        document.getElementById('btn-suppr-autorisation').style.display = '';
+    } else {
+        document.getElementById('modal-autorisation-info').textContent = 'Aucune autorisation';
+        document.getElementById('modal-autorisation-dl').style.display = 'none';
+        document.getElementById('btn-suppr-autorisation').style.display = 'none';
     }
 
     // Cartes CACES®

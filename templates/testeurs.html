@@ -41,17 +41,18 @@
                 {% endif %}
                 <button data-action="controle-editer" data-id="{{ t.id }}" data-controle="{{ t.date_prochain_controle or '' }}"
                     style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:#888;" title="Modifier prochain contrôle">✏️</button>
-                {% if t.visite_medicale %}
-                    {% set age_v = (today - t.visite_medicale).days %}
+                {% set visite_date_affichee = t.visite_medicale_date or t.visite_medicale %}
+                {% if visite_date_affichee %}
+                    {% set age_v = (today - visite_date_affichee).days %}
                     {% if age_v < 365 %}
-                        <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">Visite : {{ t.visite_medicale.strftime('%d/%m/%Y') }}</span>
+                        <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>
                     {% elif age_v < 730 %}
-                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">Visite : {{ t.visite_medicale.strftime('%d/%m/%Y') }}</span>
+                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>
                     {% else %}
-                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite : {{ t.visite_medicale.strftime('%d/%m/%Y') }}</span>
+                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite médicale : {{ visite_date_affichee.strftime('%d/%m/%Y') }}</span>
                     {% endif %}
                 {% else %}
-                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite : ❌</span>
+                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">Visite médicale : ❌</span>
                 {% endif %}
             </div>
             <div style="display:flex; gap:6px; flex-shrink:0;">
@@ -77,7 +78,10 @@
                     data-visite-nom="{{ t.visite_medicale_nom or '' }}"
                     data-has-eval="{{ 'true' if t.evaluation_pdf else 'false' }}"
                     data-eval-nom="{{ t.evaluation_nom or '' }}"
-                    data-eval-date="{{ t.evaluation_date or '' }}">✏️</button>
+                    data-eval-date="{{ t.evaluation_date or '' }}"
+                    data-visite-date="{{ t.visite_medicale_date or '' }}"
+                    data-has-autorisation="{{ 'true' if t.autorisation_conduite_pdf else 'false' }}"
+                    data-autorisation-nom="{{ t.autorisation_conduite_nom or '' }}">✏️</button>
                 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                     data-action="archiver"
                     data-id="{{ t.id }}"
@@ -132,7 +136,7 @@
                     <div style="color:#888; font-size:12px;">—</div>
                 {% endif %}
             </div>
-            <!-- Dernière évaluation -->
+            <!-- Dernière évaluation + Autorisation de conduite -->
             <div style="padding-left:16px;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Dernière évaluation</div>
                 {% if t.evaluation_pdf %}
@@ -148,6 +152,12 @@
                     {% else %}
                         <a href="/api/upload/evaluation/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.evaluation_nom or 'evaluation.pdf' }}</a>
                     {% endif %}
+                {% else %}
+                    <span style="color:#888; font-size:12px;">—</span>
+                {% endif %}
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-top:12px; margin-bottom:8px;">Autorisation de conduite</div>
+                {% if t.autorisation_conduite_pdf %}
+                    <a href="/api/upload/autorisation-conduite/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.autorisation_conduite_nom or 'autorisation.pdf' }}</a>
                 {% else %}
                     <span style="color:#888; font-size:12px;">—</span>
                 {% endif %}
@@ -270,6 +280,16 @@
                         <input type="date" id="modal-eval-date" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:12px;">
                         <input type="file" id="modal-eval-file" accept=".pdf" style="display:none;">
                         <button class="btn btn-secondary" id="btn-upload-eval" style="padding:4px 10px;font-size:11px;">📤 Uploader</button>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Autorisation de conduite</div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span id="modal-autorisation-info" style="font-size:12px; color:#666;">Aucune autorisation</span>
+                        <a id="modal-autorisation-dl" href="#" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;display:none;" target="_blank">📥</a>
+                        <button class="btn btn-danger" id="btn-suppr-autorisation" style="padding:4px 10px;font-size:11px;display:none;">🗑️ Supprimer</button>
+                        <input type="file" id="modal-autorisation-file" accept=".pdf" style="display:none;">
+                        <button class="btn btn-secondary" id="btn-upload-autorisation" style="padding:4px 10px;font-size:11px;">📤 Uploader</button>
                     </div>
                 </div>
             </div>

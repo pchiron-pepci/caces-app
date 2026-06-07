@@ -486,7 +486,7 @@ async def upload_visite_medicale(testeur_id: int, pin: str, date_visite: str = N
         t.visite_medicale_nom = file.filename
         if date_visite:
             try:
-                t.visite_medicale = datetime.strptime(date_visite, "%Y-%m-%d").date()
+                t.visite_medicale_date = datetime.strptime(date_visite, "%Y-%m-%d").date()
             except ValueError:
                 pass
         db.commit()
@@ -593,6 +593,65 @@ def supprimer_evaluation(testeur_id: int, pin: str):
     finally:
         db.close()
     return {"message": "Évaluation supprimée"}
+
+
+# --- Autorisation de conduite testeur (stockage base64 PostgreSQL) ---
+
+@router.post("/autorisation-conduite/{testeur_id}")
+async def upload_autorisation_conduite(testeur_id: int, pin: str, file: UploadFile = File(...)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Format PDF uniquement")
+    contents = await file.read()
+    contenu_b64 = base64.b64encode(contents).decode()
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t:
+            raise HTTPException(status_code=404, detail="Testeur non trouvé")
+        t.autorisation_conduite_pdf = contenu_b64
+        t.autorisation_conduite_nom = file.filename
+        db.commit()
+    finally:
+        db.close()
+    return {"message": "Autorisation de conduite uploadée"}
+
+
+@router.get("/autorisation-conduite/{testeur_id}/download")
+def telecharger_autorisation_conduite(testeur_id: int):
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t or not t.autorisation_conduite_pdf:
+            raise HTTPException(status_code=404, detail="Autorisation non disponible")
+        contenu = base64.b64decode(t.autorisation_conduite_pdf)
+        nom = t.autorisation_conduite_nom or "autorisation.pdf"
+    finally:
+        db.close()
+    return Response(content=contenu, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'})
+
+
+@router.delete("/autorisation-conduite/{testeur_id}")
+def supprimer_autorisation_conduite(testeur_id: int, pin: str):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if t:
+            t.autorisation_conduite_pdf = None
+            t.autorisation_conduite_nom = None
+            db.commit()
+    finally:
+        db.close()
+    return {"message": "Autorisation supprimée"}
 
 
 @router.get("/liste-images")

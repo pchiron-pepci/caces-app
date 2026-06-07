@@ -77,9 +77,12 @@ try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_pdf TEXT"))
         _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_nom VARCHAR"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_date DATE"))
         _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_pdf TEXT"))
         _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_nom VARCHAR"))
         _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_date DATE"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_pdf TEXT"))
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_nom VARCHAR"))
         _conn.commit()
 except Exception:
     pass

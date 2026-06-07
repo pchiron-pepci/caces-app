@@ -142,7 +142,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `SessionEpreuve` | `sessions_epreuves` | résultat pratique par catégorie |
 | `ResultatTheorie` | `resultats_theorie` | jamais écrasé |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete |
-| `Testeur` | `testeurs` | soft delete (`actif`) ; docs PDF en base64 : `attestation_prevention_pdf/nom/date`, `visite_medicale_pdf/nom` (date = champ `visite_medicale`), `evaluation_pdf/nom/date`, `carte_pdf/carte_nom_fichier` (legacy) |
+| `Testeur` | `testeurs` | soft delete (`actif`) ; docs PDF en base64 : `attestation_prevention_pdf/nom/date`, `visite_medicale_pdf/nom/visite_medicale_date`, `evaluation_pdf/nom/evaluation_date`, `autorisation_conduite_pdf/nom`, `carte_pdf/carte_nom_fichier` (legacy) |
 | `CarteTesteur` | `carte_testeur` | multi-cartes par testeur, soft delete (`actif`) ; champs : `famille`, `nom_fichier`, `contenu_pdf` base64, `date_upload` |
 | `Stagiaire` | `stagiaires` | soft delete (`actif`) |
 | `GrilleTheorie` | `grilles_theorie` | grilles INRS |
