@@ -251,3 +251,36 @@ def supprimer_logo_organisme(pin: str, db: Session = Depends(get_db)):
         config.logo_nom = None
         db.commit()
     return {"message": "Logo supprimé"}
+
+
+# --- Options catégories ---
+
+class OptionsUpdate(BaseModel):
+    codes: List[str]
+
+@router.get("/options/{famille}/{categorie}")
+def get_options_disponibles(famille: str, categorie: str, db: Session = Depends(get_db)):
+    from app.models.option_categorie import OptionCategorie
+    opts = db.query(OptionCategorie).filter(
+        OptionCategorie.famille == famille,
+        OptionCategorie.categorie == categorie
+    ).all()
+    return [{"code": o.code_option, "libelle": o.libelle_option} for o in opts]
+
+@router.get("/habilitation/{hab_id}/options")
+def get_options_habilitation(hab_id: int, db: Session = Depends(get_db)):
+    from app.models.habilitation_option import HabilitationOption
+    opts = db.query(HabilitationOption).filter(HabilitationOption.habilitation_id == hab_id).all()
+    return [o.code_option for o in opts]
+
+@router.put("/habilitation/{hab_id}/options")
+def update_options_habilitation(hab_id: int, pin: str, data: OptionsUpdate, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.habilitation_option import HabilitationOption
+    db.query(HabilitationOption).filter(HabilitationOption.habilitation_id == hab_id).delete()
+    for code in data.codes:
+        db.add(HabilitationOption(habilitation_id=hab_id, code_option=code))
+    db.commit()
+    return {"message": "Options mises à jour"}

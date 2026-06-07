@@ -76,6 +76,10 @@
 
 <!-- TAB HABILITATIONS TESTEURS -->
 <div id="tab-habilitations" style="display:none;">
+    <div style="background:#f5f7fa; border:1px solid #e8ecf4; border-radius:8px; padding:10px 16px; margin-bottom:16px; font-size:12px; color:#555;">
+        <strong>Légende options :</strong>
+        PE = Porte-engins &nbsp;·&nbsp; TEL = Télécommande &nbsp;·&nbsp; CC = Conduite cabine &nbsp;·&nbsp; TR = Translation sur rails &nbsp;·&nbsp; CEC = Circulation en charge
+    </div>
     {% for t in testeurs %}
     <div class="card" style="margin-bottom:16px;">
         <div class="card-header">
@@ -87,8 +91,7 @@
                 <tr>
                     <th>Famille</th>
                     <th>Catégorie</th>
-                    <th>PE</th>
-                    <th>Tel</th>
+                    <th>Options</th>
                     <th>Date intégration</th>
                     <th>Date échéance</th>
                     <th>Statut</th>
@@ -97,11 +100,21 @@
             </thead>
             <tbody>
                 {% for h in t.habilitations %}
+                {% set h_opts = options_habs.get(h.id, []) %}
                 <tr style="{{ 'opacity:0.5;' if not h.actif else '' }}">
                     <td><strong>{{ h.famille }}</strong></td>
                     <td><span class="badge blue">{{ h.categorie }}</span></td>
-                    <td>{{ '✅' if h.option_pe else '—' }}</td>
-                    <td>{{ '✅' if h.option_tel else '—' }}</td>
+                    <td>
+                        {% if h_opts %}
+                            <span style="font-size:12px; cursor:pointer; color:#1a73e8;"
+                                onclick="ouvrirOptionsHabilitation({{ h.id }}, '{{ h.famille }}', '{{ h.categorie }}')">
+                                {{ h_opts | join(' · ') }}
+                            </span>
+                        {% else %}
+                            <span style="color:#bbb; font-size:12px; cursor:pointer;"
+                                onclick="ouvrirOptionsHabilitation({{ h.id }}, '{{ h.famille }}', '{{ h.categorie }}')">—</span>
+                        {% endif %}
+                    </td>
                     <td>{{ h.date_integration }}</td>
                     <td>
                         {% if h.date_expiration %}
@@ -119,9 +132,7 @@
                                 '{{ h.famille }}',
                                 '{{ h.categorie }}',
                                 '{{ h.date_integration }}',
-                                '{{ h.date_expiration or '' }}',
-                                {{ 'true' if h.option_pe else 'false' }},
-                                {{ 'true' if h.option_tel else 'false' }}
+                                '{{ h.date_expiration or '' }}'
                             )">✏️</button>
                         {% if h.actif %}
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
@@ -139,6 +150,18 @@
         </table>
     </div>
     {% endfor %}
+
+    <!-- Modal options habilitation -->
+    <div id="modal-options-hab" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; padding:28px; min-width:320px; max-width:420px; width:90%;">
+            <h3 id="modal-options-titre" style="margin:0 0 16px; font-size:16px;">Options habilitation</h3>
+            <div id="modal-options-body" style="margin-bottom:20px;"></div>
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="fermerModalOptions()">Annuler</button>
+                <button class="btn btn-primary" onclick="sauvegarderOptions()">💾 Sauvegarder (PIN)</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- TAB LIEUX -->
@@ -717,6 +740,55 @@ function desactiverLieu(id, nom) {
 
 function sauvegarderParametres() {
     alert('Paramètres sauvegardés !');
+}
+
+// --- Options habilitation ---
+let _optionsHabId = null;
+
+async function ouvrirOptionsHabilitation(habId, famille, categorie) {
+    _optionsHabId = habId;
+    document.getElementById('modal-options-titre').textContent = `Options — ${famille} ${categorie}`;
+    document.getElementById('modal-options-body').innerHTML = '<p style="color:#888;">Chargement...</p>';
+    document.getElementById('modal-options-hab').style.display = 'flex';
+
+    const [respDispo, respActives] = await Promise.all([
+        fetch(`/admin/options/${encodeURIComponent(famille)}/${encodeURIComponent(categorie)}`),
+        fetch(`/admin/habilitation/${habId}/options`)
+    ]);
+    const dispo = await respDispo.json();
+    const actives = await respActives.json();
+
+    if (!dispo.length) {
+        document.getElementById('modal-options-body').innerHTML = '<p style="color:#888; font-style:italic;">Aucune option disponible pour cette catégorie.</p>';
+        return;
+    }
+    const html = dispo.map(o => `
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; font-size:14px;">
+            <input type="checkbox" value="${o.code}" ${actives.includes(o.code) ? 'checked' : ''}
+                style="width:16px; height:16px; cursor:pointer;">
+            <strong>${o.code}</strong> — ${o.libelle}
+        </label>
+    `).join('');
+    document.getElementById('modal-options-body').innerHTML = html;
+}
+
+function fermerModalOptions() {
+    document.getElementById('modal-options-hab').style.display = 'none';
+    _optionsHabId = null;
+}
+
+function sauvegarderOptions() {
+    const codes = Array.from(document.querySelectorAll('#modal-options-body input[type=checkbox]:checked'))
+        .map(cb => cb.value);
+    demanderPin(`Enregistrer les options pour cette habilitation ?`, async (pin) => {
+        const resp = await fetch(`/admin/habilitation/${_optionsHabId}/options?pin=${encodeURIComponent(pin)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codes })
+        });
+        if (resp.ok) { fermerModalOptions(); location.reload(); }
+        else { alert('Erreur lors de la sauvegarde'); }
+    });
 }
 
 async function chargerConfigOrganisme() {

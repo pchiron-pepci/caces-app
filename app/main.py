@@ -23,6 +23,7 @@ from app.models.association_log import AssociationLog
 from app.models.document_officiel import DocumentOfficiel
 from app.models.carte_testeur import CarteTesteur
 from app.models.config_organisme import ConfigOrganisme
+from app.models.habilitation_option import HabilitationOption
 
 from sqlalchemy import text
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
@@ -114,6 +115,34 @@ try:
         _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS audit_interne_date DATE"))
         _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS audit_externe_date DATE"))
         _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS revue_direction_date DATE"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS option_categorie (
+                id SERIAL PRIMARY KEY,
+                famille VARCHAR(10) NOT NULL,
+                categorie VARCHAR(10) NOT NULL,
+                code_option VARCHAR(10) NOT NULL,
+                libelle_option VARCHAR(100) NOT NULL
+            )
+        """))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS habilitation_option (
+                id SERIAL PRIMARY KEY,
+                habilitation_id INTEGER NOT NULL REFERENCES habilitations_testeurs(id),
+                code_option VARCHAR(10) NOT NULL
+            )
+        """))
         _conn.commit()
 except Exception:
     pass
@@ -335,6 +364,11 @@ def page_admin(request: Request):
         f = db.query(Famille).filter(Famille.id == c.famille_id).first()
         c.famille_code = f.code if f else "?"
         categories.append(c)
+    # Charger les options actives par habilitation_id
+    all_hab_options = db.query(HabilitationOption).all()
+    options_habs = {}
+    for ho in all_hab_options:
+        options_habs.setdefault(ho.habilitation_id, []).append(ho.code_option)
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -344,7 +378,8 @@ def page_admin(request: Request):
             "familles": familles,
             "categories": categories,
             "testeurs": testeurs_list,
-            "lieux": lieux
+            "lieux": lieux,
+            "options_habs": options_habs
         }
     )
 
