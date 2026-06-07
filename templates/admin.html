@@ -10,7 +10,7 @@
 </div>
 
 <div style="display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
-    <button class="tab-btn active-tab" onclick="showTab('cartographie', this)">🗺️ Cartographie PEPCI</button>
+    <button class="tab-btn active-tab" onclick="showTab('cartographie', this)">🗺️ Cartographie</button>
     <button class="tab-btn" onclick="showTab('habilitations', this)">👨‍🏫 Habilitations testeurs</button>
     <button class="tab-btn" onclick="showTab('lieux', this)">📍 Lieux</button>
     <button class="tab-btn" onclick="showTab('parametres', this); chargerConfigOrganisme();">⚙️ Paramètres</button>
@@ -38,7 +38,7 @@
                 <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Date habilitation</th><th>Actions</th></tr>
             </thead>
             <tbody>
-                {% for c in categories %}{% if c.pepci_habilite %}
+                {% for c in categories %}{% if c.pepci_habilite and not c.est_option %}
                 <tr>
                     <td><strong>{{ c.famille_code }}</strong></td>
                     <td><span class="badge blue">{{ c.code }}</span></td>
@@ -59,7 +59,7 @@
                     <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
-                    {% for c in categories %}{% if not c.pepci_habilite %}
+                    {% for c in categories %}{% if not c.pepci_habilite and not c.est_option %}
                     <tr>
                         <td><strong>{{ c.famille_code }}</strong></td>
                         <td><span class="badge orange">{{ c.code }}</span></td>
