@@ -20,6 +20,8 @@ class TesteurCreate(BaseModel):
     date_habilitation: Optional[date] = None
     date_expiration_habilitation: Optional[date] = None
     visite_medicale: Optional[date] = None
+    visite_medicale_date: Optional[date] = None
+    evaluation_date: Optional[date] = None
     formation_continue: Optional[date] = None
     date_prochain_controle: Optional[date] = None
     note: Optional[str] = None

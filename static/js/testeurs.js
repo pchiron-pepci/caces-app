@@ -330,6 +330,8 @@ async function sauvegarder() {
         date_habilitation: document.getElementById('f-habilitation').value || null,
         date_expiration_habilitation: document.getElementById('f-expiration').value || null,
         visite_medicale: document.getElementById('f-visite').value || null,
+        visite_medicale_date: document.getElementById('modal-visite-date').value || null,
+        evaluation_date: document.getElementById('modal-eval-date').value || null,
         formation_continue: document.getElementById('f-formation').value || null,
         date_prochain_controle: document.getElementById('f-controle').value || null,
         note: document.getElementById('f-note').value || null
