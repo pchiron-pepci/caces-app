@@ -57,75 +57,63 @@
         {% endif %}
     </div>
 
-    <div class="nc-body" id="nc-body-{{ nc.id }}" style="display:none; border-top:1px solid #e8ecf4; padding:20px;">
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
-            <div>
-                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Origine</div>
-                <div>{% if nc.origine == 'interne' %}Interne
-                    {% elif nc.origine == 'reclamation_client' %}Réclamation client
-                    {% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant
-                    {% elif nc.origine == 'audit' %}Audit
-                    {% else %}{{ nc.origine }}{% endif %}</div>
+    <div class="nc-body" id="nc-body-{{ nc.id }}" style="display:none; border-top:1px solid #e8ecf4; padding:20px 24px;">
+        <div style="display:grid; grid-template-columns:210px 1fr; gap:28px; align-items:start;">
+
+            <!-- Colonne gauche : métadonnées -->
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:3px;">Origine</div>
+                    <div style="font-size:14px;">{% if nc.origine == 'interne' %}Interne{% elif nc.origine == 'reclamation_client' %}Réclamation client{% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant{% elif nc.origine == 'audit' %}Audit{% else %}{{ nc.origine }}{% endif %}</div>
+                </div>
+                <div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:3px;">Type</div>
+                    <div style="font-size:14px;">{% if nc.type_nc == 'incident' %}Incident{% elif nc.type_nc == 'non-conformite' %}Non-conformité{% elif nc.type_nc == 'observation' %}Observation{% else %}{{ nc.type_nc }}{% endif %}</div>
+                </div>
+                <div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:3px;">Déclarant</div>
+                    <div style="font-size:14px;">{% if nc.declarant_id and nc.declarant_id in utilisateurs %}{{ utilisateurs[nc.declarant_id].nom }} {{ utilisateurs[nc.declarant_id].prenom }}{% else %}—{% endif %}</div>
+                </div>
+                <div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:3px;">Date clôture</div>
+                    <div style="font-size:14px;">{% if nc.date_cloture %}{{ nc.date_cloture.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</div>
+                </div>
+                {% if nc.justificatif_nom %}
+                <div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:6px;">Justificatif</div>
+                    <a href="/api/non-conformites/{{ nc.id }}/justificatif" target="_blank"
+                       class="btn btn-secondary" style="font-size:12px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px;">
+                        📄 {{ nc.justificatif_nom }}
+                    </a>
+                </div>
+                {% endif %}
             </div>
-            <div>
-                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Type</div>
-                <div>{% if nc.type_nc == 'incident' %}Incident
-                    {% elif nc.type_nc == 'non-conformite' %}Non-conformité
-                    {% elif nc.type_nc == 'observation' %}Observation
-                    {% else %}{{ nc.type_nc }}{% endif %}</div>
+
+            <!-- Colonne droite : contenus -->
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px;">Description</div>
+                    <div style="white-space:pre-wrap;color:{% if nc.description %}#333{% else %}#aaa{% endif %};font-size:14px;line-height:1.5;">{{ nc.description or '—' }}</div>
+                </div>
+                <div style="background:#f0f4ff;border-left:3px solid #1a237e;padding:10px 14px;border-radius:0 6px 6px 0;">
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1a237e;margin-bottom:4px;">Action préventive</div>
+                    <div style="white-space:pre-wrap;color:{% if nc.action_preventive %}#333{% else %}#aaa{% endif %};font-size:14px;line-height:1.5;">{{ nc.action_preventive or '—' }}</div>
+                </div>
+                <div style="background:#fff8e1;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:0 6px 6px 0;">
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#b45309;margin-bottom:4px;">Action corrective</div>
+                    <div style="white-space:pre-wrap;color:{% if nc.action_corrective %}#333{% else %}#aaa{% endif %};font-size:14px;line-height:1.5;">{{ nc.action_corrective or '—' }}</div>
+                </div>
             </div>
-            <div>
-                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Déclarant</div>
-                <div>{% if nc.declarant_id and nc.declarant_id in utilisateurs %}
-                    {{ utilisateurs[nc.declarant_id].nom }} {{ utilisateurs[nc.declarant_id].prenom }}
-                    {% else %}—{% endif %}</div>
-            </div>
-            {% if nc.date_cloture %}
-            <div>
-                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Date clôture</div>
-                <div>{{ nc.date_cloture.strftime('%d/%m/%Y') }}</div>
-            </div>
-            {% endif %}
         </div>
 
-        {% if nc.description %}
-        <div style="margin-bottom:12px;">
-            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Description</div>
-            <div style="white-space:pre-wrap; color:#333; font-size:14px; line-height:1.5;">{{ nc.description }}</div>
-        </div>
-        {% endif %}
-
-        {% if nc.action_preventive %}
-        <div style="margin-bottom:12px; background:#f0f4ff; border-left:3px solid #1a237e; padding:10px 12px; border-radius:0 6px 6px 0;">
-            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#1a237e; margin-bottom:4px;">Action préventive</div>
-            <div style="white-space:pre-wrap; color:#333; font-size:14px; line-height:1.5;">{{ nc.action_preventive }}</div>
-        </div>
-        {% endif %}
-
-        {% if nc.action_corrective %}
-        <div style="margin-bottom:12px; background:#fff8e1; border-left:3px solid #f59e0b; padding:10px 12px; border-radius:0 6px 6px 0;">
-            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#b45309; margin-bottom:4px;">Action corrective</div>
-            <div style="white-space:pre-wrap; color:#333; font-size:14px; line-height:1.5;">{{ nc.action_corrective }}</div>
-        </div>
-        {% endif %}
-
-        {% if nc.justificatif_nom %}
-        <div style="margin-bottom:12px;">
-            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:6px;">Justificatif</div>
-            <a href="/api/non-conformites/{{ nc.id }}/justificatif" target="_blank"
-               class="btn btn-secondary" style="font-size:12px; padding:5px 12px; display:inline-flex; align-items:center; gap:6px;">
-                📄 {{ nc.justificatif_nom }}
-            </a>
-        </div>
-        {% endif %}
-
-        <div style="display:flex; gap:8px; margin-top:4px; flex-wrap:wrap;">
+        <!-- Boutons alignés à droite -->
+        <div style="display:flex; gap:8px; margin-top:20px; justify-content:flex-end; flex-wrap:wrap;">
             <button class="btn btn-secondary nc-edit-btn" data-id="{{ nc.id }}" style="font-size:13px;">✏️ Modifier</button>
             {% if nc.statut not in ['cloture', 'sans_objet'] %}
-            <button class="btn btn-secondary nc-cloturer-btn" data-id="{{ nc.id }}" style="font-size:13px; background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7;">✅ Clôturer</button>
-            <button class="btn btn-secondary nc-sans-objet-btn" data-id="{{ nc.id }}" style="font-size:13px; background:#f5f5f5; color:#757575; border-color:#ddd;">— Sans objet</button>
+            <button class="btn btn-secondary nc-cloturer-btn" data-id="{{ nc.id }}" style="font-size:13px;background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7;">✅ Clôturer</button>
+            <button class="btn btn-secondary nc-sans-objet-btn" data-id="{{ nc.id }}" style="font-size:13px;background:#f5f5f5;color:#757575;border-color:#ddd;">— Sans objet</button>
             {% else %}
-            <button class="btn btn-secondary nc-rouvrir-btn" data-id="{{ nc.id }}" style="font-size:13px; background:#e8eaf6; color:#1a237e; border-color:#9fa8da;">🔄 Rouvrir</button>
+            <button class="btn btn-secondary nc-rouvrir-btn" data-id="{{ nc.id }}" style="font-size:13px;background:#e8eaf6;color:#1a237e;border-color:#9fa8da;">🔄 Rouvrir</button>
             {% endif %}
         </div>
     </div>
@@ -161,6 +149,17 @@
                     <option value="incident">Incident</option>
                     <option value="non-conformite">Non-conformité</option>
                     <option value="observation">Observation</option>
+                </select>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+                <label>Déclarant</label>
+                <select id="nc-declarant">
+                    <option value="">— Non renseigné —</option>
+                    {% for uid, u in utilisateurs.items() %}
+                    {% if u.actif %}
+                    <option value="{{ uid }}">{{ u.nom }} {{ u.prenom }}</option>
+                    {% endif %}
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-field" style="grid-column:1/-1;">

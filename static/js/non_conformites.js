@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modal-nc-titre').textContent = nc ? 'Modifier la non-conformité' : 'Nouvelle non-conformité';
         document.getElementById('nc-date').value = nc ? nc.date : today;
         document.getElementById('nc-statut').value = nc ? nc.statut : 'ouvert';
+        document.getElementById('nc-declarant').value = nc && nc.declarant_id ? String(nc.declarant_id) : '';
         document.getElementById('nc-origine').value = nc ? nc.origine : 'interne';
         document.getElementById('nc-type').value = nc ? nc.type_nc : 'non-conformite';
         document.getElementById('nc-titre-input').value = nc ? nc.titre : '';
@@ -136,8 +137,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const fileInput = document.getElementById('nc-justificatif-file');
 
         function envoyer(pdfB64, pdfNom) {
+            const declarantVal = document.getElementById('nc-declarant').value;
             const payload = {
                 date: dateVal,
+                declarant_id: declarantVal ? parseInt(declarantVal) : null,
                 origine: document.getElementById('nc-origine').value,
                 type_nc: document.getElementById('nc-type').value,
                 titre: titre,
