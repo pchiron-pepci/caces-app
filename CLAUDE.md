@@ -151,6 +151,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `DocumentOfficiel` | `document_officiel` | singleton par type (`certificat_organisme`, `attestation_assurance`, `procedure_interne`) ; champs : `contenu_pdf` base64, `nom_fichier`, `date_validite`, `numero_certificat` (certificat_organisme uniquement) ; Jinja2 globals `numero_certificat()`, `date_validite_certificat()` (retourne date formatée dd/mm/YYYY ou "") |
 | `GrilleTheorie` | `grilles_theorie` | grilles INRS |
 | `ReponseGrille` | `reponses_grille` | questions par grille |
+| `NonConformite` | `non_conformites` | journal des non-conformités et réclamations ; champs : `date`, `declarant_id` (FK Utilisateur), `origine` (interne/reclamation_client/reclamation_apprenant/audit), `type` (incident/non-conformite/observation), `titre`, `description`, `action_preventive`, `action_corrective`, `justificatif_pdf` base64, `justificatif_nom`, `statut` (ouvert/en_cours/cloture), `date_cloture` ; liens optionnels `session_id`, `testeur_id`, `stagiaire_id` (FK nullable) ; page `/non-conformites` à ajouter dans le menu après Statistiques ; liste dépliable (date, titre, badge statut coloré) ; carte dépliable avec description, actions préventive/corrective, justificatif PDF, statut ; dashboard : carte "Non-conformités ouvertes" affichant uniquement les non clôturées avec titre, date et badge statut ; **À implémenter** |
 
 ---
 
@@ -181,6 +182,7 @@ python init_questions_r482.py
 | Haute | Cartes CACES® PDF (format CR80, reportlab) | à faire |
 | Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | à faire |
 | Haute | Jours de formation (nouveau type, UT personnalisés) | à faire |
+| Haute | Journal non-conformités/réclamations — page /non-conformites + modèle NonConformite + carte dashboard | à faire |
 | Moyenne | Externaliser JS inline de admin.html (contrainte CSP) | à faire |
 | Moyenne | Grilles R486, R489 (scripts init à créer) | à faire |
 | Moyenne | Multi-tenant (subdomain routing, database-per-tenant) | à faire |
