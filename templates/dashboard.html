@@ -67,35 +67,7 @@
         {% endif %}
     </div>
 
-    <!-- Ligne 2 : Alertes testeurs -->
-    <div class="card">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>🔔 Alertes testeurs</h2>
-            <a href="/testeurs" class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Voir tout</a>
-        </div>
-        {% if alertes_testeurs %}
-        <div style="padding:0 16px 12px;">
-            {% for item in alertes_testeurs %}
-            <div style="padding:10px 0; border-bottom:1px solid #f0f0f0;">
-                <div style="font-weight:600; font-size:13px; color:#1a237e; margin-bottom:6px;">{{ item.testeur.nom }} {{ item.testeur.prenom }}</div>
-                <div style="display:flex; flex-wrap:wrap; gap:5px;">
-                    {% for alerte in item.alertes %}
-                    {% if alerte.couleur == 'rouge' %}
-                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">{{ alerte.label }}</span>
-                    {% else %}
-                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">{{ alerte.label }}</span>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div style="padding:20px 16px; color:#2e7d32; font-size:14px;">✅ Aucune alerte</div>
-        {% endif %}
-    </div>
-
-    <!-- Ligne 3 : Non-conformités ouvertes -->
+    <!-- Ligne 2 : Non-conformités ouvertes -->
     <div class="card">
         <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
             <h2>⚠️ Non-conformités ouvertes</h2>
@@ -125,7 +97,45 @@
         {% endif %}
     </div>
 
-    <!-- Ligne 3 : Cartographie PEPCI -->
+    <!-- Ligne 3 : Alertes testeurs -->
+    <div class="card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>🔔 Alertes testeurs</h2>
+            <a href="/testeurs" class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Voir tout</a>
+        </div>
+        {% if alertes_testeurs %}
+        <div style="padding:0 16px 12px;">
+            {% for item in alertes_testeurs %}
+            <div style="padding:10px 0; border-bottom:1px solid #f0f0f0;">
+                <div style="font-weight:600; font-size:13px; color:#1a237e; margin-bottom:6px;">{{ item.testeur.nom }} {{ item.testeur.prenom }}</div>
+                <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                    {% for alerte in item.alertes %}
+                    {% if alerte.couleur == 'rouge' %}
+                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">{{ alerte.label }}</span>
+                    {% else %}
+                        <span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">{{ alerte.label }}</span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="padding:20px 16px; color:#2e7d32; font-size:14px;">✅ Aucune alerte</div>
+        {% endif %}
+    </div>
+
+    <!-- Ligne 3 : Statistiques (placeholder) -->
+    <div class="card">
+        <div class="card-header">
+            <h2>📊 Statistiques</h2>
+        </div>
+        <div style="padding:32px 16px; text-align:center; color:#aaa; font-style:italic; font-size:14px;">
+            Indicateurs à venir
+        </div>
+    </div>
+
+    <!-- Ligne 4 : Cartographie PEPCI -->
     <div class="card">
         <div class="card-header">
             <h2>🗺️ Cartographie PEPCI</h2>
@@ -159,7 +169,7 @@
         </table>
     </div>
 
-    <!-- Ligne 4 : Testeurs actifs -->
+    <!-- Ligne 4 : Testeurs actifs (suite) -->
     <div class="card">
         <div class="card-header">
             <h2>👨‍🏫 Testeurs actifs</h2>
@@ -319,15 +329,6 @@
         </table>
     </div>
 
-    <!-- Ligne 5 : Statistiques (placeholder) -->
-    <div class="card">
-        <div class="card-header">
-            <h2>📊 Statistiques</h2>
-        </div>
-        <div style="padding:32px 16px; text-align:center; color:#aaa; font-style:italic; font-size:14px;">
-            Indicateurs à venir
-        </div>
-    </div>
 
 </div>
 {% endblock %}
