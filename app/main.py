@@ -795,6 +795,22 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
     )
 
 
+@app.get("/caces-obtenus")
+def page_caces_obtenus(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="caces_obtenus.html",
+        context={"page": "caces_obtenus"}
+    )
+
+@app.get("/cartes-caces")
+def page_cartes_caces(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="cartes_caces.html",
+        context={"page": "cartes_caces"}
+    )
+
 @app.get("/profil")
 def page_profil(request: Request):
     return templates.TemplateResponse(
