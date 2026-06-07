@@ -48,7 +48,7 @@
                 {% for s in sessions_actives %}
                 {% set date_s = s.date_theorie or s.date_pratique_debut %}
                 <tr>
-                    <td style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; white-space:nowrap;">{{ s.reference or '—' }}</td>
+                    <td style="white-space:nowrap;"><a href="/sessions/{{ s.id }}" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; text-decoration:none;">{{ s.reference or '—' }}</a></td>
                     <td style="font-size:13px; color:#444;">{{ s.famille }}</td>
                     <td style="font-size:12px; color:#888; white-space:nowrap;">{{ date_s.strftime('%d/%m/%Y') if date_s else '—' }}</td>
                     <td>
