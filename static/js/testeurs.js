@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
     document.getElementById('btn-fermer-prevention').addEventListener('click', fermerPrevention);
     document.getElementById('btn-fermer-controle').addEventListener('click', fermerControle);
+
     document.getElementById('btn-upload-prevention').addEventListener('click', function() {
         document.getElementById('modal-prev-file').click();
     });
@@ -22,6 +23,38 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadCarte(testeurId, this);
     });
 
+    document.getElementById('btn-suppr-prev').addEventListener('click', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        const nomFichier = document.getElementById('modal-prev-info').textContent;
+        document.getElementById('pin-message').textContent = `Supprimer l'attestation "${nomFichier}" ?`;
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('modal-pin').style.display = 'flex';
+        document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
+            const pin = document.getElementById('pin-input').value;
+            const resp = await fetch(`/api/upload/attestation-prevention/${testeurId}?pin=${pin}`, { method: 'DELETE' });
+            if (resp.ok) { fermerPin(); location.reload(); }
+            else document.getElementById('pin-error').style.display = 'block';
+            this.removeEventListener('click', handler);
+        });
+    });
+
+    document.getElementById('btn-suppr-carte').addEventListener('click', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        const nomFichier = document.getElementById('modal-carte-info').textContent;
+        document.getElementById('pin-message').textContent = `Supprimer la carte "${nomFichier}" ?`;
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('modal-pin').style.display = 'flex';
+        document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
+            const pin = document.getElementById('pin-input').value;
+            const resp = await fetch(`/api/upload/carte-testeur/${testeurId}?pin=${pin}`, { method: 'DELETE' });
+            if (resp.ok) { fermerPin(); location.reload(); }
+            else document.getElementById('pin-error').style.display = 'block';
+            this.removeEventListener('click', handler);
+        });
+    });
+
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
@@ -29,28 +62,14 @@ document.addEventListener('DOMContentLoaded', function() {
             editer(btn.dataset.id, btn.dataset.nom, btn.dataset.prenom, btn.dataset.statut,
                 btn.dataset.entreprise, btn.dataset.inrs, btn.dataset.email, btn.dataset.tel,
                 btn.dataset.habilitation, btn.dataset.expiration, btn.dataset.visite,
-                btn.dataset.formation, btn.dataset.controle, btn.dataset.note);
+                btn.dataset.formation, btn.dataset.controle, btn.dataset.note,
+                btn.dataset.hasPrev, btn.dataset.prevNom, btn.dataset.hasCarte, btn.dataset.carteNom);
         }
         if (btn.dataset.action === 'archiver') {
             archiver(btn.dataset.id, btn.dataset.nom);
         }
         if (btn.dataset.action === 'supprimer-hab') {
             supprimerHab(btn.dataset.habId, btn.dataset.habLabel);
-        }
-        if (btn.dataset.action === 'prevention-supprimer') {
-            const testeurId = btn.dataset.id;
-            const nomFichier = btn.dataset.nomFichier;
-            document.getElementById('pin-message').textContent = `Supprimer l'attestation "${nomFichier}" ?`;
-            document.getElementById('pin-input').value = '';
-            document.getElementById('pin-error').style.display = 'none';
-            document.getElementById('modal-pin').style.display = 'flex';
-            document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
-                const pin = document.getElementById('pin-input').value;
-                const resp = await fetch(`/api/upload/attestation-prevention/${testeurId}?pin=${pin}`, { method: 'DELETE' });
-                if (resp.ok) { fermerPin(); location.reload(); }
-                else document.getElementById('pin-error').style.display = 'block';
-                this.removeEventListener('click', handler);
-            });
         }
         if (btn.dataset.action === 'controle-editer') {
             const testeurId = btn.dataset.id;
@@ -82,21 +101,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (resp.ok) { fermerControle(); location.reload(); }
             };
         }
-        if (btn.dataset.action === 'carte-supprimer') {
-            const testeurId = btn.dataset.id;
-            const nomFichier = btn.dataset.nomFichier;
-            document.getElementById('pin-message').textContent = `Supprimer la carte "${nomFichier}" ?`;
-            document.getElementById('pin-input').value = '';
-            document.getElementById('pin-error').style.display = 'none';
-            document.getElementById('modal-pin').style.display = 'flex';
-            document.getElementById('pin-confirm-btn').addEventListener('click', async function handler() {
-                const pin = document.getElementById('pin-input').value;
-                const resp = await fetch(`/api/upload/carte-testeur/${testeurId}?pin=${pin}`, { method: 'DELETE' });
-                if (resp.ok) { fermerPin(); location.reload(); }
-                else document.getElementById('pin-error').style.display = 'block';
-                this.removeEventListener('click', handler);
-            });
-        }
     });
 });
 
@@ -116,7 +120,7 @@ function ouvrirFormulaire() {
     document.getElementById('modal').style.display = 'flex';
 }
 
-function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note) {
+function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasCarte, carteNom) {
     document.getElementById('modal-title').textContent = 'Modifier testeur';
     document.getElementById('testeur-id').value = id;
     document.getElementById('f-nom').value = nom;
@@ -132,9 +136,27 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     document.getElementById('f-formation').value = formation;
     document.getElementById('f-controle').value = controle;
     document.getElementById('f-note').value = note;
+
     document.getElementById('section-documents').style.display = 'block';
     document.getElementById('modal-prev-file').value = '';
     document.getElementById('modal-carte-file').value = '';
+
+    if (hasPrev === 'true') {
+        document.getElementById('modal-prev-info').textContent = prevNom || 'attestation.pdf';
+        document.getElementById('btn-suppr-prev').style.display = '';
+    } else {
+        document.getElementById('modal-prev-info').textContent = 'Aucune attestation';
+        document.getElementById('btn-suppr-prev').style.display = 'none';
+    }
+
+    if (hasCarte === 'true') {
+        document.getElementById('modal-carte-info').textContent = carteNom || 'carte.pdf';
+        document.getElementById('btn-suppr-carte').style.display = '';
+    } else {
+        document.getElementById('modal-carte-info').textContent = 'Aucune carte';
+        document.getElementById('btn-suppr-carte').style.display = 'none';
+    }
+
     document.getElementById('modal').style.display = 'flex';
 }
 

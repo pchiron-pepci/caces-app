@@ -58,7 +58,11 @@
                     data-visite="{{ t.visite_medicale or '' }}"
                     data-formation="{{ t.formation_continue or '' }}"
                     data-controle="{{ t.date_prochain_controle or '' }}"
-                    data-note="{{ t.note or '' }}">✏️</button>
+                    data-note="{{ t.note or '' }}"
+                    data-has-prev="{{ 'true' if t.attestation_prevention_pdf else 'false' }}"
+                    data-prev-nom="{{ t.attestation_prevention_nom or '' }}"
+                    data-has-carte="{{ 'true' if t.carte_pdf else 'false' }}"
+                    data-carte-nom="{{ t.carte_nom_fichier or '' }}">✏️</button>
                 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                     data-action="archiver"
                     data-id="{{ t.id }}"
@@ -95,10 +99,6 @@
                         {% else %}
                             <a href="/api/upload/attestation-prevention/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</a>
                         {% endif %}
-                        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"
-                            data-action="prevention-supprimer"
-                            data-id="{{ t.id }}"
-                            data-nom-fichier="{{ t.attestation_prevention_nom or 'attestation.pdf' }}">🗑️</button>
                     {% else %}
                         <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
                     {% endif %}
@@ -110,10 +110,6 @@
                 <div style="display:flex; align-items:center; gap:8px;">
                     {% if t.carte_pdf %}
                         <a href="/api/upload/carte-testeur/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.carte_nom_fichier or 'carte.pdf' }}</a>
-                        <button class="btn btn-danger" style="padding:3px 8px; font-size:11px;"
-                            data-action="carte-supprimer"
-                            data-id="{{ t.id }}"
-                            data-nom-fichier="{{ t.carte_nom_fichier or 'carte.pdf' }}">🗑️</button>
                     {% else %}
                         <span style="color:#888; font-size:12px;">—</span>
                     {% endif %}
@@ -187,16 +183,24 @@
         <input type="hidden" id="f-controle">
         <div id="section-documents" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid #e8ecf4;">
             <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:12px;">Documents</div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-size:13px; min-width:170px;">Attestation prévention</span>
-                    <input type="file" id="modal-prev-file" accept=".pdf" style="display:none;">
-                    <button class="btn btn-secondary" style="padding:5px 12px; font-size:12px;" id="btn-upload-prevention">📤 Uploader</button>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <div>
+                    <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Attestation prévention</div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span id="modal-prev-info" style="font-size:12px; color:#666;">Aucune attestation</span>
+                        <button class="btn btn-danger" id="btn-suppr-prev" style="padding:4px 10px; font-size:11px; display:none;">🗑️ Supprimer</button>
+                        <input type="file" id="modal-prev-file" accept=".pdf" style="display:none;">
+                        <button class="btn btn-secondary" id="btn-upload-prevention" style="padding:4px 10px; font-size:11px;">📤 Uploader</button>
+                    </div>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-size:13px; min-width:170px;">Carte(s) CACES®</span>
-                    <input type="file" id="modal-carte-file" accept=".pdf" style="display:none;">
-                    <button class="btn btn-secondary" style="padding:5px 12px; font-size:12px;" id="btn-upload-carte">📤 Uploader</button>
+                <div>
+                    <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Carte(s) CACES®</div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span id="modal-carte-info" style="font-size:12px; color:#666;">Aucune carte</span>
+                        <button class="btn btn-danger" id="btn-suppr-carte" style="padding:4px 10px; font-size:11px; display:none;">🗑️ Supprimer</button>
+                        <input type="file" id="modal-carte-file" accept=".pdf" style="display:none;">
+                        <button class="btn btn-secondary" id="btn-upload-carte" style="padding:4px 10px; font-size:11px;">📤 Uploader</button>
+                    </div>
                 </div>
             </div>
         </div>
