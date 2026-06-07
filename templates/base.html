@@ -10,9 +10,8 @@
 <body>
     <div class="sidebar">
         <div class="sidebar-logo">
-            <div class="logo-text">CACES®</div>
-            {% set _logo = logo_organisme() %}
-            {% if _logo %}<img src="{{ _logo }}" style="max-height:28px; margin-bottom:2px; display:block;">{% endif %}
+            <img src="/static/images/logo_piloces.png" alt="PILOCES" style="width:100%; max-width:160px; display:block; margin:0 auto;">
+            <hr style="border:none; border-top:1px solid rgba(255,255,255,0.2); margin:8px 0;">
             <div class="logo-sub">{{ nom_organisme() }}</div>
         </div>
         <nav class="sidebar-nav">
