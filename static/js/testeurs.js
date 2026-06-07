@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fermer-modal').addEventListener('click', fermerModal);
     document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
     document.getElementById('btn-fermer-prevention').addEventListener('click', fermerPrevention);
+    document.getElementById('btn-fermer-controle').addEventListener('click', fermerControle);
 
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action]');
@@ -37,6 +38,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.removeEventListener('click', handler);
             });
         }
+        if (btn.dataset.action === 'controle-editer') {
+            const testeurId = btn.dataset.id;
+            document.getElementById('controle-date-input').value = btn.dataset.controle;
+            document.getElementById('modal-controle').style.display = 'flex';
+            document.getElementById('controle-confirm-btn').onclick = async function() {
+                const dateVal = document.getElementById('controle-date-input').value || null;
+                const editBtn = document.querySelector(`[data-action="editer"][data-id="${testeurId}"]`);
+                const d = editBtn ? editBtn.dataset : {};
+                const resp = await fetch(`/api/testeurs/${testeurId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nom: d.nom || '',
+                        prenom: d.prenom || '',
+                        statut: d.statut || 'interne',
+                        entreprise: d.entreprise || null,
+                        email: d.email || null,
+                        telephone: d.tel || null,
+                        numero_inrs: d.inrs || null,
+                        date_habilitation: d.habilitation || null,
+                        date_expiration_habilitation: d.expiration || null,
+                        visite_medicale: d.visite || null,
+                        formation_continue: d.formation || null,
+                        date_prochain_controle: dateVal,
+                        note: d.note || null
+                    })
+                });
+                if (resp.ok) { fermerControle(); location.reload(); }
+            };
+        }
         if (btn.dataset.action === 'carte-supprimer') {
             const testeurId = btn.dataset.id;
             const nomFichier = btn.dataset.nomFichier;
@@ -61,7 +92,7 @@ let idHabASupprimer = null;
 function ouvrirFormulaire() {
     document.getElementById('modal-title').textContent = 'Nouveau testeur';
     document.getElementById('testeur-id').value = '';
-    ['nom','prenom','entreprise','email','tel','inrs','habilitation','expiration','visite','formation','controle','note'].forEach(f => {
+    ['nom','prenom','entreprise','email','tel','inrs','expiration','note','habilitation','visite','formation','controle'].forEach(f => {
         document.getElementById('f-' + f).value = '';
     });
     document.getElementById('f-statut').value = 'interne';
@@ -84,35 +115,6 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     document.getElementById('f-formation').value = formation;
     document.getElementById('f-controle').value = controle;
     document.getElementById('f-note').value = note;
-
-    const habContainer = document.getElementById('modal-habs');
-    habContainer.innerHTML = '';
-    const habSource = document.getElementById('habs-' + id);
-    const sectionHabs = document.getElementById('section-habs-modal');
-    if (habSource && habSource.children.length > 0) {
-        Array.from(habSource.children).forEach(div => {
-            const row = document.createElement('div');
-            row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px;';
-            const badge = document.createElement('span');
-            badge.className = 'badge blue';
-            badge.textContent = div.dataset.habLabel;
-            const btnDel = document.createElement('button');
-            btnDel.type = 'button';
-            btnDel.className = 'btn btn-danger';
-            btnDel.style.cssText = 'padding:4px 8px; font-size:12px;';
-            btnDel.textContent = '🗑️';
-            btnDel.dataset.action = 'supprimer-hab';
-            btnDel.dataset.habId = div.dataset.habId;
-            btnDel.dataset.habLabel = div.dataset.habLabel;
-            row.appendChild(badge);
-            row.appendChild(btnDel);
-            habContainer.appendChild(row);
-        });
-        sectionHabs.style.display = 'block';
-    } else {
-        sectionHabs.style.display = 'none';
-    }
-
     document.getElementById('modal').style.display = 'flex';
 }
 
@@ -203,6 +205,8 @@ function ouvrirModalPrevention(testeurId, input) {
 }
 
 function fermerPrevention() { document.getElementById('modal-prevention').style.display = 'none'; }
+
+function fermerControle() { document.getElementById('modal-controle').style.display = 'none'; }
 
 function uploadCarte(testeurId, input) {
     if (!input.files || input.files.length === 0) return;
