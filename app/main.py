@@ -179,10 +179,22 @@ def _get_config_organisme():
     except Exception:
         return None
 
+def _get_date_validite_certificat():
+    try:
+        db = SessionLocal()
+        doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == 'certificat_organisme').first()
+        db.close()
+        if doc and doc.date_validite:
+            return doc.date_validite.strftime('%d/%m/%Y')
+        return ""
+    except Exception:
+        return ""
+
 templates.env.globals['nom_organisme'] = _get_nom_organisme
 templates.env.globals['logo_organisme'] = _get_logo_organisme
 templates.env.globals['numero_certificat'] = _get_numero_certificat
 templates.env.globals['get_config_organisme'] = _get_config_organisme
+templates.env.globals['date_validite_certificat'] = _get_date_validite_certificat
 
 class CSPMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: StarletteRequest, call_next):

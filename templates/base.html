@@ -41,9 +41,10 @@
             </a>
         </nav>
         {% set _num_cert = numero_certificat() %}
+        {% set _cert_date = date_validite_certificat() %}
         <div class="sidebar-footer">
             {% if _num_cert %}<div class="cert-badge">N° {{ _num_cert }}</div>{% endif %}
-            <div class="cert-date">Valide jusqu'au 13/06/2028</div>
+            <div class="cert-date">{% if _cert_date %}Valide jusqu'au {{ _cert_date }}{% else %}—{% endif %}</div>
         </div>
     </div>
 
