@@ -999,5 +999,15 @@ function enregistrerNumeroCertificat() {
         else alert('Erreur lors de l\'enregistrement');
     });
 }
+
+// Ouvre l'onglet ciblé par le hash de l'URL (ex: /admin#lieux)
+(function() {
+    const hash = window.location.hash.replace('#', '');
+    const tabs = ['cartographie', 'habilitations', 'lieux', 'parametres', 'documents'];
+    if (hash && tabs.includes(hash)) {
+        const btn = document.querySelector('.tab-btn[onclick*="showTab(\'' + hash + '\'"]');
+        showTab(hash, btn || document.querySelector('.tab-btn'));
+    }
+})();
 </script>
 {% endblock %}
