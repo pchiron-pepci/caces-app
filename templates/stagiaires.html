@@ -28,7 +28,11 @@
         <tbody id="tbody">
             {% for s in stagiaires %}
             <tr data-stagiaire-id="{{ s.id }}">
-                <td>
+                <td style="text-align:center; vertical-align:middle;">
+                    <button class="btn btn-secondary" style="padding:3px 8px; font-size:11px; display:block; margin:0 auto 4px;"
+                        data-action="historique"
+                        data-id="{{ s.id }}"
+                        title="Voir l'historique des sessions">▶</button>
                     {% if s.photo %}
                         <img src="{{ s.photo }}" style="width:40px; height:50px; object-fit:cover; border-radius:4px; border:2px solid #1a3a8f;">
                     {% else %}
@@ -55,10 +59,6 @@
                         data-action="archiver"
                         data-id="{{ s.id }}"
                         data-nom="{{ s.nom }} {{ s.prenom }}">🗑️</button>
-                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                        data-action="historique"
-                        data-id="{{ s.id }}"
-                        title="Voir l'historique des sessions">▶</button>
                 </td>
             </tr>
             <tr id="hist-{{ s.id }}" class="hist-row" style="display:none;">
