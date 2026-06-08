@@ -352,6 +352,15 @@ def dashboard(request: Request):
             alertes.append({"label": "Prochain contrôle dépassé", "couleur": "rouge"})
         if alertes:
             alertes_testeurs.append({"testeur": t, "alertes": alertes})
+    familles_carto = db.query(Famille).filter(Famille.actif == True).order_by(Famille.code).all()
+    for f in familles_carto:
+        f.categories_habilites = db.query(Categorie).filter(
+            Categorie.famille_id == f.id,
+            Categorie.pepci_habilite == True,
+            Categorie.actif == True,
+            Categorie.est_option == False
+        ).order_by(Categorie.code).all()
+    familles_carto = [f for f in familles_carto if f.categories_habilites]
     lieux_cdt = db.query(Lieu).filter(Lieu.type == "cdt", Lieu.actif == True).order_by(Lieu.nom).all()
     for lieu in lieux_cdt:
         lieu.habilitations = db.query(LieuHabilitation).filter(
@@ -376,6 +385,7 @@ def dashboard(request: Request):
             "nc_ouvertes": nc_ouvertes,
             "sessions_actives": sessions_actives,
             "alertes_testeurs": alertes_testeurs,
+            "familles_carto": familles_carto,
             "lieux_cdt": lieux_cdt,
             "stagiaires_sans_photo": stagiaires_sans_photo,
         }

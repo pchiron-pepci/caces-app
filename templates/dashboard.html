@@ -176,18 +176,12 @@
                 </tr>
             </thead>
             <tbody>
+                {% for f in familles_carto %}
                 <tr>
-                    <td><strong>R482</strong> — Engins de chantier</td>
-                    <td>A, B1, C1, F</td>
+                    <td><strong>{{ f.code }}</strong>{% if f.libelle %} — {{ f.libelle }}{% endif %}</td>
+                    <td>{{ f.categories_habilites | map(attribute='code') | join(', ') }}</td>
                 </tr>
-                <tr>
-                    <td><strong>R486A</strong> — PEMP</td>
-                    <td>A, B</td>
-                </tr>
-                <tr>
-                    <td><strong>R489</strong> — Chariots</td>
-                    <td>1B, 3, 5</td>
-                </tr>
+                {% endfor %}
                 {% if lieux_cdt %}
                 <tr>
                     <th colspan="3" style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555;">Centres De Test (CDT)</th>
