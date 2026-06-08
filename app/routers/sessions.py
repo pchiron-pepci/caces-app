@@ -531,8 +531,16 @@ def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSess
     db.commit()
     return {"message": "Jour modifie"}
 
+@router.get("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/check-theorie")
+def check_resultat_theorie_candidat(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
+    has_resultat = db.query(ResultatTheorie).filter(
+        ResultatTheorie.jour_test_id == jour_id,
+        ResultatTheorie.stagiaire_id == stagiaire_id
+    ).first() is not None
+    return {"has_resultat": has_resultat}
+
 @router.delete("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}")
-def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
+def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, pin: str = "", db: DBSession = Depends(get_db)):
     jtc = db.query(JourTestCandidat).filter(
         JourTestCandidat.jour_test_id == jour_id,
         JourTestCandidat.stagiaire_id == stagiaire_id
@@ -554,11 +562,17 @@ def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: D
                 detail="Supprimez d'abord les résultats de ce candidat avant de le retirer du jour"
             )
 
-    # Supprimer résultats théorie liés à ce jour
-    db.query(ResultatTheorie).filter(
+    resultat_theorie = db.query(ResultatTheorie).filter(
         ResultatTheorie.jour_test_id == jour_id,
         ResultatTheorie.stagiaire_id == stagiaire_id
-    ).delete()
+    ).first()
+    if resultat_theorie:
+        if pin != "1505":
+            raise HTTPException(status_code=403, detail="Code PIN incorrect")
+        db.query(ResultatTheorie).filter(
+            ResultatTheorie.jour_test_id == jour_id,
+            ResultatTheorie.stagiaire_id == stagiaire_id
+        ).delete()
 
     db.delete(jtc)
     db.commit()

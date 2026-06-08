@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.btn-retirer-candidat-jour');
-        if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom);
+        if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom, btn.dataset.type);
     });
     document.addEventListener('change', function(e) {
         const cb = e.target;
@@ -461,16 +461,31 @@ async function sauvegarderModifierJourTheorie() {
     else alert('Erreur !');
 }
 
-function retirerCandidatJour(jourId, stagiaireId, nom) {
+async function retirerCandidatJour(jourId, stagiaireId, nom, typeJour) {
+    if (typeJour === 'theorie') {
+        const checkResp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId + '/check-theorie');
+        const checkData = await checkResp.json();
+        if (checkData.has_resultat) {
+            demanderConfirmation(
+                'Ce candidat a déjà un résultat théorique enregistré. Êtes-vous sûr de vouloir le supprimer ?',
+                () => _executerRetraitAvecPin(jourId, stagiaireId, nom)
+            );
+            return;
+        }
+    }
+    _executerRetraitAvecPin(jourId, stagiaireId, nom);
+}
+
+function _executerRetraitAvecPin(jourId, stagiaireId, nom) {
     document.getElementById('pin-message').textContent = 'Retirer ' + nom + ' de ce jour ?';
     document.getElementById('pin-input').value = '';
     document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('pin-error').textContent = 'Code PIN incorrect !';
     document.getElementById('modal-pin').style.display = 'flex';
     document.getElementById('pin-confirm-btn').onclick = async () => {
         const pin = document.getElementById('pin-input').value;
-        if (pin !== '1505') { document.getElementById('pin-error').style.display = 'block'; return; }
-        fermerPin();
-        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId, { method: 'DELETE' });
-        if (resp.ok) location.reload(); else { const d = await resp.json(); fermerPin(); alert(d.detail || 'Erreur !'); }
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId + '?pin=' + encodeURIComponent(pin), { method: 'DELETE' });
+        if (resp.ok) { fermerPin(); location.reload(); }
+        else { const d = await resp.json(); document.getElementById('pin-error').textContent = d.detail || 'Code PIN incorrect !'; document.getElementById('pin-error').style.display = 'block'; }
     };
 }
