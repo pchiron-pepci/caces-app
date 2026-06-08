@@ -818,13 +818,13 @@
     </div>
 </div>
 
-<script>
-window.SESSION_ID = {{ session.id }};
-window.UT_PAR_CAT = {{ ut_par_cat | tojson }};
-window.SESSION_FAMILLE = '{{ session.famille }}';
-window.DATE_DEBUT_SESSION = '{{ session.date_pratique_debut or "" }}';
-window.DATE_FIN_SESSION = '{{ session.date_pratique_fin or "" }}';
-window.NB_EQUIPEMENTS = {{ equipements|length }};
-</script>
+<div id="session-data" style="display:none;"
+    data-session-id="{{ session.id }}"
+    data-famille="{{ session.famille }}"
+    data-ut-par-cat="{{ ut_par_cat | tojson | e }}"
+    data-debut="{{ session.date_pratique_debut or '' }}"
+    data-fin="{{ session.date_pratique_fin or '' }}"
+    data-nb-equipements="{{ equipements|length }}">
+</div>
 <script src="/static/js/session_detail.js"></script>
 {% endblock %}

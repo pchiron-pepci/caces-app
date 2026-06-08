@@ -81,13 +81,8 @@
                 <input type="text" id="f-reference" placeholder="Auto : SESSION-2026-001">
             </div>
             <div class="form-field">
-                <label>Testeur principal (theorie)</label>
-                <select id="f-testeur-principal">
-                    <option value="">-- Choisir --</option>
-                    {% for t in testeurs %}
-                    <option value="{{ t.id }}">{{ t.nom }} {{ t.prenom }}</option>
-                    {% endfor %}
-                </select>
+                <label>Responsable</label>
+                <input type="text" id="f-responsable" placeholder="Nom Prénom">
             </div>
             <div class="form-field">
                 <label>Date debut session</label>
@@ -140,6 +135,7 @@ async function sauvegarder() {
         famille: document.getElementById('f-famille').value,
         lieu_id: parseInt(document.getElementById('f-lieu').value),
         reference: document.getElementById('f-reference').value || null,
+        responsable: document.getElementById('f-responsable').value || null,
         date_pratique_debut: document.getElementById('f-pratique-debut').value || null,
         date_pratique_fin: document.getElementById('f-pratique-fin').value || null,
         note: document.getElementById('f-note').value || null
