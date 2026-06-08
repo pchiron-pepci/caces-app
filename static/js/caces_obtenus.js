@@ -319,29 +319,22 @@ function _renderLigne(co) {
             </button>`
         : '';
 
-    return `<div data-caces-id="${co.id}" style="border:1px solid ${annule ? '#e8e8e8' : '#c8d8f0'};border-radius:12px;padding:14px 18px;margin-bottom:10px;background:#fff;${annule ? 'opacity:0.6;' : ''}box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    return `<div data-caces-id="${co.id}" style="border:1px solid ${annule ? '#e8e8e8' : '#c8d8f0'};border-radius:12px;padding:10px 16px;margin-bottom:8px;background:#fff;${annule ? 'opacity:0.6;' : ''}box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             ${noBadge}
             ${badgeStatut(co.statut)}
+            <span style="font-size:14px;font-weight:700;color:#1a237e;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
+            <span style="font-weight:700;color:#1a237e;font-size:12px;">${co.famille}</span>
+            <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:800;">${co.categorie}</span>
+            ${options}
+            <span style="font-size:12px;color:#555;">📅 <strong>${fmtDate(co.date_obtention)}</strong></span>
+            <span style="font-size:12px;color:#555;">⏳ <strong style="color:#2e7d32;">${fmtDate(co.date_echeance)}</strong></span>
+            <span style="flex:1;"></span>
+            ${toggleHtml}
+            ${actionHtml}
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-            <div style="flex:1;min-width:0;">
-                <div style="font-size:15px;font-weight:700;color:#1a237e;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</div>
-                <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap;">
-                    <span style="font-weight:700;color:#1a237e;font-size:12px;">${co.famille}</span>
-                    <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:800;">${co.categorie}</span>
-                    ${options}
-                </div>
-                <div style="display:flex;gap:16px;font-size:12px;color:#555;margin-top:6px;flex-wrap:wrap;">
-                    <span>Obtention&nbsp;: <strong>${fmtDate(co.date_obtention)}</strong></span>
-                    <span>Échéance&nbsp;: <strong style="color:#2e7d32;">${fmtDate(co.date_echeance)}</strong></span>
-                </div>
-                ${motifHtml}
-                ${sourcesHtml}
-            </div>
-            <div style="flex-shrink:0;">${actionHtml}</div>
-        </div>
-        ${toggleHtml ? `<div style="margin-top:8px;">${toggleHtml}</div>` : ''}
+        ${motifHtml}
+        ${sourcesHtml}
     </div>`;
 }
 
