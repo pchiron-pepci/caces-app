@@ -28,11 +28,11 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        const btnAnnuler = e.target.closest('[data-action="annuler-caces"]');
-        if (btnAnnuler) {
-            const id = btnAnnuler.dataset.id;
-            const nom = btnAnnuler.dataset.nom;
-            ouvrirPin('Annuler le CACES® de ' + nom + ' ?', async function (pin) {
+        const btnRejeter = e.target.closest('[data-action="annuler-caces"]');
+        if (btnRejeter) {
+            const id = btnRejeter.dataset.id;
+            const nom = btnRejeter.dataset.nom;
+            ouvrirPin('Rejeter le CACES® de ' + nom + ' ?', async function (pin) {
                 return fetch('/api/caces-obtenus/annuler/' + id + '?pin=' + encodeURIComponent(pin), { method: 'POST' });
             });
         }
@@ -84,9 +84,88 @@ function fmtDate(iso) {
 }
 
 function badgeStatut(statut) {
-    if (statut === 'valide') return '<span class="badge" style="background:#e8f5e9;color:#2e7d32;">Validé</span>';
-    if (statut === 'annule') return '<span class="badge" style="background:#fafafa;color:#999;text-decoration:line-through;">Annulé</span>';
+    if (statut === 'valide')  return '<span class="badge" style="background:#e8f5e9;color:#2e7d32;">Validé</span>';
+    if (statut === 'annule')  return '<span class="badge" style="background:#fafafa;color:#999;text-decoration:line-through;">Annulé</span>';
     return '';
+}
+
+function renderCarteAValider(co) {
+    const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
+    const options = co.options_obtenues
+        ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">${o.trim()}</span>`).join(' ')
+        : '';
+    const optionsPratique = co.options_pratique
+        ? co.options_pratique.split(',').map(o => `<span style="background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:1px 5px;font-size:11px;">${o.trim()}</span>`).join(' ')
+        : '';
+
+    const refTheorie = co.post_cloture
+        ? `${co.session_ref_theorie} <span style="background:#fff3e0;color:#e65100;border-radius:4px;padding:1px 5px;font-size:10px;">post-clôture</span>`
+        : co.session_ref_theorie;
+
+    return `
+    <div style="border:1px solid #e0e0e0; border-radius:12px; padding:18px 20px; margin-bottom:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+
+        <!-- En-tête : stagiaire + famille/catégorie -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+            <div>
+                <div style="font-size:16px; font-weight:700; color:#1a237e;">${nomComplet}</div>
+                <div style="margin-top:4px; display:flex; align-items:center; gap:8px;">
+                    <span style="font-weight:700; color:#1a237e; font-size:13px;">${co.famille}</span>
+                    <span style="background:#1a237e; color:#fff; border-radius:6px; padding:2px 10px; font-size:14px; font-weight:800;">${co.categorie}</span>
+                    ${options}
+                </div>
+            </div>
+            <div style="text-align:right; font-size:11px; color:#999;">#${co.id}</div>
+        </div>
+
+        <!-- Lignes théorie / pratique -->
+        <div style="background:#f8f9ff; border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                <span style="width:70px; color:#666; font-weight:600;">🎓 Théorie</span>
+                <span style="color:#555; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${co.session_ref_theorie}">${refTheorie}</span>
+                <span style="color:#444; white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
+                <span style="color:#2e7d32; font-weight:700;">✅</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+                <span style="width:70px; color:#666; font-weight:600;">🔧 Pratique</span>
+                <span style="color:#555; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${co.session_ref_pratique}">${co.session_ref_pratique}</span>
+                <span style="color:#444; white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
+                <span style="color:#2e7d32; font-weight:700;">✅</span>
+                ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
+            </div>
+        </div>
+
+        <!-- Dates calculées + boutons -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; gap:20px; font-size:13px;">
+                <div>
+                    <span style="color:#666;">Obtention</span>
+                    <span style="font-weight:700; color:#1a237e; margin-left:6px;">${fmtDate(co.date_obtention)}</span>
+                </div>
+                <div>
+                    <span style="color:#666;">Échéance</span>
+                    <span style="font-weight:700; color:#388e3c; margin-left:6px;">${fmtDate(co.date_echeance)}</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-danger"
+                    data-action="annuler-caces"
+                    data-id="${co.id}"
+                    data-nom="${nomComplet}"
+                    style="padding:8px 18px; font-size:13px; font-weight:700;">
+                    ❌ Rejeter
+                </button>
+                <button class="btn btn-primary"
+                    data-action="valider-caces"
+                    data-id="${co.id}"
+                    data-nom="${nomComplet}"
+                    style="padding:8px 22px; font-size:13px; font-weight:700; background:#2e7d32;">
+                    ✅ Valider
+                </button>
+            </div>
+        </div>
+
+    </div>`;
 }
 
 async function chargerAValider() {
@@ -100,25 +179,7 @@ async function chargerAValider() {
             el.innerHTML = '<p style="color:#718096;text-align:center;padding:24px;">Aucun CACES® en attente de validation.</p>';
             return;
         }
-        const entete = `
-        <div style="display:grid;grid-template-columns:1fr 110px 120px 80px 110px 110px 80px;gap:8px;padding:7px 14px;background:#f0f2fa;border-radius:8px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;">
-            <span>Stagiaire</span><span>Session</span><span>Famille / Cat.</span><span>Options</span><span>Obtention</span><span>Échéance</span><span>Actions</span>
-        </div>`;
-        const lignes = data.map(function (co) {
-            return `<div style="display:grid;grid-template-columns:1fr 110px 120px 80px 110px 110px 80px;gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;">
-                <span style="font-weight:600;">${co.stagiaire_nom} ${co.stagiaire_prenom}</span>
-                <span style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${co.session_reference}">${co.session_reference}</span>
-                <span><strong style="color:#1a237e;">${co.famille}</strong> <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span></span>
-                <span style="font-size:11px;color:#666;">${co.options_obtenues || '—'}</span>
-                <span style="font-size:12px;">${fmtDate(co.date_obtention)}</span>
-                <span style="font-size:12px;">${fmtDate(co.date_echeance)}</span>
-                <span style="display:flex;gap:4px;">
-                    <button class="btn btn-primary" data-action="valider-caces" data-id="${co.id}" data-nom="${co.stagiaire_nom} ${co.stagiaire_prenom}" style="padding:4px 8px;font-size:11px;" title="Valider">✅</button>
-                    <button class="btn btn-danger" data-action="annuler-caces" data-id="${co.id}" data-nom="${co.stagiaire_nom} ${co.stagiaire_prenom}" style="padding:4px 8px;font-size:11px;" title="Annuler">❌</button>
-                </span>
-            </div>`;
-        }).join('');
-        el.innerHTML = entete + lignes;
+        el.innerHTML = data.map(renderCarteAValider).join('');
     } catch (err) {
         el.innerHTML = '<p style="color:red;text-align:center;padding:24px;">Erreur de chargement</p>';
     }
@@ -136,14 +197,15 @@ async function chargerValides() {
             return;
         }
         const entete = `
-        <div style="display:grid;grid-template-columns:70px 1fr 110px 120px 80px 110px 110px 80px 70px;gap:8px;padding:7px 14px;background:#f0f2fa;border-radius:8px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;">
+        <div style="display:grid;grid-template-columns:70px 1fr 110px 130px 80px 110px 110px 80px 70px;gap:8px;padding:7px 14px;background:#f0f2fa;border-radius:8px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;">
             <span>N° Ordre</span><span>Stagiaire</span><span>Session</span><span>Famille / Cat.</span><span>Options</span><span>Obtention</span><span>Échéance</span><span>Statut</span><span></span>
         </div>`;
         const lignes = data.map(function (co) {
             const annule = co.statut === 'annule';
-            return `<div style="display:grid;grid-template-columns:70px 1fr 110px 120px 80px 110px 110px 80px 70px;gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;${annule ? 'opacity:0.5;' : ''}">
+            const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
+            return `<div style="display:grid;grid-template-columns:70px 1fr 110px 130px 80px 110px 110px 80px 70px;gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;${annule ? 'opacity:0.5;' : ''}">
                 <span style="font-weight:700;font-family:monospace;color:#1a237e;font-size:13px;">${co.numero_ordre ? '#' + co.numero_ordre : '—'}</span>
-                <span style="font-weight:600;${annule ? 'text-decoration:line-through;' : ''}">${co.stagiaire_nom} ${co.stagiaire_prenom}</span>
+                <span style="font-weight:600;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
                 <span style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${co.session_reference}">${co.session_reference}</span>
                 <span><strong style="color:#1a237e;">${co.famille}</strong> <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span></span>
                 <span style="font-size:11px;color:#666;">${co.options_obtenues || '—'}</span>
@@ -151,7 +213,7 @@ async function chargerValides() {
                 <span style="font-size:12px;">${fmtDate(co.date_echeance)}</span>
                 ${badgeStatut(co.statut)}
                 <span>
-                    ${!annule ? `<button class="btn btn-danger" data-action="annuler-caces" data-id="${co.id}" data-nom="${co.stagiaire_nom} ${co.stagiaire_prenom}" style="padding:4px 8px;font-size:11px;" title="Annuler">❌</button>` : ''}
+                    ${!annule ? `<button class="btn btn-danger" data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}" style="padding:4px 8px;font-size:11px;">❌</button>` : ''}
                 </span>
             </div>`;
         }).join('');
