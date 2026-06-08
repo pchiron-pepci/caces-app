@@ -14,6 +14,34 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ── Tri colonnes ──────────────────────────────────────────────────────────
+    let sortCol = null;
+    let sortDir = 1;
+    const attrMap = {
+        reference: 'ref', date: 'date', titre: 'titre',
+        origine: 'origine', type_nc: 'type', nature: 'nature', statut: 'statut'
+    };
+
+    document.addEventListener('click', function (e) {
+        const col = e.target.closest('.nc-sort-col');
+        if (!col) return;
+        const key = col.dataset.col;
+        if (sortCol === key) { sortDir *= -1; } else { sortCol = key; sortDir = 1; }
+        document.querySelectorAll('.sort-arrow').forEach(function (el) { el.textContent = ''; });
+        const arrowEl = document.getElementById('arrow-' + key);
+        if (arrowEl) arrowEl.textContent = sortDir === 1 ? ' ↑' : ' ↓';
+        const container = document.getElementById('nc-list');
+        if (!container) return;
+        const attr = 'data-' + (attrMap[key] || key);
+        const cards = Array.from(container.querySelectorAll('.nc-card'));
+        cards.sort(function (a, b) {
+            const va = (a.getAttribute(attr) || '').toLowerCase();
+            const vb = (b.getAttribute(attr) || '').toLowerCase();
+            return va < vb ? -sortDir : va > vb ? sortDir : 0;
+        });
+        cards.forEach(function (card) { container.appendChild(card); });
+    });
+
     // ── Toggle expand/collapse ─────────────────────────────────────────────
     document.addEventListener('click', function (e) {
         const header = e.target.closest('.nc-toggle-header');

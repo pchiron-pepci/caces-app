@@ -25,9 +25,28 @@
 </div>
 {% else %}
 
+<div id="nc-sort-header" style="display:flex; align-items:center; gap:12px; padding:7px 16px; background:#f0f2fa; border-radius:8px; margin-bottom:6px; user-select:none;">
+    <span style="width:16px; flex-shrink:0;"></span>
+    <span class="nc-sort-col" data-col="reference" style="min-width:105px; flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Référence <span class="sort-arrow" id="arrow-reference"></span></span>
+    <span class="nc-sort-col" data-col="date" style="min-width:85px; flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Date <span class="sort-arrow" id="arrow-date"></span></span>
+    <span class="nc-sort-col" data-col="titre" style="flex:1; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Titre <span class="sort-arrow" id="arrow-titre"></span></span>
+    <span class="nc-sort-col" data-col="origine" style="flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Origine <span class="sort-arrow" id="arrow-origine"></span></span>
+    <span class="nc-sort-col" data-col="type_nc" style="flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Type <span class="sort-arrow" id="arrow-type_nc"></span></span>
+    <span class="nc-sort-col" data-col="nature" style="flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Nature <span class="sort-arrow" id="arrow-nature"></span></span>
+    <span class="nc-sort-col" data-col="statut" style="flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Statut <span class="sort-arrow" id="arrow-statut"></span></span>
+</div>
+
+<div id="nc-list">
 {% for nc in non_conformites %}
 <div class="card nc-card" id="{{ nc.reference }}" style="margin-bottom:10px; padding:0; overflow:hidden;"
-     data-search="{{ (nc.reference or '') ~ ' ' ~ nc.titre ~ ' ' ~ nc.origine ~ ' ' ~ nc.type_nc }}">
+     data-search="{{ (nc.reference or '') ~ ' ' ~ nc.titre ~ ' ' ~ nc.origine ~ ' ' ~ nc.type_nc }}"
+     data-ref="{{ nc.reference or '' }}"
+     data-date="{{ nc.date.isoformat() if nc.date else '' }}"
+     data-titre="{{ nc.titre | lower }}"
+     data-origine="{{ nc.origine }}"
+     data-type="{{ nc.type_nc }}"
+     data-nature="{{ nc.nature or '' }}"
+     data-statut="{{ nc.statut }}">
     <div class="nc-toggle-header" data-id="{{ nc.id }}"
          style="display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none;">
         <span class="nc-arrow" style="color:#1a237e; font-size:12px; transition:transform 0.2s; display:inline-block;">▶</span>
@@ -129,6 +148,7 @@
     </div>
 </div>
 {% endfor %}
+</div>
 {% endif %}
 
 <!-- MODAL Nouvelle / Modifier NC -->
