@@ -225,7 +225,7 @@ function renderCarteAValider(co) {
                     ${options}
                 </div>
             </div>
-            <div style="text-align:right;font-size:11px;color:#999;">#${co.id}</div>
+            <div style="text-align:right;font-size:12px;color:#999;font-weight:600;">N° CACES® : —</div>
         </div>
         <div style="margin-bottom:10px;">
             <button data-action="toggle-sources" data-id="${co.id}"
@@ -264,12 +264,17 @@ function renderCarteAValider(co) {
 }
 
 // ===== RENDU LIGNE VALIDÉS =====
-const _COLS = '70px 1fr 110px 130px 80px 110px 110px 80px 90px';
+const _COLS = '160px 1fr 110px 130px 80px 110px 110px 80px 90px';
 
 function _renderLigne(co) {
     const annule = co.statut === 'annule';
     const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
-    const noOrdre = co.numero_ordre ? '#' + String(co.numero_ordre).padStart(4, '0') : '—';
+    const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : null;
+    const noOrdre = annule
+        ? `<span style="font-weight:700;font-family:monospace;font-size:13px;text-decoration:line-through;">N° CACES® ${noFormate || '—'}</span>`
+        : noFormate
+            ? `<span style="background:#1a237e;color:#fff;border-radius:6px;padding:3px 8px;font-size:16px;font-weight:700;font-family:monospace;white-space:nowrap;">N° CACES® ${noFormate}</span>`
+            : `<span style="color:#999;">—</span>`;
     const motifBtn = annule
         ? `<button data-action="voir-motif" data-id="${co.id}" data-nom="${nomComplet}"
                 title="${co.motif_annulation ? 'Motif : ' + co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
@@ -280,7 +285,7 @@ function _renderLigne(co) {
                 ↩ Annuler
             </button>`;
     return `<div data-caces-id="${co.id}" style="display:grid;grid-template-columns:${_COLS};gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;${annule ? 'opacity:0.55;' : ''}">
-        <span style="font-weight:700;font-family:monospace;color:#1a237e;font-size:13px;${annule ? 'text-decoration:line-through;' : ''}">${noOrdre}</span>
+        <span>${noOrdre}</span>
         <span style="font-weight:600;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
         <span style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${co.session_reference || ''}">${co.session_reference || '—'}</span>
         <span><strong style="color:#1a237e;">${co.famille}</strong> <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span></span>
@@ -294,7 +299,7 @@ function _renderLigne(co) {
 
 function _enteteValides() {
     return `<div id="valides-entete" style="display:grid;grid-template-columns:${_COLS};gap:8px;padding:7px 14px;background:#f0f2fa;border-radius:8px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;">
-        <span>N° Ordre</span><span>Stagiaire</span><span>Session</span><span>Famille / Cat.</span><span>Options</span><span>Obtention</span><span>Échéance</span><span>Statut</span><span></span>
+        <span>N° CACES®</span><span>Stagiaire</span><span>Session</span><span>Famille / Cat.</span><span>Options</span><span>Obtention</span><span>Échéance</span><span>Statut</span><span></span>
     </div>`;
 }
 
