@@ -264,8 +264,8 @@
         <div class="card-header">
             <h2>🏢 Organisation</h2>
         </div>
+        <div style="background:#f0f2f7; padding:8px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; border-bottom:1px solid #e8ecf4;">Référent(s)</div>
         <div style="padding:0 16px 8px;">
-            <h3 style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin:12px 0 8px;">Référents</h3>
             {% if referents %}
             <table class="table">
                 <thead>
@@ -286,8 +286,8 @@
             <p style="color:#888; font-size:13px; padding:4px 0 8px;">Aucun référent renseigné</p>
             {% endif %}
         </div>
+        <div style="background:#f0f2f7; padding:8px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; border-top:1px solid #e8ecf4; border-bottom:1px solid #e8ecf4;">Prochains audits</div>
         <div style="padding:0 16px 16px;">
-            <h3 style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin:12px 0 8px;">Prochains audits</h3>
             {% set cfg = get_config_organisme() %}
             {% set audit_rows = [
                 ('Audit interne', cfg.audit_interne_date if cfg else None),
