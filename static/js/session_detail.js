@@ -238,7 +238,6 @@ function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identit
         container.style.display = 'none';
     }
     document.getElementById('modal-pratique').style.display = 'flex';
-    document.getElementById('pratique-identite').checked = identiteVerifiee || false;
 }
 
 function fermerModalPratique() { document.getElementById('modal-pratique').style.display = 'none'; }
