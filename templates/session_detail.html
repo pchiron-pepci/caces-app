@@ -258,7 +258,7 @@
                 <div style="display:flex; gap:8px;">
                     {% if session.statut != 'terminee' %}
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                        onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.testeur_id }}', '{{ j.date }}', {{ j.candidats_categories | tojson | e }})">
+                        onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.testeur_id }}', '{{ j.date }}', {{ j.candidats_categories | tojson | forceescape }})">
                         Modifier
                     </button>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
@@ -318,19 +318,19 @@
     {% if epreuve.options_obtenues %}<br><small style="font-size:10px; color:#2e7d32;">{{ epreuve.options_obtenues }}</small>{% endif %}
     {% if session.statut != 'terminee' %}
 <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
-        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | e }}, {{ (epreuve.options_obtenues or '') | tojson | e }})">Modifier</button>
+        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | forceescape }}, {{ (epreuve.options_obtenues or '') | tojson | forceescape }})">Modifier</button>
     {% endif %}
                                 {% elif epreuve and epreuve.obtenue == False %}
                                     <span class="badge red" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✗</span>
                                     {% if epreuve.options_obtenues %}<br><small style="font-size:10px; color:#c62828;">{{ epreuve.options_obtenues }}</small>{% endif %}
                                     {% if session.statut != 'terminee' %}
                                     <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
-                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | e }}, {{ (epreuve.options_obtenues or '') | tojson | e }})">Modifier</button>
+                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | forceescape }}, {{ (epreuve.options_obtenues or '') | tojson | forceescape }})">Modifier</button>
                                     {% endif %}
                                 {% else %}
                                     {% if session.statut != 'terminee' %}
                                     <button style="background:#e8eaf6; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:12px; color:#1a237e; font-weight:600;"
-                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, null, '', {{ opts_planif | tojson | e }}, '')">
+                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, null, '', {{ opts_planif | tojson | forceescape }}, '')">
                                         {{ ut_par_cat.get(cat, 1) }} UT +
                                     </button>
                                     {% if opts_planif %}<br><small style="font-size:10px; color:#666;">{{ opts_planif | join(', ') }}</small>{% endif %}
