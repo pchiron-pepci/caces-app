@@ -836,8 +836,8 @@
 <div id="session-data" style="display:none;"
     data-session-id="{{ session.id }}"
     data-famille="{{ session.famille }}"
-    data-ut-par-cat="{{ ut_par_cat | tojson | e }}"
-    data-options-par-cat="{{ options_par_cat | tojson | e }}"
+    data-ut-par-cat='{{ ut_par_cat | tojson }}'
+    data-options-par-cat='{{ options_par_cat | tojson }}'
     data-debut="{{ session.date_pratique_debut or '' }}"
     data-fin="{{ session.date_pratique_fin or '' }}"
     data-nb-equipements="{{ equipements|length }}">
