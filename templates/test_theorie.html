@@ -829,7 +829,7 @@ function afficherQuestion(idx) {
     document.getElementById('q-theme-label').textContent = q.theme_nom;
 
     const img = document.getElementById('q-image');
-    if (q.image) {
+    if (q.image && (q.image.startsWith('http') || q.image.startsWith('/'))) {
         img.src = q.image;
         img.classList.add('visible');
     } else {

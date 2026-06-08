@@ -373,6 +373,45 @@ def get_resultat_theorie(session_id: int, stagiaire_id: int, db: DBSession = Dep
         "reponses": json.loads(rt.reponses_json) if rt.reponses_json else {}
     }
 
+@router.post("/{session_id}/theorie/reponses")
+def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db: DBSession = Depends(get_db)):
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvee")
+    jour = db.query(JourTest).filter(JourTest.id == data.jour_test_id).first()
+    if not jour:
+        raise HTTPException(status_code=404, detail="Jour non trouve")
+
+    try:
+        resultat = calculer_resultat_theorie_phase2(data.reponses, session_id, session.famille, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    rt = ResultatTheorie(
+        session_id=session_id,
+        stagiaire_id=data.stagiaire_id,
+        jour_test_id=data.jour_test_id,
+        grille_id=None,
+        reponses_json=json.dumps(data.reponses),
+        note_totale=resultat["note_totale"],
+        note_theme1=resultat["notes_themes"].get("1"),
+        note_theme2=resultat["notes_themes"].get("2"),
+        note_theme3=resultat["notes_themes"].get("3"),
+        note_theme4=resultat["notes_themes"].get("4"),
+        note_theme5=resultat["notes_themes"].get("5"),
+        theme1_ok=resultat["themes_ok"].get("1"),
+        theme2_ok=resultat["themes_ok"].get("2"),
+        theme3_ok=resultat["themes_ok"].get("3"),
+        theme4_ok=resultat["themes_ok"].get("4"),
+        theme5_ok=resultat["themes_ok"].get("5"),
+        obtenue=resultat["obtenue"],
+        dispense=False,
+    )
+    db.add(rt)
+    db.commit()
+
+    return {"resultat": resultat}
+
 @router.get("/{session_id}/jours/{jour_id}/grille")
 def get_grille_jour(session_id: int, jour_id: int, db: DBSession = Depends(get_db)):
     jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
