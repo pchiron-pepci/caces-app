@@ -21,13 +21,13 @@
                 <th data-sort-col="2" style="cursor:pointer; user-select:none;">Lieu <span id="arrow-col-2" class="sort-arrow-col"></span></th>
                 <th data-sort-col="3" style="cursor:pointer; user-select:none;">Période <span id="arrow-col-3" class="sort-arrow-col"></span></th>
                 <th data-sort-col="4" style="cursor:pointer; user-select:none;">Statut <span id="arrow-col-4" class="sort-arrow-col"></span></th>
-                <th>Actions</th>
+                <th>Suppression</th>
             </tr>
         </thead>
         <tbody id="tbody">
             {% for s in sessions %}
             <tr>
-                <td><strong>{{ s.reference or 'N/A' }}</strong></td>
+                <td><a href="/sessions/{{ s.id }}" style="color:inherit; text-decoration:none; font-weight:700;">{{ s.reference or 'N/A' }}</a></td>
                 <td><span class="badge blue">{{ s.famille }}</span></td>
                 <td>
                     {% for l in lieux %}
@@ -45,7 +45,6 @@
                     {% else %}<span class="badge red">Annulee</span>{% endif %}
                 </td>
                 <td>
-                    <a href="/sessions/{{ s.id }}" class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">📋 Detail</a>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                         onclick="annuler({{ s.id }}, '{{ s.reference or s.famille }}')">🗑️</button>
                 </td>
