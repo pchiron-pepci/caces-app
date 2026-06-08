@@ -11,23 +11,53 @@ def _date_echeance(famille: str, date_obt: date) -> date:
     try:
         return date(date_obt.year + ans, date_obt.month, date_obt.day) - timedelta(days=1)
     except ValueError:
-        # 29 fév → 28 fév de l'année cible
         return date(date_obt.year + ans, 3, 1) - timedelta(days=1)
+
+
+def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famille, date_pratique, statut_filtre):
+    """
+    Cherche un ResultatTheorie.obtenue=True dans des sessions d'une famille donnée,
+    autres que la session de pratique, avec contrainte ±12 mois par rapport à la pratique.
+    statut_filtre : "ouvert" (statut != terminee) ou "terminee" (statut == terminee).
+    """
+    limite_avant = date_pratique - timedelta(days=365)
+    limite_apres = date_pratique + timedelta(days=365)
+
+    q = (
+        db.query(ResultatTheorie)
+        .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
+        .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
+        .filter(
+            ResultatTheorie.stagiaire_id == stagiaire_id,
+            ResultatTheorie.obtenue == True,
+            ResultatTheorie.session_id != session_id_pratique,
+            SessionModel.famille == famille,
+            JourTest.date >= limite_avant,
+            JourTest.date <= limite_apres,
+        )
+    )
+    if statut_filtre == "ouvert":
+        q = q.filter(SessionModel.statut != "terminee")
+    else:
+        q = q.filter(SessionModel.statut == "terminee")
+
+    return q.order_by(ResultatTheorie.id.asc()).first()
 
 
 def calculer_et_synchroniser(db: Session) -> list:
     """
-    Pour chaque épreuve pratique réussie, vérifie qu'une théorie réussie existe
-    et crée le CacesObtenu manquant en statut 'a_valider'.
-    Retourne tous les enregistrements 'a_valider'.
+    Pour chaque épreuve pratique réussie, recherche une théorie réussie selon 3 priorités :
+      1. Même session
+      2. Autre session ouverte (statut != terminee), même famille, ±12 mois → continuité
+      3. Autre session clôturée (statut == terminee), même famille, ±12 mois → extension
 
     Règles date_obtention :
-      Cas 1/2 : théorie ≤ pratique (même jour ou théorie avant) → date_obtention = date pratique
-      Cas 3   : théorie > pratique → date_obtention = date théorie
-      Cas 4   : théorie issue d'une autre session terminée (post-clôture)
-                → date_obtention = date pratique
-                → date_echeance  = échéance du premier CACES® validé dans cette famille,
-                                   sinon calcul normal
+      Cas 1 : théorie == pratique (même jour)      → date_obtention = date pratique
+      Cas 2 : théorie < pratique                   → date_obtention = date pratique
+      Cas 3 : théorie > pratique                   → date_obtention = date théorie
+      Cas 4 : théorie issue session clôturée        → date_obtention = date pratique
+                                                     date_echeance  = échéance du 1er CACES® validé
+                                                     dans cette famille, sinon calcul normal
     """
     epreuves_ok = db.query(SessionEpreuve).filter(SessionEpreuve.obtenue == True).all()
 
@@ -38,12 +68,11 @@ def calculer_et_synchroniser(db: Session) -> list:
             CacesObtenu.categorie == ep.categorie,
         ).first()
         if existing:
-            # Mettre à jour les options si le record est encore en attente de validation
             if existing.statut == "a_valider" and existing.options_obtenues != ep.options_obtenues:
                 existing.options_obtenues = ep.options_obtenues
             continue
 
-        # Théorie réussie dans la même session
+        # Priorité 1 : théorie dans la même session
         rt = db.query(ResultatTheorie).filter(
             ResultatTheorie.stagiaire_id == ep.stagiaire_id,
             ResultatTheorie.session_id == ep.session_id,
@@ -51,23 +80,17 @@ def calculer_et_synchroniser(db: Session) -> list:
         ).order_by(ResultatTheorie.id.asc()).first()
 
         post_cloture = False
+
+        # Priorité 2 : autre session ouverte, même famille (continuité)
         if not rt:
-            # Théorie dans une autre session de même famille, valide ≤ 12 mois avant la pratique
-            limite_12_mois = ep.date - timedelta(days=365)
-            rt = (
-                db.query(ResultatTheorie)
-                .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
-                .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
-                .filter(
-                    ResultatTheorie.stagiaire_id == ep.stagiaire_id,
-                    ResultatTheorie.obtenue == True,
-                    ResultatTheorie.session_id != ep.session_id,
-                    SessionModel.famille == ep.famille,
-                    JourTest.date >= limite_12_mois,
-                    JourTest.date <= ep.date,
-                )
-                .order_by(ResultatTheorie.id.asc())
-                .first()
+            rt = _chercher_theorie_autre_session(
+                db, ep.stagiaire_id, ep.session_id, ep.famille, ep.date, "ouvert"
+            )
+
+        # Priorité 3 : session clôturée, même famille (extension)
+        if not rt:
+            rt = _chercher_theorie_autre_session(
+                db, ep.stagiaire_id, ep.session_id, ep.famille, ep.date, "terminee"
             )
             if rt:
                 post_cloture = True
@@ -83,7 +106,7 @@ def calculer_et_synchroniser(db: Session) -> list:
         date_prat = ep.date
 
         if post_cloture:
-            # Cas 4
+            # Cas 4 : extension — date_echeance = échéance du CACES® initial dans cette famille
             date_obtention = date_prat
             caces_initial = (
                 db.query(CacesObtenu)
@@ -97,7 +120,7 @@ def calculer_et_synchroniser(db: Session) -> list:
             )
             echeance = caces_initial.date_echeance if caces_initial else _date_echeance(ep.famille, date_obtention)
         elif date_theo <= date_prat:
-            # Cas 1 (même jour) ou Cas 2 (théorie avant pratique)
+            # Cas 1/2 : théorie avant ou même jour que pratique
             date_obtention = date_prat
             echeance = _date_echeance(ep.famille, date_obtention)
         else:

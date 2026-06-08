@@ -217,17 +217,18 @@ Variables de contexte passées au template `dashboard.html` :
 
 Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroniser(db)` qui parcourt tous les `SessionEpreuve.obtenue == True` et crée les `CacesObtenu` manquants en statut `a_valider`.
 
-**Recherche de la théorie :**
-1. D'abord dans la même session (`ResultatTheorie.session_id == epreuve.session_id AND obtenue == True`)
-2. Sinon extension post-clôture : autre session de même famille avec `statut == "terminee"` (résultat le plus ancien)
+**Recherche de la théorie (3 priorités) :**
+1. Même session (`ResultatTheorie.session_id == epreuve.session_id AND obtenue == True`)
+2. Autre session **ouverte** (`statut != "terminee"`), même famille, `abs(date_theo - date_prat) ≤ 365j` → **continuité** (`post_cloture = False`)
+3. Autre session **clôturée** (`statut == "terminee"`), même famille, `abs(date_theo - date_prat) ≤ 365j` → **extension** (`post_cloture = True`)
 
 **Calcul date_obtention / date_echeance :**
 | Cas | Condition | date_obtention | date_echeance |
 |---|---|---|---|
-| 1 | Théorie et pratique même jour | date pratique | +10 ans −1j (R482) ou +5 ans −1j |
-| 2 | Théorie avant pratique, même session | date pratique | idem |
-| 3 | Théorie après pratique, même session | date théorie | idem |
-| 4 | Post-clôture (théorie autre session, même famille, ≤ 12 mois avant pratique) | date pratique | échéance du 1er `CacesObtenu.valide` dans cette famille pour ce stagiaire, sinon calcul normal |
+| 1 | Théorie == pratique (même jour) | date pratique | +10 ans −1j (R482) ou +5 ans −1j |
+| 2 | Théorie < pratique | date pratique | idem |
+| 3 | Théorie > pratique (sessions ouvertes, priorités 1 et 2) | date théorie | idem |
+| 4 | Extension — théorie session clôturée (priorité 3) | date pratique | échéance du 1er `CacesObtenu.valide` dans cette famille pour ce stagiaire, sinon calcul normal |
 
 **Numéro d'ordre :** incrémental unique toutes familles confondues (`max(numero_ordre) + 1` au moment de la validation).
 
