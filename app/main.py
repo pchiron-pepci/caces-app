@@ -349,7 +349,7 @@ def dashboard(request: Request):
             LieuHabilitation.actif == True
         ).order_by(LieuHabilitation.famille, LieuHabilitation.categorie).all()
     stagiaires_sans_photo = db.query(Stagiaire).filter(
-        Stagiaire.actif == True,
+        Stagiaire.actif == 1,
         or_(Stagiaire.photo == None, Stagiaire.photo == "")
     ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
     db.close()
