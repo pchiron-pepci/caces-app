@@ -16,11 +16,11 @@
     <table class="table" id="tableau">
         <thead>
             <tr>
-                <th>Référence</th>
-                <th>Famille</th>
-                <th>Lieu</th>
-                <th>Période</th>
-                <th>Statut</th>
+                <th data-sort-col="0" style="cursor:pointer; user-select:none;">Référence <span id="arrow-col-0" class="sort-arrow-col"></span></th>
+                <th data-sort-col="1" style="cursor:pointer; user-select:none;">Famille <span id="arrow-col-1" class="sort-arrow-col"></span></th>
+                <th data-sort-col="2" style="cursor:pointer; user-select:none;">Lieu <span id="arrow-col-2" class="sort-arrow-col"></span></th>
+                <th data-sort-col="3" style="cursor:pointer; user-select:none;">Période <span id="arrow-col-3" class="sort-arrow-col"></span></th>
+                <th data-sort-col="4" style="cursor:pointer; user-select:none;">Statut <span id="arrow-col-4" class="sort-arrow-col"></span></th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -34,9 +34,9 @@
                         {% if l.id == s.lieu_id %}{{ l.nom }}{% endif %}
                     {% endfor %}
                 </td>
-                <td>
-                    {% if s.date_pratique_debut %}{{ s.date_pratique_debut }}{% endif %}
-                    {% if s.date_pratique_fin %} au {{ s.date_pratique_fin }}{% endif %}
+                <td data-date="{{ s.date_pratique_debut or '' }}">
+                    {% if s.date_pratique_debut %}{{ s.date_pratique_debut.strftime('%d/%m/%Y') }}{% endif %}
+                    {% if s.date_pratique_fin %} au {{ s.date_pratique_fin.strftime('%d/%m/%Y') }}{% endif %}
                 </td>
                 <td>
                     {% if s.statut == 'planifiee' %}<span class="badge blue">Planifiee</span>
@@ -183,5 +183,28 @@ function filtrer() {
         tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
 }
+
+let sortColIdx = null;
+let sortAsc = true;
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('th[data-sort-col]').forEach(function(th) {
+        th.addEventListener('click', function() {
+            const colIdx = parseInt(this.dataset.sortCol);
+            if (sortColIdx === colIdx) { sortAsc = !sortAsc; } else { sortColIdx = colIdx; sortAsc = true; }
+            document.querySelectorAll('.sort-arrow-col').forEach(function(el) { el.textContent = ''; });
+            const arrowEl = document.getElementById('arrow-col-' + colIdx);
+            if (arrowEl) arrowEl.textContent = sortAsc ? ' ↑' : ' ↓';
+            const tbody = document.getElementById('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function(a, b) {
+                const ca = a.cells[colIdx], cb = b.cells[colIdx];
+                const va = (ca.dataset.date || ca.textContent.trim()).toLowerCase();
+                const vb = (cb.dataset.date || cb.textContent.trim()).toLowerCase();
+                return sortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (va < vb ? 1 : va > vb ? -1 : 0);
+            });
+            rows.forEach(function(row) { tbody.appendChild(row); });
+        });
+    });
+});
 </script>
 {% endblock %}
