@@ -620,7 +620,8 @@ def page_session_detail(request: Request, session_id: int):
     categories_obj = db.query(Categorie).filter(
         Categorie.famille_id == (famille.id if famille else 0),
         Categorie.pepci_habilite == True,
-        Categorie.actif == True
+        Categorie.actif == True,
+        Categorie.est_option == False
     ).all() if famille else []
     categories = [c.code for c in categories_obj]
     ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
