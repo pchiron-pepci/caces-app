@@ -190,9 +190,7 @@ function renderCarteAValider(co) {
     const optionsPratique = co.options_pratique
         ? co.options_pratique.split(',').map(o => `<span style="background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:1px 5px;font-size:11px;">${o.trim()}</span>`).join(' ')
         : '';
-    const refTheorie = co.post_cloture
-        ? `${co.session_ref_theorie} <span style="background:#fff3e0;color:#e65100;border-radius:4px;padding:1px 5px;font-size:10px;">post-clôture</span>`
-        : co.session_ref_theorie;
+    const refTheorie = co.session_ref_theorie;
     const boutonsHtml = co.statut === 'annule'
         ? `<span style="background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;">↩ En révision — actualisez pour recalculer</span>`
         : `<button data-action="revision-caces" data-id="${co.id}" data-nom="${nomComplet}"
