@@ -284,8 +284,8 @@ function _renderLigne(co) {
 
     const noBadge = noFormate
         ? (annule
-            ? `<span style="font-family:monospace;font-size:13px;font-weight:700;text-decoration:line-through;color:#999;">N° CACES® ${noFormate}</span>`
-            : `<span style="background:#1a237e;color:#fff;border-radius:6px;padding:3px 8px;font-size:16px;font-weight:700;font-family:monospace;white-space:nowrap;">N° CACES® ${noFormate}</span>`)
+            ? `<span style="font-family:monospace;font-size:13px;font-weight:700;text-decoration:line-through;color:#999;">${noFormate}</span>`
+            : `<span style="background:#1a237e;color:#fff;border-radius:6px;padding:3px 8px;font-size:16px;font-weight:700;font-family:monospace;white-space:nowrap;">${noFormate}</span>`)
         : `<span style="color:#999;font-size:13px;">—</span>`;
 
     const options = co.options_obtenues
