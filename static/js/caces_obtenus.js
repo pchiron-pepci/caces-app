@@ -108,7 +108,7 @@ function renderCarteAValider(co) {
         <!-- En-tête : stagiaire + famille/catégorie -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
             <div>
-                <div style="font-size:16px; font-weight:700; color:#1a237e;">${nomComplet}</div>
+                <div style="font-size:16px; font-weight:700; color:#1a237e;"><a href="/stagiaires#${co.stagiaire_id}" target="_blank" style="color:inherit;text-decoration:none;">${nomComplet}</a></div>
                 <div style="margin-top:4px; display:flex; align-items:center; gap:8px;">
                     <span style="font-weight:700; color:#1a237e; font-size:13px;">${co.famille}</span>
                     <span style="background:#1a237e; color:#fff; border-radius:6px; padding:2px 10px; font-size:14px; font-weight:800;">${co.categorie}</span>
@@ -122,13 +122,13 @@ function renderCarteAValider(co) {
         <div style="background:#f8f9ff; border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; flex-direction:column; gap:6px;">
             <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
                 <span style="width:70px; color:#666; font-weight:600;">🎓 Théorie</span>
-                <span style="color:#555; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${co.session_ref_theorie}">${refTheorie}</span>
+                <a href="/sessions/${co.session_id_theorie}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;" title="${co.session_ref_theorie}">${refTheorie}</a>
                 <span style="color:#444; white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
                 <span style="color:#2e7d32; font-weight:700;">✅</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
                 <span style="width:70px; color:#666; font-weight:600;">🔧 Pratique</span>
-                <span style="color:#555; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${co.session_ref_pratique}">${co.session_ref_pratique}</span>
+                <a href="/sessions/${co.session_id_pratique}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;" title="${co.session_ref_pratique}">${co.session_ref_pratique}</a>
                 <span style="color:#444; white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
                 <span style="color:#2e7d32; font-weight:700;">✅</span>
                 ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}

@@ -97,9 +97,11 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
 
     return {
         "date_pratique": date_pratique,
+        "session_id_pratique": co.session_id,
         "session_ref_pratique": ref_pratique,
         "options_pratique": options_pratique,
         "date_theorie": date_theorie,
+        "session_id_theorie": sess_theorie_id,
         "session_ref_theorie": ref_theorie,
         "post_cloture": sess_theorie_id != co.session_id,
     }
