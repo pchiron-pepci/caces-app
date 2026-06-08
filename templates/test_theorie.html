@@ -736,7 +736,7 @@ function allerConfirmation() {
     const naissance = opt.getAttribute('data-naissance');
 
     document.getElementById('identite-nom').textContent = nom;
-    document.getElementById('identite-info').textContent = naissance ? 'Ne(e) le ' + naissance : '';
+    document.getElementById('identite-info').textContent = naissance ? 'Date de naissance le ' + naissance : '';
     document.getElementById('header-candidat').textContent = nom;
     document.getElementById('confirm-identite').checked = false;
 
@@ -765,7 +765,7 @@ function lireIdentiteVoixHaute() {
     if (!window.speechSynthesis) return;
     const nom = document.getElementById('identite-nom').textContent.trim();
     const info = document.getElementById('identite-info').textContent.trim();
-    const naissance = info ? ', ' + info : '';
+    const naissance = info ? '. ' + info : '';
     const texte = 'Êtes-vous bien ' + nom + naissance + ' ? Je certifie être la personne désignée ci-dessus et m\'engage à répondre seul aux questions, sans aide extérieure ni support de cours.';
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(texte);
