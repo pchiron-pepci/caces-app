@@ -150,20 +150,23 @@ function renderCarteAValider(co) {
                 </div>
             </div>
             <div style="display:flex; gap:10px; align-items:center;">
-                <button
-                    data-action="revision-caces"
-                    data-id="${co.id}"
-                    data-nom="${nomComplet}"
-                    style="background:#fff; border:2px solid #e65100; color:#e65100; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer;">
-                    ↩ Révision
-                </button>
-                <button
-                    data-action="valider-caces"
-                    data-id="${co.id}"
-                    data-nom="${nomComplet}"
-                    style="background:#2e7d32; color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:13px; font-weight:700; cursor:pointer;">
-                    📜 Émettre le CACES®
-                </button>
+                ${co.statut === 'annule'
+                    ? `<span style="background:#fff3e0; color:#e65100; border:2px solid #e65100; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700;">↩ En révision — actualisez pour recalculer</span>`
+                    : `<button
+                            data-action="revision-caces"
+                            data-id="${co.id}"
+                            data-nom="${nomComplet}"
+                            style="background:#fff; border:2px solid #e65100; color:#e65100; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer;">
+                            ↩ Révision
+                        </button>
+                        <button
+                            data-action="valider-caces"
+                            data-id="${co.id}"
+                            data-nom="${nomComplet}"
+                            style="background:#2e7d32; color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:13px; font-weight:700; cursor:pointer;">
+                            📜 Émettre le CACES®
+                        </button>`
+                }
             </div>
         </div>
 
