@@ -25,8 +25,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const tbody = document.getElementById('tbody');
             const rows = Array.from(tbody.querySelectorAll('tr'));
             rows.sort(function (a, b) {
-                const va = a.cells[colIdx].textContent.trim().toLowerCase();
-                const vb = b.cells[colIdx].textContent.trim().toLowerCase();
+                const cell_a = a.cells[colIdx];
+                const cell_b = b.cells[colIdx];
+                const va = (cell_a.dataset.date || cell_a.textContent.trim()).toLowerCase();
+                const vb = (cell_b.dataset.date || cell_b.textContent.trim()).toLowerCase();
                 return sortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (va < vb ? 1 : va > vb ? -1 : 0);
             });
             rows.forEach(function (row) { tbody.appendChild(row); });

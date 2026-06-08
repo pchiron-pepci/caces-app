@@ -36,7 +36,7 @@
                     {% endif %}
                 </td>
                 <td><strong>{{ s.nom }} {{ s.prenom }}</strong></td>
-                <td>{{ s.date_naissance }}</td>
+                <td data-date="{{ s.date_naissance }}">{{ s.date_naissance.strftime('%d/%m/%Y') }}</td>
                 <td>{{ s.employeur or '—' }}</td>
                 <td>{{ s.email or '—' }}</td>
                 <td>{{ s.telephone or '—' }}</td>
