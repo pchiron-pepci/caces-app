@@ -38,6 +38,9 @@ def calculer_et_synchroniser(db: Session) -> list:
             CacesObtenu.categorie == ep.categorie,
         ).first()
         if existing:
+            # Mettre à jour les options si le record est encore en attente de validation
+            if existing.statut == "a_valider" and existing.options_obtenues != ep.options_obtenues:
+                existing.options_obtenues = ep.options_obtenues
             continue
 
         # Théorie réussie dans la même session
