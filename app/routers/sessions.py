@@ -386,19 +386,34 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
     ).first()
     ut = cat.ut_pratique if cat else 1.0
 
-    e = SessionEpreuve(
-        session_id=session_id,
-        stagiaire_id=data.stagiaire_id,
-        testeur_id=data.testeur_id,
-        date=data.date,
-        famille=data.famille,
-        categorie=data.categorie,
-        ut=ut,
-        obtenue=data.obtenue,
-        note_testeur=data.note_testeur,
-        options_obtenues=data.options_obtenues
-    )
-    db.add(e)
+    e = db.query(SessionEpreuve).filter(
+        SessionEpreuve.session_id == session_id,
+        SessionEpreuve.stagiaire_id == data.stagiaire_id,
+        SessionEpreuve.categorie == data.categorie,
+        SessionEpreuve.date == data.date
+    ).first()
+
+    if e:
+        e.testeur_id = data.testeur_id
+        e.obtenue = data.obtenue
+        e.note_testeur = data.note_testeur
+        e.options_obtenues = data.options_obtenues
+        e.ut = ut
+    else:
+        e = SessionEpreuve(
+            session_id=session_id,
+            stagiaire_id=data.stagiaire_id,
+            testeur_id=data.testeur_id,
+            date=data.date,
+            famille=data.famille,
+            categorie=data.categorie,
+            ut=ut,
+            obtenue=data.obtenue,
+            note_testeur=data.note_testeur,
+            options_obtenues=data.options_obtenues
+        )
+        db.add(e)
+
     db.commit()
     return {"message": "Epreuve ajoutee"}
 
