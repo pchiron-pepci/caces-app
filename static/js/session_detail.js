@@ -221,10 +221,12 @@ function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identit
     }
     const container = document.getElementById('pratique-options-container');
     const planified = Array.isArray(optionsPlanifiees) ? optionsPlanifiees : [];
-    if (planified.length > 0) {
-        const obtained = (optionsObtenues || '').split(',').filter(Boolean);
-        const allOpts = window.OPTIONS_PAR_CAT[categorie] || [];
-        const displayOpts = allOpts.filter(o => planified.includes(o.code));
+    const obtained = (optionsObtenues || '').split(',').filter(Boolean);
+    const allOpts = window.OPTIONS_PAR_CAT[categorie] || [];
+    const displayOpts = planified.length > 0
+        ? allOpts.filter(o => planified.includes(o.code))
+        : allOpts.filter(o => obtained.includes(o.code));
+    if (displayOpts.length > 0) {
         let html = '<label style="font-size:12px; font-weight:700; color:#555; display:block; margin-bottom:8px;">Options évaluées</label><div style="display:flex; flex-wrap:wrap; gap:12px;">';
         displayOpts.forEach(function(opt) {
             const checked = obtained.includes(opt.code) ? 'checked' : '';
