@@ -451,6 +451,7 @@ def page_admin(request: Request):
         f = db.query(Famille).filter(Famille.id == c.famille_id).first()
         c.famille_code = f.code if f else "?"
         categories.append(c)
+    categories.sort(key=lambda c: (c.famille_code, c.code))
     # Charger les options actives par habilitation_id
     all_hab_options = db.query(HabilitationOption).all()
     options_habs = {}
