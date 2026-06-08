@@ -619,10 +619,12 @@ def page_session_detail(request: Request, session_id: int):
 
     lieu = db.query(Lieu).filter(Lieu.id == session.lieu_id).first()
 
-    session_candidats = db.query(SessionCandidat).filter(
+    session_candidats = db.query(SessionCandidat).join(
+        Stagiaire, Stagiaire.id == SessionCandidat.stagiaire_id
+    ).filter(
         SessionCandidat.session_id == session_id,
         SessionCandidat.actif == True
-    ).all()
+    ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
     for sc in session_candidats:
         sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
 
