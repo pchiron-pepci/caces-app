@@ -174,6 +174,13 @@ def remettre_en_revision(caces_id: int, pin: str = "", db: DBSession = Depends(g
     if not co:
         raise HTTPException(status_code=404, detail="Non trouvé")
     co.statut = "annule"
-    # numero_ordre conservé pour traçabilité ; recalcul au prochain appel /a-valider
+    # Supprimer les doublons a_valider pour les mêmes clés — seront recalculés au prochain /a-valider
+    db.query(CacesObtenu).filter(
+        CacesObtenu.id != caces_id,
+        CacesObtenu.stagiaire_id == co.stagiaire_id,
+        CacesObtenu.session_id == co.session_id,
+        CacesObtenu.categorie == co.categorie,
+        CacesObtenu.statut == "a_valider",
+    ).delete(synchronize_session=False)
     db.commit()
     return {"ok": True}
