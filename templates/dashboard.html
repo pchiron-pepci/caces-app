@@ -311,7 +311,6 @@
                     <th>Document</th>
                     <th>Fichier</th>
                     <th>Validité</th>
-                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -330,7 +329,9 @@
                         {% endif %}
                     </td>
                     {% if doc and doc.contenu_pdf %}
-                    <td>{{ doc.nom_fichier }}</td>
+                    <td>
+                        <a href="/api/upload/document-officiel/{{ type_key }}/download" style="font-size:13px; color:#1a237e; text-decoration:none;">{{ doc.nom_fichier }}</a>
+                    </td>
                     <td>
                         {% if doc.date_validite %}
                             {% set delta = (doc.date_validite.date() - today).days %}
@@ -345,14 +346,8 @@
                             <span style="color:#888;">—</span>
                         {% endif %}
                     </td>
-                    <td>
-                        <a href="/api/upload/document-officiel/{{ type_key }}/download"
-                            class="btn btn-secondary" style="font-size:12px;padding:4px 10px;">
-                            📥 Télécharger
-                        </a>
-                    </td>
                     {% else %}
-                    <td colspan="3" style="color:#888;font-style:italic;">Non disponible</td>
+                    <td colspan="2" style="color:#888;font-style:italic;">Non disponible</td>
                     {% endif %}
                 </tr>
                 {% endfor %}
