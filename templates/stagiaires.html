@@ -17,9 +17,9 @@
         <thead>
             <tr>
                 <th>Photo</th>
-                <th>Nom / Prénom</th>
-                <th>Date naissance</th>
-                <th>Employeur</th>
+                <th onclick="trierColonne(1)" style="cursor:pointer; user-select:none;">Nom / Prénom <span id="arrow-col-1"></span></th>
+                <th onclick="trierColonne(2)" style="cursor:pointer; user-select:none;">Date naissance <span id="arrow-col-2"></span></th>
+                <th onclick="trierColonne(3)" style="cursor:pointer; user-select:none;">Employeur <span id="arrow-col-3"></span></th>
                 <th>Email</th>
                 <th>Téléphone</th>
                 <th>Actions</th>
@@ -239,6 +239,27 @@ function filtrer() {
     document.querySelectorAll('#tbody tr').forEach(tr => {
         tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
+}
+
+let sortColIdx = null;
+let sortAsc = true;
+
+function trierColonne(colIdx) {
+    if (sortColIdx === colIdx) { sortAsc = !sortAsc; } else { sortColIdx = colIdx; sortAsc = true; }
+    [1, 2, 3].forEach(function(i) {
+        const el = document.getElementById('arrow-col-' + i);
+        if (el) el.textContent = '';
+    });
+    const arrowEl = document.getElementById('arrow-col-' + colIdx);
+    if (arrowEl) arrowEl.textContent = sortAsc ? ' ↑' : ' ↓';
+    const tbody = document.getElementById('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort(function(a, b) {
+        const va = a.cells[colIdx].textContent.trim().toLowerCase();
+        const vb = b.cells[colIdx].textContent.trim().toLowerCase();
+        return sortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (va < vb ? 1 : va > vb ? -1 : 0);
+    });
+    rows.forEach(function(row) { tbody.appendChild(row); });
 }
 </script>
 {% endblock %}
