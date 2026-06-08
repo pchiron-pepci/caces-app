@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('nc-declarant').value = nc && nc.declarant_id ? String(nc.declarant_id) : '';
         document.getElementById('nc-origine').value = nc ? nc.origine : 'interne';
         document.getElementById('nc-type').value = nc ? nc.type_nc : 'non-conformite';
+        document.getElementById('nc-nature').value = nc && nc.nature ? nc.nature : '';
         document.getElementById('nc-titre-input').value = nc ? nc.titre : '';
         document.getElementById('nc-description').value = nc ? nc.description : '';
         document.getElementById('nc-action-preventive').value = nc ? nc.action_preventive : '';
@@ -143,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 declarant_id: declarantVal ? parseInt(declarantVal) : null,
                 origine: document.getElementById('nc-origine').value,
                 type_nc: document.getElementById('nc-type').value,
+                nature: document.getElementById('nc-nature').value || null,
                 titre: titre,
                 statut: document.getElementById('nc-statut').value,
                 description: document.getElementById('nc-description').value || null,

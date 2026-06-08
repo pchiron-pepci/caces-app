@@ -45,6 +45,12 @@
             {% elif nc.type_nc == 'non-conformite' %}Non-conformité
             {% elif nc.type_nc == 'observation' %}Observation
             {% else %}{{ nc.type_nc }}{% endif %}
+            {% if nc.nature %}·
+            {% if nc.nature == 'documentaire' %}Documentaire
+            {% elif nc.nature == 'materiel' %}Matériel
+            {% elif nc.nature == 'organisationnel' %}Organisationnel
+            {% else %}{{ nc.nature }}{% endif %}
+            {% endif %}
         </span>
         {% if nc.statut == 'ouvert' %}
             <span class="badge" style="background:#ffebee;color:#c62828;flex-shrink:0;">Ouvert</span>
@@ -147,12 +153,21 @@
                     <option value="audit">Audit</option>
                 </select>
             </div>
-            <div class="form-field" style="grid-column:1/-1;">
+            <div class="form-field">
                 <label>Type *</label>
                 <select id="nc-type">
                     <option value="incident">Incident</option>
                     <option value="non-conformite">Non-conformité</option>
                     <option value="observation">Observation</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <label>Nature</label>
+                <select id="nc-nature">
+                    <option value="">— Non renseignée —</option>
+                    <option value="documentaire">Documentaire</option>
+                    <option value="materiel">Matériel</option>
+                    <option value="organisationnel">Organisationnel</option>
                 </select>
             </div>
             <div class="form-field" style="grid-column:1/-1;">

@@ -10,6 +10,7 @@ class NonConformite(Base):
     declarant_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=True)
     origine = Column(String(50), nullable=False)
     type_nc = Column(String(30), nullable=False)
+    nature = Column(String(30), nullable=True)
     titre = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     action_preventive = Column(Text, nullable=True)

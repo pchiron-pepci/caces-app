@@ -16,6 +16,7 @@ class NonConformiteCreate(BaseModel):
     declarant_id: Optional[int] = None
     origine: str
     type_nc: str
+    nature: Optional[str] = None
     titre: str
     description: Optional[str] = None
     action_preventive: Optional[str] = None
@@ -33,6 +34,7 @@ class NonConformiteUpdate(BaseModel):
     declarant_id: Optional[int] = None
     origine: str
     type_nc: str
+    nature: Optional[str] = None
     titre: str
     description: Optional[str] = None
     action_preventive: Optional[str] = None

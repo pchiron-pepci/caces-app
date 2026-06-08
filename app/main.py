@@ -178,6 +178,7 @@ except Exception:
 try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE non_conformites ADD COLUMN IF NOT EXISTS reference VARCHAR(20) UNIQUE"))
+        _conn.execute(text("ALTER TABLE non_conformites ADD COLUMN IF NOT EXISTS nature VARCHAR(30)"))
         _conn.commit()
 except Exception:
     pass
@@ -873,6 +874,7 @@ def page_non_conformites(request: Request):
         "declarant_id": nc.declarant_id,
         "origine": nc.origine,
         "type_nc": nc.type_nc,
+        "nature": nc.nature or "",
         "titre": nc.titre,
         "description": nc.description or "",
         "action_preventive": nc.action_preventive or "",
