@@ -53,8 +53,12 @@ def _enrich_base(co: CacesObtenu, stagiaires: dict, sessions: dict) -> dict:
 
 
 def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dict:
-    """Retrouve les détails théorie + pratique pour l'affichage enrichi."""
-    # Pratique : épreuve source
+    """Retrouve les détails théorie + pratique pour l'affichage enrichi.
+    Même logique 3 priorités que _calculer_pour_epreuve dans le service.
+    """
+    from datetime import timedelta
+
+    # --- Pratique ---
     ep = (
         db.query(SessionEpreuve)
         .filter(
@@ -75,7 +79,11 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
         t = db.query(Testeur).filter(Testeur.id == ep.testeur_id).first()
         testeur_nom = f"{t.nom} {t.prenom}" if t else ""
 
-    # Théorie : même session d'abord, sinon post-clôture
+    # --- Théorie : 3 priorités identiques au service ---
+    rt = None
+    sess_theorie_id = co.session_id
+
+    # Priorité 1 : même session
     rt = (
         db.query(ResultatTheorie)
         .filter(
@@ -86,16 +94,46 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
         .order_by(ResultatTheorie.id.asc())
         .first()
     )
-    sess_theorie_id = co.session_id
-    if not rt:
+
+    # Priorité 2 : autre session ouverte, même famille, ±365 j
+    if not rt and ep and ep.date:
+        lim_av = ep.date - timedelta(days=365)
+        lim_ap = ep.date + timedelta(days=365)
         rt = (
             db.query(ResultatTheorie)
             .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
+            .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
             .filter(
                 ResultatTheorie.stagiaire_id == co.stagiaire_id,
                 ResultatTheorie.obtenue == True,
+                ResultatTheorie.session_id != co.session_id,
+                SessionModel.famille == co.famille,
+                SessionModel.statut != "terminee",
+                JourTest.date >= lim_av,
+                JourTest.date <= lim_ap,
+            )
+            .order_by(ResultatTheorie.id.asc())
+            .first()
+        )
+        if rt:
+            sess_theorie_id = rt.session_id
+
+    # Priorité 3 : session clôturée, même famille, ±365 j
+    if not rt and ep and ep.date:
+        lim_av = ep.date - timedelta(days=365)
+        lim_ap = ep.date + timedelta(days=365)
+        rt = (
+            db.query(ResultatTheorie)
+            .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
+            .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
+            .filter(
+                ResultatTheorie.stagiaire_id == co.stagiaire_id,
+                ResultatTheorie.obtenue == True,
+                ResultatTheorie.session_id != co.session_id,
                 SessionModel.famille == co.famille,
                 SessionModel.statut == "terminee",
+                JourTest.date >= lim_av,
+                JourTest.date <= lim_ap,
             )
             .order_by(ResultatTheorie.id.asc())
             .first()
