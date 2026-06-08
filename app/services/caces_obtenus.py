@@ -52,15 +52,19 @@ def calculer_et_synchroniser(db: Session) -> list:
 
         post_cloture = False
         if not rt:
-            # Extension post-clôture : théorie d'une autre session terminée, même famille
+            # Théorie dans une autre session de même famille, valide ≤ 12 mois avant la pratique
+            limite_12_mois = ep.date - timedelta(days=365)
             rt = (
                 db.query(ResultatTheorie)
                 .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
+                .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
                 .filter(
                     ResultatTheorie.stagiaire_id == ep.stagiaire_id,
                     ResultatTheorie.obtenue == True,
+                    ResultatTheorie.session_id != ep.session_id,
                     SessionModel.famille == ep.famille,
-                    SessionModel.statut == "terminee",
+                    JourTest.date >= limite_12_mois,
+                    JourTest.date <= ep.date,
                 )
                 .order_by(ResultatTheorie.id.asc())
                 .first()

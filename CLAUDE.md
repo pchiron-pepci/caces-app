@@ -227,7 +227,7 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 | 1 | Théorie et pratique même jour | date pratique | +10 ans −1j (R482) ou +5 ans −1j |
 | 2 | Théorie avant pratique, même session | date pratique | idem |
 | 3 | Théorie après pratique, même session | date théorie | idem |
-| 4 | Post-clôture (théorie autre session terminée) | date pratique | échéance du 1er `CacesObtenu.valide` dans cette famille pour ce stagiaire, sinon calcul normal |
+| 4 | Post-clôture (théorie autre session, même famille, ≤ 12 mois avant pratique) | date pratique | échéance du 1er `CacesObtenu.valide` dans cette famille pour ce stagiaire, sinon calcul normal |
 
 **Numéro d'ordre :** incrémental unique toutes familles confondues (`max(numero_ordre) + 1` au moment de la validation).
 
