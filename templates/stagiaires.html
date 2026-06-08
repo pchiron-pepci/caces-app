@@ -27,7 +27,7 @@
         </thead>
         <tbody id="tbody">
             {% for s in stagiaires %}
-            <tr>
+            <tr data-stagiaire-id="{{ s.id }}">
                 <td>
                     {% if s.photo %}
                         <img src="{{ s.photo }}" style="width:40px; height:50px; object-fit:cover; border-radius:4px; border:2px solid #1a3a8f;">
@@ -55,6 +55,15 @@
                         data-action="archiver"
                         data-id="{{ s.id }}"
                         data-nom="{{ s.nom }} {{ s.prenom }}">🗑️</button>
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                        data-action="historique"
+                        data-id="{{ s.id }}"
+                        title="Voir l'historique des sessions">▶</button>
+                </td>
+            </tr>
+            <tr id="hist-{{ s.id }}" class="hist-row" style="display:none;">
+                <td colspan="7" style="padding:0; background:#f8f9ff; border-top:none;">
+                    <div id="hist-body-{{ s.id }}" style="padding:12px 20px;"></div>
                 </td>
             </tr>
             {% endfor %}

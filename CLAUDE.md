@@ -72,7 +72,7 @@ app/
 | Fichier | Prefix | Rôle |
 |---|---|---|
 | `testeurs.py` | `/api/testeurs` | CRUD testeurs |
-| `stagiaires.py` | `/api/stagiaires` | CRUD stagiaires |
+| `stagiaires.py` | `/stagiaires` | CRUD stagiaires + GET `/{id}/historique` (sessions + résultats théorie/pratique) |
 | `sessions.py` | `/api/sessions` | Gestion sessions CACES® |
 | `admin.py` | `/admin` | Catégories, habilitations, lieux |
 | `auth.py` | `/auth` | Login JWT |
@@ -185,6 +185,7 @@ python init_questions_r482.py
 | Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | ✅ fait |
 | Haute | Jours de formation (nouveau type, UT personnalisés) | à faire |
 | Haute | Journal non-conformités/réclamations — page /non-conformites + modèle NonConformite + carte dashboard | ✅ fait |
+| Haute | Historique sessions par stagiaire — bouton ▶ dans page stagiaires, lazy load GET /stagiaires/{id}/historique | ✅ fait |
 | Haute | Options CACES® (PE, TEL, CC, TR, CEC) sur épreuves pratiques — planification + résultats | ✅ fait |
 | Moyenne | Externaliser JS inline de admin.html (contrainte CSP) | à faire |
 | Moyenne | Grilles R486, R489 (scripts init à créer) | à faire |

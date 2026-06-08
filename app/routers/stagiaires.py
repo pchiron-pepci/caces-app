@@ -92,3 +92,114 @@ def delete_stagiaire(id: int, pin: str, db: Session = Depends(get_db)):
     s.actif = 0
     db.commit()
     return {"message": "Stagiaire archive"}
+
+@router.get("/{id}/historique")
+def get_historique_stagiaire(id: int, db: Session = Depends(get_db)):
+    from app.models.session_candidat import SessionCandidat
+    from app.models.session import Session as SessionModel
+    from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
+    from app.models.session_epreuve import SessionEpreuve
+
+    candidats = db.query(SessionCandidat).filter(
+        SessionCandidat.stagiaire_id == id,
+        SessionCandidat.actif == True
+    ).all()
+
+    result = []
+    for sc in candidats:
+        session = db.query(SessionModel).filter(SessionModel.id == sc.session_id).first()
+        if not session:
+            continue
+
+        theorie_results = db.query(ResultatTheorie).filter(
+            ResultatTheorie.session_id == sc.session_id,
+            ResultatTheorie.stagiaire_id == id
+        ).all()
+
+        theorie = None
+        if theorie_results:
+            obtenu_list = [r for r in theorie_results if r.obtenue == True]
+            if obtenu_list:
+                best = max(obtenu_list, key=lambda r: r.id)
+                theorie = {"statut": "obtenu", "note": round(best.note_totale) if best.note_totale is not None else None}
+            else:
+                non_obtenu = [r for r in theorie_results if r.obtenue == False]
+                if non_obtenu:
+                    recent = max(non_obtenu, key=lambda r: r.id)
+                    theorie = {"statut": "non_obtenu", "note": round(recent.note_totale) if recent.note_totale is not None else None}
+                else:
+                    theorie = {"statut": "planifie", "note": None}
+        else:
+            theorie_jours = db.query(JourTest).filter(
+                JourTest.session_id == sc.session_id,
+                JourTest.type == 'theorie',
+                JourTest.actif == True
+            ).all()
+            for tj in theorie_jours:
+                jtc = db.query(JourTestCandidat).filter(
+                    JourTestCandidat.jour_test_id == tj.id,
+                    JourTestCandidat.stagiaire_id == id
+                ).first()
+                if jtc:
+                    theorie = {"statut": "planifie", "note": None}
+                    break
+
+        epreuves = db.query(SessionEpreuve).filter(
+            SessionEpreuve.session_id == sc.session_id,
+            SessionEpreuve.stagiaire_id == id
+        ).all()
+
+        pratique_jours = db.query(JourTest).filter(
+            JourTest.session_id == sc.session_id,
+            JourTest.type == 'pratique',
+            JourTest.actif == True
+        ).all()
+
+        planned_cats = set()
+        for j in pratique_jours:
+            jtcs = db.query(JourTestCandidat).filter(
+                JourTestCandidat.jour_test_id == j.id,
+                JourTestCandidat.stagiaire_id == id
+            ).all()
+            for jtc in jtcs:
+                for cat in (jtc.categories or '').split(','):
+                    cat = cat.strip()
+                    if cat:
+                        planned_cats.add(cat)
+
+        evaluated_cats = {e.categorie for e in epreuves}
+        pratique = []
+        for e in epreuves:
+            if e.obtenue == True:
+                statut = "obtenu"
+            elif e.obtenue == False:
+                statut = "non_obtenu"
+            else:
+                statut = "planifie"
+            pratique.append({
+                "categorie": e.categorie,
+                "statut": statut,
+                "options": e.options_obtenues or ""
+            })
+        for cat in sorted(planned_cats - evaluated_cats):
+            pratique.append({"categorie": cat, "statut": "planifie", "options": ""})
+
+        date_ref = session.date_theorie or session.date_pratique_debut
+        result.append({
+            "session_id": session.id,
+            "reference": session.reference or f"Session #{session.id}",
+            "famille": session.famille,
+            "date_theorie": session.date_theorie.isoformat() if session.date_theorie else None,
+            "date_pratique_debut": session.date_pratique_debut.isoformat() if session.date_pratique_debut else None,
+            "date_pratique_fin": session.date_pratique_fin.isoformat() if session.date_pratique_fin else None,
+            "statut": session.statut,
+            "theorie": theorie,
+            "pratique": pratique,
+            "_date_ref": date_ref.isoformat() if date_ref else "0000-00-00"
+        })
+
+    result.sort(key=lambda x: x["_date_ref"], reverse=True)
+    for r in result:
+        del r["_date_ref"]
+
+    return result
