@@ -95,7 +95,7 @@ app/
 
 ### PIN admin
 - Code PIN : **1505**
-- Utilisé pour : archiver un testeur, supprimer/activer des habilitations, clôturer une session, retirer un candidat
+- Utilisé pour : archiver un testeur, supprimer/activer des habilitations, clôturer une session, retirer un candidat d'un jour, supprimer un candidat de la session
 - Vérifié **côté serveur** sur les routes sensibles (paramètre query `?pin=`)
 - `admin.html` valide aussi côté client dans `demanderPin()` avant d'appeler l'API
 
@@ -125,6 +125,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 6. **Identité candidat** : case à cocher (non bloquante) dans la modal saisie résultat pratique
 7. **Suppression d'un jour** : supprime aussi les `ResultatTheorie` et `SessionEpreuve` liés
 8. **Retrait candidat d'un jour** : supprime `ResultatTheorie` ET `SessionEpreuve` des catégories du jour
+11. **Suppression candidat de la session** : vérifie d'abord qu'aucun `JourTestCandidat` n'existe pour cette session (sinon 400) ; soft delete `SessionCandidat.actif = False` ; PIN 1505 requis côté serveur via `DELETE /api/sessions/{id}/candidats/{sc_id}?pin=`
 9. **Dates session** : vérification que les jours planifiés restent dans l'intervalle lors d'une modification
 10. **Statuts session** : `planifiee` → `en_cours` → `terminee` (ou `annulee`)
 

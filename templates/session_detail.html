@@ -447,7 +447,12 @@
                             {% endif %}
                         {% endif %}
                     </td>
-
+                    {% if session.statut != 'terminee' %}
+                    <td style="text-align:center;">
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;"
+                            onclick="retirerCandidat({{ sc.id }}, '{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}')">🗑️</button>
+                    </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

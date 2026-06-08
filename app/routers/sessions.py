@@ -170,10 +170,23 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
     return {"message": "Candidat mis a jour"}
 
 @router.delete("/{session_id}/candidats/{id}")
-def remove_candidat(session_id: int, id: int, db: DBSession = Depends(get_db)):
+def remove_candidat(session_id: int, id: int, pin: str = "", db: DBSession = Depends(get_db)):
+    if pin != "1505":
+        raise HTTPException(status_code=403, detail="PIN invalide")
     sc = db.query(SessionCandidat).filter(SessionCandidat.id == id).first()
     if not sc:
         raise HTTPException(status_code=404, detail="Candidat non trouve")
+    planifie = db.query(JourTestCandidat).join(
+        JourTest, JourTest.id == JourTestCandidat.jour_test_id
+    ).filter(
+        JourTest.session_id == session_id,
+        JourTestCandidat.stagiaire_id == sc.stagiaire_id
+    ).first()
+    if planifie:
+        raise HTTPException(
+            status_code=400,
+            detail="Ce candidat est planifié dans le séquençage, retirez-le d'abord des jours avant de le supprimer"
+        )
     sc.actif = False
     db.commit()
     return {"message": "Candidat retire"}

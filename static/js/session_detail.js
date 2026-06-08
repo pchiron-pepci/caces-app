@@ -334,16 +334,21 @@ async function sauvegarderCandidat() {
 }
 
 function retirerCandidat(id, nom) {
-    document.getElementById('pin-message').textContent = 'Retirer ' + nom + ' de la session ?';
+    document.getElementById('pin-message').textContent = 'Supprimer ' + nom + ' de la session ?';
     document.getElementById('pin-input').value = '';
     document.getElementById('pin-error').style.display = 'none';
     document.getElementById('modal-pin').style.display = 'flex';
     document.getElementById('pin-confirm-btn').onclick = async () => {
         const pin = document.getElementById('pin-input').value;
-        if (pin !== '1505') { document.getElementById('pin-error').style.display = 'block'; return; }
-        fermerPin();
-        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/candidats/' + id, { method: 'DELETE' });
-        if (resp.ok) location.reload();
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/candidats/' + id + '?pin=' + pin, { method: 'DELETE' });
+        if (resp.ok) { fermerPin(); location.reload(); }
+        else if (resp.status === 400) {
+            const data = await resp.json();
+            fermerPin();
+            alert(data.detail);
+        } else {
+            document.getElementById('pin-error').style.display = 'block';
+        }
     };
 }
 
