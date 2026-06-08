@@ -97,13 +97,13 @@
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Description</div>
                     <div style="white-space:pre-wrap;color:{% if nc.description %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.description or '—' }}</div>
                 </div>
-                <div style="border-left:3px solid #1565c0;padding-left:14px;">
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Action préventive</div>
-                    <div style="white-space:pre-wrap;color:{% if nc.action_preventive %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.action_preventive or '—' }}</div>
-                </div>
                 <div style="border-left:3px solid #2e7d32;padding-left:14px;">
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Action corrective</div>
                     <div style="white-space:pre-wrap;color:{% if nc.action_corrective %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.action_corrective or '—' }}</div>
+                </div>
+                <div style="border-left:3px solid #1565c0;padding-left:14px;">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Action préventive</div>
+                    <div style="white-space:pre-wrap;color:{% if nc.action_preventive %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.action_preventive or '—' }}</div>
                 </div>
             </div>
         </div>
