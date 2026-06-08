@@ -1,16 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Session {{ session.reference or session.famille }}{% endblock %}
+{% block title %}<a href="/sessions" style="color:inherit; text-decoration:none;">Sessions</a><span style="font-size:16px; font-weight:400; color:#aaa; margin:0 8px;">/</span><span style="font-size:18px; font-weight:500; color:#555;">{{ session.famille }} — {{ session.reference or 'Session sans référence' }}</span>{% endblock %}
 
 {% block content %}
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <div>
-        <a href="/sessions" style="color:#666; text-decoration:none; font-size:13px;">Retour aux sessions</a>
-        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px; margin-top:4px;">
-            {{ session.famille }} -- {{ session.reference or 'Session sans reference' }}
-        </h2>
-        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
             {% if session.statut == 'planifiee' %}<span class="badge blue">Planifiee</span>
             {% elif session.statut == 'en_cours' %}<span class="badge orange">En cours</span>
             {% elif session.statut == 'terminee' %}<span class="badge green">Terminee</span>
