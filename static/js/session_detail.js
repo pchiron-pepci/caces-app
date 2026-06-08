@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
         window.DATE_DEBUT_SESSION = _d.dataset.debut;
         window.DATE_FIN_SESSION = _d.dataset.fin;
         window.NB_EQUIPEMENTS = parseInt(_d.dataset.nbEquipements);
-        window.UT_PAR_CAT = JSON.parse(_d.dataset.utParCat);
-        window.OPTIONS_PAR_CAT = JSON.parse(_d.dataset.optionsParCat || '{}');
+        try { window.UT_PAR_CAT = JSON.parse(_d.dataset.utParCat); } catch(e) { console.error('UT_PAR_CAT parse error:', e, _d.dataset.utParCat); window.UT_PAR_CAT = {}; }
+        try { window.OPTIONS_PAR_CAT = JSON.parse(_d.dataset.optionsParCat || '{}'); } catch(e) { console.error('OPTIONS_PAR_CAT parse error:', e, _d.dataset.optionsParCat); window.OPTIONS_PAR_CAT = {}; }
     }
 
     document.addEventListener('click', function(e) {
