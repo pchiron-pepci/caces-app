@@ -221,11 +221,10 @@ def get_valides(db: DBSession = Depends(get_db)):
         .all()
     )
     stagiaires, sessions = _bulk_maps(records, db)
-    testeurs = _bulk_testeurs(records, db)
     result = []
     for r in records:
         item = _enrich_base(r, stagiaires, sessions)
-        item["testeur_nom"] = testeurs.get((r.stagiaire_id, r.session_id, r.categorie), "")
+        item.update(_get_theorie_pratique(r, sessions, db))
         result.append(item)
     return result
 

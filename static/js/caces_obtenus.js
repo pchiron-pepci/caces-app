@@ -98,8 +98,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const id = btnVToggle.dataset.id;
             const src = document.getElementById('vsources-' + id);
             const arr = document.getElementById('varrow-' + id);
-            const ouvert = src.style.display === 'block';
-            src.style.display = ouvert ? 'none' : 'block';
+            const ouvert = src.style.display === 'flex';
+            src.style.display = ouvert ? 'none' : 'flex';
             arr.textContent = ouvert ? '▶' : '▼';
             return;
         }
@@ -292,6 +292,10 @@ function _renderLigne(co) {
         ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">${o.trim()}</span>`).join(' ')
         : '';
 
+    const testeurHtml = co.testeur_nom
+        ? `<span style="font-size:12px;color:#555;">| Testeur&nbsp;: <strong>${co.testeur_nom}</strong></span>`
+        : '';
+
     const actionHtml = annule
         ? `<button data-action="voir-motif" data-id="${co.id}" data-nom="${nomComplet}"
                 title="${co.motif_annulation ? 'Motif : ' + co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
@@ -305,19 +309,33 @@ function _renderLigne(co) {
         ? `<div style="font-size:12px;color:#888;margin-top:4px;font-style:italic;">Motif : "${co.motif_annulation}"</div>`
         : '';
 
-    const sourcesHtml = (co.session_reference || co.testeur_nom)
-        ? `<div id="vsources-${co.id}" style="display:none;margin-top:8px;background:#f8f9ff;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">
-               🔧 <span style="font-weight:600;">${co.session_reference || '—'}</span>
-               ${co.testeur_nom ? ` &nbsp;|&nbsp; Testeur : <strong>${co.testeur_nom}</strong>` : ''}
-           </div>`
+    const optionsPratique = co.options_pratique
+        ? co.options_pratique.split(',').map(o => `<span style="background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:1px 5px;font-size:11px;">${o.trim()}</span>`).join(' ')
         : '';
 
-    const toggleHtml = (co.session_reference || co.testeur_nom)
-        ? `<button data-action="toggle-vsources" data-id="${co.id}"
-                style="background:none;border:none;cursor:pointer;font-size:12px;color:#1a237e;font-weight:600;padding:0;display:flex;align-items:center;gap:4px;">
-                <span id="varrow-${co.id}">▶</span> Voir les sources
-            </button>`
-        : '';
+    const sourcesHtml = `<div id="vsources-${co.id}" style="display:none;background:#f8f9ff;border-radius:8px;padding:10px 14px;margin-top:8px;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+            <span style="width:70px;color:#666;font-weight:600;">🎓 Théorie</span>
+            <a href="/sessions/${co.session_id_theorie}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_theorie || '—'}</a>
+            <span style="color:#444;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
+            <span style="color:#2e7d32;font-weight:700;">✅</span>
+            ${co.testeur_nom_theorie ? `<span style="font-size:12px;color:#555;">| Testeur&nbsp;: <strong>${co.testeur_nom_theorie}</strong></span>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+            <span style="width:70px;color:#666;font-weight:600;">🔧 Pratique</span>
+            <a href="/sessions/${co.session_id_pratique}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_pratique || '—'}</a>
+            <span style="color:#444;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
+            <span style="color:#2e7d32;font-weight:700;">✅</span>
+            <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span>
+            ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
+            ${co.testeur_nom ? `<span style="font-size:12px;color:#555;">| Testeur&nbsp;: <strong>${co.testeur_nom}</strong></span>` : ''}
+        </div>
+    </div>`;
+
+    const toggleHtml = `<button data-action="toggle-vsources" data-id="${co.id}"
+            style="background:none;border:none;cursor:pointer;font-size:12px;color:#1a237e;font-weight:600;padding:0;display:flex;align-items:center;gap:4px;">
+            <span id="varrow-${co.id}">▶</span> Voir les sources
+        </button>`;
 
     return `<div data-caces-id="${co.id}" style="border:1px solid ${annule ? '#e8e8e8' : '#c8d8f0'};border-radius:12px;padding:10px 16px;margin-bottom:8px;background:#fff;${annule ? 'opacity:0.6;' : ''}box-shadow:0 1px 3px rgba(0,0,0,0.05);">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -327,6 +345,7 @@ function _renderLigne(co) {
             <span style="font-weight:700;color:#1a237e;font-size:12px;">${co.famille}</span>
             <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:800;">${co.categorie}</span>
             ${options}
+            ${testeurHtml}
             <span style="font-size:12px;color:#555;">📅 <strong>${fmtDate(co.date_obtention)}</strong></span>
             <span style="font-size:12px;color:#555;">⏳ <strong style="color:#2e7d32;">${fmtDate(co.date_echeance)}</strong></span>
             <span style="flex:1;"></span>
