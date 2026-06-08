@@ -108,7 +108,7 @@ function ouvrirAjoutJourPratique() {
     calculerRecapUT();
 }
 
-function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories) {
+function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories, candidatsOptions) {
     document.getElementById('jp-titre').textContent = 'Modifier jour de test pratique';
     document.getElementById('jp-jour-id').value = jourId;
     document.getElementById('jp-date').value = date;
@@ -130,6 +130,15 @@ function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories
             document.querySelectorAll('[name="jp-cat-' + stagiaireId + '"]').forEach(function(cb) {
                 cb.checked = plannedCats.includes(cb.value);
             });
+            if (candidatsOptions && candidatsOptions[stagiaireId]) {
+                var opts = candidatsOptions[stagiaireId];
+                Object.keys(opts).forEach(function(cat) {
+                    var plannedOpts = opts[cat] || [];
+                    document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cat + '"]').forEach(function(ob) {
+                        ob.checked = plannedOpts.includes(ob.value);
+                    });
+                });
+            }
         });
     }
     document.getElementById('modal-jour-pratique').style.display = 'flex';
