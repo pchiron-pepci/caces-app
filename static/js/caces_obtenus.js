@@ -206,7 +206,7 @@ async function chargerValides() {
             const annule = co.statut === 'annule';
             const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
             return `<div style="display:grid;grid-template-columns:70px 1fr 110px 130px 80px 110px 110px 80px 70px;gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;${annule ? 'opacity:0.5;' : ''}">
-                <span style="font-weight:700;font-family:monospace;color:#1a237e;font-size:13px;">${co.numero_ordre ? '#' + co.numero_ordre : '—'}</span>
+                <span style="font-weight:700;font-family:monospace;color:#1a237e;font-size:13px;">${co.numero_ordre ? '#' + String(co.numero_ordre).padStart(4, '0') : '—'}</span>
                 <span style="font-weight:600;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
                 <span style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${co.session_reference}">${co.session_reference}</span>
                 <span><strong style="color:#1a237e;">${co.famille}</strong> <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span></span>

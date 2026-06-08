@@ -216,6 +216,13 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS prochain_numero_caces INTEGER DEFAULT 1"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
         _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS caces_obtenus (
                 id SERIAL PRIMARY KEY,

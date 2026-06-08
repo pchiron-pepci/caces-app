@@ -273,6 +273,11 @@
                     <label>PIN formateur (déblocage "Ce n'est pas moi")</label>
                     <input type="text" id="config-pin-formateur" placeholder="1234" maxlength="20" style="letter-spacing:4px; font-size:18px;">
                 </div>
+                <div class="form-field">
+                    <label>Prochain numéro de certificat CACES®</label>
+                    <input type="number" id="config-prochain-numero" min="1" step="1" placeholder="1" style="font-size:18px; font-weight:700; font-family:monospace; width:120px;">
+                    <small style="color:#888; display:block; margin-top:4px;">Affiché sur 4 chiffres : 0001, 0002…</small>
+                </div>
             </div>
             <div style="margin-top:16px;">
                 <div style="font-size:13px; color:#666; font-weight:500; margin-bottom:8px;">Logo actuel</div>
@@ -807,6 +812,7 @@ async function chargerConfigOrganisme() {
     if (data.audit_externe_date) document.getElementById('config-audit-externe').value = data.audit_externe_date;
     if (data.revue_direction_date) document.getElementById('config-revue-direction').value = data.revue_direction_date;
     document.getElementById('config-pin-formateur').value = data.pin_formateur || '1234';
+    document.getElementById('config-prochain-numero').value = data.prochain_numero_caces || 1;
 }
 
 function sauvegarderConfigOrganisme() {
@@ -827,6 +833,7 @@ function sauvegarderConfigOrganisme() {
             audit_externe_date: document.getElementById('config-audit-externe').value || null,
             revue_direction_date: document.getElementById('config-revue-direction').value || null,
             pin_formateur: document.getElementById('config-pin-formateur').value || '1234',
+            prochain_numero_caces: parseInt(document.getElementById('config-prochain-numero').value) || 1,
         };
         const respNom = await fetch(`/admin/config-organisme?pin=${encodeURIComponent(pin)}`, {
             method: 'PUT',

@@ -183,6 +183,7 @@ class ConfigOrganismeUpdate(BaseModel):
     audit_externe_date: Optional[date] = None
     revue_direction_date: Optional[date] = None
     pin_formateur: Optional[str] = None
+    prochain_numero_caces: Optional[int] = None
 
 @router.get("/config-organisme")
 def get_config_organisme(db: Session = Depends(get_db)):
@@ -202,6 +203,7 @@ def get_config_organisme(db: Session = Depends(get_db)):
         "audit_externe_date": config.audit_externe_date.isoformat() if config.audit_externe_date else "",
         "revue_direction_date": config.revue_direction_date.isoformat() if config.revue_direction_date else "",
         "pin_formateur": config.pin_formateur or "1234",
+        "prochain_numero_caces": config.prochain_numero_caces if config.prochain_numero_caces is not None else 1,
     }
 
 @router.put("/config-organisme")
@@ -220,6 +222,8 @@ def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session =
     config.revue_direction_date = data.revue_direction_date
     if data.pin_formateur is not None:
         config.pin_formateur = data.pin_formateur or "1234"
+    if data.prochain_numero_caces is not None:
+        config.prochain_numero_caces = data.prochain_numero_caces
     db.commit()
     return {"message": "Configuration mise à jour"}
 

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session as DBSession
-from sqlalchemy import func
 from app.database import get_db
 from app.models.caces_obtenu import CacesObtenu
+from app.models.config_organisme import ConfigOrganisme
 from app.models.stagiaire import Stagiaire
 from app.models.testeur import Testeur
 from app.models.session import Session as SessionModel
@@ -154,9 +154,14 @@ def valider_caces(caces_id: int, pin: str = "", db: DBSession = Depends(get_db))
         raise HTTPException(status_code=404, detail="Non trouvé")
     if co.statut != "a_valider":
         raise HTTPException(status_code=400, detail="Ce CACES® n'est pas en attente de validation")
-    max_no = db.query(func.max(CacesObtenu.numero_ordre)).scalar() or 0
-    co.numero_ordre = max_no + 1
+    config = db.query(ConfigOrganisme).first()
+    if not config:
+        config = ConfigOrganisme(prochain_numero_caces=1)
+        db.add(config)
+    prochain = config.prochain_numero_caces if config.prochain_numero_caces is not None else 1
+    co.numero_ordre = prochain
     co.statut = "valide"
+    config.prochain_numero_caces = prochain + 1
     db.commit()
     return {"ok": True, "numero_ordre": co.numero_ordre}
 
