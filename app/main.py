@@ -348,6 +348,10 @@ def dashboard(request: Request):
             LieuHabilitation.lieu_id == lieu.id,
             LieuHabilitation.actif == True
         ).order_by(LieuHabilitation.famille, LieuHabilitation.categorie).all()
+    stagiaires_sans_photo = db.query(Stagiaire).filter(
+        Stagiaire.actif == True,
+        (Stagiaire.photo == None) | (Stagiaire.photo == "")
+    ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -363,6 +367,7 @@ def dashboard(request: Request):
             "sessions_actives": sessions_actives,
             "alertes_testeurs": alertes_testeurs,
             "lieux_cdt": lieux_cdt,
+            "stagiaires_sans_photo": stagiaires_sans_photo,
         }
     )
 

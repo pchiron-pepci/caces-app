@@ -101,11 +101,17 @@
         {% endif %}
     </div>
 
-    <!-- Ligne 3 : Alertes testeurs -->
+    <!-- Ligne 3 : Alertes -->
     <div class="card">
         <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>🔔 Alertes testeurs</h2>
-            <a href="/testeurs" class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Voir tout</a>
+            <h2>🔔 Alertes</h2>
+        </div>
+
+        <!-- Sous-section : Testeurs -->
+        <div style="padding:0 16px 4px;">
+            <h3 style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin:12px 0 8px;">
+                Testeurs <a href="/testeurs" style="font-size:11px; font-weight:400; color:#1a237e; text-decoration:none; margin-left:8px;">Voir tout</a>
+            </h3>
         </div>
         {% if alertes_testeurs %}
         <div style="padding:0 16px 12px;">
@@ -125,8 +131,27 @@
             {% endfor %}
         </div>
         {% else %}
-        <div style="padding:20px 16px; color:#2e7d32; font-size:14px;">✅ Aucune alerte</div>
+        <div style="padding:4px 16px 12px; color:#2e7d32; font-size:14px;">✅ Aucune alerte</div>
         {% endif %}
+
+        <!-- Sous-section : Candidats sans photo -->
+        <div style="padding:0 16px 4px;">
+            <h3 style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin:12px 0 8px;">
+                Candidats sans photo <a href="/stagiaires" style="font-size:11px; font-weight:400; color:#1a237e; text-decoration:none; margin-left:8px;">Voir tout</a>
+            </h3>
+        </div>
+        {% if stagiaires_sans_photo %}
+        <div style="padding:0 16px 16px;">
+            {% for s in stagiaires_sans_photo %}
+            <div style="padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:13px;">
+                <a href="/stagiaires" style="color:#1a237e; text-decoration:none; font-weight:600;">{{ s.nom }} {{ s.prenom }}</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="padding:4px 16px 16px; color:#2e7d32; font-size:14px;">✅ Tous les candidats ont une photo</div>
+        {% endif %}
+
     </div>
 
     <!-- Ligne 3 : Statistiques (placeholder) -->
