@@ -342,6 +342,12 @@ def dashboard(request: Request):
             alertes.append({"label": "Prochain contrôle dépassé", "couleur": "rouge"})
         if alertes:
             alertes_testeurs.append({"testeur": t, "alertes": alertes})
+    lieux_cdt = db.query(Lieu).filter(Lieu.type == "cdt", Lieu.actif == True).order_by(Lieu.nom).all()
+    for lieu in lieux_cdt:
+        lieu.habilitations = db.query(LieuHabilitation).filter(
+            LieuHabilitation.lieu_id == lieu.id,
+            LieuHabilitation.actif == True
+        ).order_by(LieuHabilitation.famille, LieuHabilitation.categorie).all()
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -356,6 +362,7 @@ def dashboard(request: Request):
             "nc_ouvertes": nc_ouvertes,
             "sessions_actives": sessions_actives,
             "alertes_testeurs": alertes_testeurs,
+            "lieux_cdt": lieux_cdt,
         }
     )
 
