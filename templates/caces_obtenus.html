@@ -3,18 +3,42 @@
 {% block title %}CACES® Obtenus{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>🏆 CACES® Obtenus</h1>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 style="font-size:1.5rem; font-weight:700; color:#1a237e;">🏆 CACES® Obtenus</h1>
+    <button id="btn-refresh" class="btn btn-secondary">🔄 Actualiser</button>
 </div>
 
-<div style="display:flex; flex-direction:column; gap:20px; margin-top:20px;">
+<div style="display:flex; flex-direction:column; gap:20px;">
+
     <div class="card">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">⏳ CACES® à valider</h2>
-        <p style="color:#718096;">À venir</p>
+        <div id="liste-a-valider">
+            <p style="color:#718096; text-align:center; padding:24px;">Chargement...</p>
+        </div>
     </div>
+
     <div class="card">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">✅ CACES® validés</h2>
-        <p style="color:#718096;">À venir</p>
+        <div id="liste-valides">
+            <p style="color:#718096; text-align:center; padding:24px;">Chargement...</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal PIN -->
+<div id="modal-pin" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
+    <div class="card" style="width:320px; padding:28px; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <h3 id="pin-titre" style="margin-bottom:16px; font-size:15px; font-weight:700; color:#1a237e;">Confirmation</h3>
+        <input type="password" id="pin-input" placeholder="Code PIN admin" maxlength="10"
+               style="width:100%; padding:9px 12px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px; font-size:16px; box-sizing:border-box;">
+        <p id="pin-erreur" style="color:#c62828; font-size:12px; min-height:16px; margin-bottom:12px;"></p>
+        <div style="display:flex; gap:8px;">
+            <button id="btn-pin-confirmer" class="btn btn-primary" style="flex:1;">Confirmer</button>
+            <button id="btn-pin-annuler" class="btn btn-secondary" style="flex:1;">Annuler</button>
+        </div>
     </div>
 </div>
+
+<script src="/static/js/caces_obtenus.js"></script>
 {% endblock %}

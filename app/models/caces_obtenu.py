@@ -1,0 +1,23 @@
+from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, UniqueConstraint
+from app.database import Base
+from datetime import datetime
+
+
+class CacesObtenu(Base):
+    __tablename__ = "caces_obtenus"
+
+    id = Column(Integer, primary_key=True, index=True)
+    stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
+    famille = Column(String(10), nullable=False)
+    categorie = Column(String(10), nullable=False)
+    options_obtenues = Column(String(200), nullable=True)
+    date_obtention = Column(Date, nullable=False)
+    date_echeance = Column(Date, nullable=False)
+    numero_ordre = Column(Integer, unique=True, nullable=True)
+    statut = Column(String(20), nullable=False, default="a_valider")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("stagiaire_id", "session_id", "categorie", name="uq_caces_obtenu"),
+    )

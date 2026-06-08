@@ -27,10 +27,12 @@ from app.models.config_organisme import ConfigOrganisme
 from app.models.habilitation_option import HabilitationOption
 from app.models.non_conformite import NonConformite
 from app.models.option_categorie import OptionCategorie
+from app.models.caces_obtenu import CacesObtenu
 
 from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
 from app.routers import non_conformites
+from app.routers import caces_obtenus
 from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
@@ -211,6 +213,28 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS caces_obtenus (
+                id SERIAL PRIMARY KEY,
+                stagiaire_id INTEGER NOT NULL REFERENCES stagiaires(id),
+                session_id INTEGER NOT NULL REFERENCES sessions(id),
+                famille VARCHAR(10) NOT NULL,
+                categorie VARCHAR(10) NOT NULL,
+                options_obtenues VARCHAR(200),
+                date_obtention DATE NOT NULL,
+                date_echeance DATE NOT NULL,
+                numero_ordre INTEGER UNIQUE,
+                statut VARCHAR(20) NOT NULL DEFAULT 'a_valider',
+                created_at TIMESTAMP DEFAULT NOW(),
+                CONSTRAINT uq_caces_obtenu UNIQUE(stagiaire_id, session_id, categorie)
+            )
+        """))
+        _conn.commit()
+except Exception:
+    pass
+
 app = FastAPI(
     title="CACES® Manager",
     description="Gestion des certifications CACES® - PEPCI Formation",
@@ -302,6 +326,7 @@ app.include_router(upload.router)
 app.include_router(auth.router)
 app.include_router(statistiques.router)
 app.include_router(non_conformites.router)
+app.include_router(caces_obtenus.router)
 
 @app.get("/")
 def dashboard(request: Request):

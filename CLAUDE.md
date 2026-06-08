@@ -151,6 +151,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `CarteTesteur` | `carte_testeur` | multi-cartes par testeur, soft delete (`actif`) ; champs : `famille`, `nom_fichier`, `contenu_pdf` base64, `date_upload` |
 | `ConfigOrganisme` | `config_organisme` | singleton (1 ligne) ; `nom_organisme`, `logo_base64` (image base64), `logo_nom` ; `audit_interne_date`, `audit_externe_date`, `revue_direction_date` (Date nullable) ; `pin_formateur` VARCHAR(20) défaut "1234" — PIN saisi par le formateur pour débloquer "Ce n'est pas moi" dans test_theorie.html, vérifié via `POST /admin/config/verifier-pin-formateur`, modifiable dans Administration → Paramètres avec PIN admin 1505 ; affiché via Jinja2 globals `nom_organisme()`, `logo_organisme()`, `get_config_organisme()` |
 | `Stagiaire` | `stagiaires` | soft delete (`actif`) |
+| `CacesObtenu` | `caces_obtenus` | statut : `a_valider`/`valide`/`annule` ; `numero_ordre` (Integer unique, attribué à la validation) ; UNIQUE(stagiaire_id, session_id, categorie) ; routes : GET `/api/caces-obtenus/a-valider` (sync + liste), GET `/api/caces-obtenus/valides`, POST `/api/caces-obtenus/valider/{id}?pin=` (attribue numéro incrémental), POST `/api/caces-obtenus/annuler/{id}?pin=` (garde le numéro) ; service `app/services/caces_obtenus.py` → `calculer_et_synchroniser(db)` |
 | `DocumentOfficiel` | `document_officiel` | singleton par type (`certificat_organisme`, `attestation_assurance`, `procedure_interne`) ; champs : `contenu_pdf` base64, `nom_fichier`, `date_validite`, `numero_certificat` (certificat_organisme uniquement) ; Jinja2 globals `numero_certificat()`, `date_validite_certificat()` (retourne date formatée dd/mm/YYYY ou "") |
 | `GrilleTheorie` | `grilles_theorie` | grilles INRS |
 | `ReponseGrille` | `reponses_grille` | questions par grille |
@@ -184,6 +185,7 @@ python init_questions_r482.py
 | Haute | Suppression habilitation testeur — hard delete avec PIN (modal testeurs) | en cours |
 | Haute | Cartes CACES® PDF (format CR80, reportlab) | à faire |
 | Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | ✅ fait |
+| Haute | CACES® Obtenus — calcul auto + validation + page /caces-obtenus | ✅ fait |
 | Haute | Jours de formation (nouveau type, UT personnalisés) | à faire |
 | Haute | Journal non-conformités/réclamations — page /non-conformites + modèle NonConformite + carte dashboard | ✅ fait |
 | Haute | Historique sessions par stagiaire — bouton ▶ dans page stagiaires, lazy load GET /stagiaires/{id}/historique | ✅ fait |
@@ -210,6 +212,26 @@ Variables de contexte passées au template `dashboard.html` :
 - `nc_ouvertes` : NonConformite statut in (ouvert, en_cours) desc date
 - `sessions_actives` : Session statut in (planifiee, en_cours) order by date_theorie/date_pratique_debut
 - `alertes_testeurs` : liste de `{"testeur": Testeur, "alertes": [{"label": str, "couleur": "rouge"|"orange"}]}` — attestation prévention (absente→rouge, >4ans→orange), visite médicale (absente→rouge, >2ans→orange), date_prochain_controle dépassée→rouge
+
+### Règles de calcul CACES® Obtenus
+
+Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroniser(db)` qui parcourt tous les `SessionEpreuve.obtenue == True` et crée les `CacesObtenu` manquants en statut `a_valider`.
+
+**Recherche de la théorie :**
+1. D'abord dans la même session (`ResultatTheorie.session_id == epreuve.session_id AND obtenue == True`)
+2. Sinon extension post-clôture : autre session de même famille avec `statut == "terminee"` (résultat le plus ancien)
+
+**Calcul date_obtention / date_echeance :**
+| Cas | Condition | date_obtention | date_echeance |
+|---|---|---|---|
+| 1 | Théorie et pratique même jour | date pratique | +10 ans −1j (R482) ou +5 ans −1j |
+| 2 | Théorie avant pratique, même session | date pratique | idem |
+| 3 | Théorie après pratique, même session | date théorie | idem |
+| 4 | Post-clôture (théorie autre session terminée) | date pratique | échéance du 1er `CacesObtenu.valide` dans cette famille pour ce stagiaire, sinon calcul normal |
+
+**Numéro d'ordre :** incrémental unique toutes familles confondues (`max(numero_ordre) + 1` au moment de la validation).
+
+**Protection doublon :** UNIQUE(stagiaire_id, session_id, categorie) — un enregistrement annulé bloque la re-création automatique.
 
 ### Note : doublons date_habilitation / date_expiration_habilitation
 `Testeur.date_habilitation` et `Testeur.date_expiration_habilitation` sont des doublons avec `HabilitationTesteur` — à supprimer dans une passe de nettoyage ultérieure après vérification qu'ils ne sont utilisés nulle part (modèle, routes, templates, migrations).
