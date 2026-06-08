@@ -156,7 +156,8 @@
                             class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
                             Tablette candidat
                         </a>
-                        <a href="/sessions/{{ session.id }}/jours/{{ j.id }}/modifier" class="btn btn-secondary" style="padding:6px 12px; font-size:12px;">✏️</a>
+                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                            onclick="window.location.href='/sessions/{{ session.id }}/jours/{{ j.id }}/modifier'">✏️</button>
 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
     onclick="supprimerJour({{ j.id }})">X</button>
                         {% endif %}
