@@ -486,22 +486,25 @@ def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: D
     ).first()
     if not jtc:
         raise HTTPException(status_code=404, detail="Candidat non trouve")
-    
+
+    jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
+
     # Supprimer résultats théorie liés à ce jour
     db.query(ResultatTheorie).filter(
         ResultatTheorie.jour_test_id == jour_id,
         ResultatTheorie.stagiaire_id == stagiaire_id
     ).delete()
-    
-    # Supprimer épreuves pratiques liées aux catégories de ce jour
+
+    # Supprimer épreuves pratiques liées aux catégories de ce jour (filtré par date)
     cats = jtc.categories.split(',') if jtc.categories else []
     for cat in cats:
         db.query(SessionEpreuve).filter(
             SessionEpreuve.session_id == session_id,
             SessionEpreuve.stagiaire_id == stagiaire_id,
-            SessionEpreuve.categorie == cat
+            SessionEpreuve.categorie == cat,
+            SessionEpreuve.date == jour.date
         ).delete()
-    
+
     db.delete(jtc)
     db.commit()
     return {"message": "Candidat retire du jour"}
