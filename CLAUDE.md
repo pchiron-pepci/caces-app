@@ -139,7 +139,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `Session` | `sessions` | `famille`, `lieu_id`, `statut`, `reference` |
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
 | `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
-| `SessionEpreuve` | `sessions_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV — options obtenues lors de l'épreuve |
+| `SessionEpreuve` | `sessions_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV — options obtenues lors de l'épreuve ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` |
 | `ResultatTheorie` | `resultats_theorie` | jamais écrasé |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete ; `option_pe`/`option_tel` legacy — remplacés par `HabilitationOption` |
 | `OptionCategorie` | `option_categorie` | table de référence des options disponibles par famille/catégorie ; codes : PE=Porte-engins, TEL=Télécommande, CC=Conduite cabine, TR=Translation sur rails, CEC=Circulation en charge ; peuplé par `init_options.py` |
@@ -180,7 +180,7 @@ python init_questions_r482.py
 | URGENT | Upgrader caces-db Render avant 05/07/2026 | en attente |
 | Haute | Suppression habilitation testeur — hard delete avec PIN (modal testeurs) | en cours |
 | Haute | Cartes CACES® PDF (format CR80, reportlab) | à faire |
-| Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | à faire |
+| Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | ✅ fait |
 | Haute | Jours de formation (nouveau type, UT personnalisés) | à faire |
 | Haute | Journal non-conformités/réclamations — page /non-conformites + modèle NonConformite + carte dashboard | ✅ fait |
 | Haute | Options CACES® (PE, TEL, CC, TR, CEC) sur épreuves pratiques — planification + résultats | ✅ fait |

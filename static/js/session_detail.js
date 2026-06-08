@@ -215,9 +215,11 @@ async function sauvegarderCandidatJour() {
     if (resp.ok) { fermerModalCandidatJour(); location.reload(); } else alert('Erreur !');
 }
 
-function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identiteVerifiee, obtenue, noteTesteur, optionsPlanifiees, optionsObtenues) {
+function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identiteVerifiee, obtenue, noteTesteur, optionsPlanifiees, optionsObtenues, epreuveId) {
     document.getElementById('pratique-stagiaire-id').value = stagiaireId;
     document.getElementById('pratique-categorie').value = categorie;
+    document.getElementById('pratique-epreuve-id').value = epreuveId || '';
+    document.getElementById('pratique-annuler-zone').style.display = epreuveId ? 'block' : 'none';
     document.getElementById('pratique-info').textContent = 'Categorie : ' + categorie;
     document.getElementById('pratique-testeur').value = testeurId || '';
     document.getElementById('pratique-date').value = date || '';
@@ -252,6 +254,21 @@ function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identit
 }
 
 function fermerModalPratique() { document.getElementById('modal-pratique').style.display = 'none'; }
+
+function annulerResultatPratique() {
+    const epreuveId = document.getElementById('pratique-epreuve-id').value;
+    if (!epreuveId) return;
+    document.getElementById('pin-message').textContent = 'Supprimer définitivement ce résultat pratique ?';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+    document.getElementById('pin-confirm-btn').onclick = async () => {
+        const pin = document.getElementById('pin-input').value;
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/epreuves/' + epreuveId + '?pin=' + pin, { method: 'DELETE' });
+        if (resp.ok) { fermerPin(); fermerModalPratique(); location.reload(); }
+        else document.getElementById('pin-error').style.display = 'block';
+    };
+}
 
 async function sauvegarderPratique() {
     const stagiaireId = document.getElementById('pratique-stagiaire-id').value;

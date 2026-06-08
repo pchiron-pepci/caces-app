@@ -389,6 +389,20 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
     db.commit()
     return {"message": "Epreuve ajoutee"}
 
+@router.delete("/{session_id}/epreuves/{epreuve_id}")
+def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSession = Depends(get_db)):
+    if pin != "1505":
+        raise HTTPException(status_code=403, detail="PIN invalide")
+    e = db.query(SessionEpreuve).filter(
+        SessionEpreuve.id == epreuve_id,
+        SessionEpreuve.session_id == session_id
+    ).first()
+    if not e:
+        raise HTTPException(status_code=404, detail="Epreuve non trouvee")
+    db.delete(e)
+    db.commit()
+    return {"message": "Epreuve supprimee"}
+
 @router.post("/{id}/reouvrir")
 def reouvrir_session(id: int, db: DBSession = Depends(get_db)):
     s = db.query(Session).filter(Session.id == id).first()
