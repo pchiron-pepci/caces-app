@@ -16,6 +16,7 @@ from app.services.tirage_grille import (
     get_questions_phase2, calculer_resultat_theorie_phase2,
     tirage_to_json
 )
+from app.services.caces_obtenus import calculer_et_synchroniser
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional, List, Dict
@@ -140,6 +141,9 @@ def cloturer_session(id: int, db: DBSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Session non trouvee")
     s.statut = "terminee"
     db.commit()
+    # Recalcule les CacesObtenu a_valider : les théories issues de cette session
+    # passent en mode extension (date_echeance = échéance CACES® initial)
+    calculer_et_synchroniser(db)
     return {"message": "Session cloturee"}
 
 # CANDIDATS

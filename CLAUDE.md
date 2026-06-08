@@ -234,6 +234,8 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 
 **Protection doublon :** UNIQUE(stagiaire_id, session_id, categorie) — un enregistrement annulé bloque la re-création automatique.
 
+**Recalcul à la clôture :** `POST /api/sessions/{id}/cloturer` appelle `calculer_et_synchroniser(db)` après `statut = "terminee"`. Les enregistrements `a_valider` dont la théorie provenait de cette session (mode continuité) voient leurs dates recalculées en mode extension (priorité 3 → `post_cloture = True` → `date_echeance` = échéance CACES® initial). Les records `valide`/`annule` ne sont jamais modifiés.
+
 ### Note : doublons date_habilitation / date_expiration_habilitation
 `Testeur.date_habilitation` et `Testeur.date_expiration_habilitation` sont des doublons avec `HabilitationTesteur` — à supprimer dans une passe de nettoyage ultérieure après vérification qu'ils ne sont utilisés nulle part (modèle, routes, templates, migrations).
 
