@@ -223,6 +223,13 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
         _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS caces_obtenus (
                 id SERIAL PRIMARY KEY,

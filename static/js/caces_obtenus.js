@@ -8,22 +8,31 @@ document.addEventListener('DOMContentLoaded', function () {
         chargerValides();
     });
 
+    // --- PIN modal ---
     document.getElementById('btn-pin-annuler').addEventListener('click', fermerPin);
-
     document.getElementById('pin-input').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') document.getElementById('btn-pin-confirmer').click();
     });
-
     document.getElementById('modal-pin').addEventListener('click', function (e) {
         if (e.target === this) fermerPin();
     });
 
+    // --- Motif modal ---
+    document.getElementById('btn-motif-annuler').addEventListener('click', fermerMotif);
+    document.getElementById('btn-motif-confirmer').addEventListener('click', _confirmerMotif);
+    document.getElementById('modal-motif').addEventListener('click', function (e) {
+        if (e.target === this) fermerMotif();
+    });
+
+    // --- Délégation clics ---
     document.addEventListener('click', function (e) {
+
+        // Émettre le CACES® (carte à valider)
         const btnValider = e.target.closest('[data-action="valider-caces"]');
         if (btnValider) {
             const id = parseInt(btnValider.dataset.id);
             const nom = btnValider.dataset.nom;
-            ouvrirPin('Valider le CACES® de ' + nom + ' ?', async function (pin) {
+            ouvrirPin('Émettre le CACES® de ' + nom + ' ?', async function (pin) {
                 const r = await fetch('/api/caces-obtenus/valider/' + id + '?pin=' + encodeURIComponent(pin), { method: 'POST' });
                 if (r.ok) {
                     const data = await r.json();
@@ -34,29 +43,72 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Révision sans motif (carte à valider uniquement)
         const btnRevision = e.target.closest('[data-action="revision-caces"]');
         if (btnRevision) {
             const id = parseInt(btnRevision.dataset.id);
             const nom = btnRevision.dataset.nom;
-            const dansAValider = !!btnRevision.closest('#liste-a-valider');
             ouvrirPin('Remettre en révision le CACES® de ' + nom + ' ?', async function (pin) {
-                const r = await fetch('/api/caces-obtenus/remettre-en-revision/' + id + '?pin=' + encodeURIComponent(pin), { method: 'POST' });
-                if (r.ok) {
-                    if (dansAValider) {
-                        _apresRevisionCarte(id);
-                    } else {
-                        chargerValides();
-                    }
-                }
+                const r = await fetch('/api/caces-obtenus/annuler/' + id + '?pin=' + encodeURIComponent(pin), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ motif: null }),
+                });
+                if (r.ok) _apresRevisionCarte(id);
                 return r;
+            });
+            return;
+        }
+
+        // Annuler CACES® validé (liste validés — motif obligatoire)
+        const btnAnnuler = e.target.closest('[data-action="annuler-caces"]');
+        if (btnAnnuler) {
+            const id = parseInt(btnAnnuler.dataset.id);
+            const nom = btnAnnuler.dataset.nom;
+            ouvrirMotif('Motif de l\'annulation du CACES® de ' + nom, '', function (motif) {
+                fermerMotif();
+                ouvrirPin('Confirmer l\'annulation du CACES® de ' + nom + ' ?', async function (pin) {
+                    const r = await fetch('/api/caces-obtenus/annuler/' + id + '?pin=' + encodeURIComponent(pin), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ motif: motif }),
+                    });
+                    if (r.ok) _apresAnnulation(id, motif);
+                    return r;
+                });
+            });
+            return;
+        }
+
+        // Voir / modifier motif (ligne annulée)
+        const btnMotif = e.target.closest('[data-action="voir-motif"]');
+        if (btnMotif) {
+            const id = parseInt(btnMotif.dataset.id);
+            const nom = btnMotif.dataset.nom || '';
+            const motifActuel = (_validesData[id] && _validesData[id].motif_annulation) || '';
+            ouvrirMotif('Motif d\'annulation' + (nom ? ' — ' + nom : ''), motifActuel, function (motif) {
+                fermerMotif();
+                ouvrirPin('Modifier le motif ?', async function (pin) {
+                    const r = await fetch('/api/caces-obtenus/' + id + '/motif?pin=' + encodeURIComponent(pin), {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ motif: motif }),
+                    });
+                    if (r.ok && _validesData[id]) _validesData[id].motif_annulation = motif;
+                    return r;
+                });
             });
         }
     });
 });
 
+// ===== ÉTAT =====
 let _pinCallback = null;
+let _motifCallback = null;
 const _carteData = {};
+const _validesData = {};
 
+// ===== PIN MODAL =====
 function ouvrirPin(titre, callback) {
     _pinCallback = callback;
     document.getElementById('pin-titre').textContent = titre;
@@ -91,6 +143,31 @@ function fermerPin() {
     _pinCallback = null;
 }
 
+// ===== MOTIF MODAL =====
+function ouvrirMotif(titre, motifInitial, onConfirme) {
+    _motifCallback = onConfirme;
+    document.getElementById('motif-titre').textContent = titre;
+    document.getElementById('motif-input').value = motifInitial || '';
+    document.getElementById('motif-erreur').textContent = '​';
+    document.getElementById('modal-motif').style.display = 'flex';
+    setTimeout(function () { document.getElementById('motif-input').focus(); }, 50);
+}
+
+function fermerMotif() {
+    document.getElementById('modal-motif').style.display = 'none';
+    _motifCallback = null;
+}
+
+function _confirmerMotif() {
+    const motif = document.getElementById('motif-input').value.trim();
+    if (!motif) {
+        document.getElementById('motif-erreur').textContent = '⚠️ Le motif est obligatoire.';
+        return;
+    }
+    if (_motifCallback) _motifCallback(motif);
+}
+
+// ===== UTILITAIRES =====
 function fmtDate(iso) {
     if (!iso) return '—';
     const [y, m, d] = iso.split('-');
@@ -99,10 +176,11 @@ function fmtDate(iso) {
 
 function badgeStatut(statut) {
     if (statut === 'valide') return '<span class="badge" style="background:#e8f5e9;color:#2e7d32;">Validé</span>';
-    if (statut === 'annule') return '<span class="badge" style="background:#fafafa;color:#999;text-decoration:line-through;">Annulé</span>';
+    if (statut === 'annule') return '<span class="badge" style="background:#fde8e8;color:#c62828;">Annulé</span>';
     return '';
 }
 
+// ===== RENDU CARTE À VALIDER =====
 function renderCarteAValider(co) {
     _carteData[co.id] = co;
     const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
@@ -168,6 +246,43 @@ function renderCarteAValider(co) {
     </div>`;
 }
 
+// ===== RENDU LIGNE VALIDÉS =====
+const _COLS = '70px 1fr 110px 130px 80px 110px 110px 80px 90px';
+
+function _renderLigne(co) {
+    const annule = co.statut === 'annule';
+    const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
+    const noOrdre = co.numero_ordre ? '#' + String(co.numero_ordre).padStart(4, '0') : '—';
+    const motifBtn = annule
+        ? `<button data-action="voir-motif" data-id="${co.id}" data-nom="${nomComplet}"
+                title="${co.motif_annulation ? 'Motif : ' + co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
+                style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;"
+                >📝</button>`
+        : `<button data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}"
+                style="background:#fff;border:2px solid #c62828;color:#c62828;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+                ↩ Annuler
+            </button>`;
+    return `<div data-caces-id="${co.id}" style="display:grid;grid-template-columns:${_COLS};gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;${annule ? 'opacity:0.55;' : ''}">
+        <span style="font-weight:700;font-family:monospace;color:#1a237e;font-size:13px;${annule ? 'text-decoration:line-through;' : ''}">${noOrdre}</span>
+        <span style="font-weight:600;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
+        <span style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${co.session_reference || ''}">${co.session_reference || '—'}</span>
+        <span><strong style="color:#1a237e;">${co.famille}</strong> <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span></span>
+        <span style="font-size:11px;color:#666;">${co.options_obtenues || '—'}</span>
+        <span style="font-size:12px;">${fmtDate(co.date_obtention)}</span>
+        <span style="font-size:12px;">${fmtDate(co.date_echeance)}</span>
+        ${badgeStatut(co.statut)}
+        <span>${motifBtn}</span>
+    </div>`;
+}
+
+function _enteteValides() {
+    return `<div id="valides-entete" style="display:grid;grid-template-columns:${_COLS};gap:8px;padding:7px 14px;background:#f0f2fa;border-radius:8px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;">
+        <span>N° Ordre</span><span>Stagiaire</span><span>Session</span><span>Famille / Cat.</span><span>Options</span><span>Obtention</span><span>Échéance</span><span>Statut</span><span></span>
+    </div>`;
+}
+
+// ===== MISES À JOUR DOM =====
+
 function _apresValider(id, numeroOrdre) {
     const co = _carteData[id];
     const carte = document.getElementById('caces-card-' + id);
@@ -179,6 +294,9 @@ function _apresValider(id, numeroOrdre) {
     }
     if (co) {
         co.numero_ordre = numeroOrdre;
+        co.statut = 'valide';
+        co.session_reference = co.session_ref_pratique || co.session_reference || '—';
+        _validesData[co.id] = co;
         _ajouterLigneValide(co);
     }
 }
@@ -190,30 +308,38 @@ function _apresRevisionCarte(id) {
     }
 }
 
+function _apresAnnulation(id, motif) {
+    if (_validesData[id]) _validesData[id].motif_annulation = motif;
+    const el = document.getElementById('liste-valides');
+    if (!el) return;
+    const row = el.querySelector('[data-caces-id="' + id + '"]');
+    if (row) row.remove();
+    const co = _validesData[id];
+    if (!co) return;
+    co.statut = 'annule';
+    co.motif_annulation = motif;
+    el.appendChild(_creerNoeudLigne(co));
+}
+
 function _ajouterLigneValide(co) {
     const el = document.getElementById('liste-valides');
     if (!el) return;
-    const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
-    const ligneHtml = `<div style="display:grid;grid-template-columns:70px 1fr 110px 130px 80px 110px 110px 80px 70px;gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;">
-        <span style="font-weight:700;font-family:monospace;color:#1a237e;font-size:13px;">${co.numero_ordre ? '#' + String(co.numero_ordre).padStart(4, '0') : '—'}</span>
-        <span style="font-weight:600;">${nomComplet}</span>
-        <span style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${co.session_ref_pratique || ''}">${co.session_ref_pratique || '—'}</span>
-        <span><strong style="color:#1a237e;">${co.famille}</strong> <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span></span>
-        <span style="font-size:11px;color:#666;">${co.options_obtenues || '—'}</span>
-        <span style="font-size:12px;">${fmtDate(co.date_obtention)}</span>
-        <span style="font-size:12px;">${fmtDate(co.date_echeance)}</span>
-        <span class="badge" style="background:#e8f5e9;color:#2e7d32;">Validé</span>
-        <span><button data-action="revision-caces" data-id="${co.id}" data-nom="${nomComplet}" style="background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">↩</button></span>
-    </div>`;
+    _validesData[co.id] = co;
     const entete = document.getElementById('valides-entete');
     if (entete) {
-        entete.insertAdjacentHTML('afterend', ligneHtml);
+        entete.insertAdjacentHTML('afterend', _renderLigne(co));
     } else {
-        el.innerHTML = `<div id="valides-entete" style="display:grid;grid-template-columns:70px 1fr 110px 130px 80px 110px 110px 80px 70px;gap:8px;padding:7px 14px;background:#f0f2fa;border-radius:8px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;">
-            <span>N° Ordre</span><span>Stagiaire</span><span>Session</span><span>Famille / Cat.</span><span>Options</span><span>Obtention</span><span>Échéance</span><span>Statut</span><span></span>
-        </div>` + ligneHtml;
+        el.innerHTML = _enteteValides() + _renderLigne(co);
     }
 }
+
+function _creerNoeudLigne(co) {
+    const div = document.createElement('div');
+    div.innerHTML = _renderLigne(co);
+    return div.firstElementChild;
+}
+
+// ===== CHARGEMENT =====
 
 async function chargerAValider() {
     const el = document.getElementById('liste-a-valider');
@@ -236,6 +362,7 @@ async function chargerAValider() {
 async function chargerValides() {
     const el = document.getElementById('liste-valides');
     el.innerHTML = '<p style="color:#718096;text-align:center;padding:24px;">Chargement...</p>';
+    Object.keys(_validesData).forEach(k => delete _validesData[k]);
     try {
         const r = await fetch('/api/caces-obtenus/valides');
         if (!r.ok) throw new Error('Erreur ' + r.status);
@@ -244,25 +371,13 @@ async function chargerValides() {
             el.innerHTML = '<p style="color:#718096;text-align:center;padding:24px;">Aucun CACES® validé.</p>';
             return;
         }
-        const entete = `<div id="valides-entete" style="display:grid;grid-template-columns:70px 1fr 110px 130px 80px 110px 110px 80px 70px;gap:8px;padding:7px 14px;background:#f0f2fa;border-radius:8px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;">
-            <span>N° Ordre</span><span>Stagiaire</span><span>Session</span><span>Famille / Cat.</span><span>Options</span><span>Obtention</span><span>Échéance</span><span>Statut</span><span></span>
-        </div>`;
-        const lignes = data.map(function (co) {
-            const annule = co.statut === 'annule';
-            const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
-            return `<div style="display:grid;grid-template-columns:70px 1fr 110px 130px 80px 110px 110px 80px 70px;gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;${annule ? 'opacity:0.5;' : ''}">
-                <span style="font-weight:700;font-family:monospace;color:#1a237e;font-size:13px;">${co.numero_ordre ? '#' + String(co.numero_ordre).padStart(4, '0') : '—'}</span>
-                <span style="font-weight:600;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
-                <span style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${co.session_reference}">${co.session_reference}</span>
-                <span><strong style="color:#1a237e;">${co.famille}</strong> <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span></span>
-                <span style="font-size:11px;color:#666;">${co.options_obtenues || '—'}</span>
-                <span style="font-size:12px;">${fmtDate(co.date_obtention)}</span>
-                <span style="font-size:12px;">${fmtDate(co.date_echeance)}</span>
-                ${badgeStatut(co.statut)}
-                <span>${!annule ? `<button data-action="revision-caces" data-id="${co.id}" data-nom="${nomComplet}" style="background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">↩</button>` : ''}</span>
-            </div>`;
-        }).join('');
-        el.innerHTML = entete + lignes;
+        // Trier : validés en haut (par numéro desc), annulés en bas
+        data.sort(function (a, b) {
+            if (a.statut !== b.statut) return a.statut === 'valide' ? -1 : 1;
+            return (b.numero_ordre || 0) - (a.numero_ordre || 0);
+        });
+        data.forEach(co => { _validesData[co.id] = co; });
+        el.innerHTML = _enteteValides() + data.map(_renderLigne).join('');
     } catch (err) {
         el.innerHTML = '<p style="color:red;text-align:center;padding:24px;">Erreur de chargement</p>';
     }

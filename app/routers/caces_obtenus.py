@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session as DBSession
+from typing import Optional
+from pydantic import BaseModel
 from app.database import get_db
 from app.models.caces_obtenu import CacesObtenu
 from app.models.config_organisme import ConfigOrganisme
@@ -13,6 +15,14 @@ from app.services.caces_obtenus import calculer_et_synchroniser
 router = APIRouter(prefix="/api/caces-obtenus", tags=["CACES® Obtenus"])
 
 PIN_ADMIN = "1505"
+
+
+class AnnulerData(BaseModel):
+    motif: Optional[str] = None
+
+
+class MotifUpdate(BaseModel):
+    motif: str
 
 
 def _ref(sess) -> str:
@@ -38,6 +48,7 @@ def _enrich_base(co: CacesObtenu, stagiaires: dict, sessions: dict) -> dict:
         "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
         "numero_ordre": co.numero_ordre,
         "statut": co.statut,
+        "motif_annulation": co.motif_annulation or "",
     }
 
 
@@ -166,14 +177,15 @@ def valider_caces(caces_id: int, pin: str = "", db: DBSession = Depends(get_db))
     return {"ok": True, "numero_ordre": co.numero_ordre}
 
 
-@router.post("/remettre-en-revision/{caces_id}")
-def remettre_en_revision(caces_id: int, pin: str = "", db: DBSession = Depends(get_db)):
+@router.post("/annuler/{caces_id}")
+def annuler_caces(caces_id: int, pin: str = "", data: Optional[AnnulerData] = Body(default=None), db: DBSession = Depends(get_db)):
     if pin != PIN_ADMIN:
         raise HTTPException(status_code=403, detail="PIN incorrect")
     co = db.query(CacesObtenu).filter(CacesObtenu.id == caces_id).first()
     if not co:
         raise HTTPException(status_code=404, detail="Non trouvé")
     co.statut = "annule"
+    co.motif_annulation = (data.motif if data and data.motif else None)
     # Supprimer les doublons a_valider pour les mêmes clés — seront recalculés au prochain /a-valider
     db.query(CacesObtenu).filter(
         CacesObtenu.id != caces_id,
@@ -182,5 +194,17 @@ def remettre_en_revision(caces_id: int, pin: str = "", db: DBSession = Depends(g
         CacesObtenu.categorie == co.categorie,
         CacesObtenu.statut == "a_valider",
     ).delete(synchronize_session=False)
+    db.commit()
+    return {"ok": True}
+
+
+@router.patch("/{caces_id}/motif")
+def update_motif(caces_id: int, data: MotifUpdate, pin: str = "", db: DBSession = Depends(get_db)):
+    if pin != PIN_ADMIN:
+        raise HTTPException(status_code=403, detail="PIN incorrect")
+    co = db.query(CacesObtenu).filter(CacesObtenu.id == caces_id).first()
+    if not co:
+        raise HTTPException(status_code=404, detail="Non trouvé")
+    co.motif_annulation = data.motif
     db.commit()
     return {"ok": True}

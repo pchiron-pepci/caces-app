@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey, UniqueConstraint
 from app.database import Base
 from datetime import datetime
 
@@ -16,6 +16,7 @@ class CacesObtenu(Base):
     date_echeance = Column(Date, nullable=False)
     numero_ordre = Column(Integer, unique=True, nullable=True)
     statut = Column(String(20), nullable=False, default="a_valider")
+    motif_annulation = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
