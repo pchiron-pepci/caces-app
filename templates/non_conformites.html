@@ -25,15 +25,15 @@
 </div>
 {% else %}
 
-<div id="nc-sort-header" style="display:flex; align-items:center; gap:12px; padding:7px 16px; background:#f0f2fa; border-radius:8px; margin-bottom:6px; user-select:none;">
-    <span style="width:16px; flex-shrink:0;"></span>
-    <span class="nc-sort-col" data-col="reference" style="min-width:105px; flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Référence <span class="sort-arrow" id="arrow-reference"></span></span>
-    <span class="nc-sort-col" data-col="date" style="min-width:85px; flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Date <span class="sort-arrow" id="arrow-date"></span></span>
-    <span class="nc-sort-col" data-col="titre" style="flex:1; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Titre <span class="sort-arrow" id="arrow-titre"></span></span>
-    <span class="nc-sort-col" data-col="origine" style="flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Origine <span class="sort-arrow" id="arrow-origine"></span></span>
-    <span class="nc-sort-col" data-col="type_nc" style="flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Type <span class="sort-arrow" id="arrow-type_nc"></span></span>
-    <span class="nc-sort-col" data-col="nature" style="flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Nature <span class="sort-arrow" id="arrow-nature"></span></span>
-    <span class="nc-sort-col" data-col="statut" style="flex-shrink:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Statut <span class="sort-arrow" id="arrow-statut"></span></span>
+<div id="nc-sort-header" style="display:grid; grid-template-columns:20px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:7px 16px; background:#f0f2fa; border-radius:8px; margin-bottom:6px; user-select:none;">
+    <span></span>
+    <span class="nc-sort-col" data-col="reference" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Référence <span class="sort-arrow" id="arrow-reference"></span></span>
+    <span class="nc-sort-col" data-col="date" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Date <span class="sort-arrow" id="arrow-date"></span></span>
+    <span class="nc-sort-col" data-col="titre" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Titre <span class="sort-arrow" id="arrow-titre"></span></span>
+    <span class="nc-sort-col" data-col="origine" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Origine <span class="sort-arrow" id="arrow-origine"></span></span>
+    <span class="nc-sort-col" data-col="type_nc" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Type <span class="sort-arrow" id="arrow-type_nc"></span></span>
+    <span class="nc-sort-col" data-col="nature" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Nature <span class="sort-arrow" id="arrow-nature"></span></span>
+    <span class="nc-sort-col" data-col="statut" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Statut <span class="sort-arrow" id="arrow-statut"></span></span>
 </div>
 
 <div id="nc-list">
@@ -48,37 +48,39 @@
      data-nature="{{ nc.nature or '' }}"
      data-statut="{{ nc.statut }}">
     <div class="nc-toggle-header" data-id="{{ nc.id }}"
-         style="display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none;">
+         style="display:grid; grid-template-columns:20px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:14px 16px; cursor:pointer; user-select:none;">
         <span class="nc-arrow" style="color:#1a237e; font-size:12px; transition:transform 0.2s; display:inline-block;">▶</span>
-        <span style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; min-width:105px; flex-shrink:0;">{{ nc.reference or '—' }}</span>
-        <span style="color:#888; font-size:13px; min-width:85px; flex-shrink:0;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
-        <span style="flex:1; font-weight:600; color:#1a237e;">{{ nc.titre }}</span>
-        <span style="font-size:12px; color:#666; margin-right:4px; flex-shrink:0;">
+        <span style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.reference or '—' }}</span>
+        <span style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
+        <span style="font-weight:600; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.titre }}</span>
+        <span style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.origine == 'interne' %}Interne
-            {% elif nc.origine == 'reclamation_client' %}Réclamation client
-            {% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant
+            {% elif nc.origine == 'reclamation_client' %}Récl. client
+            {% elif nc.origine == 'reclamation_apprenant' %}Récl. apprenant
             {% elif nc.origine == 'audit' %}Audit
             {% else %}{{ nc.origine }}{% endif %}
-            ·
+        </span>
+        <span style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.type_nc == 'incident' %}Incident
             {% elif nc.type_nc == 'non-conformite' %}Non-conformité
             {% elif nc.type_nc == 'observation' %}Observation
             {% else %}{{ nc.type_nc }}{% endif %}
-            {% if nc.nature %}·
+        </span>
+        <span style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.nature == 'documentaire' %}Documentaire
             {% elif nc.nature == 'materiel' %}Matériel
             {% elif nc.nature == 'organisationnel' %}Organisationnel
-            {% else %}{{ nc.nature }}{% endif %}
-            {% endif %}
+            {% elif nc.nature %}{{ nc.nature }}
+            {% else %}—{% endif %}
         </span>
         {% if nc.statut == 'ouvert' %}
-            <span class="badge" style="background:#ffebee;color:#c62828;flex-shrink:0;">Ouvert</span>
+            <span class="badge" style="background:#ffebee;color:#c62828;">Ouvert</span>
         {% elif nc.statut == 'en_cours' %}
-            <span class="badge" style="background:#fff3e0;color:#e65100;flex-shrink:0;">En cours</span>
+            <span class="badge" style="background:#fff3e0;color:#e65100;">En cours</span>
         {% elif nc.statut == 'cloture' %}
-            <span class="badge" style="background:#e8f5e9;color:#2e7d32;flex-shrink:0;">Clôturé</span>
+            <span class="badge" style="background:#e8f5e9;color:#2e7d32;">Clôturé</span>
         {% else %}
-            <span class="badge" style="background:#f5f5f5;color:#757575;flex-shrink:0;">Sans objet</span>
+            <span class="badge" style="background:#f5f5f5;color:#757575;">Sans objet</span>
         {% endif %}
     </div>
 
