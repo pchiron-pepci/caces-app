@@ -506,6 +506,13 @@
         <div class="identite-nom" id="identite-nom">—</div>
         <div class="identite-info" id="identite-info">—</div>
 
+        <div style="text-align:center; margin:16px 0 8px;">
+            <button onclick="lireIdentiteVoixHaute()"
+                style="background:#e8eaf6; border:none; border-radius:10px; padding:10px 22px; font-size:15px; cursor:pointer; color:#1a237e; font-weight:700;">
+                🔊 Lire à voix haute
+            </button>
+        </div>
+
         <label class="checkbox-confirm">
             <input type="checkbox" id="confirm-identite">
             <span>Je certifie etre la personne designe ci-dessus et m'engage a repondre seul aux questions, sans aide exterieure ni support de cours.</span>
@@ -752,6 +759,19 @@ function demanderPinFormateur() {
 
 function annulerPinFormateur() {
     document.getElementById('zone-pas-moi').style.display = 'none';
+}
+
+function lireIdentiteVoixHaute() {
+    if (!window.speechSynthesis) return;
+    const nom = document.getElementById('identite-nom').textContent.trim();
+    const info = document.getElementById('identite-info').textContent.trim();
+    const naissance = info ? ', ' + info : '';
+    const texte = 'Êtes-vous bien ' + nom + naissance + ' ? Je certifie être la personne désignée ci-dessus et m\'engage à répondre seul aux questions, sans aide extérieure ni support de cours.';
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(texte);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
 }
 
 async function verifierPinFormateur() {
