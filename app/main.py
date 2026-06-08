@@ -26,7 +26,7 @@ from app.models.config_organisme import ConfigOrganisme
 from app.models.habilitation_option import HabilitationOption
 from app.models.non_conformite import NonConformite
 
-from sqlalchemy import text
+from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
 from app.routers import non_conformites
 from app.models.utilisateur import Utilisateur
@@ -350,7 +350,7 @@ def dashboard(request: Request):
         ).order_by(LieuHabilitation.famille, LieuHabilitation.categorie).all()
     stagiaires_sans_photo = db.query(Stagiaire).filter(
         Stagiaire.actif == True,
-        (Stagiaire.photo == None) | (Stagiaire.photo == "")
+        or_(Stagiaire.photo == None, Stagiaire.photo == "")
     ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
     db.close()
     return templates.TemplateResponse(
