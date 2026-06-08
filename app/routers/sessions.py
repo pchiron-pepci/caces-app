@@ -503,21 +503,23 @@ def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: D
 
     jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
 
+    if jour and jour.type == 'pratique':
+        epreuve_existante = db.query(SessionEpreuve).filter(
+            SessionEpreuve.session_id == session_id,
+            SessionEpreuve.stagiaire_id == stagiaire_id,
+            SessionEpreuve.date == jour.date
+        ).first()
+        if epreuve_existante:
+            raise HTTPException(
+                status_code=400,
+                detail="Supprimez d'abord les résultats de ce candidat avant de le retirer du jour"
+            )
+
     # Supprimer résultats théorie liés à ce jour
     db.query(ResultatTheorie).filter(
         ResultatTheorie.jour_test_id == jour_id,
         ResultatTheorie.stagiaire_id == stagiaire_id
     ).delete()
-
-    # Supprimer épreuves pratiques liées aux catégories de ce jour (filtré par date)
-    cats = jtc.categories.split(',') if jtc.categories else []
-    for cat in cats:
-        db.query(SessionEpreuve).filter(
-            SessionEpreuve.session_id == session_id,
-            SessionEpreuve.stagiaire_id == stagiaire_id,
-            SessionEpreuve.categorie == cat,
-            SessionEpreuve.date == jour.date
-        ).delete()
 
     db.delete(jtc)
     db.commit()

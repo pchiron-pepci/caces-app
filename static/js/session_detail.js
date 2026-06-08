@@ -471,6 +471,6 @@ function retirerCandidatJour(jourId, stagiaireId, nom) {
         if (pin !== '1505') { document.getElementById('pin-error').style.display = 'block'; return; }
         fermerPin();
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId, { method: 'DELETE' });
-        if (resp.ok) location.reload(); else alert('Erreur !');
+        if (resp.ok) location.reload(); else { const d = await resp.json(); fermerPin(); alert(d.detail || 'Erreur !'); }
     };
 }
