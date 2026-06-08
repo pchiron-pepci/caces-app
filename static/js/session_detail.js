@@ -101,19 +101,37 @@ function ouvrirAjoutJourPratique() {
     document.getElementById('jp-jour-id').value = '';
     document.getElementById('jp-date').value = '';
     document.getElementById('jp-testeur').value = '';
-    document.querySelectorAll('[name^="jp-cand-"], [name^="jp-cat-"]').forEach(cb => { cb.checked = true; cb.disabled = false; });
-    document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '1');
+    document.querySelectorAll('[name="jp-candidat"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('[name^="jp-cat-"], [name^="jp-opt-"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
+    document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '0.3');
     document.getElementById('modal-jour-pratique').style.display = 'flex';
     calculerRecapUT();
 }
 
-function ouvrirModifierJourPratique(jourId, testeurId, date) {
+function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories) {
     document.getElementById('jp-titre').textContent = 'Modifier jour de test pratique';
     document.getElementById('jp-jour-id').value = jourId;
     document.getElementById('jp-date').value = date;
     document.getElementById('jp-testeur').value = testeurId;
-    document.querySelectorAll('[name^="jp-cand-"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('[name="jp-candidat"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('[name^="jp-cat-"], [name^="jp-opt-"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
     document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '0.3');
+    if (candidatsCategories) {
+        Object.keys(candidatsCategories).forEach(function(stagiaireId) {
+            var candCb = document.getElementById('jp-cand-' + stagiaireId);
+            if (!candCb) return;
+            candCb.checked = true;
+            var catsDiv = document.getElementById('cats-' + stagiaireId);
+            if (catsDiv) {
+                catsDiv.style.opacity = '1';
+                catsDiv.querySelectorAll('input').forEach(function(cb) { cb.disabled = false; });
+            }
+            var plannedCats = candidatsCategories[stagiaireId] || [];
+            document.querySelectorAll('[name="jp-cat-' + stagiaireId + '"]').forEach(function(cb) {
+                cb.checked = plannedCats.includes(cb.value);
+            });
+        });
+    }
     document.getElementById('modal-jour-pratique').style.display = 'flex';
     calculerRecapUT();
 }
