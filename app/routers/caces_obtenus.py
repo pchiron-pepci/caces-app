@@ -175,6 +175,31 @@ def _bulk_maps(records: list, db: DBSession):
     return stagiaires, sessions
 
 
+def _bulk_testeurs(records: list, db: DBSession) -> dict:
+    """Retourne {(stagiaire_id, session_id, categorie): testeur_nom} via SessionEpreuve."""
+    if not records:
+        return {}
+    from sqlalchemy import or_, and_
+    filtre = or_(*[
+        and_(
+            SessionEpreuve.stagiaire_id == r.stagiaire_id,
+            SessionEpreuve.session_id == r.session_id,
+            SessionEpreuve.categorie == r.categorie,
+            SessionEpreuve.obtenue == True,
+        )
+        for r in records
+    ])
+    epreuves = db.query(SessionEpreuve).filter(filtre).all()
+    t_ids = {ep.testeur_id for ep in epreuves if ep.testeur_id}
+    testeurs = {t.id: t for t in db.query(Testeur).filter(Testeur.id.in_(t_ids)).all()} if t_ids else {}
+    result = {}
+    for ep in epreuves:
+        k = (ep.stagiaire_id, ep.session_id, ep.categorie)
+        t = testeurs.get(ep.testeur_id)
+        result[k] = f"{t.nom} {t.prenom}" if t else ""
+    return result
+
+
 @router.get("/a-valider")
 def get_a_valider(db: DBSession = Depends(get_db)):
     records = calculer_et_synchroniser(db)
@@ -196,7 +221,13 @@ def get_valides(db: DBSession = Depends(get_db)):
         .all()
     )
     stagiaires, sessions = _bulk_maps(records, db)
-    return [_enrich_base(r, stagiaires, sessions) for r in records]
+    testeurs = _bulk_testeurs(records, db)
+    result = []
+    for r in records:
+        item = _enrich_base(r, stagiaires, sessions)
+        item["testeur_nom"] = testeurs.get((r.stagiaire_id, r.session_id, r.categorie), "")
+        result.append(item)
+    return result
 
 
 @router.post("/valider/{caces_id}")

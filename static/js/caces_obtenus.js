@@ -92,6 +92,18 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Toggle sources validés
+        const btnVToggle = e.target.closest('[data-action="toggle-vsources"]');
+        if (btnVToggle) {
+            const id = btnVToggle.dataset.id;
+            const src = document.getElementById('vsources-' + id);
+            const arr = document.getElementById('varrow-' + id);
+            const ouvert = src.style.display === 'block';
+            src.style.display = ouvert ? 'none' : 'block';
+            arr.textContent = ouvert ? '▶' : '▼';
+            return;
+        }
+
         // Voir / modifier motif (ligne annulée)
         const btnMotif = e.target.closest('[data-action="voir-motif"]');
         if (btnMotif) {
@@ -263,43 +275,73 @@ function renderCarteAValider(co) {
     </div>`;
 }
 
-// ===== RENDU LIGNE VALIDÉS =====
-const _COLS = '160px 1fr 110px 130px 80px 110px 110px 80px 90px';
+// ===== RENDU CARTE VALIDÉS =====
 
 function _renderLigne(co) {
     const annule = co.statut === 'annule';
     const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
     const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : null;
-    const noOrdre = annule
-        ? `<span style="font-weight:700;font-family:monospace;font-size:13px;text-decoration:line-through;">N° CACES® ${noFormate || '—'}</span>`
-        : noFormate
-            ? `<span style="background:#1a237e;color:#fff;border-radius:6px;padding:3px 8px;font-size:16px;font-weight:700;font-family:monospace;white-space:nowrap;">N° CACES® ${noFormate}</span>`
-            : `<span style="color:#999;">—</span>`;
-    const motifBtn = annule
+
+    const noBadge = noFormate
+        ? (annule
+            ? `<span style="font-family:monospace;font-size:13px;font-weight:700;text-decoration:line-through;color:#999;">N° CACES® ${noFormate}</span>`
+            : `<span style="background:#1a237e;color:#fff;border-radius:6px;padding:3px 8px;font-size:16px;font-weight:700;font-family:monospace;white-space:nowrap;">N° CACES® ${noFormate}</span>`)
+        : `<span style="color:#999;font-size:13px;">—</span>`;
+
+    const options = co.options_obtenues
+        ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">${o.trim()}</span>`).join(' ')
+        : '';
+
+    const actionHtml = annule
         ? `<button data-action="voir-motif" data-id="${co.id}" data-nom="${nomComplet}"
                 title="${co.motif_annulation ? 'Motif : ' + co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
-                style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;"
-                >📝</button>`
+                style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;">📝</button>`
         : `<button data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}"
-                style="background:#fff;border:2px solid #c62828;color:#c62828;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+                style="background:#fff;border:2px solid #c62828;color:#c62828;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
                 ↩ Annuler
             </button>`;
-    return `<div data-caces-id="${co.id}" style="display:grid;grid-template-columns:${_COLS};gap:8px;padding:10px 14px;border-bottom:1px solid #f0f0f0;align-items:center;${annule ? 'opacity:0.55;' : ''}">
-        <span>${noOrdre}</span>
-        <span style="font-weight:600;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
-        <span style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${co.session_reference || ''}">${co.session_reference || '—'}</span>
-        <span><strong style="color:#1a237e;">${co.famille}</strong> <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span></span>
-        <span style="font-size:11px;color:#666;">${co.options_obtenues || '—'}</span>
-        <span style="font-size:12px;">${fmtDate(co.date_obtention)}</span>
-        <span style="font-size:12px;">${fmtDate(co.date_echeance)}</span>
-        ${badgeStatut(co.statut)}
-        <span>${motifBtn}</span>
-    </div>`;
-}
 
-function _enteteValides() {
-    return `<div id="valides-entete" style="display:grid;grid-template-columns:${_COLS};gap:8px;padding:7px 14px;background:#f0f2fa;border-radius:8px;margin-bottom:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;">
-        <span>N° CACES®</span><span>Stagiaire</span><span>Session</span><span>Famille / Cat.</span><span>Options</span><span>Obtention</span><span>Échéance</span><span>Statut</span><span></span>
+    const motifHtml = annule && co.motif_annulation
+        ? `<div style="font-size:12px;color:#888;margin-top:4px;font-style:italic;">Motif : "${co.motif_annulation}"</div>`
+        : '';
+
+    const sourcesHtml = (co.session_reference || co.testeur_nom)
+        ? `<div id="vsources-${co.id}" style="display:none;margin-top:8px;background:#f8f9ff;border-radius:8px;padding:8px 12px;font-size:12px;color:#555;">
+               🔧 <span style="font-weight:600;">${co.session_reference || '—'}</span>
+               ${co.testeur_nom ? ` &nbsp;|&nbsp; Testeur : <strong>${co.testeur_nom}</strong>` : ''}
+           </div>`
+        : '';
+
+    const toggleHtml = (co.session_reference || co.testeur_nom)
+        ? `<button data-action="toggle-vsources" data-id="${co.id}"
+                style="background:none;border:none;cursor:pointer;font-size:12px;color:#1a237e;font-weight:600;padding:0;display:flex;align-items:center;gap:4px;">
+                <span id="varrow-${co.id}">▶</span> Voir les sources
+            </button>`
+        : '';
+
+    return `<div data-caces-id="${co.id}" style="border:1px solid ${annule ? '#e8e8e8' : '#c8d8f0'};border-radius:12px;padding:14px 18px;margin-bottom:10px;background:#fff;${annule ? 'opacity:0.6;' : ''}box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            ${noBadge}
+            ${badgeStatut(co.statut)}
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:15px;font-weight:700;color:#1a237e;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</div>
+                <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap;">
+                    <span style="font-weight:700;color:#1a237e;font-size:12px;">${co.famille}</span>
+                    <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:800;">${co.categorie}</span>
+                    ${options}
+                </div>
+                <div style="display:flex;gap:16px;font-size:12px;color:#555;margin-top:6px;flex-wrap:wrap;">
+                    <span>Obtention&nbsp;: <strong>${fmtDate(co.date_obtention)}</strong></span>
+                    <span>Échéance&nbsp;: <strong style="color:#2e7d32;">${fmtDate(co.date_echeance)}</strong></span>
+                </div>
+                ${motifHtml}
+                ${sourcesHtml}
+            </div>
+            <div style="flex-shrink:0;">${actionHtml}</div>
+        </div>
+        ${toggleHtml ? `<div style="margin-top:8px;">${toggleHtml}</div>` : ''}
     </div>`;
 }
 
@@ -347,12 +389,8 @@ function _ajouterLigneValide(co) {
     const el = document.getElementById('liste-valides');
     if (!el) return;
     _validesData[co.id] = co;
-    const entete = document.getElementById('valides-entete');
-    if (entete) {
-        entete.insertAdjacentHTML('afterend', _renderLigne(co));
-    } else {
-        el.innerHTML = _enteteValides() + _renderLigne(co);
-    }
+    // Insérer en premier (validé tout en haut)
+    el.insertAdjacentHTML('afterbegin', _renderLigne(co));
 }
 
 function _creerNoeudLigne(co) {
@@ -399,7 +437,7 @@ async function chargerValides() {
             return (b.numero_ordre || 0) - (a.numero_ordre || 0);
         });
         data.forEach(co => { _validesData[co.id] = co; });
-        el.innerHTML = _enteteValides() + data.map(_renderLigne).join('');
+        el.innerHTML = data.map(_renderLigne).join('');
     } catch (err) {
         el.innerHTML = '<p style="color:red;text-align:center;padding:24px;">Erreur de chargement</p>';
     }
