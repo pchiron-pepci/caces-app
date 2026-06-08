@@ -1,4 +1,5 @@
 import math
+import json
 from fastapi import FastAPI, Request, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
@@ -25,6 +26,7 @@ from app.models.carte_testeur import CarteTesteur
 from app.models.config_organisme import ConfigOrganisme
 from app.models.habilitation_option import HabilitationOption
 from app.models.non_conformite import NonConformite
+from app.models.option_categorie import OptionCategorie
 
 from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
@@ -196,6 +198,14 @@ try:
                 actif BOOLEAN DEFAULT TRUE
             )
         """))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE jour_test_candidats ADD COLUMN IF NOT EXISTS options_planifiees TEXT"))
+        _conn.execute(text("ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS options_obtenues VARCHAR(200)"))
         _conn.commit()
 except Exception:
     pass
@@ -615,6 +625,12 @@ def page_session_detail(request: Request, session_id: int):
     categories = [c.code for c in categories_obj]
     ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
 
+    options_par_cat = {}
+    for opt in db.query(OptionCategorie).filter(OptionCategorie.famille == session.famille).all():
+        if opt.categorie not in options_par_cat:
+            options_par_cat[opt.categorie] = []
+        options_par_cat[opt.categorie].append({"code": opt.code_option, "libelle": opt.libelle_option})
+
     epreuves_map = {}
     for e in epreuves:
         testeur = db.query(Testeur).filter(Testeur.id == e.testeur_id).first()
@@ -677,6 +693,16 @@ def page_session_detail(request: Request, session_id: int):
             jtc.stagiaire_id: jtc.identite_verifiee
             for jtc in jtcs
         }
+
+        j.candidats_options = {}
+        for jtc in jtcs:
+            if jtc.options_planifiees:
+                try:
+                    j.candidats_options[jtc.stagiaire_id] = json.loads(jtc.options_planifiees)
+                except Exception:
+                    j.candidats_options[jtc.stagiaire_id] = {}
+            else:
+                j.candidats_options[jtc.stagiaire_id] = {}
 
         if j.type == 'pratique':
             total_ut = 0
@@ -761,6 +787,7 @@ def page_session_detail(request: Request, session_id: int):
             "equipements": equipements,
             "stagiaires": stagiaires,
             "testeurs": testeurs_list,
+            "options_par_cat": options_par_cat,
             "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date]
         }
     )

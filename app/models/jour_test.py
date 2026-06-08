@@ -23,6 +23,7 @@ class JourTestCandidat(Base):
     categories = Column(String(100), nullable=True)
     actif = Column(Boolean, default=True)
     identite_verifiee = Column(Boolean, default=False)
+    options_planifiees = Column(Text, nullable=True)
 
 class ResultatTheorie(Base):
     __tablename__ = "resultats_theorie"

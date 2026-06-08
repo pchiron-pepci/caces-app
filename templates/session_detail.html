@@ -316,26 +316,31 @@
                             {% if cat in cats_jour %}
                                 {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
                                 {% set ut_jour.total = ut_jour.total + ut_par_cat.get(cat, 1) %}
+                                {% set opts_planif = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}
                                 {% if epreuve and epreuve.obtenue == True %}
 <span class="badge green" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✓</span>
+    {% if epreuve.options_obtenues %}<br><small style="font-size:10px; color:#2e7d32;">{{ epreuve.options_obtenues }}</small>{% endif %}
     {% if session.statut != 'terminee' %}
 <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
-        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}')">Modifier</button>
+        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson }}, {{ (epreuve.options_obtenues or '') | tojson }})">Modifier</button>
     {% endif %}
                                 {% elif epreuve and epreuve.obtenue == False %}
                                     <span class="badge red" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✗</span>
+                                    {% if epreuve.options_obtenues %}<br><small style="font-size:10px; color:#c62828;">{{ epreuve.options_obtenues }}</small>{% endif %}
                                     {% if session.statut != 'terminee' %}
                                     <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
-                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}')">Modifier</button>
+                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson }}, {{ (epreuve.options_obtenues or '') | tojson }})">Modifier</button>
                                     {% endif %}
                                 {% else %}
                                     {% if session.statut != 'terminee' %}
                                     <button style="background:#e8eaf6; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:12px; color:#1a237e; font-weight:600;"
-                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, null, '')">
+                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, null, '', {{ opts_planif | tojson }}, '')">
                                         {{ ut_par_cat.get(cat, 1) }} UT +
                                     </button>
+                                    {% if opts_planif %}<br><small style="font-size:10px; color:#666;">{{ opts_planif | join(', ') }}</small>{% endif %}
                                     {% else %}
                                     <span style="font-size:12px; color:#1a237e; font-weight:600;">{{ ut_par_cat.get(cat, 1) }} UT</span>
+                                    {% if opts_planif %}<br><small style="font-size:10px; color:#666;">{{ opts_planif | join(', ') }}</small>{% endif %}
                                     {% endif %}
                                 {% endif %}
                             {% else %}
@@ -615,10 +620,22 @@
                     </div>
                     <div id="cats-{{ sc.stagiaire_id }}" style="display:flex; flex-wrap:wrap; gap:8px; padding-left:24px;">
                         {% for cat in categories %}
-                        <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; padding:6px 10px; background:white; border-radius:8px;">
-                            <input type="checkbox" name="jp-cat-{{ sc.stagiaire_id }}" value="{{ cat }}" checked onchange="calculerRecapUT()">
-                            {{ cat }} ({{ ut_par_cat.get(cat, 1) }} UT)
-                        </label>
+                        <div style="background:white; border-radius:8px; padding:6px 10px;">
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+                                <input type="checkbox" name="jp-cat-{{ sc.stagiaire_id }}" value="{{ cat }}" checked onchange="calculerRecapUT()">
+                                {{ cat }} ({{ ut_par_cat.get(cat, 1) }} UT)
+                            </label>
+                            {% if options_par_cat.get(cat) %}
+                            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; padding-left:20px;">
+                                {% for opt in options_par_cat.get(cat, []) %}
+                                <label style="display:flex; align-items:center; gap:4px; font-size:11px; cursor:pointer; color:#555;">
+                                    <input type="checkbox" name="jp-opt-{{ sc.stagiaire_id }}-{{ cat }}" value="{{ opt.code }}">
+                                    {{ opt.code }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -685,6 +702,8 @@
                         <input type="radio" name="pratique-resultat" value="false"> ECHEC
                     </label>
                 </div>
+            </div>
+            <div class="form-field" style="grid-column: span 2;" id="pratique-options-container" style="display:none;">
             </div>
             <div class="form-field" style="grid-column: span 2;">
                 <label>Note testeur (optionnel)</label>
@@ -822,6 +841,7 @@
     data-session-id="{{ session.id }}"
     data-famille="{{ session.famille }}"
     data-ut-par-cat="{{ ut_par_cat | tojson | e }}"
+    data-options-par-cat="{{ options_par_cat | tojson | e }}"
     data-debut="{{ session.date_pratique_debut or '' }}"
     data-fin="{{ session.date_pratique_fin or '' }}"
     data-nb-equipements="{{ equipements|length }}">

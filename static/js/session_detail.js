@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.DATE_FIN_SESSION = _d.dataset.fin;
         window.NB_EQUIPEMENTS = parseInt(_d.dataset.nbEquipements);
         window.UT_PAR_CAT = JSON.parse(_d.dataset.utParCat);
+        window.OPTIONS_PAR_CAT = JSON.parse(_d.dataset.optionsParCat || '{}');
     }
 
     document.addEventListener('click', function(e) {
@@ -131,8 +132,14 @@ async function sauvegarderJourPratique() {
     document.querySelectorAll('[id^="jp-cand-"]:checked').forEach(candCb => {
         const stagiaireId = parseInt(candCb.value);
         const cats = [];
-        document.querySelectorAll('[name="jp-cat-' + stagiaireId + '"]:checked').forEach(cb => cats.push(cb.value));
-        if (cats.length > 0) candidats_pratique.push({ stagiaire_id: stagiaireId, categories: cats });
+        const options = {};
+        document.querySelectorAll('[name="jp-cat-' + stagiaireId + '"]:checked').forEach(cb => {
+            const cat = cb.value;
+            cats.push(cat);
+            const optCbs = document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cat + '"]:checked');
+            if (optCbs.length > 0) options[cat] = Array.from(optCbs).map(o => o.value);
+        });
+        if (cats.length > 0) candidats_pratique.push({ stagiaire_id: stagiaireId, categories: cats, options });
     });
     if (candidats_pratique.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     if (jourId) {
@@ -181,7 +188,7 @@ async function sauvegarderCandidatJour() {
     if (resp.ok) { fermerModalCandidatJour(); location.reload(); } else alert('Erreur !');
 }
 
-function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identiteVerifiee, obtenue, noteTesteur) {
+function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identiteVerifiee, obtenue, noteTesteur, optionsPlanifiees, optionsObtenues) {
     document.getElementById('pratique-stagiaire-id').value = stagiaireId;
     document.getElementById('pratique-categorie').value = categorie;
     document.getElementById('pratique-info').textContent = 'Categorie : ' + categorie;
@@ -193,6 +200,24 @@ function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identit
         document.querySelector('[name="pratique-resultat"][value="true"]').checked = true;
     } else if (obtenue === false || obtenue === 'false') {
         document.querySelector('[name="pratique-resultat"][value="false"]').checked = true;
+    }
+    const container = document.getElementById('pratique-options-container');
+    const planified = Array.isArray(optionsPlanifiees) ? optionsPlanifiees : [];
+    if (planified.length > 0) {
+        const obtained = (optionsObtenues || '').split(',').filter(Boolean);
+        const allOpts = window.OPTIONS_PAR_CAT[categorie] || [];
+        const displayOpts = allOpts.filter(o => planified.includes(o.code));
+        let html = '<label style="font-size:12px; font-weight:700; color:#555; display:block; margin-bottom:8px;">Options évaluées</label><div style="display:flex; flex-wrap:wrap; gap:12px;">';
+        displayOpts.forEach(function(opt) {
+            const checked = obtained.includes(opt.code) ? 'checked' : '';
+            html += '<label style="display:flex; align-items:center; gap:6px; font-size:14px; cursor:pointer;"><input type="checkbox" name="pratique-option" value="' + opt.code + '" ' + checked + '> ' + opt.code + ' — ' + opt.libelle + '</label>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+        container.style.display = 'block';
+    } else {
+        container.innerHTML = '';
+        container.style.display = 'none';
     }
     document.getElementById('modal-pratique').style.display = 'flex';
     document.getElementById('pratique-identite').checked = identiteVerifiee || false;
@@ -208,6 +233,8 @@ async function sauvegarderPratique() {
     const resultatEl = document.querySelector('[name="pratique-resultat"]:checked');
     if (!testeurId) { alert('Le testeur est obligatoire !'); return; }
     if (!resultatEl) { alert('Le resultat est obligatoire !'); return; }
+    const optsCbs = document.querySelectorAll('[name="pratique-option"]:checked');
+    const optionsObtenues = optsCbs.length > 0 ? Array.from(optsCbs).map(cb => cb.value).join(',') : null;
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/epreuves', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,7 +242,8 @@ async function sauvegarderPratique() {
             testeur_id: parseInt(testeurId), date,
             famille: window.SESSION_FAMILLE, categorie,
             obtenue: resultatEl.value === 'true',
-            note_testeur: document.getElementById('pratique-note').value || null
+            note_testeur: document.getElementById('pratique-note').value || null,
+            options_obtenues: optionsObtenues
         })
     });
     if (resp.ok) { fermerModalPratique(); location.reload(); } else alert('Erreur !');

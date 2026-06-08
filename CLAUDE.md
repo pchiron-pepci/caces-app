@@ -138,8 +138,8 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `Categorie` | `categories` | `ut_pratique`, `pepci_habilite`, `est_option` |
 | `Session` | `sessions` | `famille`, `lieu_id`, `statut`, `reference` |
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
-| `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV |
-| `SessionEpreuve` | `sessions_epreuves` | résultat pratique par catégorie |
+| `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
+| `SessionEpreuve` | `sessions_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV — options obtenues lors de l'épreuve |
 | `ResultatTheorie` | `resultats_theorie` | jamais écrasé |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete ; `option_pe`/`option_tel` legacy — remplacés par `HabilitationOption` |
 | `OptionCategorie` | `option_categorie` | table de référence des options disponibles par famille/catégorie ; codes : PE=Porte-engins, TEL=Télécommande, CC=Conduite cabine, TR=Translation sur rails, CEC=Circulation en charge ; peuplé par `init_options.py` |
@@ -183,6 +183,7 @@ python init_questions_r482.py
 | Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | à faire |
 | Haute | Jours de formation (nouveau type, UT personnalisés) | à faire |
 | Haute | Journal non-conformités/réclamations — page /non-conformites + modèle NonConformite + carte dashboard | ✅ fait |
+| Haute | Options CACES® (PE, TEL, CC, TR, CEC) sur épreuves pratiques — planification + résultats | ✅ fait |
 | Moyenne | Externaliser JS inline de admin.html (contrainte CSP) | à faire |
 | Moyenne | Grilles R486, R489 (scripts init à créer) | à faire |
 | Moyenne | Multi-tenant (subdomain routing, database-per-tenant) | à faire |

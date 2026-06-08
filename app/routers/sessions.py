@@ -74,6 +74,7 @@ class EquipementCreate(BaseModel):
 class CandidatJourPratique(BaseModel):
     stagiaire_id: int
     categories: List[str] = []
+    options: Dict[str, List[str]] = {}
 
 class JourTestCreate(BaseModel):
     session_id: int
@@ -102,6 +103,7 @@ class EpreuveCreate(BaseModel):
     categorie: str
     obtenue: bool
     note_testeur: Optional[str] = None
+    options_obtenues: Optional[str] = None
 
 @router.get("/", response_model=list[SessionResponse])
 def liste_sessions(db: DBSession = Depends(get_db)):
@@ -237,7 +239,8 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
             jtc = JourTestCandidat(
                 jour_test_id=jour.id,
                 stagiaire_id=cp.stagiaire_id,
-                categories=",".join(cp.categories)
+                categories=",".join(cp.categories),
+                options_planifiees=json.dumps(cp.options) if cp.options else None
             )
             db.add(jtc)
 
@@ -261,11 +264,13 @@ def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, 
             ).first()
             if existing:
                 existing.categories = ",".join(cp.categories)
+                existing.options_planifiees = json.dumps(cp.options) if cp.options else None
             else:
                 jtc = JourTestCandidat(
                     jour_test_id=jour_id,
                     stagiaire_id=cp.stagiaire_id,
-                    categories=",".join(cp.categories)
+                    categories=",".join(cp.categories),
+                    options_planifiees=json.dumps(cp.options) if cp.options else None
                 )
                 db.add(jtc)
     else:
@@ -377,7 +382,8 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
         categorie=data.categorie,
         ut=ut,
         obtenue=data.obtenue,
-        note_testeur=data.note_testeur
+        note_testeur=data.note_testeur,
+        options_obtenues=data.options_obtenues
     )
     db.add(e)
     db.commit()
