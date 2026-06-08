@@ -35,7 +35,7 @@
                         <div style="width:40px; height:50px; background:#e0e0e0; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:18px;">👤</div>
                     {% endif %}
                 </td>
-                <td><strong>{{ s.nom }} {{ s.prenom }}</strong></td>
+                <td><strong>{{ s.nom }} {{ s.prenom }}</strong>{% if s.note %} <span title="{{ s.note }}" style="cursor:default;">📝</span>{% endif %}</td>
                 <td data-date="{{ s.date_naissance }}">{{ s.date_naissance.strftime('%d/%m/%Y') }}</td>
                 <td>{{ s.employeur or '—' }}</td>
                 <td>{{ s.email or '—' }}</td>
