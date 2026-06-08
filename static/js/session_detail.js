@@ -238,7 +238,7 @@ function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identit
         ? allOpts.filter(o => planified.includes(o.code))
         : allOpts.filter(o => obtained.includes(o.code));
     if (displayOpts.length > 0) {
-        let html = '<label style="font-size:12px; font-weight:700; color:#555; display:block; margin-bottom:8px;">Options évaluées</label><div style="display:flex; flex-wrap:wrap; gap:12px;">';
+        let html = '<label style="font-size:12px; font-weight:700; color:#555; display:block; margin-bottom:8px;">Options réussies</label><div style="display:flex; flex-wrap:wrap; gap:12px;">';
         displayOpts.forEach(function(opt) {
             const checked = obtained.includes(opt.code) ? 'checked' : '';
             html += '<label style="display:flex; align-items:center; gap:6px; font-size:14px; cursor:pointer;"><input type="checkbox" name="pratique-option" value="' + opt.code + '" ' + checked + '> ' + opt.code + ' — ' + opt.libelle + '</label>';
