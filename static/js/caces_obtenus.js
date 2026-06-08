@@ -43,6 +43,18 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Toggle sources théorie/pratique
+        const btnToggle = e.target.closest('[data-action="toggle-sources"]');
+        if (btnToggle) {
+            const id = btnToggle.dataset.id;
+            const sources = document.getElementById('sources-' + id);
+            const arrow = document.getElementById('toggle-arrow-' + id);
+            const ouvert = sources.style.display === 'flex';
+            sources.style.display = ouvert ? 'none' : 'flex';
+            arrow.textContent = ouvert ? '▶' : '▼';
+            return;
+        }
+
         // Révision sans motif (carte à valider uniquement)
         const btnRevision = e.target.closest('[data-action="revision-caces"]');
         if (btnRevision) {
@@ -215,7 +227,13 @@ function renderCarteAValider(co) {
             </div>
             <div style="text-align:right;font-size:11px;color:#999;">#${co.id}</div>
         </div>
-        <div style="background:#f8f9ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:6px;">
+        <div style="margin-bottom:10px;">
+            <button data-action="toggle-sources" data-id="${co.id}"
+                style="background:none;border:none;cursor:pointer;font-size:12px;color:#1a237e;font-weight:600;padding:0;display:flex;align-items:center;gap:4px;">
+                <span id="toggle-arrow-${co.id}">▶</span> Voir les sources
+            </button>
+        </div>
+        <div id="sources-${co.id}" style="display:none;background:#f8f9ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-direction:column;gap:6px;">
             <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
                 <span style="width:70px;color:#666;font-weight:600;">🎓 Théorie</span>
                 <a href="/sessions/${co.session_id_theorie}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;" title="${co.session_ref_theorie}">${refTheorie}</a>
