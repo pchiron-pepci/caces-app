@@ -4,6 +4,7 @@ from sqlalchemy import func
 from app.database import get_db
 from app.models.caces_obtenu import CacesObtenu
 from app.models.stagiaire import Stagiaire
+from app.models.testeur import Testeur
 from app.models.session import Session as SessionModel
 from app.models.session_epreuve import SessionEpreuve
 from app.models.jour_test import JourTest, ResultatTheorie
@@ -58,6 +59,10 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
     options_pratique = ep.options_obtenues or "" if ep else ""
     sess_pratique = sessions.get(co.session_id)
     ref_pratique = _ref(sess_pratique)
+    testeur_nom = ""
+    if ep and ep.testeur_id:
+        t = db.query(Testeur).filter(Testeur.id == ep.testeur_id).first()
+        testeur_nom = f"{t.nom} {t.prenom}" if t else ""
 
     # Théorie : même session d'abord, sinon post-clôture
     rt = (
@@ -100,6 +105,7 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
         "session_id_pratique": co.session_id,
         "session_ref_pratique": ref_pratique,
         "options_pratique": options_pratique,
+        "testeur_nom": testeur_nom,
         "date_theorie": date_theorie,
         "session_id_theorie": sess_theorie_id,
         "session_ref_theorie": ref_theorie,

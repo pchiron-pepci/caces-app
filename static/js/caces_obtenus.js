@@ -133,6 +133,7 @@ function renderCarteAValider(co) {
                 <span style="color:#2e7d32; font-weight:700;">✅</span>
                 <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span>
                 ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
+                ${co.testeur_nom ? `<span style="font-size:12px;color:#555;margin-left:4px;">| Testeur&nbsp;: <strong>${co.testeur_nom}</strong></span>` : ''}
             </div>
         </div>
 
