@@ -131,6 +131,7 @@ function renderCarteAValider(co) {
                 <a href="/sessions/${co.session_id_pratique}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;" title="${co.session_ref_pratique}">${co.session_ref_pratique}</a>
                 <span style="color:#444; white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
                 <span style="color:#2e7d32; font-weight:700;">✅</span>
+                <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span>
                 ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
             </div>
         </div>
