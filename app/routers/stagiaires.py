@@ -184,7 +184,6 @@ def get_historique_stagiaire(id: int, db: Session = Depends(get_db)):
         for cat in sorted(planned_cats - evaluated_cats):
             pratique.append({"categorie": cat, "statut": "planifie", "options": ""})
 
-        date_ref = session.date_theorie or session.date_pratique_debut
         result.append({
             "session_id": session.id,
             "reference": session.reference or f"Session #{session.id}",
@@ -195,11 +194,7 @@ def get_historique_stagiaire(id: int, db: Session = Depends(get_db)):
             "statut": session.statut,
             "theorie": theorie,
             "pratique": pratique,
-            "_date_ref": date_ref.isoformat() if date_ref else "0000-00-00"
         })
 
-    result.sort(key=lambda x: x["_date_ref"], reverse=True)
-    for r in result:
-        del r["_date_ref"]
-
+    result.sort(key=lambda x: x["session_id"], reverse=True)
     return result
