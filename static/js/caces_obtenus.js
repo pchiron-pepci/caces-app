@@ -28,12 +28,12 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        const btnRejeter = e.target.closest('[data-action="annuler-caces"]');
-        if (btnRejeter) {
-            const id = btnRejeter.dataset.id;
-            const nom = btnRejeter.dataset.nom;
-            ouvrirPin('Rejeter le CACES® de ' + nom + ' ?', async function (pin) {
-                return fetch('/api/caces-obtenus/annuler/' + id + '?pin=' + encodeURIComponent(pin), { method: 'POST' });
+        const btnRevision = e.target.closest('[data-action="revision-caces"]');
+        if (btnRevision) {
+            const id = btnRevision.dataset.id;
+            const nom = btnRevision.dataset.nom;
+            ouvrirPin('Remettre en révision le CACES® de ' + nom + ' ?', async function (pin) {
+                return fetch('/api/caces-obtenus/remettre-en-revision/' + id + '?pin=' + encodeURIComponent(pin), { method: 'POST' });
             });
         }
     });
@@ -149,20 +149,20 @@ function renderCarteAValider(co) {
                     <span style="font-weight:700; color:#388e3c; margin-left:6px;">${fmtDate(co.date_echeance)}</span>
                 </div>
             </div>
-            <div style="display:flex; gap:8px;">
-                <button class="btn btn-danger"
-                    data-action="annuler-caces"
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button
+                    data-action="revision-caces"
                     data-id="${co.id}"
                     data-nom="${nomComplet}"
-                    style="padding:8px 18px; font-size:13px; font-weight:700;">
-                    ❌ Rejeter
+                    style="background:#fff; border:2px solid #e65100; color:#e65100; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer;">
+                    ↩ Révision
                 </button>
-                <button class="btn btn-primary"
+                <button
                     data-action="valider-caces"
                     data-id="${co.id}"
                     data-nom="${nomComplet}"
-                    style="padding:8px 22px; font-size:13px; font-weight:700; background:#2e7d32;">
-                    ✅ Valider
+                    style="background:#2e7d32; color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:13px; font-weight:700; cursor:pointer;">
+                    📜 Émettre le CACES®
                 </button>
             </div>
         </div>
@@ -215,7 +215,7 @@ async function chargerValides() {
                 <span style="font-size:12px;">${fmtDate(co.date_echeance)}</span>
                 ${badgeStatut(co.statut)}
                 <span>
-                    ${!annule ? `<button class="btn btn-danger" data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}" style="padding:4px 8px;font-size:11px;">❌</button>` : ''}
+                    ${!annule ? `<button data-action="revision-caces" data-id="${co.id}" data-nom="${nomComplet}" style="background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">↩</button>` : ''}
                 </span>
             </div>`;
         }).join('');

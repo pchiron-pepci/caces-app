@@ -161,13 +161,14 @@ def valider_caces(caces_id: int, pin: str = "", db: DBSession = Depends(get_db))
     return {"ok": True, "numero_ordre": co.numero_ordre}
 
 
-@router.post("/annuler/{caces_id}")
-def annuler_caces(caces_id: int, pin: str = "", db: DBSession = Depends(get_db)):
+@router.post("/remettre-en-revision/{caces_id}")
+def remettre_en_revision(caces_id: int, pin: str = "", db: DBSession = Depends(get_db)):
     if pin != PIN_ADMIN:
         raise HTTPException(status_code=403, detail="PIN incorrect")
     co = db.query(CacesObtenu).filter(CacesObtenu.id == caces_id).first()
     if not co:
         raise HTTPException(status_code=404, detail="Non trouvé")
     co.statut = "annule"
+    # numero_ordre conservé pour traçabilité ; recalcul au prochain appel /a-valider
     db.commit()
     return {"ok": True}

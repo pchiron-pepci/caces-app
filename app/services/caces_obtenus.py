@@ -144,6 +144,13 @@ def calculer_et_synchroniser(db: Session) -> list:
                 existing.date_obtention = calc["date_obtention"]
                 existing.date_echeance = calc["date_echeance"]
                 existing.options_obtenues = calc["options_obtenues"]
+            elif existing.statut == "annule" and calc is not None:
+                # Remise en a_valider automatique : les données source sont toujours valides
+                existing.statut = "a_valider"
+                existing.numero_ordre = None
+                existing.date_obtention = calc["date_obtention"]
+                existing.date_echeance = calc["date_echeance"]
+                existing.options_obtenues = calc["options_obtenues"]
             continue
 
         if calc is None:
