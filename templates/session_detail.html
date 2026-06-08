@@ -242,7 +242,7 @@
         <div class="card-header">
             <h2>Epreuves pratiques</h2>
             {% if session.statut != 'terminee' %}
-            <button class="btn btn-primary" onclick="ouvrirAjoutJourPratique()">+ Planifier jour pratique</button>
+            <button class="btn btn-primary" onclick="ouvrirAjoutJourPratique()">+ Planifier épreuve pratique</button>
             {% endif %}
         </div>
 
@@ -393,7 +393,7 @@
 
         {% if not jours_test or not (jours_test | selectattr('type', 'equalto', 'pratique') | list) %}
         <div style="padding:24px; text-align:center; color:#888;">
-            Aucun jour pratique planifie. Cliquez sur "+ Planifier jour pratique".
+            Aucun jour pratique planifie. Cliquez sur "+ Planifier épreuve pratique".
         </div>
         {% endif %}
     </div>
