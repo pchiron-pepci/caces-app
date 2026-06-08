@@ -728,10 +728,20 @@ def page_session_detail(request: Request, session_id: int):
             j.total_ut = round(total_ut, 1)
             j.nb_testeurs = nb_testeurs
             j.ut_libres = round((nb_testeurs * 6) - total_ut, 1)
+            epreuves_jour = db.query(SessionEpreuve).filter(
+                SessionEpreuve.session_id == session_id,
+                SessionEpreuve.date == j.date
+            ).all()
+            j.candidats_epreuves = {}
+            for ep in epreuves_jour:
+                if ep.stagiaire_id not in j.candidats_epreuves:
+                    j.candidats_epreuves[ep.stagiaire_id] = []
+                j.candidats_epreuves[ep.stagiaire_id].append(ep.categorie)
         else:
             j.total_ut = 0
             j.nb_testeurs = 0
             j.ut_libres = 0
+            j.candidats_epreuves = {}
 
     ut_planifie_candidat = {}
     for j in jours_test:

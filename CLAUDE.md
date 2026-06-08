@@ -125,6 +125,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 6. **Identité candidat** : case à cocher (non bloquante) dans la modal saisie résultat pratique
 7. **Suppression d'un jour** : supprime aussi les `ResultatTheorie` et `SessionEpreuve` liés
 8. **Retrait candidat d'un jour** : supprime `ResultatTheorie` ET `SessionEpreuve` des catégories du jour — filtre par `(session_id, stagiaire_id, categorie, date)` pour ne pas toucher les épreuves d'autres jours
+12. **Décochage catégorie dans modal jour pratique** : bloqué si une `SessionEpreuve` existe déjà pour ce candidat/catégorie/jour — message "Supprimez d'abord le résultat de la catégorie X avant de la retirer" ; vérifié côté client (JS, sur l'événement `change`) ET côté serveur (`add_candidats_jour` renvoie 400) ; `j.candidats_epreuves = {stagiaire_id: [cat_list]}` calculé dans `main.py` et passé à `ouvrirModifierJourPratique` comme 6e paramètre
 11. **Suppression candidat de la session** : vérifie d'abord qu'aucun `JourTestCandidat` n'existe pour cette session (sinon 400) ; soft delete `SessionCandidat.actif = False` ; PIN 1505 requis côté serveur via `DELETE /api/sessions/{id}/candidats/{sc_id}?pin=`
 9. **Dates session** : vérification que les jours planifiés restent dans l'intervalle lors d'une modification
 10. **Statuts session** : `planifiee` → `en_cours` → `terminee` (ou `annulee`)

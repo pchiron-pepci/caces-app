@@ -276,6 +276,20 @@ def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, 
                 JourTestCandidat.stagiaire_id == cp.stagiaire_id
             ).first()
             if existing:
+                old_cats = set(c.strip() for c in existing.categories.split(',') if c.strip()) if existing.categories else set()
+                new_cats = set(cp.categories)
+                for cat in (old_cats - new_cats):
+                    ep = db.query(SessionEpreuve).filter(
+                        SessionEpreuve.session_id == session_id,
+                        SessionEpreuve.stagiaire_id == cp.stagiaire_id,
+                        SessionEpreuve.categorie == cat,
+                        SessionEpreuve.date == jour.date
+                    ).first()
+                    if ep:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Supprimez d'abord le résultat de la catégorie {cat} avant de la retirer"
+                        )
                 existing.categories = ",".join(cp.categories)
                 existing.options_planifiees = json.dumps(cp.options) if cp.options else None
             else:

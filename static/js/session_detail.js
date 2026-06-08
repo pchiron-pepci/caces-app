@@ -10,9 +10,22 @@ document.addEventListener('DOMContentLoaded', function() {
         try { window.OPTIONS_PAR_CAT = JSON.parse(_d.dataset.optionsParCat || '{}'); } catch(e) { console.error('OPTIONS_PAR_CAT parse error:', e, _d.dataset.optionsParCat); window.OPTIONS_PAR_CAT = {}; }
     }
 
+    window._CANDIDATS_EPREUVES = {};
+
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.btn-retirer-candidat-jour');
         if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom);
+    });
+    document.addEventListener('change', function(e) {
+        const cb = e.target;
+        if (!cb.matches('[name^="jp-cat-"]') || cb.checked) return;
+        const stagiaireId = parseInt(cb.name.replace('jp-cat-', ''));
+        const cat = cb.value;
+        const catsAvecResultat = (window._CANDIDATS_EPREUVES[stagiaireId] || window._CANDIDATS_EPREUVES[String(stagiaireId)] || []);
+        if (catsAvecResultat.includes(cat)) {
+            cb.checked = true;
+            alert('Supprimez d\'abord le résultat de la catégorie ' + cat + ' avant de la retirer');
+        }
     });
 });
 
@@ -108,7 +121,8 @@ function ouvrirAjoutJourPratique() {
     calculerRecapUT();
 }
 
-function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories, candidatsOptions) {
+function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories, candidatsOptions, candidatsEpreuves) {
+    window._CANDIDATS_EPREUVES = candidatsEpreuves || {};
     document.getElementById('jp-titre').textContent = 'Modifier jour de test pratique';
     document.getElementById('jp-jour-id').value = jourId;
     document.getElementById('jp-date').value = date;
@@ -178,7 +192,7 @@ async function sauvegarderJourPratique() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ candidats_pratique })
         });
-        if (resp.ok) { fermerModalJourPratique(); location.reload(); } else alert('Erreur !');
+        if (resp.ok) { fermerModalJourPratique(); location.reload(); } else { const d = await resp.json(); alert(d.detail || 'Erreur !'); }
     } else {
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
