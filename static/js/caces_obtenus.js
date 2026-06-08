@@ -221,6 +221,7 @@ function renderCarteAValider(co) {
                 <a href="/sessions/${co.session_id_theorie}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;" title="${co.session_ref_theorie}">${refTheorie}</a>
                 <span style="color:#444;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
                 <span style="color:#2e7d32;font-weight:700;">✅</span>
+                ${co.testeur_nom_theorie ? `<span style="font-size:12px;color:#555;margin-left:4px;">| Testeur&nbsp;: <strong>${co.testeur_nom_theorie}</strong></span>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
                 <span style="width:70px;color:#666;font-weight:600;">🔧 Pratique</span>
