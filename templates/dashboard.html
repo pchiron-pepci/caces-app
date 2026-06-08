@@ -169,34 +169,30 @@
                     <td>1B, 3, 5</td>
                     <td><span class="badge green">✅ Certifié</span></td>
                 </tr>
+                {% if lieux_cdt %}
+                <tr>
+                    <th colspan="3" style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555;">Centres De Test (CDT)</th>
+                </tr>
+                {% for lieu in lieux_cdt %}
+                <tr>
+                    <td>
+                        <a href="/admin#tab-lieux" style="font-weight:600; color:#1a237e; text-decoration:none;">{{ lieu.nom }}</a>
+                        {% if lieu.ville %}<span style="font-size:12px; color:#888; margin-left:6px;">{{ lieu.ville }}</span>{% endif %}
+                    </td>
+                    <td colspan="2" style="font-size:12px; color:#444;">
+                        {% if lieu.habilitations %}
+                            {% for famille, habs in lieu.habilitations | groupby('famille') %}
+                                <strong>{{ famille }}</strong> {{ habs | map(attribute='categorie') | join(', ') }}{% if not loop.last %} &nbsp;/&nbsp; {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <span style="color:#bbb;">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endif %}
             </tbody>
         </table>
-        {% if lieux_cdt %}
-        <div style="padding:0 16px 16px;">
-            <h3 style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; margin:12px 0 8px;">Centres De Test (CDT)</h3>
-            <table class="table">
-                <tbody>
-                    {% for lieu in lieux_cdt %}
-                    <tr>
-                        <td>
-                            <a href="/admin#tab-lieux" style="font-weight:600; color:#1a237e; text-decoration:none;">{{ lieu.nom }}</a>
-                            {% if lieu.ville %}<span style="font-size:12px; color:#888; margin-left:6px;">{{ lieu.ville }}</span>{% endif %}
-                        </td>
-                        <td style="font-size:12px; color:#444;">
-                            {% if lieu.habilitations %}
-                                {% for famille, habs in lieu.habilitations | groupby('famille') %}
-                                    <strong>{{ famille }}</strong> {{ habs | map(attribute='categorie') | join(', ') }}{% if not loop.last %} &nbsp;/&nbsp; {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                <span style="color:#bbb;">—</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
     </div>
 
     <!-- Ligne 4 : Testeurs opérationnels -->
