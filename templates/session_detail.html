@@ -78,8 +78,10 @@
                         {% if epreuve %}
                             {% if epreuve.obtenue == True %}
                                 <span class="badge green" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✓</span>
+                                {% set ns_ro = namespace(opts_planif=[]) %}{% for j in jours_test %}{% if j.type == 'pratique' and j.date == epreuve.date %}{% set ns_ro.opts_planif = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}{% endif %}{% endfor %}{% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = ns_ro.opts_planif if ns_ro.opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
                             {% elif epreuve.obtenue == False %}
                                 <span class="badge red" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✗</span>
+                                {% set ns_ro = namespace(opts_planif=[]) %}{% for j in jours_test %}{% if j.type == 'pratique' and j.date == epreuve.date %}{% set ns_ro.opts_planif = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}{% endif %}{% endfor %}{% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = ns_ro.opts_planif if ns_ro.opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
                             {% else %}
                                 <span class="badge blue" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT</span>
                             {% endif %}
