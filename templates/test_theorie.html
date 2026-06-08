@@ -513,7 +513,20 @@
     </div>
 
     <button class="btn-action" onclick="allerConsignes()">Confirmer mon identite →</button>
-    <button class="btn-action-secondary" onclick="retourSelection()">← Ce n'est pas moi</button>
+    <button class="btn-action-secondary" onclick="demanderPinFormateur()">← Ce n'est pas moi</button>
+
+    <div id="zone-pas-moi" style="display:none; margin-top:16px; background:#fff3e0; border-radius:14px; padding:20px; border:2px solid #ffb74d;">
+        <div style="font-size:15px; font-weight:700; color:#e65100; margin-bottom:6px;">🔒 Action réservée au formateur</div>
+        <div style="font-size:14px; color:#555; margin-bottom:16px;">Veuillez contacter votre testeur/formateur pour débloquer.</div>
+        <label style="display:block; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#888; margin-bottom:8px;">Code PIN formateur</label>
+        <input type="password" id="pin-formateur-input" placeholder="••••"
+            style="width:100%; padding:12px; border:2px solid #ffb74d; border-radius:10px; font-size:20px; letter-spacing:8px; text-align:center; margin-bottom:8px; outline:none;">
+        <div id="pin-formateur-error" style="display:none; color:#c62828; font-size:13px; margin-bottom:8px;">❌ Code PIN incorrect</div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-action" style="margin-top:0; flex:1;" onclick="verifierPinFormateur()">Débloquer</button>
+            <button class="btn-action-secondary" style="margin-top:0; flex:1;" onclick="annulerPinFormateur()">Annuler</button>
+        </div>
+    </div>
 </div>
 
 <!-- ECRAN 3 : CONSIGNES -->
@@ -728,6 +741,34 @@ function allerConfirmation() {
 function retourSelection() {
     document.getElementById('ecran-identite').style.display = 'none';
     document.getElementById('ecran-selection').style.display = 'block';
+}
+
+function demanderPinFormateur() {
+    document.getElementById('pin-formateur-input').value = '';
+    document.getElementById('pin-formateur-error').style.display = 'none';
+    document.getElementById('zone-pas-moi').style.display = 'block';
+    document.getElementById('pin-formateur-input').focus();
+}
+
+function annulerPinFormateur() {
+    document.getElementById('zone-pas-moi').style.display = 'none';
+}
+
+async function verifierPinFormateur() {
+    const pin = document.getElementById('pin-formateur-input').value;
+    const resp = await fetch('/admin/config/verifier-pin-formateur', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin })
+    });
+    if (resp.ok) {
+        document.getElementById('zone-pas-moi').style.display = 'none';
+        retourSelection();
+    } else {
+        document.getElementById('pin-formateur-error').style.display = 'block';
+        document.getElementById('pin-formateur-input').value = '';
+        document.getElementById('pin-formateur-input').focus();
+    }
 }
 
 // ECRAN 2 → 3

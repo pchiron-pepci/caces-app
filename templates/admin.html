@@ -269,6 +269,10 @@
                     <label>Nom de l'organisme</label>
                     <input type="text" id="config-nom" placeholder="PEPCI Formation">
                 </div>
+                <div class="form-field">
+                    <label>PIN formateur (déblocage "Ce n'est pas moi")</label>
+                    <input type="text" id="config-pin-formateur" placeholder="1234" maxlength="20" style="letter-spacing:4px; font-size:18px;">
+                </div>
             </div>
             <div style="margin-top:16px;">
                 <div style="font-size:13px; color:#666; font-weight:500; margin-bottom:8px;">Logo actuel</div>
@@ -802,6 +806,7 @@ async function chargerConfigOrganisme() {
     if (data.audit_interne_date) document.getElementById('config-audit-interne').value = data.audit_interne_date;
     if (data.audit_externe_date) document.getElementById('config-audit-externe').value = data.audit_externe_date;
     if (data.revue_direction_date) document.getElementById('config-revue-direction').value = data.revue_direction_date;
+    document.getElementById('config-pin-formateur').value = data.pin_formateur || '1234';
 }
 
 function sauvegarderConfigOrganisme() {
@@ -821,6 +826,7 @@ function sauvegarderConfigOrganisme() {
             audit_interne_date: document.getElementById('config-audit-interne').value || null,
             audit_externe_date: document.getElementById('config-audit-externe').value || null,
             revue_direction_date: document.getElementById('config-revue-direction').value || null,
+            pin_formateur: document.getElementById('config-pin-formateur').value || '1234',
         };
         const respNom = await fetch(`/admin/config-organisme?pin=${encodeURIComponent(pin)}`, {
             method: 'PUT',

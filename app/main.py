@@ -206,6 +206,7 @@ try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE jour_test_candidats ADD COLUMN IF NOT EXISTS options_planifiees TEXT"))
         _conn.execute(text("ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS options_obtenues VARCHAR(200)"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS pin_formateur VARCHAR(20) DEFAULT '1234'"))
         _conn.commit()
 except Exception:
     pass
