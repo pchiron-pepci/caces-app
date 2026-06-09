@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             label.innerHTML = 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
         }
-        const showBlocage = (this.value === 'Non conforme' || this.value === 'CACES® annulé');
+        const showBlocage = (this.value === 'CACES® annulé');
         document.getElementById('motif-blocage-section').style.display = showBlocage ? 'block' : 'none';
         if (!showBlocage) {
             document.getElementById('chk-bloquer-pratique').checked = false;
@@ -187,7 +187,7 @@ function fermerPin() {
 }
 
 // ===== MOTIF MODAL =====
-const _MOTIF_OPTS = ['Erreur administrative', 'Non conforme', 'CACES® annulé'];
+const _MOTIF_OPTS = ['CACES® annulé'];
 
 function _parseMotif(stored) {
     for (const opt of _MOTIF_OPTS) {
