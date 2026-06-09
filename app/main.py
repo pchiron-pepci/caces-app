@@ -294,8 +294,8 @@ except Exception:
     pass
 
 app = FastAPI(
-    title="CACES® Manager",
-    description="Gestion des certifications CACES® - PEPCI Formation",
+    title="NORYX Engins",
+    description="Pilotage CACES® & Autorisation de conduite — PEPCI Formation",
     version="0.1.0"
 )
 

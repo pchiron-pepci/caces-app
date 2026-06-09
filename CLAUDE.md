@@ -1,6 +1,6 @@
-# CACES® Manager — Documentation projet
+# NORYX Engins — Documentation projet
 
-Application de gestion des certifications CACES® pour PEPCI Formation.
+Application de pilotage CACES® & Autorisation de conduite pour PEPCI Formation.
 
 ---
 
