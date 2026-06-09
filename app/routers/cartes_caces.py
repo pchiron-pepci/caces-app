@@ -104,7 +104,7 @@ def _build_print_data(carte, s, cos, t_map, config):
 def get_stagiaires(db: DBSession = Depends(get_db)):
     stagiaires = (
         db.query(Stagiaire)
-        .filter(Stagiaire.actif == True)
+        .filter(Stagiaire.actif == 1)
         .order_by(Stagiaire.nom, Stagiaire.prenom)
         .all()
     )
