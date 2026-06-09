@@ -245,17 +245,18 @@ async function _chargerCacesValides(stagId, famille) {
                     ? co.options_obtenues.split(',').map(o => '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:1px 5px;font-size:11px;font-weight:700;">' + o.trim() + '</span>').join(' ')
                     : '—';
                 return '<tr>'
-                    + '<td style="font-weight:700; color:#1a237e; padding:8px 10px;">' + co.categorie + '</td>'
-                    + '<td style="font-family:monospace; font-size:13px; padding:8px 10px;"><span style="background:#e8eaf6; padding:2px 8px; border-radius:4px;">' + _noFormate(co.numero_ordre) + '</span></td>'
+                    + '<td style="font-weight:700; color:#1a237e; padding:8px 10px; white-space:nowrap;">' + co.categorie + '</td>'
+                    + '<td style="font-size:13px; color:#333; padding:8px 10px;">' + (co.categorie_libelle || '—') + '</td>'
                     + '<td style="padding:8px 10px;">' + opts + '</td>'
-                    + '<td style="font-size:13px; color:#444; padding:8px 10px;">' + _fmtDate(co.date_obtention) + '</td>'
-                    + '<td style="font-size:13px; color:#2e7d32; font-weight:700; padding:8px 10px;">' + _fmtDate(co.date_echeance) + '</td>'
+                    + '<td style="font-family:monospace; font-size:13px; padding:8px 10px;"><span style="background:#e8eaf6; padding:2px 8px; border-radius:4px;">' + _noFormate(co.numero_ordre) + '</span></td>'
+                    + '<td style="font-size:13px; color:#444; padding:8px 10px; white-space:nowrap;">' + _fmtDate(co.date_obtention) + '</td>'
+                    + '<td style="font-size:13px; color:#2e7d32; font-weight:700; padding:8px 10px; white-space:nowrap;">' + _fmtDate(co.date_echeance) + '</td>'
                     + '<td style="font-size:12px; color:#666; padding:8px 10px;">' + (co.testeur_nom || '—') + '</td>'
                     + '</tr>';
             }).join('');
             tableEl.innerHTML = '<table class="table">'
                 + '<thead><tr>'
-                + '<th>Cat.</th><th>N° CACES®</th><th>Options</th><th>Obtention</th><th>Échéance</th><th>Testeur</th>'
+                + '<th>Cat.</th><th>Libellé</th><th>Options</th><th>N° CACES®</th><th>Obtention</th><th>Échéance</th><th>Testeur</th>'
                 + '</tr></thead><tbody>' + rows + '</tbody></table>';
 
             // Bouton émettre

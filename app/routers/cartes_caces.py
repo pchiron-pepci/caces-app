@@ -11,6 +11,7 @@ from app.models.stagiaire import Stagiaire
 from app.models.session_epreuve import SessionEpreuve
 from app.models.testeur import Testeur
 from app.models.config_organisme import ConfigOrganisme
+from app.models.categorie import Categorie, Famille
 
 router = APIRouter(prefix="/api/cartes-caces", tags=["Cartes CACES®"])
 
@@ -131,6 +132,13 @@ def get_caces_valides(stagiaire_id: int, famille: str, db: DBSession = Depends(g
         .order_by(CacesObtenu.categorie)
         .all()
     )
+    # Libellés des catégories pour cette famille
+    fam_obj = db.query(Famille).filter(Famille.code == famille).first()
+    libelles: dict = {}
+    if fam_obj:
+        cats = db.query(Categorie).filter(Categorie.famille_id == fam_obj.id).all()
+        libelles = {c.code: c.libelle or "" for c in cats}
+
     t_map = _testeurs_map(cos, db)
     return {
         "stagiaire_id": s.id,
@@ -143,6 +151,7 @@ def get_caces_valides(stagiaire_id: int, famille: str, db: DBSession = Depends(g
             {
                 "id": co.id,
                 "categorie": co.categorie,
+                "categorie_libelle": libelles.get(co.categorie, ""),
                 "numero_ordre": co.numero_ordre,
                 "options_obtenues": co.options_obtenues or "",
                 "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
