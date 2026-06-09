@@ -114,6 +114,10 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 - `/sessions/{id}/modifier` — modification des dates cadre + responsable
 - `/sessions/{id}/jours/{jour_id}/modifier` — modification d'un jour test
 
+### Test théorique — routes
+- `GET /test/theorie/{session_id}/{jour_id}` — tablette testeur : affiche `test_theorie.html` avec sélection candidat (écran 1→2→3→4)
+- `GET /test/theorie/{jour_test_id}/{stagiaire_id}/start` — QR code candidat : démarre directement le test (skip écrans sélection/identité/consignes) ; `jour_test_id` est l'id du `JourTest` (pas `session_id`) ; contexte supplémentaire : `start_direct=True`, `start_stagiaire_id`, `start_nom`, `start_prenom` ; QR générés dans `session_detail.js` via `qrcode.js` (CDN cdnjs) sur `.qr-container[data-qr-url]`
+
 ---
 
 ## Règles métier

@@ -643,6 +643,10 @@
 const SESSION_ID = {{ session_id }};
 const JOUR_ID = {{ jour_id }};
 const GRILLE_ID = {{ grille_id if grille_id else 'null' }};
+const START_DIRECT = {{ 'true' if start_direct is defined and start_direct else 'false' }};
+const START_STAGIAIRE_ID = {{ start_stagiaire_id if start_stagiaire_id is defined else 'null' }};
+const START_NOM = "{{ start_nom if start_nom is defined else '' }}";
+const START_PRENOM = "{{ start_prenom if start_prenom is defined else '' }}";
 
 let questions = [];
 let reponses = {};
@@ -713,6 +717,16 @@ async function chargerQuestions() {
 }
 
 chargerQuestions();
+
+if (START_DIRECT && START_STAGIAIRE_ID) {
+    stagiaireId = START_STAGIAIRE_ID;
+    const headerEl = document.getElementById('header-candidat');
+    if (headerEl) headerEl.textContent = START_NOM + ' ' + START_PRENOM;
+    document.getElementById('ecran-selection').style.display = 'none';
+    document.getElementById('ecran-identite').style.display = 'none';
+    document.getElementById('ecran-consignes').style.display = 'none';
+    demarrerTest();
+}
 
 // ECRAN 1 → 2
 function allerConfirmation() {

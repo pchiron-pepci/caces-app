@@ -12,6 +12,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window._CANDIDATS_EPREUVES = {};
 
+    document.querySelectorAll('.qr-container[data-qr-url]').forEach(function(el) {
+        new QRCode(el, {
+            text: window.location.origin + el.dataset.qrUrl,
+            width: 150,
+            height: 150,
+            colorDark: '#1a237e',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    });
+
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.btn-retirer-candidat-jour');
         if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom, btn.dataset.type);

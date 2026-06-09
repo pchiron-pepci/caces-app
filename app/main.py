@@ -1023,6 +1023,47 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
     )
 
 
+@app.get("/test/theorie/{jour_test_id}/{stagiaire_id}/start")
+def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: int):
+    db = SessionLocal()
+    jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
+    if not jour:
+        db.close()
+        return {"error": "Non trouve"}
+    session = db.query(Session).filter(Session.id == jour.session_id).first()
+    grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first() if jour.grille_id else None
+    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+    candidats_ids = [
+        jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
+            JourTestCandidat.jour_test_id == jour_test_id,
+            JourTestCandidat.actif == True
+        ).all()
+    ]
+    session_candidats = db.query(SessionCandidat).filter(
+        SessionCandidat.session_id == jour.session_id,
+        SessionCandidat.stagiaire_id.in_(candidats_ids),
+        SessionCandidat.actif == True
+    ).all()
+    for sc in session_candidats:
+        sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="test_theorie.html",
+        context={
+            "session_id": jour.session_id,
+            "jour_id": jour_test_id,
+            "grille_id": jour.grille_id,
+            "grille_numero": grille.numero if grille else "Phase 2",
+            "session_candidats": session_candidats,
+            "start_direct": True,
+            "start_stagiaire_id": stagiaire_id,
+            "start_nom": stagiaire.nom if stagiaire else "",
+            "start_prenom": stagiaire.prenom if stagiaire else "",
+        }
+    )
+
+
 @app.get("/non-conformites")
 def page_non_conformites(request: Request):
     import json

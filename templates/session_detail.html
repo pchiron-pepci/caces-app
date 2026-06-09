@@ -190,6 +190,13 @@
                                     class="btn-retirer-candidat-jour"
                                     style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
                                 {% endif %}
+                                {% if not sc.theorie_dispensee %}
+                                <div style="margin-top:8px;">
+                                    <div class="qr-container" data-qr-url="/test/theorie/{{ j.id }}/{{ sc.stagiaire_id }}/start"
+                                         style="display:inline-block;"></div>
+                                    <div style="font-size:10px; color:#888; margin-top:3px; text-align:center;">📱 Scannez pour passer le test</div>
+                                </div>
+                                {% endif %}
                             </td>
                             <td style="text-align:center;">
                                 {% if session.statut != 'terminee' %}
@@ -856,5 +863,6 @@
     data-fin="{{ session.date_pratique_fin or '' }}"
     data-nb-equipements="{{ equipements|length }}">
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/static/js/session_detail.js"></script>
 {% endblock %}
