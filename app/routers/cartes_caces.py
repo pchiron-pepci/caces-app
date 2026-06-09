@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import or_, and_
@@ -170,6 +171,10 @@ def get_caces_carte(carte_id: int, db: DBSession = Depends(get_db)):
     carte = db.query(CarteCaces).filter(CarteCaces.id == carte_id).first()
     if not carte:
         raise HTTPException(status_code=404, detail="Carte introuvable")
+    # Snapshot stocké à l'émission — retourner directement si disponible
+    if carte.caces_json:
+        return json.loads(carte.caces_json)
+    # Fallback pour les cartes legacy sans snapshot
     cos = (
         db.query(CacesObtenu)
         .filter(
@@ -237,13 +242,35 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
     s = db.query(Stagiaire).filter(Stagiaire.id == carte.stagiaire_id).first()
     if not s:
         raise HTTPException(status_code=404)
+    config = db.query(ConfigOrganisme).first()
+    cfg = config or ConfigOrganisme()
+
+    if carte.caces_json:
+        # Snapshot figé à l'émission — impression fidèle à l'original
+        return {
+            "id": carte.id,
+            "numero_carte": carte.numero_carte,
+            "date_generation": carte.date_generation.isoformat(),
+            "stagiaire_id": s.id,
+            "stagiaire_nom": s.nom,
+            "stagiaire_prenom": s.prenom,
+            "photo_url": s.photo or "",
+            "famille": carte.famille,
+            "caces": json.loads(carte.caces_json),
+            "config": {
+                "nom_organisme": cfg.nom_organisme or "",
+                "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
+                "url_verification_caces": cfg.url_verification_caces or "",
+            },
+        }
+
+    # Fallback legacy : CACES® valides actuels
     cos = (
         db.query(CacesObtenu)
         .filter(CacesObtenu.stagiaire_id == carte.stagiaire_id, CacesObtenu.famille == carte.famille, CacesObtenu.statut == "valide")
         .all()
     )
     t_map = _testeurs_map(cos, db)
-    config = db.query(ConfigOrganisme).first()
     return _build_print_data(carte, s, cos, t_map, config)
 
 
@@ -265,6 +292,26 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     )
     if not cos:
         raise HTTPException(status_code=400, detail="Aucun CACES® valide pour ce stagiaire / famille")
+
+    # Snapshot figé à l'émission
+    t_map = _testeurs_map(cos, db)
+    fam_obj = db.query(Famille).filter(Famille.code == famille).first()
+    libelles: dict = {}
+    if fam_obj:
+        libelles = {c.code: c.libelle or "" for c in db.query(Categorie).filter(Categorie.famille_id == fam_obj.id).all()}
+    caces_snapshot = json.dumps([
+        {
+            "categorie": co.categorie,
+            "categorie_libelle": libelles.get(co.categorie, ""),
+            "numero_ordre": co.numero_ordre,
+            "options_obtenues": co.options_obtenues or "",
+            "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
+            "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
+            "testeur_nom": t_map.get((co.stagiaire_id, co.session_id, co.categorie), ""),
+        }
+        for co in sorted(cos, key=lambda x: x.categorie)
+    ], ensure_ascii=False)
+
     # Remplace l'ancienne carte émise
     db.query(CarteCaces).filter(
         CarteCaces.stagiaire_id == stagiaire_id,
@@ -277,11 +324,11 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
         numero_carte=_gen_numero(db),
         date_generation=date.today(),
         statut="emise",
+        caces_json=caces_snapshot,
     )
     db.add(carte)
     db.commit()
     db.refresh(carte)
-    t_map = _testeurs_map(cos, db)
     config = db.query(ConfigOrganisme).first()
     return _build_print_data(carte, s, cos, t_map, config)
 

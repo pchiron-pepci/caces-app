@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, Text, ForeignKey
 from app.database import Base
 
 class CarteCaces(Base):
@@ -10,3 +10,4 @@ class CarteCaces(Base):
     date_generation = Column(Date, nullable=False)
     statut = Column(String(20), nullable=False, default="en_preparation")
     motif_annulation = Column(String(500), nullable=True)
+    caces_json = Column(Text, nullable=True)

@@ -293,6 +293,13 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS caces_json TEXT"))
+        _conn.commit()
+except Exception:
+    pass
+
 app = FastAPI(
     title="NORYX Engins",
     description="Pilotage CACES® & Autorisation de conduite — PEPCI Formation",

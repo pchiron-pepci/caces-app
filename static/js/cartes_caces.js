@@ -394,10 +394,10 @@ function _renderEmise(carte) {
     const annulee = carte.statut === 'annulee';
 
     const badgeHtml = emise
-        ? '<span class="badge" style="background:#e8f5e9;color:#2e7d32;">Émise</span>'
+        ? '<span class="badge" style="background:#e8f5e9;color:#2e7d32;">✅ Émise</span>'
         : remplacee
-        ? '<span class="badge" style="background:#f5f5f5;color:#888;">Remplacée</span>'
-        : '<span class="badge" style="background:#ffebee;color:#c62828;">Annulée</span>';
+        ? '<span class="badge" style="background:#f5f5f5;color:#888;">📷 Remplacée</span>'
+        : '<span class="badge" style="background:#ffebee;color:#c62828;">❌ Annulée</span>';
 
     const motifHtml = (annulee || remplacee) && carte.motif_annulation
         ? '<div style="font-size:11px;color:#888;margin-top:2px;font-style:italic;">' + carte.motif_annulation + '</div>'
