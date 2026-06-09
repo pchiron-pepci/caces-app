@@ -1,4 +1,6 @@
 import json
+import re
+import unicodedata
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import or_, and_
@@ -694,7 +696,11 @@ def telecharger_pdf(carte_id: int, db: DBSession = Depends(get_db)):
     html = _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle, numero_certificat)
     pdf_bytes = _html_to_pdf(html)
     protected = _protect_pdf(pdf_bytes)
-    filename = f"CACES-{carte.numero_carte}.pdf"
+    def _safe(txt):
+        txt = unicodedata.normalize('NFD', txt or '')
+        txt = ''.join(c for c in txt if unicodedata.category(c) != 'Mn')
+        return re.sub(r'[^A-Za-z0-9_-]', '_', txt).upper()
+    filename = f"CACES-{carte.numero_carte}-{_safe(s.nom)}_{_safe(s.prenom).title()}.pdf"
     return StreamingResponse(
         _BIO(protected),
         media_type="application/pdf",
