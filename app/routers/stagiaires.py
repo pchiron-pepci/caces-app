@@ -198,3 +198,44 @@ def get_historique_stagiaire(id: int, db: Session = Depends(get_db)):
 
     result.sort(key=lambda x: x["session_id"], reverse=True)
     return result
+
+
+@router.get("/{id}/caces-valides")
+def get_caces_valides_stagiaire(id: int, db: Session = Depends(get_db)):
+    from app.models.caces_obtenu import CacesObtenu
+    from app.models.session_epreuve import SessionEpreuve
+    from app.models.testeur import Testeur
+
+    cos = (
+        db.query(CacesObtenu)
+        .filter(CacesObtenu.stagiaire_id == id, CacesObtenu.statut == "valide")
+        .order_by(CacesObtenu.numero_ordre.desc())
+        .all()
+    )
+
+    result = []
+    for co in cos:
+        ep = db.query(SessionEpreuve).filter(
+            SessionEpreuve.stagiaire_id == id,
+            SessionEpreuve.session_id == co.session_id,
+            SessionEpreuve.categorie == co.categorie,
+            SessionEpreuve.obtenue == True,
+        ).first()
+        testeur_nom = ""
+        if ep and ep.testeur_id:
+            t = db.query(Testeur).filter(Testeur.id == ep.testeur_id).first()
+            if t:
+                testeur_nom = f"{t.nom} {t.prenom}"
+
+        result.append({
+            "id": co.id,
+            "numero_ordre": co.numero_ordre,
+            "famille": co.famille,
+            "categorie": co.categorie,
+            "options_obtenues": co.options_obtenues or "",
+            "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
+            "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
+            "testeur_nom": testeur_nom,
+        })
+
+    return result

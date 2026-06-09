@@ -200,10 +200,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         body.innerHTML = '<em style="color:#888;">Chargement...</em>';
         try {
-            const resp = await fetch('/stagiaires/' + id + '/historique');
-            if (!resp.ok) throw new Error();
-            const data = await resp.json();
-            body.innerHTML = renderHistorique(data);
+            const [rHisto, rCaces] = await Promise.all([
+                fetch('/stagiaires/' + id + '/historique'),
+                fetch('/stagiaires/' + id + '/caces-valides'),
+            ]);
+            if (!rHisto.ok || !rCaces.ok) throw new Error();
+            const [sessions, caces] = await Promise.all([rHisto.json(), rCaces.json()]);
+            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces);
             body.dataset.loaded = '1';
         } catch (_) {
             body.innerHTML = '<em style="color:red;">Erreur de chargement.</em>';
@@ -282,6 +285,53 @@ document.addEventListener('DOMContentLoaded', function () {
             html += '</div></div>';
         });
         html += '</div>';
+        return html;
+    }
+
+    function renderCacesValides(caces) {
+        let html = '<div style="margin-top:16px;">';
+        html += '<div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">🏆 CACES® validés</div>';
+
+        if (!caces.length) {
+            html += '<p style="color:#bbb;font-size:13px;font-style:italic;margin:0;">Aucun CACES® validé.</p>';
+            html += '</div>';
+            return html;
+        }
+
+        html += '<div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
+
+        // En-tête
+        html += '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;gap:0;">';
+        html += '<div style="width:60px;min-width:60px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">N°</div>';
+        html += '<div style="width:70px;min-width:70px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Fam.</div>';
+        html += '<div style="width:52px;min-width:52px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Cat.</div>';
+        html += '<div style="width:80px;min-width:80px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Options</div>';
+        html += '<div style="flex:1;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Testeur</div>';
+        html += '<div style="width:84px;min-width:84px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Obtention</div>';
+        html += '<div style="width:84px;min-width:84px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Échéance</div>';
+        html += '</div>';
+
+        caces.forEach(function (co, i) {
+            const bg = i % 2 === 0 ? '#fff' : '#f5f7ff';
+            const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+            const options = co.options_obtenues
+                ? co.options_obtenues.split(',').map(function (o) {
+                    return '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:0 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>';
+                  }).join(' ')
+                : '<span style="color:#ccc;font-size:11px;">—</span>';
+
+            html += '<div style="display:flex;align-items:center;padding:8px 12px;background:' + bg + ';border-bottom:1px solid #eef0f6;gap:0;">';
+            html += '<div style="width:60px;min-width:60px;"><span style="background:#1a237e;color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;font-family:monospace;">' + noFormate + '</span></div>';
+            html += '<div style="width:70px;min-width:70px;font-size:12px;font-weight:700;color:#555;">' + co.famille + '</div>';
+            html += '<div style="width:52px;min-width:52px;"><span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;">' + co.categorie + '</span></div>';
+            html += '<div style="width:80px;min-width:80px;display:flex;flex-wrap:wrap;gap:2px;align-items:center;">' + options + '</div>';
+            html += '<div style="flex:1;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">' + (co.testeur_nom || '<span style="color:#ccc;">—</span>') + '</div>';
+            html += '<div style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#1a237e;">' + formatDate(co.date_obtention) + '</div>';
+            html += '<div style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#2e7d32;">' + formatDate(co.date_echeance) + '</div>';
+            html += '</div>';
+        });
+
+        html += '</div></div>';
         return html;
     }
 
