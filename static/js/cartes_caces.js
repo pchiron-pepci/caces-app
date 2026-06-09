@@ -221,6 +221,7 @@ async function _chargerCacesValides(stagId, famille) {
     tableEl.innerHTML = '';
     document.getElementById('resultats-placeholder').style.display = 'none';
     section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     try {
         const r = await fetch('/api/cartes-caces/caces-valides/' + stagId + '/' + encodeURIComponent(famille));
@@ -282,6 +283,7 @@ async function _chargerCacesValides(stagId, famille) {
             }
             btnEmettre.style.display = '';
         }
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (_) {
         infoEl.innerHTML = '<p style="color:red; padding:8px;">Erreur de chargement</p>';
     }
