@@ -64,18 +64,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Toggle sources théorie/pratique
-        const btnToggle = e.target.closest('[data-action="toggle-sources"]');
-        if (btnToggle) {
-            const id = btnToggle.dataset.id;
-            const sources = document.getElementById('sources-' + id);
-            const arrow = document.getElementById('toggle-arrow-' + id);
-            const ouvert = sources.style.display === 'flex';
-            sources.style.display = ouvert ? 'none' : 'flex';
-            arrow.textContent = ouvert ? '▶' : '▼';
-            return;
-        }
-
         // Révision sans motif (carte à valider uniquement)
         const btnRevision = e.target.closest('[data-action="revision-caces"]');
         if (btnRevision) {
@@ -360,70 +348,81 @@ function _renderValides() {
 function renderCarteAValider(co) {
     _carteData[co.id] = co;
     const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
+
     const options = co.options_obtenues
         ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">${o.trim()}</span>`).join(' ')
         : '';
     const optionsPratique = co.options_pratique
         ? co.options_pratique.split(',').map(o => `<span style="background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:1px 5px;font-size:11px;">${o.trim()}</span>`).join(' ')
         : '';
-    const refTheorie = co.session_ref_theorie;
+
     const boutonsHtml = co.statut === 'annule'
-        ? `<span style="background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;">↩ En révision — actualisez pour recalculer</span>`
+        ? `<span style="background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;">↩ En révision — actualisez pour recalculer</span>`
         : `<button data-action="revision-caces" data-id="${co.id}" data-nom="${nomComplet}"
-                style="background:#fff;border:2px solid #e65100;color:#e65100;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;">
+                style="background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">
                 ↩ Révision
             </button>
             <button data-action="valider-caces" data-id="${co.id}" data-nom="${nomComplet}"
-                style="background:#2e7d32;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;">
+                style="background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;">
                 📜 Émettre le CACES®
             </button>`;
 
     return `
-    <div id="caces-card-${co.id}" style="border:1px solid #e0e0e0;border-radius:12px;padding:18px 20px;margin-bottom:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
-            <div>
-                <div style="font-size:16px;font-weight:700;color:#1a237e;"><a href="/stagiaires#${co.stagiaire_id}" target="_blank" style="color:inherit;text-decoration:none;">${nomComplet}</a></div>
-                <div style="margin-top:4px;display:flex;align-items:center;gap:8px;">
-                    <span style="font-weight:700;color:#1a237e;font-size:13px;">${co.famille}</span>
-                    <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 10px;font-size:14px;font-weight:800;">${co.categorie}</span>
-                    ${options}
+    <div id="caces-card-${co.id}" style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;margin-bottom:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+
+        <!-- Header -->
+        <div style="background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <a href="/stagiaires#${co.stagiaire_id}" target="_blank"
+               style="font-size:15px;font-weight:700;color:#1a237e;text-decoration:none;">${nomComplet}</a>
+            <span style="font-weight:700;color:#555;font-size:13px;background:#e8eaf6;padding:2px 8px;border-radius:4px;">${co.famille}</span>
+            <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 10px;font-size:13px;font-weight:800;">${co.categorie}</span>
+            ${options}
+        </div>
+
+        <!-- Body 2 colonnes -->
+        <div style="display:flex;align-items:stretch;">
+
+            <!-- Gauche : dates -->
+            <div style="width:190px;min-width:190px;padding:16px 18px;border-right:2px solid #e8eef8;background:#fafbff;display:flex;flex-direction:column;gap:14px;justify-content:center;">
+                <div>
+                    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;">📅 Obtention présumée</div>
+                    <div style="font-size:18px;font-weight:800;color:#1a237e;">${fmtDate(co.date_obtention)}</div>
+                </div>
+                <div>
+                    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;">⏳ Échéance</div>
+                    <div style="font-size:16px;font-weight:700;color:#2e7d32;">${fmtDate(co.date_echeance)}</div>
                 </div>
             </div>
-            <div style="text-align:right;font-size:12px;color:#999;font-weight:600;">N° CACES® : —</div>
-        </div>
-        <div style="margin-bottom:10px;">
-            <button data-action="toggle-sources" data-id="${co.id}"
-                style="background:none;border:none;cursor:pointer;font-size:12px;color:#1a237e;font-weight:600;padding:0;display:flex;align-items:center;gap:4px;">
-                <span id="toggle-arrow-${co.id}">▶</span> Voir les sources
-            </button>
-        </div>
-        <div id="sources-${co.id}" style="display:none;background:#f8f9ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-direction:column;gap:6px;">
-            <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-                <span style="width:70px;color:#666;font-weight:600;">🎓 Théorie</span>
-                <a href="/sessions/${co.session_id_theorie}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;" title="${co.session_ref_theorie}">${refTheorie}</a>
-                <span style="color:#444;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
-                <span style="color:#2e7d32;font-weight:700;">✅</span>
-                ${co.testeur_nom_theorie ? `<span style="font-size:12px;color:#555;margin-left:4px;">| Testeur&nbsp;: <strong>${co.testeur_nom_theorie}</strong></span>` : ''}
+
+            <!-- Droite : sources toujours visibles -->
+            <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:8px;justify-content:center;">
+                <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+                    <span style="width:70px;color:#666;font-weight:600;white-space:nowrap;">🎓 Théorie</span>
+                    <a href="/sessions/${co.session_id_theorie}" target="_blank"
+                       style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;font-size:12px;">${co.session_ref_theorie || '—'}</a>
+                    <span style="color:#555;white-space:nowrap;font-size:12px;">${fmtDate(co.date_theorie)}</span>
+                    <span style="color:#2e7d32;font-weight:700;">✅</span>
+                    ${co.testeur_nom_theorie ? `<span style="font-size:11px;color:#777;white-space:nowrap;">| ${co.testeur_nom_theorie}</span>` : ''}
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+                    <span style="width:70px;color:#666;font-weight:600;white-space:nowrap;">🔧 Pratique</span>
+                    <a href="/sessions/${co.session_id_pratique}" target="_blank"
+                       style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;font-size:12px;">${co.session_ref_pratique || '—'}</a>
+                    <span style="color:#555;white-space:nowrap;font-size:12px;">${fmtDate(co.date_pratique)}</span>
+                    <span style="color:#2e7d32;font-weight:700;">✅</span>
+                    ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
+                    ${co.testeur_nom ? `<span style="font-size:11px;color:#777;white-space:nowrap;">| ${co.testeur_nom}</span>` : ''}
+                </div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-                <span style="width:70px;color:#666;font-weight:600;">🔧 Pratique</span>
-                <a href="/sessions/${co.session_id_pratique}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;" title="${co.session_ref_pratique}">${co.session_ref_pratique}</a>
-                <span style="color:#444;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
-                <span style="color:#2e7d32;font-weight:700;">✅</span>
-                <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span>
-                ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
-                ${co.testeur_nom ? `<span style="font-size:12px;color:#555;margin-left:4px;">| Testeur&nbsp;: <strong>${co.testeur_nom}</strong></span>` : ''}
-            </div>
+
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-            <div style="display:flex;gap:20px;font-size:13px;align-items:center;">
-                <div style="background:#e8eaf6;border-radius:8px;padding:5px 12px;"><span style="font-weight:700;color:#555;">📅 Obtention présumée&nbsp;:</span> <span style="font-weight:800;color:#1a237e;font-size:14px;">${fmtDate(co.date_obtention)}</span></div>
-                <div><span style="color:#666;">Échéance</span><span style="font-weight:700;color:#388e3c;margin-left:6px;">${fmtDate(co.date_echeance)}</span></div>
-            </div>
-            <div id="caces-card-${co.id}-actions" style="display:flex;gap:10px;align-items:center;">
-                ${boutonsHtml}
-            </div>
+
+        <!-- Footer : actions -->
+        <div id="caces-card-${co.id}-actions"
+             style="border-top:1px solid #f0f0f0;padding:10px 16px;display:flex;justify-content:flex-end;gap:10px;align-items:center;background:#fafbff;">
+            ${boutonsHtml}
         </div>
+
     </div>`;
 }
 
