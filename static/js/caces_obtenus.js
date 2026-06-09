@@ -151,14 +151,17 @@ let _validesArray = [];
 let _sortKey = 'numero_ordre';
 let _sortDir = -1; // -1 = desc
 
+// col definitions : key=sortKey (null=non triable), label, w=width fixe ou flex:true
 const _SORT_COLS = [
-    { key: 'stagiaire',      label: 'Stagiaire' },
-    { key: 'famille',        label: 'Famille' },
-    { key: 'categorie',      label: 'Catégorie' },
-    { key: 'numero_ordre',   label: 'N°' },
-    { key: 'date_obtention', label: 'Obtention' },
-    { key: 'date_echeance',  label: 'Échéance' },
-    { key: 'statut',         label: 'Statut' },
+    { key: 'numero_ordre',   label: 'N°',          w: '68px'  },
+    { key: 'statut',         label: 'Statut',       w: '82px'  },
+    { key: 'stagiaire',      label: 'Stagiaire',    flex: true  },
+    { key: 'famille',        label: 'Fam. · Cat.',  w: '116px' },
+    { key: null,             label: 'Options',      w: '84px'  },
+    { key: null,             label: 'Testeur',      w: '132px' },
+    { key: 'date_obtention', label: 'Obtention',    w: '88px'  },
+    { key: 'date_echeance',  label: 'Échéance',     w: '88px'  },
+    { key: null,             label: '',             w: '120px' },
 ];
 
 // ===== PIN MODAL =====
@@ -276,26 +279,29 @@ function badgeStatut(statut) {
 
 // ===== TRI & RENDU VALIDÉS =====
 
-function _renderHeaderValides() {
-    const cols = _SORT_COLS.map(function (col) {
-        const active = _sortKey === col.key;
-        const arrow = active ? (_sortDir === 1 ? ' ▲' : ' ▼') : ' ↕';
-        return '<span data-action="sort-valides" data-key="' + col.key + '" '
-            + 'style="font-size:11px; font-weight:' + (active ? '800' : '600') + '; '
-            + 'color:' + (active ? '#1a237e' : '#888') + '; '
-            + 'cursor:pointer; user-select:none; text-transform:uppercase; letter-spacing:0.5px; '
-            + 'padding:3px 6px; border-radius:4px; '
-            + 'background:' + (active ? '#e8eaf6' : 'transparent') + '; '
-            + 'white-space:nowrap; transition:color .15s;">'
-            + col.label + '<span style="opacity:0.5;font-size:10px;">' + arrow + '</span>'
-            + '</span>';
-    }).join('<span style="color:#e0e0e0; margin:0 1px; font-size:11px;">·</span>');
+function _colBaseStyle(col) {
+    return col.flex
+        ? 'flex:1;min-width:130px;overflow:hidden;'
+        : 'width:' + col.w + ';min-width:' + col.w + ';';
+}
 
-    return '<div style="display:flex; align-items:center; flex-wrap:wrap; gap:1px; '
-        + 'padding:7px 16px 7px 16px; margin-bottom:10px; '
-        + 'border-bottom:1px solid #eef0f6;">'
-        + cols
-        + '</div>';
+function _renderHeaderValides() {
+    const cells = _SORT_COLS.map(function (col) {
+        const base = _colBaseStyle(col);
+        if (!col.key || !col.label) {
+            return '<div style="' + base + 'font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">' + col.label + '</div>';
+        }
+        const active = _sortKey === col.key;
+        const arrow = active ? (_sortDir === 1 ? '▲' : '▼') : '↕';
+        return '<div data-action="sort-valides" data-key="' + col.key + '" '
+            + 'style="' + base + 'font-size:11px;color:' + (active ? '#1a237e' : '#888') + ';font-weight:' + (active ? '800' : '600') + ';'
+            + 'text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;user-select:none;'
+            + 'display:flex;align-items:center;gap:3px;">'
+            + col.label
+            + '<span style="font-size:9px;color:' + (active ? '#1a237e' : '#ccc') + ';">' + arrow + '</span>'
+            + '</div>';
+    }).join('');
+    return '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:9px 16px;gap:0;">' + cells + '</div>';
 }
 
 function _sortValides(arr) {
@@ -322,14 +328,19 @@ function _renderValides() {
     const listEl = document.getElementById('liste-valides');
     if (!headerEl || !listEl) return;
 
+    headerEl.innerHTML = '';
+
     if (!_validesArray.length) {
-        headerEl.innerHTML = '';
         listEl.innerHTML = '<p style="color:#718096; text-align:center; padding:24px;">Aucun CACES® validé.</p>';
         return;
     }
 
-    headerEl.innerHTML = _renderHeaderValides();
-    listEl.innerHTML = _sortValides(_validesArray).map(_renderLigne).join('');
+    const sorted = _sortValides(_validesArray);
+    listEl.innerHTML =
+        '<div style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;">'
+        + _renderHeaderValides()
+        + sorted.map(function (co, i) { return _renderLigne(co, i); }).join('')
+        + '</div>';
 }
 
 // ===== RENDU CARTE À VALIDER =====
@@ -416,77 +427,43 @@ function renderCarteAValider(co) {
 
 // ===== RENDU CARTE VALIDÉS =====
 
-function _renderLigne(co) {
+function _renderLigne(co, idx) {
     const annule = co.statut === 'annule';
     const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
     const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+    const bg = annule ? '#f7f7f7' : (idx % 2 === 0 ? '#fff' : '#f5f7ff');
 
     const noBadge = annule
-        ? `<span style="font-family:monospace;font-size:13px;font-weight:700;text-decoration:line-through;color:#aaa;">${noFormate}</span>`
-        : `<span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 10px;font-size:14px;font-weight:700;font-family:monospace;white-space:nowrap;">${noFormate}</span>`;
+        ? `<span style="font-family:monospace;font-size:12px;font-weight:700;text-decoration:line-through;color:#bbb;">${noFormate}</span>`
+        : `<span style="background:#1a237e;color:#fff;border-radius:5px;padding:1px 8px;font-size:12px;font-weight:700;font-family:monospace;">${noFormate}</span>`;
 
     const options = co.options_obtenues
-        ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">${o.trim()}</span>`).join(' ')
-        : '';
-
-    const motifHtml = annule && co.motif_annulation
-        ? `<div style="font-size:11px;color:#999;margin-top:3px;font-style:italic;">Motif : "${co.motif_annulation}"</div>`
-        : '';
+        ? co.options_obtenues.split(',').map(o =>
+            `<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:1px 4px;font-size:10px;font-weight:700;">${o.trim()}</span>`
+          ).join(' ')
+        : `<span style="color:#ccc;font-size:11px;">—</span>`;
 
     const actionHtml = annule
         ? `<button data-action="voir-motif" data-id="${co.id}" data-nom="${nomComplet}"
-                title="${co.motif_annulation ? 'Motif : ' + co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
-                style="background:none;border:none;cursor:pointer;font-size:12px;color:#999;padding:2px 4px;font-weight:600;">📝 Voir motif</button>`
+                title="${co.motif_annulation ? co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
+                style="background:none;border:none;cursor:pointer;font-size:11px;color:#999;font-weight:600;padding:0;">📝 Motif</button>`
         : `<button data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}" data-categorie="${co.categorie}" data-famille="${co.famille}"
-                style="background:none;border:none;cursor:pointer;font-size:12px;color:#e65100;font-weight:600;padding:2px 0;white-space:nowrap;">
-                ↩ Annuler ce CACES®
-            </button>`;
+                style="background:none;border:none;cursor:pointer;font-size:11px;color:#e65100;font-weight:600;padding:0;white-space:nowrap;">↩ Annuler</button>`;
 
-    return `
-    <div data-caces-id="${co.id}"
-         style="border:1px solid ${annule ? '#e8e8e8' : '#c8d8f0'};border-radius:12px;overflow:hidden;margin-bottom:8px;background:#fff;${annule ? 'opacity:0.65;' : ''}box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-
-        <!-- Header -->
-        <div style="background:${annule ? '#f5f5f5' : '#f0f2f7'};border-bottom:1px solid ${annule ? '#e8e8e8' : '#dde3f0'};padding:9px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            ${noBadge}
-            ${badgeStatut(co.statut)}
-            <span style="font-size:14px;font-weight:700;color:#1a237e;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
-            <span style="font-weight:700;color:#555;font-size:12px;background:#e8eaf6;padding:2px 7px;border-radius:4px;">${co.famille}</span>
-            <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:800;">${co.categorie}</span>
-            ${options}
+    return `<div data-caces-id="${co.id}"
+         style="display:flex;align-items:center;padding:9px 16px;background:${bg};${annule ? 'opacity:0.65;' : ''}border-bottom:1px solid #eef0f6;gap:0;">
+        <div style="width:68px;min-width:68px;">${noBadge}</div>
+        <div style="width:82px;min-width:82px;">${badgeStatut(co.statut)}</div>
+        <div style="flex:1;min-width:130px;font-size:13px;font-weight:700;color:#1a237e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:10px;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</div>
+        <div style="width:116px;min-width:116px;display:flex;flex-direction:column;gap:1px;padding-right:6px;">
+            <span style="font-size:11px;color:#555;font-weight:700;">${co.famille}</span>
+            <span style="font-size:11px;background:#1a237e;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;display:inline-block;width:fit-content;">${co.categorie}</span>
         </div>
-
-        <!-- Body 2 colonnes -->
-        <div style="display:flex;align-items:stretch;">
-
-            <!-- Gauche : dates -->
-            <div style="width:190px;min-width:190px;padding:12px 16px;border-right:2px solid #e8eef8;background:#fafbff;display:flex;flex-direction:column;gap:10px;justify-content:center;">
-                <div>
-                    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">📅 Obtention</div>
-                    <div style="font-size:16px;font-weight:800;color:#1a237e;">${fmtDate(co.date_obtention)}</div>
-                </div>
-                <div>
-                    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">⏳ Échéance</div>
-                    <div style="font-size:14px;font-weight:700;color:#2e7d32;">${fmtDate(co.date_echeance)}</div>
-                </div>
-            </div>
-
-            <!-- Droite : testeur + motif -->
-            <div style="flex:1;padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:4px;">
-                ${co.testeur_nom
-                    ? `<div style="font-size:13px;color:#555;">🧑‍🏫 Testeur : <strong>${co.testeur_nom}</strong></div>`
-                    : `<div style="font-size:12px;color:#bbb;font-style:italic;">Testeur non renseigné</div>`
-                }
-                ${motifHtml}
-            </div>
-
-        </div>
-
-        <!-- Footer : actions -->
-        <div style="border-top:1px solid #f0f0f0;padding:7px 16px;display:flex;justify-content:flex-end;background:#fafbff;">
-            ${actionHtml}
-        </div>
-
+        <div style="width:84px;min-width:84px;display:flex;flex-wrap:wrap;gap:2px;align-items:center;">${options}</div>
+        <div style="width:132px;min-width:132px;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">${co.testeur_nom || '<span style="color:#ccc;">—</span>'}</div>
+        <div style="width:88px;min-width:88px;font-size:12px;font-weight:700;color:#1a237e;">${fmtDate(co.date_obtention)}</div>
+        <div style="width:88px;min-width:88px;font-size:12px;font-weight:700;color:#2e7d32;">${fmtDate(co.date_echeance)}</div>
+        <div style="width:120px;min-width:120px;text-align:right;">${actionHtml}</div>
     </div>`;
 }
 
