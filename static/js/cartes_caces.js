@@ -613,7 +613,7 @@ function _buildCr80Html(data, cfg) {
         '.r-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.7mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
-        '.v-hdr { background:#fff; border-bottom:0.7mm solid ' + RED + '; padding:1mm 2.5mm; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:1mm; }',
+        '.v-hdr { background:#fff; border-bottom:0.7mm solid ' + RED + '; padding:0.6mm 2.5mm; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:1mm; }',
         '.v-hdr-info { flex:1; min-width:0; }',
         '.v-logo2 { height:6mm; width:auto; max-width:14mm; object-fit:contain; flex-shrink:0; }',
         '.v-htitle { font-size:6pt; font-weight:900; color:' + ANT + '; line-height:1.2; }',
@@ -701,7 +701,7 @@ function _buildCr80Html(data, cfg) {
         +   '<div class="v-hdr">'
         +     '<div class="v-hdr-info">'
         +       '<div class="v-htitle">CACES® ' + data.famille + ' — ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + ddn + '</div>'
-        +       '<div class="v-hcarte">N° ' + data.numero_carte + (data.date_generation ? ' <span class="v-hdate">· ' + _fmtDateCourt(data.date_generation) + '</span>' : '') + '</div>'
+        +       '<div class="v-hcarte">N° ' + data.numero_carte + (data.date_generation ? ' <span class="v-hdate">· Édité le ' + _fmtDateCourt(data.date_generation) + '</span>' : '') + '</div>'
         +     '</div>'
         +     (cfg.logo2_uri ? '<img class="v-logo2" src="' + cfg.logo2_uri + '" />' : '')
         +   '</div>'
