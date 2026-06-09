@@ -595,6 +595,7 @@ function _buildCr80Html(data, cfg) {
         '.r-sign img { height:3.5mm; width:auto; max-width:8mm; object-fit:contain; }',
         '.r-photo { width:13mm; height:16.5mm; object-fit:cover; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }',
         '.r-photo-ph { width:13mm; height:16.5mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }',
+        '.r-sep { width:13mm; height:0.25mm; background:#d0d0d0; margin:0.5mm 0 0.2mm; flex-shrink:0; }',
         '#qr canvas, #qr img { width:11mm !important; height:11mm !important; display:block; }',
         '.r-qr-text { font-size:3.2pt; color:#888; text-align:center; line-height:1.25; font-style:italic; max-width:13mm; }',
         '.r-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
@@ -672,6 +673,7 @@ function _buildCr80Html(data, cfg) {
         +     '</div>'
         +     '<div class="r-right">'
         +       photoHtml
+        +       '<div class="r-sep"></div>'
         +       '<div id="qr" data-url="' + (verifyUrl || data.numero_carte) + '"></div>'
         +       '<div class="r-qr-text">Scanner pour vérifier l\'authenticité</div>'
         +     '</div>'
