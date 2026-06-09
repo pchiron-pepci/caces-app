@@ -553,16 +553,19 @@ function _buildCr80Html(data, cfg) {
                 return '<span class="vopt-badge">' + o.trim() + '</span>';
               }).join(' ')
             : '<span style="color:#bbb;">—</span>';
-        return '<tr>'
+        const mainRow = '<tr' + (co.testeur_nom ? ' class="vhastest"' : '') + '>'
             + '<td class="vfam">' + data.famille + '</td>'
             + '<td class="vcat">' + co.categorie + '</td>'
             + '<td class="vopt">' + opts + '</td>'
             + '<td class="vno">' + no + '</td>'
             + '<td class="vdt">' + _fmtDateCourt(co.date_obtention) + '</td>'
             + '<td class="vval">' + _fmtDateCourt(co.date_echeance) + '</td>'
-            + '<td class="vtest">' + (co.testeur_nom || '—') + '</td>'
             + '<td class="vlib">' + (co.categorie_libelle || '') + '</td>'
             + '</tr>';
+        const testeurRow = co.testeur_nom
+            ? '<tr><td colspan="7" class="vtestcell">Testeur : ' + co.testeur_nom + '</td></tr>'
+            : '';
+        return mainRow + testeurRow;
     }).join('');
 
     const ddn = data.stagiaire_ddn
@@ -631,9 +634,10 @@ function _buildCr80Html(data, cfg) {
         '  font-weight:600; padding:0.1mm 0.5mm; border-radius:0.4mm; white-space:nowrap; border:0.15mm solid #c0c0c0; }',
         '.vdt { font-size:4.8pt; white-space:nowrap; color:' + ANT + '; font-weight:700; }',
         '.vval { font-weight:700; font-size:4.8pt; color:' + ANT + '; white-space:nowrap; }',
-        '.vtest { color:' + ANT + '; font-size:4.5pt; font-weight:600; width:16mm; }',
         '.vopt { max-width:9mm; overflow:hidden; }',
-        '.vlib { color:' + ANT + '; font-size:4.2pt; font-style:italic; font-weight:600; width:13mm; max-width:13mm; overflow:hidden; }',
+        '.vlib { color:' + ANT + '; font-size:4.2pt; font-style:italic; font-weight:600; }',
+        '.vhastest td { border-bottom:none !important; }',
+        '.vtestcell { padding:0mm 0.4mm 0.6mm !important; font-size:3.5pt; color:#999; font-style:italic; border-bottom:0.15mm solid #d8d8d8 !important; }',
         '.v-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.6mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
@@ -705,7 +709,7 @@ function _buildCr80Html(data, cfg) {
         +     '<table>'
         +       '<thead><tr>'
         +         '<th>Famille</th><th>Cat.</th><th>Opt.</th><th>N° CACES®</th>'
-        +         '<th>Obtention</th><th>Validité</th><th>Testeur</th><th>Libellé</th>'
+        +         '<th>Obtention</th><th>Validité</th><th>Libellé</th>'
         +       '</tr></thead>'
         +       '<tbody>' + versoRows + '</tbody>'
         +     '</table>'
