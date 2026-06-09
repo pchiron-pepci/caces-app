@@ -413,6 +413,19 @@ def dashboard(request: Request):
         text("stagiaires.actif = 1"),
         or_(Stagiaire.photo == None, Stagiaire.photo == "")
     ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
+    caces_a_valider_raw = db.query(CacesObtenu).filter(CacesObtenu.statut == "a_valider").all()
+    _stag_ids = {co.stagiaire_id for co in caces_a_valider_raw}
+    _stag_map = {s.id: s for s in db.query(Stagiaire).filter(Stagiaire.id.in_(_stag_ids)).all()} if _stag_ids else {}
+    caces_a_valider = [
+        {
+            "id": co.id,
+            "stagiaire_nom": (_stag_map.get(co.stagiaire_id).nom if _stag_map.get(co.stagiaire_id) else "?"),
+            "stagiaire_prenom": (_stag_map.get(co.stagiaire_id).prenom if _stag_map.get(co.stagiaire_id) else ""),
+            "famille": co.famille,
+            "categorie": co.categorie,
+        }
+        for co in caces_a_valider_raw
+    ]
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -430,6 +443,7 @@ def dashboard(request: Request):
             "familles_carto": familles_carto,
             "lieux_cdt": lieux_cdt,
             "stagiaires_sans_photo": stagiaires_sans_photo,
+            "caces_a_valider": caces_a_valider,
         }
     )
 
