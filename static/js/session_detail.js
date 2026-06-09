@@ -59,6 +59,10 @@ function calculerRecapUT() {
             utCand += ut;
             total += ut;
             cats.push(cb.value);
+            document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cb.value + '"]:checked').forEach(() => {
+                utCand += 0.5;
+                total += 0.5;
+            });
         });
         if (utCand > 0) {
             html += '<div style="display:flex; justify-content:space-between; padding:3px 0;">' +

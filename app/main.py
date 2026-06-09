@@ -583,6 +583,11 @@ def page_admin(request: Request):
     options_habs = {}
     for ho in all_hab_options:
         options_habs.setdefault(ho.habilitation_id, []).append(ho.code_option)
+    # Options par (famille, categorie) pour l'onglet Cartographie
+    options_cat_map = {}
+    for opt in db.query(OptionCategorie).all():
+        key = f"{opt.famille}__{opt.categorie}"
+        options_cat_map.setdefault(key, []).append(opt)
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -593,7 +598,8 @@ def page_admin(request: Request):
             "categories": categories,
             "testeurs": testeurs_list,
             "lieux": lieux,
-            "options_habs": options_habs
+            "options_habs": options_habs,
+            "options_cat_map": options_cat_map,
         }
     )
 
@@ -842,6 +848,12 @@ def page_session_detail(request: Request, session_id: int):
                     cat = cat.strip()
                     if cat:
                         total_ut += ut_par_cat.get(cat, 1.0)
+                if jtc.options_planifiees:
+                    try:
+                        for opt_list in json.loads(jtc.options_planifiees).values():
+                            total_ut += len(opt_list) * 0.5
+                    except Exception:
+                        pass
             nb_testeurs = math.ceil(total_ut / 6) if total_ut > 0 else 1
             j.total_ut = round(total_ut, 1)
             j.nb_testeurs = nb_testeurs
@@ -871,6 +883,10 @@ def page_session_detail(request: Request, session_id: int):
                         ut_planifie_candidat[stagiaire_id] = round(
                             ut_planifie_candidat.get(stagiaire_id, 0) + ut_par_cat.get(cat, 1.0), 1
                         )
+                for opt_list in j.candidats_options.get(stagiaire_id, {}).values():
+                    ut_planifie_candidat[stagiaire_id] = round(
+                        ut_planifie_candidat.get(stagiaire_id, 0) + len(opt_list) * 0.5, 1
+                    )
 
     resultats_theorie_par_jour = {}
     for j in jours_test:

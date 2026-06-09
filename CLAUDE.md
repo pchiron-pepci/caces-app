@@ -125,6 +125,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 
 1. **UT testeur** : max 6 UT/testeur/jour
 2. **Machines** : alerte si > 7 UT/catégorie/jour → `ceil(UT/7)` machines recommandées
+1b. **UT options** : chaque option planifiée/réalisée ajoute **0.5 UT** au total du jour — calculé dans `session_detail.js:calculerRecapUT()` (options cochées `jp-opt-{id}-{cat}`), `main.py` (total_ut planifié + ut_planifie_candidat via `options_planifiees`), `sessions.py:add_epreuve` (ut = cat.ut_pratique + nb_options × 0.5) ; affiché dans Cartographie admin comme lignes ↳ rattachées à leur catégorie (0.5 UT chacune)
 3. **Résultats théorie** : jamais écrasés, traçabilité totale
 4. **Meilleur résultat réussi** affiché sur la carte CACES® avec sa date
 5. **Grilles INRS** : règle 10-30% par thème, comptage sur jours actifs uniquement
@@ -206,7 +207,7 @@ python init_questions_r482.py
 - Credentials `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` stockés dans les variables d'environnement de chaque instance Render, ou dans une table `tenant_config` en base.
 - Au provisioning d'un nouveau tenant : créer un compte Cloudinary gratuit et renseigner les 3 credentials.
 | Basse | Responsive mobile (CSS media queries) | à faire |
-| Basse | UT options = 0 (actuellement 0.5 par défaut) | à faire |
+| Basse | UT options = 0.5 par option planifiée/réalisée | ✅ fait |
 | Basse | Supprimer `date_habilitation` et `date_expiration_habilitation` du modèle `Testeur` (doublons avec `HabilitationTesteur`) | à faire |
 
 ### Dashboard — route GET /

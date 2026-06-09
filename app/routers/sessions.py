@@ -441,7 +441,8 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
         Categorie.famille_id == (famille.id if famille else 0),
         Categorie.code == data.categorie
     ).first()
-    ut = cat.ut_pratique if cat else 1.0
+    options_count = len([o for o in (data.options_obtenues or "").split(",") if o.strip()])
+    ut = (cat.ut_pratique if cat else 1.0) + options_count * 0.5
 
     e = db.query(SessionEpreuve).filter(
         SessionEpreuve.session_id == session_id,
