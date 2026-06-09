@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
             hint.textContent = 'Le CACES® est invalidé suite à une décision réglementaire ou administrative. Vous pouvez bloquer les résultats sources pour empêcher toute re-certification automatique.';
         } else if (this.value === 'Autre') {
             label.innerHTML = 'Détail <span style="color:#c62828;">*</span>';
-            hint.textContent = 'Décrivez le motif dans le champ ci-dessous.';
+            hint.textContent = 'Décrivez le motif dans le champ ci-dessous. Les résultats sources restent valides — un nouveau CACES® sera recalculé automatiquement.';
         } else {
             label.innerHTML = 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
             hint.textContent = '';
