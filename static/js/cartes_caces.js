@@ -596,7 +596,7 @@ function _buildCr80Html(data, cfg) {
         '.r-photo { width:13mm; height:14mm; object-fit:cover; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }',
         '.r-photo-ph { width:13mm; height:14mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }',
         '.r-sep { width:13mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }',
-        '#qr canvas, #qr img { width:10mm !important; height:10mm !important; display:block; }',
+        '#qr canvas, #qr img { width:12mm !important; height:12mm !important; display:block; }',
         '.r-qr-text { font-size:3.8pt; color:' + ANT + '; text-align:center; line-height:1.25; font-style:italic; max-width:13mm; }',
         '.r-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.7mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
@@ -622,8 +622,8 @@ function _buildCr80Html(data, cfg) {
         '  font-weight:600; padding:0.1mm 0.5mm; border-radius:0.4mm; white-space:nowrap; border:0.15mm solid #c0c0c0; }',
         '.vdt { font-size:4.8pt; white-space:nowrap; color:' + ANT + '; font-weight:700; }',
         '.vval { font-weight:700; font-size:4.8pt; color:' + ANT + '; white-space:nowrap; }',
-        '.vtest { color:' + ANT + '; font-size:4.5pt; font-weight:600; }',
-        '.vlib { color:' + ANT + '; font-size:4.2pt; font-style:italic; font-weight:600; }',
+        '.vtest { color:' + ANT + '; font-size:4.5pt; font-weight:600; width:16mm; }',
+        '.vlib { color:' + ANT + '; font-size:4.2pt; font-style:italic; font-weight:600; width:8mm; max-width:8mm; overflow:hidden; }',
         '.v-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.6mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
@@ -677,7 +677,7 @@ function _buildCr80Html(data, cfg) {
         +       photoHtml
         +       '<div class="r-sep"></div>'
         +       '<div id="qr" data-url="' + (verifyUrl || data.numero_carte) + '"></div>'
-        +       '<div class="r-qr-text">Scanner pour vérifier l\'authenticité</div>'
+        +       '<div class="r-qr-text">Scanner pour vérifier</div>'
         +     '</div>'
         +   '</div>'
         +   '<div class="r-ftr">La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire</div>'
