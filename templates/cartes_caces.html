@@ -9,37 +9,37 @@
 <div style="display:flex; flex-direction:column; gap:20px;">
 
     <!-- Sélection stagiaire / famille -->
-    <div class="card">
-        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">🖨️ Émettre une carte</h2>
-        <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
-            <div style="flex:1; min-width:200px;">
-                <label style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px;">Stagiaire</label>
-                <select id="sel-stagiaire" style="width:100%; border:1px solid #ddd; border-radius:8px; padding:8px 12px; font-size:14px;">
+    <div class="card" style="padding:28px;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:#1a237e; margin-bottom:20px;">🖨️ Émettre une carte CACES®</h2>
+        <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+            <div style="flex:2; min-width:220px;">
+                <label style="font-size:12px; font-weight:700; color:#444; display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Stagiaire</label>
+                <select id="sel-stagiaire" style="width:100%; border:1.5px solid #c8d8f0; border-radius:8px; padding:10px 14px; font-size:14px; background:#fff; color:#1a237e; font-weight:600;">
                     <option value="">— Choisir un stagiaire —</option>
                 </select>
             </div>
-            <div style="min-width:140px;">
-                <label style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px;">Famille</label>
-                <select id="sel-famille" disabled style="width:100%; border:1px solid #ddd; border-radius:8px; padding:8px 12px; font-size:14px; background:#f5f5f5;">
-                    <option value="">— Famille —</option>
+            <div style="flex:1; min-width:140px;">
+                <label style="font-size:12px; font-weight:700; color:#444; display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Famille</label>
+                <select id="sel-famille" disabled style="width:100%; border:1.5px solid #ddd; border-radius:8px; padding:10px 14px; font-size:14px; background:#f7f7f7; color:#aaa;">
+                    <option value="">— —</option>
                 </select>
             </div>
             <button data-action="voir-caces"
-                    style="background:#1a237e; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                    style="background:#cc0000; color:#fff; border:none; border-radius:8px; padding:11px 22px; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 2px 6px rgba(204,0,0,0.25);">
                 🔍 Voir les CACES®
             </button>
         </div>
-    </div>
 
-    <!-- Résultats CACES® -->
-    <div id="section-caces" style="display:none;" class="card">
-        <div id="info-stagiaire" style="margin-bottom:14px;"></div>
-        <div id="tableau-caces"></div>
-        <div style="display:flex; justify-content:flex-end; margin-top:16px;">
-            <button id="btn-emettre" data-action="emettre-carte" data-stag-id="" data-famille=""
-                    style="background:#1a237e; color:#fff; border:none; border-radius:10px; padding:11px 24px; font-size:14px; font-weight:700; cursor:pointer;">
-                🖨️ Générer et imprimer
-            </button>
+        <!-- Résultats CACES® (inline, sous les selects) -->
+        <div id="section-caces" style="display:none; margin-top:24px; border-top:1px solid #e8eef8; padding-top:20px;">
+            <div id="info-stagiaire" style="margin-bottom:14px;"></div>
+            <div id="tableau-caces"></div>
+            <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+                <button id="btn-emettre" data-action="emettre-carte" data-stag-id="" data-famille=""
+                        style="background:#2e7d32; color:#fff; border:none; border-radius:10px; padding:13px 32px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 3px 8px rgba(46,125,50,0.3); letter-spacing:0.3px;">
+                    🖨️ Générer et imprimer
+                </button>
+            </div>
         </div>
     </div>
 

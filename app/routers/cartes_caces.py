@@ -102,12 +102,9 @@ def _build_print_data(carte, s, cos, t_map, config):
 
 @router.get("/stagiaires")
 def get_stagiaires(db: DBSession = Depends(get_db)):
-    stag_ids = [r[0] for r in db.query(CacesObtenu.stagiaire_id).filter(CacesObtenu.statut == "valide").distinct().all()]
-    if not stag_ids:
-        return []
     stagiaires = (
         db.query(Stagiaire)
-        .filter(Stagiaire.id.in_(stag_ids), Stagiaire.actif == True)
+        .filter(Stagiaire.actif == True)
         .order_by(Stagiaire.nom, Stagiaire.prenom)
         .all()
     )

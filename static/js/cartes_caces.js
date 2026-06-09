@@ -7,19 +7,30 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('sel-stagiaire').addEventListener('change', function () {
         const stagId = this.value;
         const selFamille = document.getElementById('sel-famille');
-        selFamille.innerHTML = '<option value="">— Famille —</option>';
+        selFamille.innerHTML = '<option value="">— —</option>';
         selFamille.disabled = true;
+        selFamille.style.color = '#aaa';
+        selFamille.style.borderColor = '#ddd';
+        selFamille.style.background = '#f7f7f7';
         document.getElementById('section-caces').style.display = 'none';
         if (!stagId) return;
         fetch('/api/cartes-caces/familles/' + stagId)
             .then(r => r.json())
             .then(function (familles) {
+                if (!familles.length) {
+                    selFamille.innerHTML = '<option value="">Aucun CACES® validé</option>';
+                    return;
+                }
+                selFamille.innerHTML = '<option value="">— Famille —</option>';
                 familles.forEach(function (f) {
                     const opt = document.createElement('option');
                     opt.value = f; opt.textContent = f;
                     selFamille.appendChild(opt);
                 });
-                selFamille.disabled = familles.length === 0;
+                selFamille.disabled = false;
+                selFamille.style.color = '#1a237e';
+                selFamille.style.borderColor = '#c8d8f0';
+                selFamille.style.background = '#fff';
             });
     });
 
@@ -253,15 +264,17 @@ async function _chargerCacesValides(stagId, famille) {
             btnEmettre.dataset.nom = data.stagiaire_nom + ' ' + data.stagiaire_prenom;
             if (data.photo_manquante) {
                 btnEmettre.disabled = true;
-                btnEmettre.style.background = '#e0e0e0';
-                btnEmettre.style.color = '#999';
+                btnEmettre.style.background = '#bdbdbd';
+                btnEmettre.style.color = '#fff';
                 btnEmettre.style.cursor = 'not-allowed';
+                btnEmettre.style.boxShadow = 'none';
                 btnEmettre.title = 'Photo manquante — ajoutez une photo au stagiaire avant d\'imprimer';
             } else {
                 btnEmettre.disabled = false;
-                btnEmettre.style.background = '#1a237e';
+                btnEmettre.style.background = '#2e7d32';
                 btnEmettre.style.color = '#fff';
                 btnEmettre.style.cursor = 'pointer';
+                btnEmettre.style.boxShadow = '0 3px 8px rgba(46,125,50,0.3)';
                 btnEmettre.title = '';
             }
             btnEmettre.style.display = '';
