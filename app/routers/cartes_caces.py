@@ -218,6 +218,7 @@ def get_emises(db: DBSession = Depends(get_db)):
             "stagiaire_id": c.stagiaire_id,
             "stagiaire_nom": stagiaires[c.stagiaire_id].nom if c.stagiaire_id in stagiaires else "?",
             "stagiaire_prenom": stagiaires[c.stagiaire_id].prenom if c.stagiaire_id in stagiaires else "",
+            "stagiaire_ddn": stagiaires[c.stagiaire_id].date_naissance.isoformat() if c.stagiaire_id in stagiaires and stagiaires[c.stagiaire_id].date_naissance else None,
             "famille": c.famille,
             "numero_carte": c.numero_carte,
             "date_generation": c.date_generation.isoformat(),

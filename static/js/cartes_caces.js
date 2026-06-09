@@ -422,7 +422,7 @@ function _renderEmise(carte) {
     const mainRow = '<tr style="' + opacity + '">'
         + '<td style="text-align:center;padding:8px 4px;">' + toggleBtn + '</td>'
         + '<td style="font-family:monospace;font-size:13px;font-weight:700;color:#1a237e;white-space:nowrap;' + strike + '">' + carte.numero_carte + '</td>'
-        + '<td style="font-weight:600;font-size:13px;">' + nomComplet + motifHtml + '</td>'
+        + '<td style="font-weight:600;font-size:13px;">' + nomComplet + (carte.stagiaire_ddn ? '<span style="font-weight:400;color:#888;font-size:12px;"> (' + _fmtDate(carte.stagiaire_ddn) + ')</span>' : '') + motifHtml + '</td>'
         + '<td><span style="background:#1a237e;color:#fff;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:800;">' + carte.famille + '</span></td>'
         + '<td style="font-size:12px;color:#666;white-space:nowrap;">' + _fmtDate(carte.date_generation) + '</td>'
         + '<td>' + badgeHtml + '</td>'
