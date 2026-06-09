@@ -547,7 +547,7 @@ function _buildCr80Html(data, cfg) {
         return '<tr>'
             + '<td class="vfam">' + data.famille + '</td>'
             + '<td class="vcat">' + co.categorie + '</td>'
-            + '<td>' + opts + '</td>'
+            + '<td class="vopt">' + opts + '</td>'
             + '<td class="vno">' + no + '</td>'
             + '<td class="vdt">' + _fmtDateCourt(co.date_obtention) + '</td>'
             + '<td class="vval">' + _fmtDateCourt(co.date_echeance) + '</td>'
@@ -593,11 +593,11 @@ function _buildCr80Html(data, cfg) {
         '.r-siret { font-size:5pt; color:' + ANT + '; margin-bottom:0.35mm; line-height:1.3; }',
         '.r-sign { font-size:5.2pt; color:' + ANT + '; display:flex; align-items:center; gap:0.8mm; padding-bottom:0.4mm; }',
         '.r-sign img { height:3.5mm; width:auto; max-width:8mm; object-fit:contain; }',
-        '.r-photo { width:13mm; height:14mm; object-fit:cover; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }',
-        '.r-photo-ph { width:13mm; height:14mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }',
-        '.r-sep { width:13mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }',
-        '#qr canvas, #qr img { width:12mm !important; height:12mm !important; display:block; }',
-        '.r-qr-text { font-size:3.8pt; color:' + ANT + '; text-align:center; line-height:1.25; font-style:italic; max-width:13mm; }',
+        '.r-photo { width:11mm; height:12mm; object-fit:cover; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }',
+        '.r-photo-ph { width:11mm; height:12mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }',
+        '.r-sep { width:11mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }',
+        '#qr canvas, #qr img { width:10mm !important; height:10mm !important; display:block; }',
+        '.r-qr-text { font-size:3.8pt; color:' + ANT + '; text-align:center; line-height:1.25; font-style:italic; max-width:11mm; }',
         '.r-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.7mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
@@ -623,7 +623,8 @@ function _buildCr80Html(data, cfg) {
         '.vdt { font-size:4.8pt; white-space:nowrap; color:' + ANT + '; font-weight:700; }',
         '.vval { font-weight:700; font-size:4.8pt; color:' + ANT + '; white-space:nowrap; }',
         '.vtest { color:' + ANT + '; font-size:4.5pt; font-weight:600; width:16mm; }',
-        '.vlib { color:' + ANT + '; font-size:4.2pt; font-style:italic; font-weight:600; width:8mm; max-width:8mm; overflow:hidden; }',
+        '.vopt { max-width:9mm; overflow:hidden; }',
+        '.vlib { color:' + ANT + '; font-size:4.2pt; font-style:italic; font-weight:600; width:13mm; max-width:13mm; overflow:hidden; }',
         '.v-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.6mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
@@ -694,7 +695,7 @@ function _buildCr80Html(data, cfg) {
         +   '<div class="v-tbl">'
         +     '<table>'
         +       '<thead><tr>'
-        +         '<th>Famille</th><th>Cat.</th><th>Options</th><th>N° CACES®</th>'
+        +         '<th>Famille</th><th>Cat.</th><th>Opt.</th><th>N° CACES®</th>'
         +         '<th>Obtention</th><th>Validité</th><th>Testeur</th><th>Libellé</th>'
         +       '</tr></thead>'
         +       '<tbody>' + versoRows + '</tbody>'
