@@ -57,8 +57,9 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
 
     Règles date_obtention :
       Cas 1/2 : théorie ≤ pratique → date pratique
-      Cas 3   : théorie > pratique (sessions ouvertes) → date théorie
-      Cas 4   : extension (session clôturée) → date pratique, date_echeance = CACES® initial
+      Cas 3   : théorie > pratique (toutes priorités) → date théorie
+      Cas 4   : extension (session clôturée) + théorie ≤ pratique → date pratique, date_echeance = CACES® initial
+               + extension + théorie > pratique → date théorie, date_echeance = CACES® initial
     """
     rt = db.query(ResultatTheorie).filter(
         ResultatTheorie.stagiaire_id == ep.stagiaire_id,
@@ -92,7 +93,8 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
     date_prat = ep.date
 
     if post_cloture:
-        date_obtention = date_prat
+        # Extension depuis session clôturée : on respecte quand même la règle théorie > pratique
+        date_obtention = date_theo if date_theo > date_prat else date_prat
         caces_initial = (
             db.query(CacesObtenu)
             .filter(
