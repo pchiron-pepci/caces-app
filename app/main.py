@@ -423,6 +423,7 @@ def dashboard(request: Request):
             "stagiaire_prenom": (_stag_map.get(co.stagiaire_id).prenom if _stag_map.get(co.stagiaire_id) else ""),
             "famille": co.famille,
             "categorie": co.categorie,
+            "date_obtention": co.date_obtention.strftime('%d/%m/%Y') if co.date_obtention else "—",
         }
         for co in caces_a_valider_raw
     ]
