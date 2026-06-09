@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CACES® Test Theorique</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -493,6 +494,12 @@
         </div>
     </div>
 
+    <div id="qr-section" style="display:none; text-align:center; margin-top:20px; padding:20px; background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(26,35,126,0.10);">
+        <div style="font-size:12px; font-weight:700; color:#1a237e; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px;">📱 Le candidat peut scanner ce QR</div>
+        <div id="qr-box" style="display:inline-block;"></div>
+        <div style="font-size:11px; color:#888; margin-top:10px;">Scannez pour passer le test sur votre téléphone</div>
+    </div>
+
     <button class="btn-action" onclick="allerConfirmation()">Preparer le test →</button>
 </div>
 
@@ -717,6 +724,24 @@ async function chargerQuestions() {
 }
 
 chargerQuestions();
+
+let _qrInstance = null;
+document.getElementById('select-candidat').addEventListener('change', function() {
+    const val = this.value;
+    const section = document.getElementById('qr-section');
+    const box = document.getElementById('qr-box');
+    if (!val) { section.style.display = 'none'; return; }
+    box.innerHTML = '';
+    _qrInstance = new QRCode(box, {
+        text: window.location.origin + '/test/theorie/' + JOUR_ID + '/' + val + '/start',
+        width: 150,
+        height: 150,
+        colorDark: '#1a237e',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+    });
+    section.style.display = 'block';
+});
 
 if (START_DIRECT && START_STAGIAIRE_ID) {
     stagiaireId = START_STAGIAIRE_ID;
