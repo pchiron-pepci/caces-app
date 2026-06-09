@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
         selFamille.style.borderColor = '#ddd';
         selFamille.style.background = '#f7f7f7';
         document.getElementById('section-caces').style.display = 'none';
+        document.getElementById('resultats-placeholder').style.display = 'flex';
         if (!stagId) return;
         fetch('/api/cartes-caces/familles/' + stagId)
             .then(r => r.json())
@@ -218,6 +219,7 @@ async function _chargerCacesValides(stagId, famille) {
 
     infoEl.innerHTML = '<p style="color:#718096; padding:8px;">Chargement…</p>';
     tableEl.innerHTML = '';
+    document.getElementById('resultats-placeholder').style.display = 'none';
     section.style.display = 'block';
 
     try {
