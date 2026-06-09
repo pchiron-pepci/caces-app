@@ -200,6 +200,26 @@ def get_historique_stagiaire(id: int, db: Session = Depends(get_db)):
     return result
 
 
+@router.get("/{id}/cartes-emises")
+def get_cartes_emises_stagiaire(id: int, db: Session = Depends(get_db)):
+    from app.models.carte_caces import CarteCaces
+    cartes = (
+        db.query(CarteCaces)
+        .filter(CarteCaces.stagiaire_id == id, CarteCaces.statut == "emise")
+        .order_by(CarteCaces.date_generation.desc())
+        .all()
+    )
+    return [
+        {
+            "id": c.id,
+            "numero_carte": c.numero_carte,
+            "famille": c.famille,
+            "date_generation": c.date_generation.isoformat() if c.date_generation else None,
+        }
+        for c in cartes
+    ]
+
+
 @router.get("/{id}/caces-valides")
 def get_caces_valides_stagiaire(id: int, db: Session = Depends(get_db)):
     from app.models.caces_obtenu import CacesObtenu

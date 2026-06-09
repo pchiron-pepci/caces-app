@@ -210,13 +210,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         body.innerHTML = '<em style="color:#888;">Chargement...</em>';
         try {
-            const [rHisto, rCaces] = await Promise.all([
+            const [rHisto, rCaces, rCartes] = await Promise.all([
                 fetch('/stagiaires/' + id + '/historique'),
                 fetch('/stagiaires/' + id + '/caces-valides'),
+                fetch('/stagiaires/' + id + '/cartes-emises'),
             ]);
-            if (!rHisto.ok || !rCaces.ok) throw new Error();
-            const [sessions, caces] = await Promise.all([rHisto.json(), rCaces.json()]);
-            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces);
+            if (!rHisto.ok || !rCaces.ok || !rCartes.ok) throw new Error();
+            const [sessions, caces, cartes] = await Promise.all([rHisto.json(), rCaces.json(), rCartes.json()]);
+            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces) + renderCartesEmises(cartes);
             body.dataset.loaded = '1';
         } catch (_) {
             body.innerHTML = '<em style="color:red;">Erreur de chargement.</em>';
@@ -345,6 +346,36 @@ document.addEventListener('DOMContentLoaded', function () {
             html += '<div style="flex:1;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">' + (co.testeur_nom || '<span style="color:#ccc;">—</span>') + '</div>';
             html += '<div style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#1a237e;">' + formatDate(co.date_obtention) + '</div>';
             html += '<div style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#2e7d32;">' + formatDate(co.date_echeance) + '</div>';
+            html += '</div>';
+        });
+
+        html += '</div></div>';
+        return html;
+    }
+
+    function renderCartesEmises(cartes) {
+        let html = '<div style="margin-top:16px;">';
+        html += '<div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">🪪 Cartes émises</div>';
+
+        if (!cartes.length) {
+            html += '<p style="color:#bbb;font-size:13px;font-style:italic;margin:0;">Aucune carte émise.</p>';
+            html += '</div>';
+            return html;
+        }
+
+        html += '<div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
+        html += '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;gap:0;">';
+        html += '<div style="flex:1;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">N° Carte</div>';
+        html += '<div style="width:80px;min-width:80px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Famille</div>';
+        html += '<div style="width:90px;min-width:90px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Émission</div>';
+        html += '</div>';
+
+        cartes.forEach(function (c, i) {
+            const bg = i % 2 === 0 ? '#fff' : '#f5f7ff';
+            html += '<div style="display:flex;align-items:center;padding:8px 12px;background:' + bg + ';border-bottom:1px solid #eef0f6;gap:0;">';
+            html += '<div style="flex:1;"><a href="/cartes-caces" style="font-family:monospace;font-size:12px;font-weight:700;color:#1a237e;text-decoration:none;">' + c.numero_carte + '</a></div>';
+            html += '<div style="width:80px;min-width:80px;font-size:12px;font-weight:700;color:#555;">' + c.famille + '</div>';
+            html += '<div style="width:90px;min-width:90px;font-size:12px;color:#666;">' + formatDate(c.date_generation) + '</div>';
             html += '</div>';
         });
 

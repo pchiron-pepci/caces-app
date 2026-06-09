@@ -72,7 +72,7 @@ app/
 | Fichier | Prefix | Rôle |
 |---|---|---|
 | `testeurs.py` | `/api/testeurs` | CRUD testeurs |
-| `stagiaires.py` | `/stagiaires` | CRUD stagiaires + GET `/{id}/historique` (sessions + résultats théorie/pratique) + GET `/{id}/caces-valides` (CacesObtenu valides avec testeur) |
+| `stagiaires.py` | `/stagiaires` | CRUD stagiaires + GET `/{id}/historique` (sessions + résultats théorie/pratique) + GET `/{id}/caces-valides` (CacesObtenu valides avec testeur) + GET `/{id}/cartes-emises` (CarteCaces statut=emise : numero_carte, famille, date_generation) |
 | `sessions.py` | `/api/sessions` | Gestion sessions CACES® |
 | `admin.py` | `/admin` | Catégories, habilitations, lieux |
 | `auth.py` | `/auth` | Login JWT |
