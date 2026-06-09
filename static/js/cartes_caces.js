@@ -570,7 +570,7 @@ function _buildCr80Html(data, cfg) {
         '  -webkit-print-color-adjust:exact; print-color-adjust:exact; }',
         '.page { width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; }',
         '.page + .page { page-break-before:always; }',
-        '.r-hdr { background:#fff; height:13mm; display:flex; align-items:center; padding:0 2.5mm;',
+        '.r-hdr { background:#fff; height:15mm; display:flex; align-items:center; padding:0 2.5mm;',
         '  justify-content:space-between; flex-shrink:0; gap:1.5mm; border-bottom:0.5mm solid ' + RED + '; }',
         '.r-hdr-left { display:flex; flex-direction:column; align-items:flex-start; gap:0.5mm; }',
         '.r-logo  { height:11mm; width:auto; max-width:26mm; object-fit:contain; }',
