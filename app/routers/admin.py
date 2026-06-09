@@ -208,6 +208,7 @@ def get_config_organisme(db: Session = Depends(get_db)):
         return {"nom_organisme": "", "logo_data_uri": "", "signature_data_uri": ""}
     return {
         "nom_organisme": config.nom_organisme or "",
+        "logo_base64": config.logo_base64 or "",
         "logo_data_uri": _img_data_uri(config.logo_base64, config.logo_nom),
         "audit_interne_date": config.audit_interne_date.isoformat() if config.audit_interne_date else "",
         "audit_externe_date": config.audit_externe_date.isoformat() if config.audit_externe_date else "",

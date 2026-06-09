@@ -363,7 +363,7 @@ templates.env.globals['date_validite_certificat'] = _get_date_validite_certifica
 class CSPMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: StarletteRequest, call_next):
         response = await call_next(request)
-        response.headers["Content-Security-Policy"] = "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';"
+        response.headers["Content-Security-Policy"] = "default-src *; img-src * data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';"
         return response
 
 app.add_middleware(CSPMiddleware)

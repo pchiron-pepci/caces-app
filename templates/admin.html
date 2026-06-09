@@ -868,8 +868,9 @@ async function chargerConfigOrganisme() {
     document.getElementById('config-prochain-numero').value = data.prochain_numero_caces || 1;
     const preview = document.getElementById('config-logo-preview');
     const btnSuppr = document.getElementById('btn-suppr-logo');
-    if (data.logo_data_uri) {
-        preview.innerHTML = `<img src="${data.logo_data_uri}" style="max-height:64px; border:1px solid #e8ecf4; border-radius:8px; padding:4px;">`;
+    if (data.logo_base64) {
+        const logoSrc = data.logo_base64.startsWith('data:image') ? data.logo_base64 : 'data:image/png;base64,' + data.logo_base64;
+        preview.innerHTML = `<img src="${logoSrc}" style="max-height:64px; border:1px solid #e8ecf4; border-radius:8px; padding:4px;">`;
         btnSuppr.style.display = '';
     } else {
         preview.innerHTML = '<span style="color:#888; font-size:13px;">— Aucun logo</span>';
