@@ -1,15 +1,70 @@
 {% extends "base.html" %}
-
 {% block title %}Cartes CACES®{% endblock %}
-
 {% block content %}
-<div class="page-header">
-    <h1>🪪 Cartes CACES®</h1>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 style="font-size:1.5rem; font-weight:700; color:#1a237e;">🪪 Cartes CACES®</h1>
+    <button id="btn-refresh" class="btn btn-secondary">🔄 Actualiser</button>
 </div>
 
-<div class="card" style="text-align:center; padding: 60px 40px;">
-    <div style="font-size:3rem; margin-bottom:16px;">🪪</div>
-    <h2 style="color:#4a5568; margin-bottom:8px;">Cartes CACES®</h2>
-    <p style="color:#718096; font-size:1.05rem;">Génération des cartes CACES® — à venir</p>
+<div style="display:flex; flex-direction:column; gap:20px;">
+
+    <div class="card">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">📋 Cartes à préparer</h2>
+        <div id="liste-a-preparer"><p style="color:#718096; text-align:center; padding:24px;">Chargement…</p></div>
+    </div>
+
+    <div class="card">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">⏳ En préparation</h2>
+        <div id="liste-en-preparation"><p style="color:#718096; text-align:center; padding:24px;">Chargement…</p></div>
+    </div>
+
+    <div class="card">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">📇 Cartes émises</h2>
+        <div id="liste-emises"><p style="color:#718096; text-align:center; padding:24px;">Chargement…</p></div>
+    </div>
+
 </div>
+
+<!-- Modal récapitulatif préparation -->
+<div id="modal-recap" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
+    <div class="card" style="width:520px; max-width:95%; padding:28px; box-shadow:0 8px 32px rgba(0,0,0,0.18); max-height:90vh; overflow-y:auto;">
+        <h3 id="recap-titre" style="margin-bottom:16px; font-size:16px; font-weight:700; color:#1a237e;"></h3>
+        <div id="recap-body" style="margin-bottom:16px;"></div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button id="btn-recap-annuler" class="btn btn-secondary">Annuler</button>
+            <button id="btn-recap-confirmer" class="btn btn-primary" data-stag-id="" data-famille="">📇 Préparer la carte</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal motif annulation carte -->
+<div id="modal-motif-carte" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
+    <div class="card" style="width:440px; max-width:90%; padding:28px; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <h3 style="margin-bottom:12px; font-size:15px; font-weight:700; color:#1a237e;">Motif de l'annulation</h3>
+        <textarea id="motif-carte-input" rows="3" placeholder="Motif obligatoire…"
+                  style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 12px; font-size:14px; resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>
+        <p id="motif-carte-erreur" style="color:#c62828; font-size:12px; min-height:16px; margin:6px 0 12px;">​</p>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button id="btn-motif-carte-annuler" class="btn btn-secondary">Annuler</button>
+            <button id="btn-motif-carte-confirmer" class="btn btn-primary">Continuer →</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal PIN -->
+<div id="modal-pin-carte" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
+    <div class="card" style="width:320px; padding:28px; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <h3 id="pin-carte-titre" style="margin-bottom:16px; font-size:15px; font-weight:700; color:#1a237e;">Confirmation</h3>
+        <input type="password" id="pin-carte-input" placeholder="Code PIN admin" maxlength="10"
+               style="width:100%; padding:9px 12px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px; font-size:16px; box-sizing:border-box;">
+        <p id="pin-carte-erreur" style="color:#c62828; font-size:12px; min-height:16px; margin-bottom:12px;"></p>
+        <div style="display:flex; gap:8px;">
+            <button id="btn-pin-carte-confirmer" class="btn btn-primary" style="flex:1;">Confirmer</button>
+            <button id="btn-pin-carte-annuler" class="btn btn-secondary" style="flex:1;">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/cartes_caces.js"></script>
 {% endblock %}

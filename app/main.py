@@ -28,11 +28,13 @@ from app.models.habilitation_option import HabilitationOption
 from app.models.non_conformite import NonConformite
 from app.models.option_categorie import OptionCategorie
 from app.models.caces_obtenu import CacesObtenu
+from app.models.carte_caces import CarteCaces
 
 from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
 from app.routers import non_conformites
 from app.routers import caces_obtenus
+from app.routers import cartes_caces
 from app.routers import dev
 from app.models.utilisateur import Utilisateur
 
@@ -247,6 +249,23 @@ except Exception:
 try:
     with engine.connect() as _conn:
         _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS carte_caces (
+                id SERIAL PRIMARY KEY,
+                stagiaire_id INTEGER NOT NULL REFERENCES stagiaires(id),
+                famille VARCHAR(20) NOT NULL,
+                numero_carte VARCHAR(30) UNIQUE NOT NULL,
+                date_generation DATE NOT NULL,
+                statut VARCHAR(20) NOT NULL DEFAULT 'en_preparation',
+                motif_annulation VARCHAR(500)
+            )
+        """))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS caces_obtenus (
                 id SERIAL PRIMARY KEY,
                 stagiaire_id INTEGER NOT NULL REFERENCES stagiaires(id),
@@ -358,6 +377,7 @@ app.include_router(auth.router)
 app.include_router(statistiques.router)
 app.include_router(non_conformites.router)
 app.include_router(caces_obtenus.router)
+app.include_router(cartes_caces.router)
 app.include_router(dev.router)
 
 @app.get("/")
