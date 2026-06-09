@@ -414,7 +414,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
                 pass
     if _src:
         photo_html = (
-            f'<img style="width:22mm;height:28mm;display:block;'
+            f'<img style="width:18mm;height:22mm;display:block;'
             f'border:0.4mm solid #bbb;border-radius:0.6mm;" src="{_src}">'
         )
 
