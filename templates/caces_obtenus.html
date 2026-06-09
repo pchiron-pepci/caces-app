@@ -29,8 +29,16 @@
 <!-- Modal motif annulation -->
 <div id="modal-motif" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
     <div class="card" style="width:460px; max-width:90%; padding:28px; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
-        <h3 id="motif-titre" style="margin-bottom:12px; font-size:15px; font-weight:700; color:#1a237e;">Motif de l'annulation</h3>
-        <textarea id="motif-input" rows="4" placeholder="Expliquez le motif de l'annulation…"
+        <h3 id="motif-titre" style="margin-bottom:14px; font-size:15px; font-weight:700; color:#1a237e;">Motif de l'annulation</h3>
+        <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:6px;">Motif <span style="color:#c62828;">*</span></label>
+        <select id="motif-select" style="width:100%; border:1px solid #ddd; border-radius:8px; padding:9px 12px; font-size:14px; box-sizing:border-box; margin-bottom:12px;">
+            <option value="">— Choisir —</option>
+            <option value="Erreur administrative">Erreur administrative</option>
+            <option value="Non conforme">Non conforme</option>
+            <option value="Autre">Autre</option>
+        </select>
+        <label id="motif-detail-label" style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:6px;">Détail <span style="color:#888; font-weight:400;">(optionnel)</span></label>
+        <textarea id="motif-input" rows="3" placeholder="Précisions éventuelles…"
                   style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 12px; font-size:14px; resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>
         <p id="motif-erreur" style="color:#c62828; font-size:12px; min-height:16px; margin:6px 0 12px;">​</p>
         <div style="display:flex; gap:8px; justify-content:flex-end;">

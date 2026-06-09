@@ -23,6 +23,15 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('modal-motif').addEventListener('click', function (e) {
         if (e.target === this) fermerMotif();
     });
+    document.getElementById('motif-select').addEventListener('change', function () {
+        const label = document.getElementById('motif-detail-label');
+        if (this.value === 'Autre') {
+            label.innerHTML = 'Détail <span style="color:#c62828;">*</span>';
+        } else {
+            label.innerHTML = 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
+        }
+        document.getElementById('motif-erreur').textContent = '​';
+    });
 
     // --- Délégation clics ---
     document.addEventListener('click', function (e) {
@@ -168,13 +177,30 @@ function fermerPin() {
 }
 
 // ===== MOTIF MODAL =====
+const _MOTIF_OPTS = ['Erreur administrative', 'Non conforme'];
+
+function _parseMotif(stored) {
+    for (const opt of _MOTIF_OPTS) {
+        if (stored === opt) return { select: opt, detail: '' };
+        if (stored.startsWith(opt + ' — ')) return { select: opt, detail: stored.slice(opt.length + 3) };
+    }
+    return { select: stored ? 'Autre' : '', detail: stored || '' };
+}
+
 function ouvrirMotif(titre, motifInitial, onConfirme) {
     _motifCallback = onConfirme;
     document.getElementById('motif-titre').textContent = titre;
-    document.getElementById('motif-input').value = motifInitial || '';
+    const parsed = _parseMotif(motifInitial || '');
+    const sel = document.getElementById('motif-select');
+    sel.value = parsed.select;
+    document.getElementById('motif-input').value = parsed.detail;
+    const label = document.getElementById('motif-detail-label');
+    label.innerHTML = parsed.select === 'Autre'
+        ? 'Détail <span style="color:#c62828;">*</span>'
+        : 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
     document.getElementById('motif-erreur').textContent = '​';
     document.getElementById('modal-motif').style.display = 'flex';
-    setTimeout(function () { document.getElementById('motif-input').focus(); }, 50);
+    setTimeout(function () { sel.focus(); }, 50);
 }
 
 function fermerMotif() {
@@ -183,11 +209,17 @@ function fermerMotif() {
 }
 
 function _confirmerMotif() {
-    const motif = document.getElementById('motif-input').value.trim();
-    if (!motif) {
-        document.getElementById('motif-erreur').textContent = '⚠️ Le motif est obligatoire.';
+    const sel = document.getElementById('motif-select').value;
+    const detail = document.getElementById('motif-input').value.trim();
+    if (!sel) {
+        document.getElementById('motif-erreur').textContent = '⚠️ Veuillez choisir un motif.';
         return;
     }
+    if (sel === 'Autre' && !detail) {
+        document.getElementById('motif-erreur').textContent = '⚠️ Le détail est obligatoire pour "Autre".';
+        return;
+    }
+    const motif = detail ? sel + ' — ' + detail : sel;
     if (_motifCallback) _motifCallback(motif);
 }
 
