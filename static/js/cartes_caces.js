@@ -597,7 +597,7 @@ function _buildCr80Html(data, cfg) {
         '#qr canvas, #qr img { width:11mm !important; height:11mm !important; display:block; }',
         '.r-qr-text { font-size:3.2pt; color:#888; text-align:center; line-height:1.25; font-style:italic; max-width:13mm; }',
         '.r-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
-        '  padding:0.7mm 2.5mm; font-size:3.8pt; color:#666; font-style:italic;',
+        '  padding:0.7mm 2.5mm; font-size:4.5pt; color:#555; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
         '.v-hdr { background:' + ANT + '; padding:1.3mm 2.5mm; flex-shrink:0; }',
         '.v-htitle { font-size:6pt; font-weight:900; color:#fff; line-height:1.2; }',
@@ -616,12 +616,12 @@ function _buildCr80Html(data, cfg) {
         '.vno { font-family:monospace; font-weight:700; font-size:4.5pt; white-space:nowrap; color:#444; }',
         '.vopt-badge { display:inline-block; background:#e6e6e6; color:#3a3a3a; font-size:3.6pt;',
         '  font-weight:600; padding:0.1mm 0.5mm; border-radius:0.4mm; white-space:nowrap; border:0.15mm solid #c0c0c0; }',
-        '.vdt { font-size:4.3pt; white-space:nowrap; color:#555; }',
+        '.vdt { font-size:4.3pt; white-space:nowrap; color:#555; font-weight:700; }',
         '.vval { font-weight:800; font-size:4.8pt; color:' + ANT + '; white-space:nowrap; }',
         '.vtest { color:#555; font-size:4pt; }',
         '.vlib { color:#666; font-size:3.8pt; font-style:italic; }',
         '.v-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
-        '  padding:0.6mm 2.5mm; font-size:3.8pt; color:#666; font-style:italic;',
+        '  padding:0.6mm 2.5mm; font-size:4.5pt; color:#555; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
     ].join('\n');
 
