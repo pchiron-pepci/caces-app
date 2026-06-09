@@ -140,6 +140,27 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Toggle détail CACES® d'une carte émise
+        const btnToggle = e.target.closest('[data-action="toggle-caces-carte"]');
+        if (btnToggle) {
+            const carteId = btnToggle.dataset.carteId;
+            const detailRow = document.getElementById('detail-carte-' + carteId);
+            const detailDiv = document.getElementById('detail-caces-' + carteId);
+            const isOpen = detailRow.style.display !== 'none';
+            if (isOpen) {
+                detailRow.style.display = 'none';
+                btnToggle.textContent = '▶';
+            } else {
+                detailRow.style.display = '';
+                btnToggle.textContent = '▼';
+                if (btnToggle.dataset.loaded === '0') {
+                    btnToggle.dataset.loaded = '1';
+                    _chargerCacesCarte(carteId, detailDiv);
+                }
+            }
+            return;
+        }
+
         // Annuler carte
         const btnAnnuler = e.target.closest('[data-action="annuler-carte"]');
         if (btnAnnuler) {
@@ -358,6 +379,7 @@ async function chargerEmises() {
         }
         const rows = data.map(_renderEmise).join('');
         el.innerHTML = '<table class="table"><thead><tr>'
+            + '<th style="width:32px;"></th>'
             + '<th>N° Carte</th><th>Stagiaire</th><th>Famille</th><th>Date</th><th>Statut</th><th></th>'
             + '</tr></thead><tbody>' + rows + '</tbody></table>';
     } catch (_) {
@@ -393,7 +415,12 @@ function _renderEmise(carte) {
     const opacity = emise ? '' : 'opacity:0.5;';
     const strike = emise ? '' : 'text-decoration:line-through;';
 
-    return '<tr style="' + opacity + '">'
+    const toggleBtn = '<button data-action="toggle-caces-carte" data-carte-id="' + carte.id + '" data-loaded="0" '
+        + 'style="background:none;border:none;cursor:pointer;font-size:12px;color:#2d2d2d;padding:2px 6px;line-height:1;" '
+        + 'title="Voir les CACES® de cette carte">▶</button>';
+
+    const mainRow = '<tr style="' + opacity + '">'
+        + '<td style="text-align:center;padding:8px 4px;">' + toggleBtn + '</td>'
         + '<td style="font-family:monospace;font-size:13px;font-weight:700;color:#1a237e;white-space:nowrap;' + strike + '">' + carte.numero_carte + '</td>'
         + '<td style="font-weight:600;font-size:13px;">' + nomComplet + motifHtml + '</td>'
         + '<td><span style="background:#1a237e;color:#fff;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:800;">' + carte.famille + '</span></td>'
@@ -401,6 +428,56 @@ function _renderEmise(carte) {
         + '<td>' + badgeHtml + '</td>'
         + '<td>' + actionsHtml + '</td>'
         + '</tr>';
+
+    const detailRow = '<tr id="detail-carte-' + carte.id + '" style="display:none;">'
+        + '<td style="padding:0;border-top:none;"></td>'
+        + '<td colspan="6" style="padding:0;border-top:none;">'
+        + '<div id="detail-caces-' + carte.id + '" style="padding:10px 12px 14px; background:#f7f8fc; border-top:1px solid #e8eef8;">'
+        + '<span style="color:#888;font-size:12px;">Chargement…</span>'
+        + '</div></td></tr>';
+
+    return mainRow + detailRow;
+}
+
+// ===== DÉTAIL CACES® D'UNE CARTE =====
+async function _chargerCacesCarte(carteId, el) {
+    try {
+        const r = await fetch('/api/cartes-caces/' + carteId + '/caces');
+        if (!r.ok) throw new Error();
+        const caces = await r.json();
+        if (!caces.length) {
+            el.innerHTML = '<span style="color:#888;font-size:12px;font-style:italic;">Aucun CACES® valide actuel pour cette famille.</span>';
+            return;
+        }
+        const rows = caces.map(function (co) {
+            const opts = co.options_obtenues
+                ? co.options_obtenues.split(',').map(function (o) {
+                    return '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:700;">' + o.trim() + '</span>';
+                  }).join(' ')
+                : '—';
+            return '<tr>'
+                + '<td style="font-size:12px;color:#444;padding:5px 10px;">' + (co.categorie_libelle || '—') + '</td>'
+                + '<td style="font-weight:700;color:#1a237e;font-size:12px;padding:5px 10px;">' + co.categorie + '</td>'
+                + '<td style="padding:5px 10px;">' + opts + '</td>'
+                + '<td style="font-family:monospace;font-size:12px;padding:5px 10px;"><span style="background:#e8eaf6;padding:1px 7px;border-radius:3px;">' + _noFormate(co.numero_ordre) + '</span></td>'
+                + '<td style="font-size:12px;color:#444;white-space:nowrap;padding:5px 10px;">' + _fmtDate(co.date_obtention) + '</td>'
+                + '<td style="font-size:12px;color:#2e7d32;font-weight:700;white-space:nowrap;padding:5px 10px;">' + _fmtDate(co.date_echeance) + '</td>'
+                + '<td style="font-size:11px;color:#666;padding:5px 10px;">' + (co.testeur_nom || '—') + '</td>'
+                + '</tr>';
+        }).join('');
+        el.innerHTML = '<table style="width:100%;border-collapse:collapse;">'
+            + '<thead><tr style="border-bottom:1px solid #dde3f0;">'
+            + '<th style="font-size:10px;text-transform:uppercase;color:#888;padding:4px 10px;font-weight:700;text-align:left;">Libellé</th>'
+            + '<th style="font-size:10px;text-transform:uppercase;color:#888;padding:4px 10px;font-weight:700;text-align:left;">Cat.</th>'
+            + '<th style="font-size:10px;text-transform:uppercase;color:#888;padding:4px 10px;font-weight:700;text-align:left;">Options</th>'
+            + '<th style="font-size:10px;text-transform:uppercase;color:#888;padding:4px 10px;font-weight:700;text-align:left;">N° CACES®</th>'
+            + '<th style="font-size:10px;text-transform:uppercase;color:#888;padding:4px 10px;font-weight:700;text-align:left;">Obtention</th>'
+            + '<th style="font-size:10px;text-transform:uppercase;color:#888;padding:4px 10px;font-weight:700;text-align:left;">Échéance</th>'
+            + '<th style="font-size:10px;text-transform:uppercase;color:#888;padding:4px 10px;font-weight:700;text-align:left;">Testeur</th>'
+            + '</tr></thead><tbody>' + rows + '</tbody></table>';
+    } catch (_) {
+        el.innerHTML = '<span style="color:#c62828;font-size:12px;">Erreur de chargement.</span>';
+    }
 }
 
 // ===== IMPRESSION =====

@@ -165,6 +165,41 @@ def get_caces_valides(stagiaire_id: int, famille: str, db: DBSession = Depends(g
     }
 
 
+@router.get("/{carte_id}/caces")
+def get_caces_carte(carte_id: int, db: DBSession = Depends(get_db)):
+    carte = db.query(CarteCaces).filter(CarteCaces.id == carte_id).first()
+    if not carte:
+        raise HTTPException(status_code=404, detail="Carte introuvable")
+    cos = (
+        db.query(CacesObtenu)
+        .filter(
+            CacesObtenu.stagiaire_id == carte.stagiaire_id,
+            CacesObtenu.famille == carte.famille,
+            CacesObtenu.statut == "valide",
+        )
+        .order_by(CacesObtenu.categorie)
+        .all()
+    )
+    t_map = _testeurs_map(cos, db)
+    fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
+    libelles: dict = {}
+    if fam_obj:
+        cats = db.query(Categorie).filter(Categorie.famille_id == fam_obj.id).all()
+        libelles = {c.code: c.libelle or "" for c in cats}
+    return [
+        {
+            "categorie": co.categorie,
+            "categorie_libelle": libelles.get(co.categorie, ""),
+            "numero_ordre": co.numero_ordre,
+            "options_obtenues": co.options_obtenues or "",
+            "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
+            "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
+            "testeur_nom": t_map.get((co.stagiaire_id, co.session_id, co.categorie), ""),
+        }
+        for co in cos
+    ]
+
+
 @router.get("/emises")
 def get_emises(db: DBSession = Depends(get_db)):
     cartes = (
