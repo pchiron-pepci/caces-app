@@ -416,7 +416,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
                 pass
     if _src:
         photo_html = (
-            f'<div class="r-photo"><img style="width:22mm;height:22mm;max-width:22mm;max-height:22mm;object-fit:cover;display:block;" src="{_src}"></div>'
+            f'<div class="r-photo"><img style="width:25mm !important;height:30mm !important;max-width:25mm !important;max-height:30mm !important;object-fit:cover !important;overflow:hidden !important;display:block !important;" src="{_src}"></div>'
         )
 
     # Logo organisme
@@ -552,8 +552,8 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         f'.r-siret {{ font-size:5pt; color:{ANT}; margin-bottom:0.35mm; line-height:1.3; }}\n'
         f'.r-sign {{ font-size:5.2pt; color:{ANT}; display:flex; align-items:center; gap:0.8mm; padding-bottom:0.4mm; }}\n'
         f'.r-sign img {{ height:3.5mm; width:auto; max-width:8mm; object-fit:contain; }}\n'
-        f'.r-photo {{ width:22mm; height:22mm; max-width:22mm; max-height:22mm; overflow:hidden; flex-shrink:0; border:0.4mm solid #bbb; border-radius:0.6mm; display:flex; align-items:center; justify-content:center; }}\n'
-        f'.r-photo-ph {{ width:22mm; height:22mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }}\n'
+        f'.r-photo {{ width:25mm; height:30mm; max-width:25mm; max-height:30mm; overflow:hidden; flex-shrink:0; border:0.4mm solid #bbb; border-radius:0.6mm; display:block; }}\n'
+        f'.r-photo-ph {{ width:25mm; height:30mm; max-width:25mm; max-height:30mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }}\n'
         f'.r-sep {{ width:22mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }}\n'
         f'.r-qr {{ width:22mm; height:22mm; display:block; }}\n'
         f'.r-qr-text {{ font-size:3.8pt; color:{ANT}; text-align:center; line-height:1.25; font-style:italic; max-width:22mm; }}\n'
