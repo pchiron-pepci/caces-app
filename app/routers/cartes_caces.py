@@ -13,6 +13,7 @@ from app.models.session_epreuve import SessionEpreuve
 from app.models.testeur import Testeur
 from app.models.config_organisme import ConfigOrganisme
 from app.models.categorie import Categorie, Famille
+from app.models.document_officiel import DocumentOfficiel
 
 router = APIRouter(prefix="/api/cartes-caces", tags=["Cartes CACES®"])
 
@@ -70,7 +71,7 @@ def _img_uri(b64, nom):
     return f"data:{mime};base64,{b64}"
 
 
-def _build_print_data(carte, s, cos, t_map, config, famille_libelle=""):
+def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_certificat=""):
     cfg = config or ConfigOrganisme()
     return {
         "id": carte.id,
@@ -106,6 +107,7 @@ def _build_print_data(carte, s, cos, t_map, config, famille_libelle=""):
             "signataire_nom": cfg.signataire_nom or "" if hasattr(cfg, 'signataire_nom') else "",
             "signataire_prenom": cfg.signataire_prenom or "" if hasattr(cfg, 'signataire_prenom') else "",
             "signataire_qualite": cfg.signataire_qualite or "" if hasattr(cfg, 'signataire_qualite') else "",
+            "numero_certificat": numero_certificat,
         },
     }
 
@@ -254,6 +256,8 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
         raise HTTPException(status_code=404)
     config = db.query(ConfigOrganisme).first()
     cfg = config or ConfigOrganisme()
+    doc_cert = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == "certificat_organisme").first()
+    numero_certificat = doc_cert.numero_certificat or "" if doc_cert else ""
 
     fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
     famille_libelle = fam_obj.libelle if fam_obj else ""
@@ -284,6 +288,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
                 "signataire_nom": cfg.signataire_nom or "" if hasattr(cfg, 'signataire_nom') else "",
                 "signataire_prenom": cfg.signataire_prenom or "" if hasattr(cfg, 'signataire_prenom') else "",
                 "signataire_qualite": cfg.signataire_qualite or "" if hasattr(cfg, 'signataire_qualite') else "",
+                "numero_certificat": numero_certificat,
             },
         }
 
@@ -296,7 +301,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
     t_map = _testeurs_map(cos, db)
     fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
     famille_libelle = fam_obj.libelle if fam_obj else ""
-    return _build_print_data(carte, s, cos, t_map, config, famille_libelle)
+    return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
 
 
 # ===== ACTIONS =====
@@ -355,8 +360,10 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     db.commit()
     db.refresh(carte)
     config = db.query(ConfigOrganisme).first()
+    doc_cert = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == "certificat_organisme").first()
+    numero_certificat = doc_cert.numero_certificat or "" if doc_cert else ""
     famille_libelle = fam_obj.libelle if fam_obj else ""
-    return _build_print_data(carte, s, cos, t_map, config, famille_libelle)
+    return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
 
 
 @router.post("/annuler/{carte_id}")

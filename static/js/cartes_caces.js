@@ -508,16 +508,13 @@ function _buildCarteHtml(data, format) {
 }
 
 function _buildCr80Html(data, cfg) {
-    // Numéros CACES® (0427 – 0429 – ...)
     const numsCaces = data.caces
         .map(function (co) { return co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : ''; })
         .filter(Boolean).join(' – ');
 
-    // Signataire
     const sigNom = [cfg.signataire_prenom, cfg.signataire_nom].filter(Boolean).join(' ');
     const sigLigne = [sigNom, cfg.signataire_qualite].filter(Boolean).join(' — ');
 
-    // Légende options
     const allOpts = {};
     data.caces.forEach(function (co) {
         if (co.options_obtenues) {
@@ -525,36 +522,33 @@ function _buildCr80Html(data, cfg) {
         }
     });
     const optLabels = { PE: 'Porte-engin', TE: 'Télécommande', TEL: 'Télécommande', CC: 'Conduite cabine', TR: 'Translation rails', CEC: 'Circulation en charge' };
-    const optLegend = Object.keys(allOpts).map(function (k) { return k + ' : ' + (optLabels[k] || k); }).join(' — ');
+    const optLegend = Object.keys(allOpts).map(function (k) { return k + ' : ' + (optLabels[k] || k); }).join(' — ');
 
-    // Organisme
     const organisme = cfg.nom_organisme || '';
     const adresse = cfg.adresse || '';
-    const delivreePar = adresse
-        ? 'Carte délivrée par <span class="org">' + organisme + '</span> — ' + adresse
-        : 'Carte délivrée par <span class="org">' + organisme + '</span>';
+    const delivreePar = adresse ? organisme + ' — ' + adresse : organisme;
     const siretLine = [
-        cfg.siret ? 'Siret : ' + cfg.siret : '',
-        cfg.email ? cfg.email : '',
-        cfg.telephone ? 'Tél. : ' + cfg.telephone : '',
-    ].filter(Boolean).join(' — ');
+        cfg.siret ? 'SIRET ' + cfg.siret : '',
+        cfg.email || '',
+        cfg.telephone ? 'Tél. ' + cfg.telephone : '',
+    ].filter(Boolean).join(' · ');
 
-    // Vérification / QR
-    const verifyUrl = cfg.url_verification_caces || cfg.email || '';
+    const verifyUrl = cfg.url_verification_caces || '';
+    const numeroCert = cfg.numero_certificat || '';
 
-    // Lignes verso
+    // Verso rows — Options next to Cat.
     const versoRows = data.caces.map(function (co) {
         const no = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
         const opts = co.options_obtenues
             ? co.options_obtenues.split(',').map(function (o) {
                 return '<span class="vopt-badge">' + o.trim() + '</span>';
               }).join(' ')
-            : '—';
+            : '<span style="color:#bbb;">—</span>';
         return '<tr>'
             + '<td class="vfam">' + data.famille + '</td>'
             + '<td class="vcat">' + co.categorie + '</td>'
-            + '<td class="vno">' + no + '</td>'
             + '<td>' + opts + '</td>'
+            + '<td class="vno">' + no + '</td>'
             + '<td class="vdt">' + _fmtDateCourt(co.date_obtention) + '</td>'
             + '<td class="vval">' + _fmtDateCourt(co.date_echeance) + '</td>'
             + '<td class="vtest">' + (co.testeur_nom || '—') + '</td>'
@@ -562,9 +556,12 @@ function _buildCr80Html(data, cfg) {
             + '</tr>';
     }).join('');
 
-    const ANT = '#2b2b2b';   // anthracite
-    const RED = '#c62828';   // rouge
-    const RED2 = '#7f0000';  // rouge foncé pour fonds sombres
+    const ddn = data.stagiaire_ddn
+        ? ' <span class="v-hddn">(' + data.stagiaire_ddn + ')</span>'
+        : '';
+
+    const ANT = '#2b2b2b';
+    const RED = '#c62828';
 
     const css = [
         '* { margin:0; padding:0; box-sizing:border-box; }',
@@ -573,62 +570,59 @@ function _buildCr80Html(data, cfg) {
         '  -webkit-print-color-adjust:exact; print-color-adjust:exact; }',
         '.page { width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; }',
         '.page + .page { page-break-before:always; }',
-
-        /* ── RECTO ── */
-        '.r-hdr { background:' + ANT + '; height:11.5mm; display:flex; align-items:center; padding:0 2.5mm;',
+        '.r-hdr { background:' + ANT + '; height:11mm; display:flex; align-items:center; padding:0 2.5mm;',
         '  justify-content:space-between; flex-shrink:0; gap:1.5mm; }',
         '.r-logo  { height:8.5mm; width:auto; max-width:22mm; object-fit:contain; }',
-        '.r-logo-am { height:10.5mm; width:auto; max-width:25mm; object-fit:contain; }',
-        '.r-body { display:flex; flex:1; padding:1.5mm 2.5mm 0; gap:2mm; min-height:0; overflow:hidden; }',
-        '.r-left { flex:1; min-width:0; display:flex; flex-direction:column; gap:0; }',
-        '.r-right { width:15mm; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:1mm; padding-top:0.3mm; }',
-
+        '.r-logo-am { height:10mm; width:auto; max-width:24mm; object-fit:contain; }',
+        '.r-subhdr { background:#fff; border-bottom:0.3mm solid #e4e4e4; padding:0.55mm 2.5mm;',
+        '  display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }',
+        '.r-subhdr-title { font-size:4.8pt; color:#3a3a3a; font-style:italic; }',
+        '.r-subhdr-cert { font-size:3.8pt; color:#999; font-weight:700; letter-spacing:0.05mm; white-space:nowrap; }',
+        '.r-body { display:flex; flex:1; padding:1.2mm 2.5mm 0; gap:2mm; min-height:0; overflow:hidden; }',
+        '.r-left { flex:1; min-width:0; display:flex; flex-direction:column; }',
+        '.r-right { width:14.5mm; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:0.7mm; padding-top:0.2mm; }',
         '.r-fam-badge { display:inline-block; background:' + RED + '; color:#fff; font-size:6.5pt; font-weight:900;',
-        '  padding:0.5mm 2mm; border-radius:0.7mm; margin-bottom:1mm; letter-spacing:0.15mm; }',
-        '.r-titre { font-size:5.8pt; font-weight:700; color:' + ANT + '; margin-bottom:0.8mm; line-height:1.2; }',
-
-        '.r-row { font-size:5.5pt; color:' + ANT + '; margin-bottom:0.35mm; line-height:1.25; }',
-        '.r-row .lbl { color:#555; font-size:5pt; }',
-        '.r-row .nom { font-weight:900; font-style:italic; color:#111; }',
-        '.r-row .ddn { font-style:italic; color:#3a3a3a; }',
-        '.r-row .ncert { font-weight:800; color:' + RED + '; letter-spacing:0.3mm; font-size:5.5pt; }',
-        '.r-row .org { font-weight:700; }',
-        '.r-siret { font-size:4.5pt; color:#3a3a3a; margin-bottom:0.35mm; line-height:1.3; }',
-        '.r-sign { font-size:4.8pt; color:' + ANT + '; display:flex; align-items:center; gap:1mm; margin-top:auto; padding-bottom:0.3mm; }',
-        '.r-sign img { height:3.8mm; width:auto; max-width:9mm; object-fit:contain; }',
-
-        '.r-photo { width:13.5mm; height:17mm; object-fit:cover; border:0.4mm solid #999; display:block; border-radius:0.5mm; }',
-        '.r-photo-ph { width:13.5mm; height:17mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.5mm; }',
-        '#qr canvas, #qr img { width:11.5mm !important; height:11.5mm !important; }',
-
-        '.r-ftr { flex-shrink:0; background:#ebebeb; border-top:0.35mm solid #cacaca;',
-        '  padding:0.9mm 2.5mm; font-size:4pt; color:#3a3a3a; font-style:italic; font-weight:700;',
-        '  text-align:center; line-height:1.35; }',
-
-        /* ── VERSO ── */
-        '.v-hdr { background:' + ANT + '; padding:1.5mm 2.5mm; flex-shrink:0; }',
-        '.v-htitle { font-size:6.5pt; font-weight:900; color:#fff; line-height:1.2; }',
-        '.v-hcarte { font-size:5pt; color:' + RED + '; font-weight:700; font-family:monospace; margin-top:0.3mm; }',
-        '.v-notices { padding:0.6mm 2.5mm; font-size:4.6pt; color:#3a3a3a; line-height:1.35; flex-shrink:0; border-bottom:0.2mm solid #e0e0e0; }',
+        '  padding:0.4mm 2mm; border-radius:0.7mm; margin-bottom:0.7mm; letter-spacing:0.1mm; white-space:nowrap; }',
+        '.r-nums { font-size:5.5pt; color:' + RED + '; font-weight:800; margin-bottom:0.4mm; letter-spacing:0.2mm; }',
+        '.r-nums .lbl { font-weight:400; color:#666; font-size:4.8pt; }',
+        '.r-titulaire { font-size:6.2pt; font-weight:900; font-style:italic; color:#111; margin-bottom:0.2mm; line-height:1.2; }',
+        '.r-ddn { font-size:4.5pt; color:#666; font-style:italic; }',
+        '.r-spacer { flex:1; min-height:0.5mm; }',
+        '.r-org { font-size:4.8pt; color:' + ANT + '; font-weight:700; line-height:1.25; margin-bottom:0.25mm; }',
+        '.r-siret { font-size:4pt; color:#777; margin-bottom:0.35mm; line-height:1.3; }',
+        '.r-sign { font-size:4.5pt; color:' + ANT + '; display:flex; align-items:center; gap:0.8mm; padding-bottom:0.4mm; }',
+        '.r-sign img { height:3.5mm; width:auto; max-width:8mm; object-fit:contain; }',
+        '.r-photo { width:13mm; height:16.5mm; object-fit:cover; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }',
+        '.r-photo-ph { width:13mm; height:16.5mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }',
+        '#qr canvas, #qr img { width:11mm !important; height:11mm !important; display:block; }',
+        '.r-qr-text { font-size:3.2pt; color:#888; text-align:center; line-height:1.25; font-style:italic; max-width:13mm; }',
+        '.r-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
+        '  padding:0.7mm 2.5mm; font-size:3.8pt; color:#666; font-style:italic;',
+        '  text-align:center; line-height:1.3; }',
+        '.v-hdr { background:' + ANT + '; padding:1.3mm 2.5mm; flex-shrink:0; }',
+        '.v-htitle { font-size:6pt; font-weight:900; color:#fff; line-height:1.2; }',
+        '.v-hddn { font-size:4.3pt; font-weight:400; color:#bbb; font-style:italic; }',
+        '.v-hcarte { font-size:4.5pt; color:' + RED + '; font-weight:700; font-family:monospace; margin-top:0.2mm; }',
+        '.v-notices { padding:0.5mm 2.5mm; font-size:4.3pt; color:#666; line-height:1.3; flex-shrink:0; border-bottom:0.15mm solid #ebebeb; }',
         '.v-tbl { flex:1; padding:0 2.5mm; overflow:hidden; }',
         'table { width:100%; border-collapse:collapse; }',
-        'thead tr { background:' + RED + '; }',
-        'th { font-size:4.2pt; font-weight:700; color:#fff; text-transform:uppercase; padding:0.6mm 0.5mm;',
-        '  text-align:left; white-space:nowrap; letter-spacing:0.1mm; }',
+        'thead tr { background:' + ANT + '; }',
+        'th { font-size:3.8pt; font-weight:700; color:#fff; text-transform:uppercase; padding:0.5mm 0.4mm;',
+        '  text-align:left; white-space:nowrap; letter-spacing:0.04mm; }',
         'tbody tr:nth-child(even) { background:#f5f5f5; }',
-        'td { font-size:5pt; padding:0.5mm 0.5mm; border-bottom:0.1mm solid #e0e0e0; vertical-align:middle; color:' + ANT + '; }',
-        '.vfam { font-weight:900; color:' + RED + '; font-size:5pt; white-space:nowrap; }',
-        '.vcat { font-weight:900; color:' + ANT + '; font-size:5.5pt; white-space:nowrap; }',
-        '.vno { font-family:monospace; font-weight:700; font-size:5pt; white-space:nowrap; }',
-        '.vopt-badge { display:inline-block; background:' + RED + '; color:#fff; font-size:4pt;',
-        '  font-weight:700; padding:0.2mm 0.8mm; border-radius:0.5mm; white-space:nowrap; }',
-        '.vdt { font-size:5pt; white-space:nowrap; }',
-        '.vval { font-weight:800; font-size:5pt; color:' + ANT + '; white-space:nowrap; }',
-        '.vtest { color:#3a3a3a; font-size:4.5pt; }',
-        '.vlib { color:#444; font-size:4.5pt; font-style:italic; }',
-        '.v-ftr { flex-shrink:0; background:#ebebeb; border-top:0.35mm solid #cacaca;',
-        '  padding:0.8mm 2.5mm; font-size:4pt; color:#3a3a3a; font-style:italic; font-weight:700;',
-        '  text-align:center; line-height:1.35; }',
+        'td { font-size:4.8pt; padding:0.4mm 0.4mm; border-bottom:0.1mm solid #ebebeb; vertical-align:middle; color:' + ANT + '; }',
+        '.vfam { font-weight:800; color:' + RED + '; font-size:4.5pt; white-space:nowrap; }',
+        '.vcat { font-weight:900; color:' + ANT + '; font-size:5pt; white-space:nowrap; }',
+        '.vno { font-family:monospace; font-weight:700; font-size:4.5pt; white-space:nowrap; color:#444; }',
+        '.vopt-badge { display:inline-block; background:#e6e6e6; color:#3a3a3a; font-size:3.6pt;',
+        '  font-weight:600; padding:0.1mm 0.5mm; border-radius:0.4mm; white-space:nowrap; border:0.15mm solid #c0c0c0; }',
+        '.vdt { font-size:4.3pt; white-space:nowrap; color:#555; }',
+        '.vval { font-weight:800; font-size:4.8pt; color:' + ANT + '; white-space:nowrap; }',
+        '.vtest { color:#555; font-size:4pt; }',
+        '.vlib { color:#666; font-size:3.8pt; font-style:italic; }',
+        '.v-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
+        '  padding:0.6mm 2.5mm; font-size:3.8pt; color:#666; font-style:italic;',
+        '  text-align:center; line-height:1.3; }',
     ].join('\n');
 
     const logoHtml = cfg.logo_uri
@@ -640,72 +634,71 @@ function _buildCr80Html(data, cfg) {
         : '<div class="r-photo-ph"></div>';
 
     const signHtml = cfg.signature_uri
-        ? '<img src="' + cfg.signature_uri + '" style="height:3.8mm;width:auto;max-width:9mm;object-fit:contain;" /> '
+        ? '<img src="' + cfg.signature_uri + '" style="height:3.5mm;width:auto;max-width:8mm;object-fit:contain;" /> '
         : '';
 
     const versoNotices = [
-        data.famille === 'R482' ? 'Option réseaux : Ne permet pas la délivrance d\'une AIPR' : '',
-        optLegend ? '*Options : ' + optLegend : '',
+        data.famille === 'R482' ? 'Option réseaux : Ne permet pas la délivrance d\'une AIPR' : '',
+        optLegend ? 'Options : ' + optLegend : '',
     ].filter(Boolean).join(' — ');
 
     return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
         + '<style>' + css + '</style>'
         + (verifyUrl ? '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>' : '')
         + '</head><body>'
-
-        // ===== RECTO =====
         + '<div class="page">'
         +   '<div class="r-hdr">'
         +     logoHtml
         +     '<img class="r-logo-am" src="/static/img/assurance_maladie_caces.jpeg" />'
         +   '</div>'
+        +   '<div class="r-subhdr">'
+        +     '<span class="r-subhdr-title">Certificat d\'aptitude à la conduite en sécurité</span>'
+        +     (numeroCert ? '<span class="r-subhdr-cert">Cert. DEKRA n° ' + numeroCert + '</span>' : '')
+        +   '</div>'
         +   '<div class="r-body">'
         +     '<div class="r-left">'
         +       '<span class="r-fam-badge">CACES® ' + data.famille
                     + (data.famille_libelle ? ' — ' + data.famille_libelle.toUpperCase() : '') + '</span>'
-        +       '<div class="r-titre">Certificat d\'aptitude à la conduite en sécurité</div>'
-        +       (numsCaces ? '<div class="r-row"><span class="lbl">N° certificats : </span><span class="ncert">' + numsCaces + '</span></div>' : '')
-        +       '<div class="r-row"><span class="lbl">Titulaire : </span><span class="nom">' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + '</span>'
-                    + (data.stagiaire_ddn ? ' <span class="ddn">— ' + data.stagiaire_ddn + '</span>' : '') + '</div>'
-        +       '<div class="r-row">' + delivreePar + '</div>'
+        +       (numsCaces ? '<div class="r-nums"><span class="lbl">N° CACES® </span>' + numsCaces + '</div>' : '')
+        +       '<div class="r-titulaire">' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + '</div>'
+        +       (data.stagiaire_ddn ? '<div class="r-ddn">Né(e) le ' + data.stagiaire_ddn + '</div>' : '')
+        +       '<div class="r-spacer"></div>'
+        +       (delivreePar ? '<div class="r-org">' + delivreePar + '</div>' : '')
         +       (siretLine ? '<div class="r-siret">' + siretLine + '</div>' : '')
         +       (sigLigne ? '<div class="r-sign">' + signHtml + sigLigne + '</div>' : '')
         +     '</div>'
         +     '<div class="r-right">'
         +       photoHtml
         +       (verifyUrl ? '<div id="qr" data-url="' + verifyUrl + '"></div>' : '')
+        +       (verifyUrl ? '<div class="r-qr-text">Scanner pour vérifier l\'authenticité</div>' : '')
         +     '</div>'
         +   '</div>'
-        +   '<div class="r-ftr">La marque CACES® est protégée (INPI n° 03.3237295)<br>Document recto/verso. Toute copie doit comporter les 2 faces.</div>'
+        +   '<div class="r-ftr">La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire</div>'
         + '</div>'
-
-        // ===== VERSO =====
         + '<div class="page">'
         +   '<div class="v-hdr">'
-        +     '<div class="v-htitle">CACES® ' + data.famille + ' — ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + '</div>'
-        +     '<div class="v-hcarte">N° carte : ' + data.numero_carte + '</div>'
+        +     '<div class="v-htitle">CACES® ' + data.famille + ' — ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + ddn + '</div>'
+        +     '<div class="v-hcarte">N° ' + data.numero_carte + '</div>'
         +   '</div>'
         +   (versoNotices ? '<div class="v-notices">' + versoNotices + '</div>' : '')
         +   '<div class="v-tbl">'
         +     '<table>'
         +       '<thead><tr>'
-        +         '<th>Famille</th><th>Cat.</th><th>N° CACES®</th><th>Options</th>'
+        +         '<th>Famille</th><th>Cat.</th><th>Options</th><th>N° CACES®</th>'
         +         '<th>Obtention</th><th>Validité</th><th>Testeur</th><th>Libellé</th>'
         +       '</tr></thead>'
         +       '<tbody>' + versoRows + '</tbody>'
         +     '</table>'
         +   '</div>'
         +   '<div class="v-ftr">'
-        +     (verifyUrl ? 'Vérification : ' + verifyUrl + ' — ' : '')
+        +     (verifyUrl ? 'Vérification : ' + verifyUrl + ' — ' : '')
         +     'Document recto/verso. Toute copie doit comporter les 2 faces.'
         +   '</div>'
         + '</div>'
-
-        // QR code init (avant impression déclenchée par le parent après 1500ms)
         + '<script>window.onload=function(){'
         +   'var el=document.getElementById("qr");'
         +   'if(el&&el.dataset.url&&typeof QRCode!=="undefined"){'
-        +     'new QRCode(el,{text:el.dataset.url,width:44,height:44,colorDark:"' + ANT + '",colorLight:"#fff"});'
+        +     'new QRCode(el,{text:el.dataset.url,width:42,height:42,colorDark:"' + ANT + '",colorLight:"#fff"});'
         +   '}'
         + '};<\/script>'
         + '</body></html>';
