@@ -184,26 +184,45 @@ class ConfigOrganismeUpdate(BaseModel):
     revue_direction_date: Optional[date] = None
     pin_formateur: Optional[str] = None
     prochain_numero_caces: Optional[int] = None
+    adresse: Optional[str] = None
+    siret: Optional[str] = None
+    email: Optional[str] = None
+    telephone: Optional[str] = None
+    signataire_nom: Optional[str] = None
+    signataire_prenom: Optional[str] = None
+    signataire_qualite: Optional[str] = None
+    url_verification_caces: Optional[str] = None
+
+def _img_data_uri(b64: str, nom: str) -> str:
+    if not b64 or not nom:
+        return ""
+    ext = nom.rsplit('.', 1)[-1].lower()
+    mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
+    return f"data:{mime};base64,{b64}"
 
 @router.get("/config-organisme")
 def get_config_organisme(db: Session = Depends(get_db)):
     from app.models.config_organisme import ConfigOrganisme
     config = db.query(ConfigOrganisme).first()
     if not config:
-        return {"nom_organisme": "", "logo_data_uri": ""}
-    logo_data_uri = ""
-    if config.logo_base64 and config.logo_nom:
-        ext = config.logo_nom.rsplit('.', 1)[-1].lower()
-        mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
-        logo_data_uri = f"data:{mime};base64,{config.logo_base64}"
+        return {"nom_organisme": "", "logo_data_uri": "", "signature_data_uri": ""}
     return {
         "nom_organisme": config.nom_organisme or "",
-        "logo_data_uri": logo_data_uri,
+        "logo_data_uri": _img_data_uri(config.logo_base64, config.logo_nom),
         "audit_interne_date": config.audit_interne_date.isoformat() if config.audit_interne_date else "",
         "audit_externe_date": config.audit_externe_date.isoformat() if config.audit_externe_date else "",
         "revue_direction_date": config.revue_direction_date.isoformat() if config.revue_direction_date else "",
         "pin_formateur": config.pin_formateur or "1234",
         "prochain_numero_caces": config.prochain_numero_caces if config.prochain_numero_caces is not None else 1,
+        "adresse": config.adresse or "",
+        "siret": config.siret or "",
+        "email": config.email or "",
+        "telephone": config.telephone or "",
+        "signataire_nom": config.signataire_nom or "",
+        "signataire_prenom": config.signataire_prenom or "",
+        "signataire_qualite": config.signataire_qualite or "",
+        "signature_data_uri": _img_data_uri(config.signature_base64, config.signature_nom),
+        "url_verification_caces": config.url_verification_caces or "",
     }
 
 @router.put("/config-organisme")
@@ -224,6 +243,14 @@ def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session =
         config.pin_formateur = data.pin_formateur or "1234"
     if data.prochain_numero_caces is not None:
         config.prochain_numero_caces = data.prochain_numero_caces
+    config.adresse = data.adresse
+    config.siret = data.siret
+    config.email = data.email
+    config.telephone = data.telephone
+    config.signataire_nom = data.signataire_nom
+    config.signataire_prenom = data.signataire_prenom
+    config.signataire_qualite = data.signataire_qualite
+    config.url_verification_caces = data.url_verification_caces
     db.commit()
     return {"message": "Configuration mise à jour"}
 
@@ -236,13 +263,12 @@ async def upload_logo_organisme(pin: str, file: UploadFile = File(...), db: Sess
     if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
         raise HTTPException(status_code=400, detail="Format image invalide (png, jpg, gif, webp)")
     contents = await file.read()
-    logo_b64 = base64.b64encode(contents).decode()
     from app.models.config_organisme import ConfigOrganisme
     config = db.query(ConfigOrganisme).first()
     if not config:
         config = ConfigOrganisme()
         db.add(config)
-    config.logo_base64 = logo_b64
+    config.logo_base64 = base64.b64encode(contents).decode()
     config.logo_nom = file.filename
     db.commit()
     return {"message": "Logo mis à jour"}
@@ -259,6 +285,38 @@ def supprimer_logo_organisme(pin: str, db: Session = Depends(get_db)):
         config.logo_nom = None
         db.commit()
     return {"message": "Logo supprimé"}
+
+@router.post("/config-organisme/signature")
+async def upload_signature_organisme(pin: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
+        raise HTTPException(status_code=400, detail="Format image invalide (png, jpg, gif, webp)")
+    contents = await file.read()
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if not config:
+        config = ConfigOrganisme()
+        db.add(config)
+    config.signature_base64 = base64.b64encode(contents).decode()
+    config.signature_nom = file.filename
+    db.commit()
+    return {"message": "Signature mise à jour"}
+
+@router.delete("/config-organisme/signature")
+def supprimer_signature_organisme(pin: str, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if config:
+        config.signature_base64 = None
+        config.signature_nom = None
+        db.commit()
+    return {"message": "Signature supprimée"}
 
 
 @router.post("/config/verifier-pin-formateur")

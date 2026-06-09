@@ -223,6 +223,22 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS adresse TEXT"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS siret VARCHAR(20)"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS email VARCHAR(200)"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS telephone VARCHAR(50)"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_nom VARCHAR(100)"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_prenom VARCHAR(100)"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_qualite VARCHAR(100)"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signature_base64 TEXT"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signature_nom VARCHAR(200)"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS url_verification_caces VARCHAR(500)"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT"))
         _conn.commit()
 except Exception:

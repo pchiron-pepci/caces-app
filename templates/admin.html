@@ -269,6 +269,59 @@
                     <label>Nom de l'organisme</label>
                     <input type="text" id="config-nom" placeholder="PEPCI Formation">
                 </div>
+                <div class="form-field" style="grid-column:span 2;">
+                    <label>Adresse complète</label>
+                    <textarea id="config-adresse" rows="3" placeholder="12 rue de la Formation, 75001 Paris" style="width:100%; resize:vertical;"></textarea>
+                </div>
+                <div class="form-field">
+                    <label>SIRET</label>
+                    <input type="text" id="config-siret" placeholder="12345678901234" maxlength="20">
+                </div>
+                <div class="form-field">
+                    <label>Email</label>
+                    <input type="email" id="config-email" placeholder="contact@pepci.fr">
+                </div>
+                <div class="form-field">
+                    <label>Téléphone</label>
+                    <input type="tel" id="config-telephone" placeholder="01 23 45 67 89">
+                </div>
+                <div class="form-field">
+                    <label>URL vérification CACES® <small style="color:#aaa;">(optionnel)</small></label>
+                    <input type="url" id="config-url-verification" placeholder="https://…">
+                </div>
+            </div>
+
+            <div style="border-top:1px solid #e8ecf4; margin:20px 0 16px;"></div>
+            <div style="font-size:13px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">Signataire</div>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>Nom du signataire</label>
+                    <input type="text" id="config-signataire-nom" placeholder="DUPONT">
+                </div>
+                <div class="form-field">
+                    <label>Prénom du signataire</label>
+                    <input type="text" id="config-signataire-prenom" placeholder="Jean">
+                </div>
+                <div class="form-field">
+                    <label>Qualité du signataire</label>
+                    <input type="text" id="config-signataire-qualite" placeholder="Président">
+                </div>
+            </div>
+            <div style="margin-top:12px;">
+                <div style="font-size:13px; color:#666; font-weight:500; margin-bottom:8px;">Image de signature</div>
+                <div id="config-signature-preview" style="margin-bottom:10px;">
+                    <span style="color:#888; font-size:13px;">— Aucune signature</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <input type="file" id="config-signature-file" accept="image/*">
+                    <button class="btn btn-danger" id="btn-suppr-signature" style="padding:4px 10px; font-size:12px; display:none;"
+                        onclick="supprimerSignatureOrganisme()">🗑️ Supprimer la signature</button>
+                </div>
+            </div>
+
+            <div style="border-top:1px solid #e8ecf4; margin:20px 0 16px;"></div>
+            <div style="font-size:13px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">Accès et sécurité</div>
+            <div class="form-grid">
                 <div class="form-field">
                     <label>PIN formateur (déblocage "Ce n'est pas moi")</label>
                     <input type="text" id="config-pin-formateur" placeholder="1234" maxlength="20" style="letter-spacing:4px; font-size:18px;">
@@ -279,18 +332,19 @@
                     <small style="color:#888; display:block; margin-top:4px;">Affiché sur 4 chiffres : 0001, 0002…</small>
                 </div>
             </div>
-            <div style="margin-top:16px;">
-                <div style="font-size:13px; color:#666; font-weight:500; margin-bottom:8px;">Logo actuel</div>
-                <div id="config-logo-preview" style="margin-bottom:12px;">
-                    <span style="color:#888; font-size:13px;">— Aucun logo</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <input type="file" id="config-logo-file" accept="image/*">
-                    <button class="btn btn-danger" id="btn-suppr-logo" style="padding:4px 10px; font-size:12px; display:none;"
-                        onclick="supprimerLogoOrganisme()">🗑️ Supprimer le logo</button>
-                </div>
+
+            <div style="border-top:1px solid #e8ecf4; margin:20px 0 16px;"></div>
+            <div style="font-size:13px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">Logo</div>
+            <div id="config-logo-preview" style="margin-bottom:12px;">
+                <span style="color:#888; font-size:13px;">— Aucun logo</span>
             </div>
-            <div class="form-actions" style="margin-top:20px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <input type="file" id="config-logo-file" accept="image/*">
+                <button class="btn btn-danger" id="btn-suppr-logo" style="padding:4px 10px; font-size:12px; display:none;"
+                    onclick="supprimerLogoOrganisme()">🗑️ Supprimer le logo</button>
+            </div>
+
+            <div class="form-actions" style="margin-top:24px;">
                 <button class="btn btn-primary" onclick="sauvegarderConfigOrganisme()">💾 Enregistrer</button>
             </div>
         </div>
@@ -802,6 +856,16 @@ async function chargerConfigOrganisme() {
     if (!resp.ok) return;
     const data = await resp.json();
     document.getElementById('config-nom').value = data.nom_organisme || '';
+    document.getElementById('config-adresse').value = data.adresse || '';
+    document.getElementById('config-siret').value = data.siret || '';
+    document.getElementById('config-email').value = data.email || '';
+    document.getElementById('config-telephone').value = data.telephone || '';
+    document.getElementById('config-url-verification').value = data.url_verification_caces || '';
+    document.getElementById('config-signataire-nom').value = data.signataire_nom || '';
+    document.getElementById('config-signataire-prenom').value = data.signataire_prenom || '';
+    document.getElementById('config-signataire-qualite').value = data.signataire_qualite || '';
+    document.getElementById('config-pin-formateur').value = data.pin_formateur || '1234';
+    document.getElementById('config-prochain-numero').value = data.prochain_numero_caces || 1;
     const preview = document.getElementById('config-logo-preview');
     const btnSuppr = document.getElementById('btn-suppr-logo');
     if (data.logo_data_uri) {
@@ -811,27 +875,46 @@ async function chargerConfigOrganisme() {
         preview.innerHTML = '<span style="color:#888; font-size:13px;">— Aucun logo</span>';
         btnSuppr.style.display = 'none';
     }
+    const sigPreview = document.getElementById('config-signature-preview');
+    const btnSupprSig = document.getElementById('btn-suppr-signature');
+    if (data.signature_data_uri) {
+        sigPreview.innerHTML = `<img src="${data.signature_data_uri}" style="max-height:80px; border:1px solid #e8ecf4; border-radius:8px; padding:4px; background:#fff;">`;
+        btnSupprSig.style.display = '';
+    } else {
+        sigPreview.innerHTML = '<span style="color:#888; font-size:13px;">— Aucune signature</span>';
+        btnSupprSig.style.display = 'none';
+    }
     if (data.audit_interne_date) document.getElementById('config-audit-interne').value = data.audit_interne_date;
     if (data.audit_externe_date) document.getElementById('config-audit-externe').value = data.audit_externe_date;
     if (data.revue_direction_date) document.getElementById('config-revue-direction').value = data.revue_direction_date;
-    document.getElementById('config-pin-formateur').value = data.pin_formateur || '1234';
-    document.getElementById('config-prochain-numero').value = data.prochain_numero_caces || 1;
 }
 
 function sauvegarderConfigOrganisme() {
     demanderPin("Sauvegarder la configuration de l'organisme ?", async (pin) => {
-        const nom = document.getElementById('config-nom').value;
-        const file = document.getElementById('config-logo-file').files[0];
-        if (file) {
+        const logoFile = document.getElementById('config-logo-file').files[0];
+        if (logoFile) {
             const fd = new FormData();
-            fd.append('file', file);
-            const respLogo = await fetch(`/admin/config-organisme/logo?pin=${encodeURIComponent(pin)}`, {
-                method: 'POST', body: fd
-            });
-            if (!respLogo.ok) { alert('Erreur upload logo'); return; }
+            fd.append('file', logoFile);
+            const r = await fetch(`/admin/config-organisme/logo?pin=${encodeURIComponent(pin)}`, { method: 'POST', body: fd });
+            if (!r.ok) { alert('Erreur upload logo'); return; }
+        }
+        const sigFile = document.getElementById('config-signature-file').files[0];
+        if (sigFile) {
+            const fd = new FormData();
+            fd.append('file', sigFile);
+            const r = await fetch(`/admin/config-organisme/signature?pin=${encodeURIComponent(pin)}`, { method: 'POST', body: fd });
+            if (!r.ok) { alert('Erreur upload signature'); return; }
         }
         const payload = {
-            nom_organisme: nom,
+            nom_organisme: document.getElementById('config-nom').value,
+            adresse: document.getElementById('config-adresse').value || null,
+            siret: document.getElementById('config-siret').value || null,
+            email: document.getElementById('config-email').value || null,
+            telephone: document.getElementById('config-telephone').value || null,
+            url_verification_caces: document.getElementById('config-url-verification').value || null,
+            signataire_nom: document.getElementById('config-signataire-nom').value || null,
+            signataire_prenom: document.getElementById('config-signataire-prenom').value || null,
+            signataire_qualite: document.getElementById('config-signataire-qualite').value || null,
             audit_interne_date: document.getElementById('config-audit-interne').value || null,
             audit_externe_date: document.getElementById('config-audit-externe').value || null,
             revue_direction_date: document.getElementById('config-revue-direction').value || null,
@@ -845,6 +928,7 @@ function sauvegarderConfigOrganisme() {
         });
         if (respNom.ok) {
             document.getElementById('config-logo-file').value = '';
+            document.getElementById('config-signature-file').value = '';
             const msg = document.getElementById('config-organisme-msg');
             msg.textContent = '✅ Configuration sauvegardée — rechargement...';
             msg.style.display = 'block';
@@ -860,6 +944,14 @@ function supprimerLogoOrganisme() {
         const resp = await fetch(`/admin/config-organisme/logo?pin=${encodeURIComponent(pin)}`, { method: 'DELETE' });
         if (resp.ok) location.reload();
         else alert('Erreur suppression logo');
+    });
+}
+
+function supprimerSignatureOrganisme() {
+    demanderPin('Supprimer la signature ?', async (pin) => {
+        const resp = await fetch(`/admin/config-organisme/signature?pin=${encodeURIComponent(pin)}`, { method: 'DELETE' });
+        if (resp.ok) location.reload();
+        else alert('Erreur suppression signature');
     });
 }
 
