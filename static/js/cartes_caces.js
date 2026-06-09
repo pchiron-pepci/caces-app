@@ -415,7 +415,7 @@ function _renderEmise(carte) {
             + '<button data-action="reimprimer-carte" data-id="' + carte.id + '" title="Réimprimer" '
             + 'style="background:none;border:1px solid #1a237e;color:#1a237e;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">🖨️</button>'
             + '<button data-action="telecharger-pdf" data-id="' + carte.id + '" title="Télécharger PDF protégé" '
-            + 'style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">📥</button>'
+            + 'style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">📥 PDF</button>'
             + '<button data-action="annuler-carte" data-id="' + carte.id + '" data-num="' + carte.numero_carte + '" title="Annuler" '
             + 'style="background:none;border:1px solid #c62828;color:#c62828;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">❌</button>'
             + '</div>'

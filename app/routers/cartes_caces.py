@@ -374,256 +374,274 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
 
 
-def _generate_cr80_pdf(carte, s, cfg, caces_list: list, verify_url: str) -> bytes:
-    """Génère un PDF CR80 recto/verso avec reportlab."""
+def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='', numero_certificat=''):
+    """Genere le HTML CR80 recto/verso identique au template JS, pour WeasyPrint."""
     import base64 as _b64
     from io import BytesIO as _BIO
     import qrcode as _qr
-    from reportlab.pdfgen.canvas import Canvas
-    from reportlab.lib.units import mm
-    from reportlab.lib import colors
-    from reportlab.lib.utils import ImageReader
-    from reportlab.platypus import Table, TableStyle
+    from html import escape as _esc
 
-    W, H = 85.6 * mm, 54.0 * mm
-    RED = colors.HexColor('#c62828')
-    ANT = colors.HexColor('#2b2b2b')
-    GRAY = colors.HexColor('#f0f0f0')
+    ANT = '#2b2b2b'
+    RED = '#c62828'
 
-    buf = _BIO()
-    c = Canvas(buf, pagesize=(W, H))
+    # QR code -> PNG base64
+    qr = _qr.QRCode(version=1, box_size=4, border=1,
+                    error_correction=_qr.constants.ERROR_CORRECT_M)
+    qr.add_data(verify_url or carte.numero_carte)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color=ANT, back_color='white')
+    qr_buf = _BIO()
+    qr_img.save(qr_buf, format='PNG')
+    qr_b64 = _b64.b64encode(qr_buf.getvalue()).decode()
+    qr_html = f'<img class="r-qr" src="data:image/png;base64,{qr_b64}">'
 
-    # ── RECTO ──────────────────────────────────────────────────────────────
-    # Footer strip
-    c.setFillColor(GRAY)
-    c.rect(0, 0, W, 4 * mm, fill=1, stroke=0)
-    c.setFillColor(RED)
-    c.rect(0, 0, W, 1.5 * mm, fill=1, stroke=0)
-
-    # Org/signature text in footer
-    org_name = (cfg.nom_organisme or '') if cfg else ''
-    c.setFont('Helvetica-Bold', 4.5)
-    c.setFillColor(ANT)
-    c.drawString(2 * mm, 2.7 * mm, org_name)
-    sig = ''
-    if cfg and getattr(cfg, 'signataire_nom', None):
-        sig = f"{cfg.signataire_prenom or ''} {cfg.signataire_nom}".strip()
-        if getattr(cfg, 'signataire_qualite', None):
-            sig += f" — {cfg.signataire_qualite}"
-    if sig:
-        c.setFont('Helvetica', 4)
-        c.drawString(2 * mm, 1.8 * mm, sig)
-
-    # Header (top 15mm), red border-bottom
-    c.setStrokeColor(RED)
-    c.setLineWidth(0.5)
-    c.line(0, H - 15 * mm, W, H - 15 * mm)
-
-    # Logo organisme
-    if cfg and getattr(cfg, 'logo_base64', None):
-        try:
-            logo_data = _b64.b64decode(cfg.logo_base64)
-            logo_rdr = ImageReader(_BIO(logo_data))
-            c.drawImage(logo_rdr, 2 * mm, H - 14 * mm, width=24 * mm, height=12 * mm,
-                        preserveAspectRatio=True, anchor='nw', mask='auto')
-        except Exception:
-            c.setFont('Helvetica-Bold', 6)
-            c.setFillColor(ANT)
-            c.drawString(2 * mm, H - 8 * mm, org_name or 'CACES®')
-
-    # Assurance Maladie logo
-    try:
-        c.drawImage('static/img/assurance_maladie_caces.jpeg',
-                    W - 28 * mm, H - 14.5 * mm, width=26 * mm, height=13 * mm,
-                    preserveAspectRatio=True, anchor='nw', mask='auto')
-    except Exception:
-        pass
-
-    # DEKRA cert
-    numeroCert = ''
-    if cfg and getattr(cfg, 'numero_certificat', None):
-        numeroCert = cfg.numero_certificat
-    if numeroCert:
-        c.setFont('Helvetica-Bold', 3.8)
-        c.setFillColor(ANT)
-        c.drawString(2 * mm, H - 15.5 * mm, f'Cert. DEKRA n° {numeroCert}')
-
-    # Sub-header "Certificat d'aptitude..."
-    c.setFont('Helvetica-Oblique', 5.5)
-    c.setFillColor(ANT)
-    c.drawString(2 * mm, H - 17.5 * mm, "Certificat d'aptitude à la conduite en sécurité")
-    c.setStrokeColor(colors.HexColor('#e4e4e4'))
-    c.setLineWidth(0.3)
-    c.line(0, H - 18.5 * mm, W, H - 18.5 * mm)
-
-    # Body area
-    body_top = H - 19 * mm  # y coord of top of body
-    right_w = 13 * mm
-    right_x = W - right_w - 1.5 * mm
-
-    # CACES® family badge
-    badge_h = 3.5 * mm
-    c.setFillColor(RED)
-    c.roundRect(2 * mm, body_top - badge_h, 52 * mm, badge_h, 0.7 * mm, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont('Helvetica-Bold', 6)
-    fam_label = f"CACES® {carte.famille}"
-    c.drawString(3 * mm, body_top - badge_h + 0.8 * mm, fam_label)
-
-    # N° CACES
-    nums = [f"{co.get('numero_ordre', 0):04d}" for co in caces_list if co.get('numero_ordre')]
-    if nums:
-        c.setFont('Helvetica-Bold', 7.5)
-        c.setFillColor(RED)
-        c.drawString(2 * mm, body_top - 7.5 * mm, f"N° {' · '.join(nums)}")
-
-    # Name
-    nom = f"{s.nom.upper()} {s.prenom}"
-    if len(nom) > 24:
-        nom = nom[:23] + '…'
-    c.setFont('Helvetica-Bold', 9)
-    c.setFillColor(ANT)
-    c.drawString(2 * mm, body_top - 12 * mm, nom)
-
-    # DOB
-    if s.date_naissance:
-        c.setFont('Helvetica-Oblique', 6.5)
-        c.drawString(2 * mm, body_top - 15.5 * mm, f"Né(e) le {s.date_naissance.strftime('%d/%m/%Y')}")
-
-    # Right column: photo
-    photo_h, photo_w = 12 * mm, 11 * mm
-    photo_x = right_x + (right_w - photo_w) / 2
-    photo_y = body_top - photo_h
-    photo_drawn = False
+    # Photo -> base64 ou placeholder
+    photo_html = '<div class="r-photo-ph"></div>'
     if s.photo:
         try:
             import requests as _req
-            resp = _req.get(s.photo, timeout=5)
+            resp = _req.get(s.photo, timeout=6)
             if resp.status_code == 200:
-                photo_rdr = ImageReader(_BIO(resp.content))
-                c.drawImage(photo_rdr, photo_x, photo_y, width=photo_w, height=photo_h,
-                            preserveAspectRatio=False, mask='auto')
-                c.setStrokeColor(colors.HexColor('#bbbbbb'))
-                c.setLineWidth(0.4)
-                c.rect(photo_x, photo_y, photo_w, photo_h, fill=0, stroke=1)
-                photo_drawn = True
+                ct = resp.headers.get('content-type', 'image/jpeg').split(';')[0]
+                pb64 = _b64.b64encode(resp.content).decode()
+                photo_html = f'<img class="r-photo" src="data:{ct};base64,{pb64}">'
         except Exception:
             pass
-    if not photo_drawn:
-        c.setFillColor(colors.HexColor('#eeeeee'))
-        c.rect(photo_x, photo_y, photo_w, photo_h, fill=1, stroke=0)
 
-    # Separator
-    sep_y = photo_y - 0.6 * mm
-    c.setStrokeColor(colors.HexColor('#d0d0d0'))
-    c.setLineWidth(0.3)
-    c.line(right_x, sep_y, right_x + right_w, sep_y)
+    # Logo organisme
+    if cfg and cfg.logo_base64:
+        ext = (cfg.logo_nom or '').rsplit('.', 1)[-1].lower() if cfg.logo_nom and '.' in (cfg.logo_nom or '') else 'png'
+        mime = 'image/jpeg' if ext in ('jpg', 'jpeg') else 'image/png'
+        logo_html = f'<img class="r-logo" src="data:{mime};base64,{cfg.logo_base64}">'
+    else:
+        org = _esc((cfg.nom_organisme or 'CACES®') if cfg else 'CACES®')
+        logo_html = f'<span style="font-size:5.5pt;font-weight:900;color:{ANT};">{org}</span>'
 
-    # QR code
-    qr_size = 10 * mm
-    qr_y = sep_y - qr_size - 0.4 * mm
-    qr_x = right_x + (right_w - qr_size) / 2
+    # AM logo
+    am_html = ''
     try:
-        qr_img = _qr.make(verify_url or carte.numero_carte)
-        qr_buf = _BIO()
-        qr_img.save(qr_buf, format='PNG')
-        qr_buf.seek(0)
-        c.drawImage(ImageReader(qr_buf), qr_x, qr_y, width=qr_size, height=qr_size, mask='auto')
+        with open('static/img/assurance_maladie_caces.jpeg', 'rb') as f:
+            am_b64 = _b64.b64encode(f.read()).decode()
+        am_html = f'<img class="r-logo-am" src="data:image/jpeg;base64,{am_b64}">'
     except Exception:
         pass
 
-    # QR label
-    c.setFont('Helvetica-Oblique', 3.5)
-    c.setFillColor(ANT)
-    c.drawCentredString(right_x + right_w / 2, qr_y - 1.5 * mm, 'Scanner · Vérifier')
+    # Signature
+    sign_html = ''
+    if cfg and getattr(cfg, 'signature_base64', None):
+        sig_ext = (getattr(cfg, 'signature_nom', '') or '').rsplit('.', 1)[-1].lower()
+        sig_mime = 'image/jpeg' if sig_ext in ('jpg', 'jpeg') else 'image/png'
+        sign_html = f'<img src="data:{sig_mime};base64,{cfg.signature_base64}" style="height:3.5mm;width:auto;max-width:8mm;object-fit:contain;"> '
 
-    # Recto footer text
-    c.setFont('Helvetica-Oblique', 3.3)
-    c.setFillColor(colors.HexColor('#555555'))
-    c.drawCentredString(W / 2, 0.8 * mm, "La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire")
+    sig_nom = ' '.join(filter(None, [getattr(cfg, 'signataire_prenom', '') or '', getattr(cfg, 'signataire_nom', '') or ''])) if cfg else ''
+    sig_qualite = (getattr(cfg, 'signataire_qualite', '') or '') if cfg else ''
+    sig_ligne = ' — '.join(filter(None, [sig_nom, sig_qualite]))
 
-    c.showPage()
+    organisme = _esc((cfg.nom_organisme or '') if cfg else '')
+    adresse = _esc((getattr(cfg, 'adresse', '') or '') if cfg else '')
+    delivree_par = f'{organisme} — {adresse}' if adresse else organisme
+    siret_parts = [
+        f"SIRET {_esc(cfg.siret)}" if cfg and getattr(cfg, 'siret', '') else '',
+        _esc((getattr(cfg, 'email', '') or '') if cfg else ''),
+        f"Tél. {_esc(cfg.telephone)}" if cfg and getattr(cfg, 'telephone', '') else '',
+    ]
+    siret_line = ' · '.join(p for p in siret_parts if p)
 
-    # ── VERSO ──────────────────────────────────────────────────────────────
-    # Red top strip + red header border-bottom
-    c.setFillColor(RED)
-    c.rect(0, H - 1.5 * mm, W, 1.5 * mm, fill=1, stroke=0)
-    c.setStrokeColor(RED)
-    c.setLineWidth(0.7)
-    c.line(0, H - 9.5 * mm, W, H - 9.5 * mm)
+    nums_caces = ' – '.join(
+        str(co.get('numero_ordre', '')).zfill(4)
+        for co in caces_list if co.get('numero_ordre')
+    )
 
-    c.setFont('Helvetica-Bold', 5.5)
-    c.setFillColor(ANT)
-    titre = f"CACES® {carte.famille} — {s.nom} {s.prenom}"
-    if s.date_naissance:
-        titre += f" ({s.date_naissance.strftime('%d/%m/%Y')})"
-    c.drawString(2 * mm, H - 5.5 * mm, titre)
-    c.setFont('Courier-Bold', 4.8)
-    c.setFillColor(RED)
-    c.drawString(2 * mm, H - 8.8 * mm, f"N° {carte.numero_carte}")
-
-    # CACES® table
-    from datetime import datetime as _dtv
-    def _fd(iso):
-        if not iso:
-            return '—'
-        try:
-            return _dtv.fromisoformat(iso[:10]).strftime('%d/%m/%y')
-        except Exception:
-            return iso
-
-    headers = ['Fam.', 'Cat.', 'Opt.', 'N° CACES®', 'Obtention', 'Échéance', 'Testeur']
-    rows = [headers]
+    all_opts: dict = {}
     for co in caces_list:
-        no = f"{co['numero_ordre']:04d}" if co.get('numero_ordre') else '—'
-        rows.append([
-            carte.famille,
-            co.get('categorie', ''),
-            co.get('options_obtenues', '') or '—',
-            no,
-            _fd(co.get('date_obtention')),
-            _fd(co.get('date_echeance')),
-            (co.get('testeur_nom') or '—')[:18],
-        ])
+        if co.get('options_obtenues'):
+            for o in co['options_obtenues'].split(','):
+                all_opts[o.strip()] = True
+    opt_labels = {'PE': 'Porte-engin', 'TEL': 'Télécommande', 'TE': 'Télécommande',
+                  'CC': 'Conduite cabine', 'TR': 'Translation rails', 'CEC': 'Circulation en charge'}
+    opt_legend = ' — '.join(f"{k} : {opt_labels.get(k, k)}" for k in all_opts)
 
-    col_widths = [7 * mm, 7 * mm, 11 * mm, 13 * mm, 13 * mm, 13 * mm, None]
-    col_widths[-1] = W - 4 * mm - sum(w for w in col_widths[:-1])
+    verso_notices_parts = []
+    if carte.famille == 'R482':
+        verso_notices_parts.append("Option réseaux : Ne permet pas la délivrance d'une AIPR")
+    if opt_legend:
+        verso_notices_parts.append(f'Options : {opt_legend}')
+    verso_notices_html = (
+        f'<div class="v-notices">{" — ".join(verso_notices_parts)}</div>'
+        if verso_notices_parts else ''
+    )
 
-    tbl = Table(rows, colWidths=col_widths, rowHeights=None)
-    tbl.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), ANT),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 3.8),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 4.3),
-        ('FONTNAME', (3, 1), (3, -1), 'Courier-Bold'),
-        ('FONTSIZE', (3, 1), (3, -1), 4.3),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 1),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
-        ('LEFTPADDING', (0, 0), (-1, -1), 1.5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 1),
-        ('GRID', (0, 0), (-1, -1), 0.1, colors.HexColor('#e0e0e0')),
-        ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#555555')),
-    ]))
-    tbl_w, tbl_h = tbl.wrapOn(c, W - 4 * mm, H)
-    tbl.drawOn(c, 2 * mm, H - 10.5 * mm - tbl_h)
+    ddn_str = s.date_naissance.strftime('%d/%m/%Y') if s.date_naissance else ''
+    ddn_verso = f' <span class="v-hddn">({_esc(ddn_str)})</span>' if ddn_str else ''
+    date_gen_str = carte.date_generation.strftime('%d/%m/%y') if carte.date_generation else ''
 
-    # Verso footer
-    c.setFillColor(GRAY)
-    c.rect(0, 0, W, 3.5 * mm, fill=1, stroke=0)
-    c.setFont('Helvetica-Oblique', 3.3)
-    c.setFillColor(colors.HexColor('#555555'))
-    if verify_url:
-        c.drawCentredString(W / 2, 1.5 * mm, f'Vérification : {verify_url}')
-    c.drawCentredString(W / 2, 0.4 * mm, 'Document recto/verso · Toute copie doit comporter les 2 faces')
+    logo2_html = ''
+    if cfg and getattr(cfg, 'logo2_base64', None):
+        ext2 = (getattr(cfg, 'logo2_nom', '') or '').rsplit('.', 1)[-1].lower()
+        mime2 = 'image/jpeg' if ext2 in ('jpg', 'jpeg') else 'image/png'
+        logo2_html = f'<img class="v-logo2" src="data:{mime2};base64,{cfg.logo2_base64}">'
 
-    c.save()
+    from datetime import datetime as _dtt
+    def _fc(iso):
+        if not iso: return '—'
+        try: return _dtt.fromisoformat(iso[:10]).strftime('%d/%m/%y')
+        except: return iso
+
+    verso_rows = ''
+    for co in caces_list:
+        no = str(co.get('numero_ordre', '')).zfill(4) if co.get('numero_ordre') else '—'
+        opts_html = ''
+        if co.get('options_obtenues'):
+            for o in co['options_obtenues'].split(','):
+                opts_html += f'<span class="vopt-badge">{_esc(o.strip())}</span> '
+        else:
+            opts_html = '<span style="color:#bbb;">—</span>'
+        has_test = bool(co.get('testeur_nom'))
+        verso_rows += (
+            f'<tr{" class=\"vhastest\"" if has_test else ""}>'
+            f'<td class="vfam">{_esc(carte.famille)}</td>'
+            f'<td class="vcat">{_esc(co.get("categorie", ""))}</td>'
+            f'<td class="vopt">{opts_html}</td>'
+            f'<td class="vno">{no}</td>'
+            f'<td class="vdt">{_fc(co.get("date_obtention"))}</td>'
+            f'<td class="vval">{_fc(co.get("date_echeance"))}</td>'
+            f'<td class="vlib">{_esc(co.get("categorie_libelle", ""))}</td>'
+            f'</tr>'
+        )
+        if has_test:
+            verso_rows += f'<tr><td colspan="7" class="vtestcell">Testeur : {_esc(co.get("testeur_nom", ""))}</td></tr>'
+
+    fam_badge = f'CACES® {_esc(carte.famille)}'
+    if famille_libelle:
+        fam_badge += f' — {_esc(famille_libelle.upper())}'
+
+    css = (
+        f'* {{ margin:0; padding:0; box-sizing:border-box; }}\n'
+        f'@page {{ size:85.6mm 54mm; margin:0; }}\n'
+        f'html,body {{ width:85.6mm; height:108mm; font-family:Arial,Helvetica,sans-serif; font-size:5.5pt; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }}\n'
+        f'.page {{ width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; }}\n'
+        f'.page + .page {{ page-break-before:always; }}\n'
+        f'.r-hdr {{ background:#fff; height:15mm; display:flex; align-items:center; padding:0 2.5mm; justify-content:space-between; flex-shrink:0; gap:1.5mm; border-bottom:0.5mm solid {RED}; }}\n'
+        f'.r-hdr-left {{ display:flex; flex-direction:column; align-items:flex-start; gap:0.5mm; }}\n'
+        f'.r-logo {{ height:11mm; width:auto; max-width:26mm; object-fit:contain; }}\n'
+        f'.r-logo-am {{ height:13mm; width:auto; max-width:30mm; object-fit:contain; }}\n'
+        f'.r-dekra {{ font-size:4pt; color:{ANT}; font-weight:800; letter-spacing:0.05mm; }}\n'
+        f'.r-subhdr {{ background:#fff; border-bottom:0.3mm solid #e4e4e4; padding:0.55mm 2.5mm; display:flex; align-items:center; flex-shrink:0; }}\n'
+        f'.r-subhdr-title {{ font-size:6.5pt; color:{ANT}; font-style:italic; }}\n'
+        f'.r-body {{ display:flex; flex:1; padding:1.2mm 2.5mm 0; gap:2mm; min-height:0; overflow:hidden; }}\n'
+        f'.r-left {{ flex:1; min-width:0; display:flex; flex-direction:column; }}\n'
+        f'.r-right {{ width:14.5mm; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:0.7mm; padding-top:0.2mm; }}\n'
+        f'.r-fam-badge {{ display:inline-block; background:{RED}; color:#fff; font-size:6.5pt; font-weight:900; padding:0.4mm 2mm; border-radius:0.7mm; margin-bottom:0.7mm; letter-spacing:0.1mm; white-space:nowrap; }}\n'
+        f'.r-nums {{ font-size:8pt; color:{RED}; font-weight:800; margin-top:1.5mm; margin-bottom:0.4mm; letter-spacing:0.2mm; }}\n'
+        f'.r-nums .lbl {{ font-weight:400; color:{ANT}; font-size:6.5pt; }}\n'
+        f'.r-titulaire {{ font-size:9pt; font-weight:900; font-style:italic; color:{ANT}; margin-bottom:0.3mm; line-height:1.2; }}\n'
+        f'.r-ddn {{ font-size:7pt; color:{ANT}; font-style:italic; }}\n'
+        f'.r-spacer {{ flex:1; min-height:0.5mm; }}\n'
+        f'.r-org {{ font-size:6pt; color:{ANT}; font-weight:700; line-height:1.25; margin-bottom:0.25mm; }}\n'
+        f'.r-siret {{ font-size:5pt; color:{ANT}; margin-bottom:0.35mm; line-height:1.3; }}\n'
+        f'.r-sign {{ font-size:5.2pt; color:{ANT}; display:flex; align-items:center; gap:0.8mm; padding-bottom:0.4mm; }}\n'
+        f'.r-sign img {{ height:3.5mm; width:auto; max-width:8mm; object-fit:contain; }}\n'
+        f'.r-photo {{ width:11mm; height:12mm; object-fit:cover; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }}\n'
+        f'.r-photo-ph {{ width:11mm; height:12mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }}\n'
+        f'.r-sep {{ width:11mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }}\n'
+        f'.r-qr {{ width:10mm; height:10mm; display:block; }}\n'
+        f'.r-qr-text {{ font-size:3.8pt; color:{ANT}; text-align:center; line-height:1.25; font-style:italic; max-width:11mm; }}\n'
+        f'.r-ftr {{ flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0; padding:0.7mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic; text-align:center; line-height:1.3; }}\n'
+        f'.v-hdr {{ background:#fff; border-bottom:0.7mm solid {RED}; padding:0.6mm 2.5mm; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:1mm; }}\n'
+        f'.v-hdr-info {{ flex:1; min-width:0; }}\n'
+        f'.v-htitle {{ font-size:6pt; font-weight:900; color:{ANT}; line-height:1.2; }}\n'
+        f'.v-hddn {{ font-size:4.3pt; font-weight:400; color:{ANT}; font-style:italic; }}\n'
+        f'.v-hcarte {{ font-size:5.2pt; color:{RED}; font-weight:700; font-family:monospace; margin-top:0.2mm; }}\n'
+        f'.v-hdate {{ color:{ANT}; font-weight:400; font-family:Arial,sans-serif; font-size:4.5pt; }}\n'
+        f'.v-notices {{ padding:0.5mm 2.5mm; font-size:4.3pt; color:{ANT}; line-height:1.3; flex-shrink:0; border-bottom:0.15mm solid #e0e0e0; }}\n'
+        f'.v-tbl {{ flex:1; padding:0 2.5mm; overflow:hidden; }}\n'
+        f'.v-logo2 {{ height:6mm; width:auto; max-width:14mm; object-fit:contain; flex-shrink:0; }}\n'
+        f'table {{ width:100%; border-collapse:collapse; }}\n'
+        f'thead tr {{ background:{ANT}; }}\n'
+        f'th {{ font-size:3.8pt; font-weight:700; color:#fff; text-transform:uppercase; padding:0.5mm 0.4mm; text-align:left; white-space:nowrap; letter-spacing:0.04mm; }}\n'
+        f'tbody tr:nth-child(even) {{ background:#f5f5f5; }}\n'
+        f'td {{ font-size:5.2pt; padding:0.4mm 0.4mm; border-bottom:0.1mm solid #ebebeb; vertical-align:middle; color:{ANT}; }}\n'
+        f'.vfam {{ font-weight:800; color:{RED}; font-size:5pt; white-space:nowrap; }}\n'
+        f'.vcat {{ font-weight:900; color:{ANT}; font-size:5.2pt; white-space:nowrap; }}\n'
+        f'.vno {{ font-family:monospace; font-weight:800; font-size:5pt; white-space:nowrap; color:{ANT}; }}\n'
+        f'.vopt-badge {{ display:inline-block; background:#e6e6e6; color:{ANT}; font-size:3.8pt; font-weight:600; padding:0.1mm 0.5mm; border-radius:0.4mm; white-space:nowrap; border:0.15mm solid #c0c0c0; }}\n'
+        f'.vdt {{ font-size:4.8pt; white-space:nowrap; color:{ANT}; font-weight:700; }}\n'
+        f'.vval {{ font-weight:700; font-size:4.8pt; color:{ANT}; white-space:nowrap; }}\n'
+        f'.vopt {{ max-width:9mm; overflow:hidden; }}\n'
+        f'.vlib {{ color:{ANT}; font-size:4.2pt; font-style:italic; font-weight:600; }}\n'
+        f'.vhastest td {{ border-bottom:none !important; }}\n'
+        f'.vtestcell {{ padding:0.3mm 0.4mm 0.5mm !important; font-size:3.8pt; color:{ANT}; font-style:italic; font-weight:600; vertical-align:middle; border-bottom:0.15mm solid #d8d8d8 !important; }}\n'
+        f'.v-ftr {{ flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0; padding:0.6mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic; text-align:center; line-height:1.3; }}'
+    )
+
+    ddn_recto = f'<div class="r-ddn">Né(e) le {_esc(ddn_str)}</div>' if ddn_str else ''
+    nums_html = f'<div class="r-nums"><span class="lbl">N° CACES® </span>{_esc(nums_caces)}</div>' if nums_caces else ''
+    dekra_html = f'<div class="r-dekra">Cert. DEKRA n° {_esc(numero_certificat)}</div>' if numero_certificat else ''
+    org_html = f'<div class="r-org">{delivree_par}</div>' if delivree_par else ''
+    siret_html = f'<div class="r-siret">{siret_line}</div>' if siret_line else ''
+    sign_bloc = f'<div class="r-sign">{sign_html}{_esc(sig_ligne)}</div>' if sig_ligne else ''
+    edition_html = f' <span class="v-hdate">· Édition du {_esc(date_gen_str)}</span>' if date_gen_str else ''
+    verif_html = f'Vérification : {_esc(verify_url)} — ' if verify_url else ''
+
+    return (
+        '<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><style>' + css + '</style></head><body>\n'
+        '<div class="page">\n'
+        '  <div class="r-hdr">\n'
+        f'    <div class="r-hdr-left">{logo_html}{dekra_html}</div>\n'
+        f'    {am_html}\n'
+        '  </div>\n'
+        '  <div class="r-subhdr"><span class="r-subhdr-title">Certificat d’aptitude à la conduite en sécurité</span></div>\n'
+        '  <div class="r-body">\n'
+        '    <div class="r-left">\n'
+        f'      <span class="r-fam-badge">{fam_badge}</span>\n'
+        f'      {nums_html}\n'
+        f'      <div class="r-titulaire">{_esc(s.nom)} {_esc(s.prenom)}</div>\n'
+        f'      {ddn_recto}\n'
+        '      <div class="r-spacer"></div>\n'
+        f'      {org_html}\n'
+        f'      {siret_html}\n'
+        f'      {sign_bloc}\n'
+        '    </div>\n'
+        '    <div class="r-right">\n'
+        f'      {photo_html}\n'
+        '      <div class="r-sep"></div>\n'
+        f'      {qr_html}\n'
+        '      <div class="r-qr-text">Scanner · Vérifier</div>\n'
+        '    </div>\n'
+        '  </div>\n'
+        '  <div class="r-ftr">La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire</div>\n'
+        '</div>\n'
+        '<div class="page">\n'
+        '  <div class="v-hdr">\n'
+        '    <div class="v-hdr-info">\n'
+        f'      <div class="v-htitle">CACES® {_esc(carte.famille)} — {_esc(s.nom)} {_esc(s.prenom)}{ddn_verso}</div>\n'
+        f'      <div class="v-hcarte">N° {_esc(carte.numero_carte)}{edition_html}</div>\n'
+        '    </div>\n'
+        f'    {logo2_html}\n'
+        '  </div>\n'
+        f'  {verso_notices_html}\n'
+        '  <div class="v-tbl">\n'
+        '    <table>\n'
+        '      <thead><tr>'
+        '<th>Famille</th><th>Cat.</th><th>Opt.</th><th>N° CACES®</th>'
+        '<th>Obtention</th><th>Validité</th><th>Libellé</th>'
+        '</tr></thead>\n'
+        f'      <tbody>{verso_rows}</tbody>\n'
+        '    </table>\n'
+        '  </div>\n'
+        f'  <div class="v-ftr">{verif_html}Document recto/verso. Toute copie doit comporter les 2 faces.</div>\n'
+        '</div>\n'
+        '</body></html>'
+    )
+
+
+def _html_to_pdf(html: str) -> bytes:
+    """Convertit le HTML CR80 en PDF via WeasyPrint."""
+    from weasyprint import HTML
+    from io import BytesIO as _BIO
+    buf = _BIO()
+    HTML(string=html, base_url='.').write_pdf(buf)
     return buf.getvalue()
-
 
 def _protect_pdf(pdf_bytes: bytes, owner_password: str = "NORYX-CACES-PEPCI") -> bytes:
     """Chiffre le PDF : impression autorisée, modification interdite."""
@@ -656,11 +674,15 @@ def telecharger_pdf(carte_id: int, db: DBSession = Depends(get_db)):
     s = db.query(Stagiaire).filter(Stagiaire.id == carte.stagiaire_id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Stagiaire introuvable")
-    config = db.query(ConfigOrganisme).first()
-    cfg = config or ConfigOrganisme()
+    cfg = db.query(ConfigOrganisme).first() or ConfigOrganisme()
     caces_list = json.loads(carte.caces_json) if carte.caces_json else []
     verify_url = _build_verify_url(cfg, carte.numero_carte)
-    pdf_bytes = _generate_cr80_pdf(carte, s, cfg, caces_list, verify_url)
+    fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
+    famille_libelle = fam_obj.libelle if fam_obj else ""
+    doc_cert = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == "certificat_organisme").first()
+    numero_certificat = doc_cert.numero_certificat or "" if doc_cert else ""
+    html = _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle, numero_certificat)
+    pdf_bytes = _html_to_pdf(html)
     protected = _protect_pdf(pdf_bytes)
     filename = f"CACES-{carte.numero_carte}.pdf"
     return StreamingResponse(
@@ -671,7 +693,6 @@ def telecharger_pdf(carte_id: int, db: DBSession = Depends(get_db)):
             "Content-Length": str(len(protected)),
         }
     )
-
 
 @router.post("/annuler/{carte_id}")
 def annuler_carte(carte_id: int, pin: str = "", data: Optional[AnnulerData] = Body(default=None), db: DBSession = Depends(get_db)):
