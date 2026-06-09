@@ -570,14 +570,15 @@ function _buildCr80Html(data, cfg) {
         '  -webkit-print-color-adjust:exact; print-color-adjust:exact; }',
         '.page { width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; }',
         '.page + .page { page-break-before:always; }',
-        '.r-hdr { background:#fff; height:11mm; display:flex; align-items:center; padding:0 2.5mm;',
+        '.r-hdr { background:#fff; height:12mm; display:flex; align-items:center; padding:0 2.5mm;',
         '  justify-content:space-between; flex-shrink:0; gap:1.5mm; border-bottom:0.5mm solid ' + RED + '; }',
-        '.r-logo  { height:8.5mm; width:auto; max-width:22mm; object-fit:contain; }',
+        '.r-hdr-left { display:flex; flex-direction:column; align-items:flex-start; gap:0.5mm; }',
+        '.r-logo  { height:8mm; width:auto; max-width:22mm; object-fit:contain; }',
         '.r-logo-am { height:10mm; width:auto; max-width:24mm; object-fit:contain; }',
+        '.r-dekra { font-size:4pt; color:' + ANT + '; font-weight:800; letter-spacing:0.05mm; }',
         '.r-subhdr { background:#fff; border-bottom:0.3mm solid #e4e4e4; padding:0.55mm 2.5mm;',
-        '  display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }',
+        '  display:flex; align-items:center; flex-shrink:0; }',
         '.r-subhdr-title { font-size:4.8pt; color:#3a3a3a; font-style:italic; }',
-        '.r-subhdr-cert { font-size:3.8pt; color:#999; font-weight:700; letter-spacing:0.05mm; white-space:nowrap; }',
         '.r-body { display:flex; flex:1; padding:1.2mm 2.5mm 0; gap:2mm; min-height:0; overflow:hidden; }',
         '.r-left { flex:1; min-width:0; display:flex; flex-direction:column; }',
         '.r-right { width:14.5mm; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:0.7mm; padding-top:0.2mm; }',
@@ -644,16 +645,18 @@ function _buildCr80Html(data, cfg) {
 
     return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
         + '<style>' + css + '</style>'
-        + (verifyUrl ? '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>' : '')
+        + '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'
         + '</head><body>'
         + '<div class="page">'
         +   '<div class="r-hdr">'
-        +     logoHtml
+        +     '<div class="r-hdr-left">'
+        +       logoHtml
+        +       (numeroCert ? '<div class="r-dekra">Cert. DEKRA n° ' + numeroCert + '</div>' : '')
+        +     '</div>'
         +     '<img class="r-logo-am" src="/static/img/assurance_maladie_caces.jpeg" />'
         +   '</div>'
         +   '<div class="r-subhdr">'
         +     '<span class="r-subhdr-title">Certificat d\'aptitude à la conduite en sécurité</span>'
-        +     (numeroCert ? '<span class="r-subhdr-cert">Cert. DEKRA n° ' + numeroCert + '</span>' : '')
         +   '</div>'
         +   '<div class="r-body">'
         +     '<div class="r-left">'
@@ -669,8 +672,8 @@ function _buildCr80Html(data, cfg) {
         +     '</div>'
         +     '<div class="r-right">'
         +       photoHtml
-        +       (verifyUrl ? '<div id="qr" data-url="' + verifyUrl + '"></div>' : '')
-        +       (verifyUrl ? '<div class="r-qr-text">Scanner pour vérifier l\'authenticité</div>' : '')
+        +       '<div id="qr" data-url="' + (verifyUrl || data.numero_carte) + '"></div>'
+        +       '<div class="r-qr-text">Scanner pour vérifier l\'authenticité</div>'
         +     '</div>'
         +   '</div>'
         +   '<div class="r-ftr">La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire</div>'
@@ -698,7 +701,7 @@ function _buildCr80Html(data, cfg) {
         + '<script>window.onload=function(){'
         +   'var el=document.getElementById("qr");'
         +   'if(el&&el.dataset.url&&typeof QRCode!=="undefined"){'
-        +     'new QRCode(el,{text:el.dataset.url,width:42,height:42,colorDark:"' + ANT + '",colorLight:"#fff"});'
+        +     'new QRCode(el,{text:el.dataset.url,width:42,height:42,colorDark:"' + ANT + '",colorLight:"#ffffff"});'
         +   '}'
         + '};<\/script>'
         + '</body></html>';
