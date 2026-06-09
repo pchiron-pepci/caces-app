@@ -395,9 +395,9 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     qr_b64 = _b64.b64encode(qr_buf.getvalue()).decode()
     qr_html = f'<img class="r-qr" src="data:image/png;base64,{qr_b64}">'
 
-    # Photo -> URL directe, WeasyPrint gere le fetch externe
+    # Photo -> dimensions inline (WeasyPrint ne gere pas bien object-fit)
     photo_html = (
-        f'<img class="r-photo" src="{_esc(s.photo)}">'
+        f'<img style="width:11mm;height:12mm;display:block;border:0.4mm solid #bbb;border-radius:0.6mm;" src="{_esc(s.photo)}">'
         if s.photo else '<div class="r-photo-ph"></div>'
     )
 
@@ -534,7 +534,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         f'.r-siret {{ font-size:5pt; color:{ANT}; margin-bottom:0.35mm; line-height:1.3; }}\n'
         f'.r-sign {{ font-size:5.2pt; color:{ANT}; display:flex; align-items:center; gap:0.8mm; padding-bottom:0.4mm; }}\n'
         f'.r-sign img {{ height:3.5mm; width:auto; max-width:8mm; object-fit:contain; }}\n'
-        f'.r-photo {{ width:11mm; height:12mm; object-fit:cover; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }}\n'
+        f'.r-photo {{ width:11mm; height:12mm; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }}\n'
         f'.r-photo-ph {{ width:11mm; height:12mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }}\n'
         f'.r-sep {{ width:11mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }}\n'
         f'.r-qr {{ width:10mm; height:10mm; display:block; }}\n'
