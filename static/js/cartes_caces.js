@@ -599,9 +599,11 @@ function _buildCr80Html(data, cfg) {
         '#qr canvas, #qr img { width:11mm !important; height:11mm !important; display:block; }',
         '.r-qr-text { font-size:3.8pt; color:' + ANT + '; text-align:center; line-height:1.25; font-style:italic; max-width:13mm; }',
         '.r-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
-        '  padding:0.7mm 2.5mm; font-size:4.5pt; color:#555; font-style:italic;',
+        '  padding:0.7mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
-        '.v-hdr { background:#fff; border-top:0.7mm solid ' + RED + '; border-bottom:0.25mm solid #e4e4e4; padding:1mm 2.5mm; flex-shrink:0; }',
+        '.v-hdr { background:#fff; border-top:0.7mm solid ' + RED + '; border-bottom:0.25mm solid #e4e4e4; padding:1mm 2.5mm; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:1mm; }',
+        '.v-hdr-info { flex:1; min-width:0; }',
+        '.v-logo2 { height:6mm; width:auto; max-width:14mm; object-fit:contain; flex-shrink:0; }',
         '.v-htitle { font-size:6pt; font-weight:900; color:' + ANT + '; line-height:1.2; }',
         '.v-hddn { font-size:4.3pt; font-weight:400; color:#666; font-style:italic; }',
         '.v-hcarte { font-size:5.2pt; color:' + RED + '; font-weight:700; font-family:monospace; margin-top:0.2mm; }',
@@ -623,7 +625,7 @@ function _buildCr80Html(data, cfg) {
         '.vtest { color:#555; font-size:4pt; font-weight:600; }',
         '.vlib { color:#666; font-size:3.8pt; font-style:italic; font-weight:600; }',
         '.v-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
-        '  padding:0.6mm 2.5mm; font-size:4.5pt; color:#555; font-style:italic;',
+        '  padding:0.6mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
     ].join('\n');
 
@@ -654,7 +656,7 @@ function _buildCr80Html(data, cfg) {
         +       logoHtml
         +       (numeroCert ? '<div class="r-dekra">Cert. DEKRA n° ' + numeroCert + '</div>' : '')
         +     '</div>'
-        +     '<img class="r-logo-am" src="' + (cfg.logo2_uri || '/static/img/assurance_maladie_caces.jpeg') + '" />'
+        +     '<img class="r-logo-am" src="/static/img/assurance_maladie_caces.jpeg" />'
         +   '</div>'
         +   '<div class="r-subhdr">'
         +     '<span class="r-subhdr-title">Certificat d\'aptitude à la conduite en sécurité</span>'
@@ -682,8 +684,11 @@ function _buildCr80Html(data, cfg) {
         + '</div>'
         + '<div class="page">'
         +   '<div class="v-hdr">'
-        +     '<div class="v-htitle">CACES® ' + data.famille + ' — ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + ddn + '</div>'
-        +     '<div class="v-hcarte">N° ' + data.numero_carte + '</div>'
+        +     '<div class="v-hdr-info">'
+        +       '<div class="v-htitle">CACES® ' + data.famille + ' — ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + ddn + '</div>'
+        +       '<div class="v-hcarte">N° ' + data.numero_carte + '</div>'
+        +     '</div>'
+        +     (cfg.logo2_uri ? '<img class="v-logo2" src="' + cfg.logo2_uri + '" />' : '')
         +   '</div>'
         +   (versoNotices ? '<div class="v-notices">' + versoNotices + '</div>' : '')
         +   '<div class="v-tbl">'
