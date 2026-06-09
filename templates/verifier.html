@@ -6,126 +6,53 @@
     <title>Vérification carte CACES® — {{ numero_carte }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #f4f6fb;
-            color: #1a1a2e;
-            min-height: 100vh;
-        }
-        .page-wrap {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 36px 16px 64px;
-        }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; color: #1a1a2e; min-height: 100vh; }
+        .page-wrap { max-width: 700px; margin: 0 auto; padding: 36px 16px 64px; }
+
         /* Header */
-        .v-header {
-            text-align: center;
-            margin-bottom: 28px;
+        .v-header { text-align: center; margin-bottom: 28px; }
+        .v-header img { max-height: 60px; max-width: 200px; object-fit: contain; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; }
+        .v-header .org-name { font-size: 1.05rem; font-weight: 700; color: #1a237e; }
+        .v-header .badge-off {
+            display: inline-block; margin-top: 6px;
+            background: #1a237e; color: #fff;
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+            padding: 3px 12px; border-radius: 20px;
         }
-        .v-header img {
-            max-height: 56px;
-            max-width: 200px;
-            object-fit: contain;
-            margin-bottom: 10px;
+        .v-header .consult-date {
+            margin-top: 6px; font-size: 0.75rem; color: #888;
         }
-        .v-header .org-name {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #1a237e;
-        }
-        .v-header .badge {
-            display: inline-block;
-            margin-top: 6px;
-            background: #1a237e;
-            color: #fff;
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            padding: 3px 12px;
-            border-radius: 20px;
-        }
+
         /* Main card */
-        .v-card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 16px rgba(26,35,126,0.09);
-            overflow: hidden;
-        }
-        .v-card-head {
-            background: #1a237e;
-            color: #fff;
-            padding: 16px 22px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .v-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(26,35,126,0.09); overflow: hidden; }
+        .v-card-head { background: #1a237e; color: #fff; padding: 16px 22px; display: flex; align-items: center; gap: 12px; }
         .v-card-head .icon { font-size: 1.5rem; }
         .v-card-head .h1 { font-size: 0.98rem; font-weight: 700; }
         .v-card-head .h2 { font-size: 0.78rem; opacity: 0.7; font-family: monospace; margin-top: 2px; }
         .v-card-body { padding: 24px; }
 
         /* Banners */
-        .banner {
-            border-radius: 8px;
-            padding: 16px 18px;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
-        .banner.warn { background: #fff8e1; border-left: 4px solid #f9a825; }
-        .banner.err  { background: #fce4ec; border-left: 4px solid #c62828; }
+        .banner { border-radius: 8px; padding: 16px 18px; display: flex; gap: 12px; align-items: flex-start; }
+        .banner.warn  { background: #fff8e1; border-left: 4px solid #f9a825; }
+        .banner.err   { background: #fce4ec; border-left: 4px solid #c62828; }
         .banner .bico { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
         .banner .btit { font-weight: 700; font-size: 0.95rem; margin-bottom: 5px; }
-        .banner .btxt { font-size: 0.84rem; color: #555; line-height: 1.5; }
+        .banner .btxt { font-size: 0.84rem; color: #555; line-height: 1.6; }
+        .banner .btxt a { color: #1a237e; }
 
         /* Titulaire */
-        .tit-block {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding-bottom: 18px;
-            margin-bottom: 18px;
-            border-bottom: 1px solid #edf0f8;
-        }
-        .tit-avatar {
-            width: 48px; height: 48px;
-            background: #e8eef8;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem;
-            flex-shrink: 0;
-        }
+        .tit-block { display: flex; align-items: center; gap: 16px; padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid #edf0f8; }
+        .tit-avatar { width: 48px; height: 48px; background: #e8eef8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
         .tit-name { font-size: 1.1rem; font-weight: 800; color: #1a237e; text-transform: uppercase; letter-spacing: 0.5px; }
         .tit-ddn  { font-size: 0.82rem; color: #666; margin-top: 3px; }
-        .tit-fam  {
-            display: inline-block;
-            margin-top: 6px;
-            background: #c62828;
-            color: #fff;
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 4px;
-            letter-spacing: 0.4px;
-        }
+        .tit-fam  { display: inline-block; margin-top: 6px; background: #c62828; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.4px; }
 
         /* CACES table */
-        table.caces {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.84rem;
-        }
+        table.caces { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
         table.caces thead th {
-            background: #f0f2f7;
-            color: #555;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 10px;
-            text-align: left;
-            border-bottom: 2px solid #dde3f0;
+            background: #f0f2f7; color: #555; font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 8px 10px; text-align: left; border-bottom: 2px solid #dde3f0;
         }
         table.caces tbody tr { border-bottom: 1px solid #f0f4fb; }
         table.caces tbody tr:last-child { border-bottom: none; }
@@ -133,45 +60,36 @@
         .cat-code { font-weight: 800; color: #1a237e; }
         .cat-lib  { font-size: 0.73rem; color: #888; display: block; margin-top: 2px; }
         .no-caces { font-family: monospace; font-weight: 700; }
-        .opt-badge {
-            display: inline-block;
-            background: #e8eef8;
-            color: #1a237e;
-            font-size: 0.68rem;
-            font-weight: 700;
-            padding: 1px 5px;
-            border-radius: 3px;
-            margin-right: 2px;
-            margin-bottom: 1px;
-        }
-        .date-ok  { color: #2e7d32; font-weight: 700; }
-        .date-exp { color: #c62828; font-weight: 700; }
+        .opt-badge { display: inline-block; background: #e8eef8; color: #1a237e; font-size: 0.68rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-right: 2px; margin-bottom: 1px; }
         .date-std { font-weight: 600; }
 
-        /* Emission info */
-        .emission-info {
-            margin-top: 18px;
-            padding: 10px 14px;
-            background: #f7f9ff;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            color: #666;
-            border-left: 3px solid #c5cae9;
+        /* Validity badges */
+        .badge-valid {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #e8f5e9; color: #2e7d32;
+            font-size: 0.78rem; font-weight: 700;
+            padding: 3px 8px; border-radius: 20px;
+            border: 1px solid #a5d6a7;
+        }
+        .badge-expired {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #fce4ec; color: #c62828;
+            font-size: 0.78rem; font-weight: 700;
+            padding: 3px 8px; border-radius: 20px;
+            border: 1px solid #ef9a9a;
         }
 
+        /* Emission info */
+        .emission-info { margin-top: 18px; padding: 10px 14px; background: #f7f9ff; border-radius: 6px; font-size: 0.78rem; color: #666; border-left: 3px solid #c5cae9; }
+
         /* Footer */
-        .v-footer {
-            margin-top: 28px;
-            text-align: center;
-            font-size: 0.73rem;
-            color: #bbb;
-            line-height: 1.7;
-        }
+        .v-footer { margin-top: 28px; text-align: center; font-size: 0.73rem; color: #bbb; line-height: 1.7; }
     </style>
 </head>
 <body>
 <div class="page-wrap">
 
+    <!-- Header commun à tous les cas -->
     <div class="v-header">
         {% if config and config.logo_base64 %}
             {% set ext = (config.logo_nom or "").rsplit(".", 1)[-1].lower() if config.logo_nom and "." in (config.logo_nom or "") else "png" %}
@@ -181,7 +99,10 @@
         {% if config and config.nom_organisme %}
             <div class="org-name">{{ config.nom_organisme }}</div>
         {% endif %}
-        <div class="badge">Vérification officielle NORYX Engins</div>
+        <div class="badge-off">Vérification officielle NORYX Engins</div>
+        {% if today %}
+        <div class="consult-date">Consultation du {{ today.strftime("%d/%m/%Y") }}</div>
+        {% endif %}
     </div>
 
     <div class="v-card">
@@ -201,19 +122,33 @@
                     <div class="btit">Carte introuvable</div>
                     <div class="btxt">
                         Le numéro <strong>{{ numero_carte }}</strong> ne correspond à aucune carte enregistrée.
-                        Vérifiez que vous avez bien scanné le QR code de la carte.
+                        Vérifiez le numéro ou contactez l'organisme émetteur.
                     </div>
                 </div>
             </div>
 
-            {% elif statut == "annulee" or statut == "remplacee" %}
+            {% elif statut == "annulee" %}
+            <div class="banner err">
+                <span class="bico">❌</span>
+                <div>
+                    <div class="btit">Cette carte a été annulée</div>
+                    <div class="btxt">
+                        Cette carte n'est plus valide et a été annulée définitivement.
+                        Contactez l'organisme émetteur{% if config and config.email %} :
+                        <a href="mailto:{{ config.email }}">{{ config.email }}</a>{% endif %}.
+                    </div>
+                </div>
+            </div>
+
+            {% elif statut == "remplacee" %}
             <div class="banner warn">
                 <span class="bico">⚠️</span>
                 <div>
-                    <div class="btit">Carte invalide — {% if statut == "annulee" %}annulée{% else %}remplacée{% endif %}</div>
+                    <div class="btit">Cette carte a été remplacée par une nouvelle version</div>
                     <div class="btxt">
-                        Cette carte {% if statut == "remplacee" %}a été remplacée par une nouvelle carte et {% endif %}n'est plus valide.
-                        Contactez l'organisme émetteur pour plus d'informations.
+                        Cette carte n'est plus la version en cours — une nouvelle carte a été émise pour ce titulaire.
+                        Contactez l'organisme émetteur{% if config and config.email %} :
+                        <a href="mailto:{{ config.email }}">{{ config.email }}</a>{% endif %}.
                     </div>
                 </div>
             </div>
@@ -238,7 +173,7 @@
                         <th>N° CACES®</th>
                         <th>Options</th>
                         <th>Obtention</th>
-                        <th>Échéance</th>
+                        <th>Validité</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -248,24 +183,20 @@
                             <span class="cat-code">{{ c.categorie }}</span>
                             {% if c.categorie_libelle %}<span class="cat-lib">{{ c.categorie_libelle }}</span>{% endif %}
                         </td>
-                        <td>
-                            <span class="no-caces">
-                                {% if c.numero_ordre %}{{ "%04d" % c.numero_ordre }}{% else %}—{% endif %}
-                            </span>
-                        </td>
+                        <td><span class="no-caces">{% if c.numero_ordre %}{{ "%04d" % c.numero_ordre }}{% else %}—{% endif %}</span></td>
                         <td>
                             {% if c.options_obtenues %}
-                                {% for opt in c.options_obtenues.split(',') %}
-                                    <span class="opt-badge">{{ opt.strip() }}</span>
-                                {% endfor %}
+                                {% for opt in c.options_obtenues.split(',') %}<span class="opt-badge">{{ opt.strip() }}</span>{% endfor %}
                             {% else %}—{% endif %}
                         </td>
                         <td><span class="date-std">{{ c.date_obtention_fmt or "—" }}</span></td>
                         <td>
                             {% if c.date_echeance_fmt %}
-                                <span class="{{ 'date-exp' if c.echeance_expired else 'date-ok' }}">
-                                    {{ c.date_echeance_fmt }}{% if c.echeance_expired %} ✗{% else %} ✓{% endif %}
-                                </span>
+                                {% if c.echeance_expired %}
+                                    <span class="badge-expired">⚠️ Expiré le {{ c.date_echeance_fmt }}</span>
+                                {% else %}
+                                    <span class="badge-valid">✅ Valide jusqu'au {{ c.date_echeance_fmt }}</span>
+                                {% endif %}
                             {% else %}—{% endif %}
                         </td>
                     </tr>
@@ -293,9 +224,7 @@
     </div>
 
     <div class="v-footer">
-        <p>Système de vérification NORYX Engins
-            {% if config and config.nom_organisme %} · {{ config.nom_organisme }}{% endif %}
-        </p>
+        <p>Système de vérification NORYX Engins{% if config and config.nom_organisme %} · {{ config.nom_organisme }}{% endif %}</p>
         <p>Cette page est la source officielle de vérification des cartes CACES® émises par cet organisme.</p>
     </div>
 
