@@ -78,6 +78,16 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (action === 'fermer-modal') fermerModal();
         else if (action === 'confirmer-archivage') confirmerArchivage();
         else if (action === 'fermer-pin') fermerPin();
+        else if (action === 'toggle-session') {
+            if (e.target.closest('a')) return;
+            const sid = btn.dataset.id;
+            const detail = document.getElementById('session-detail-' + sid);
+            const arrow  = document.getElementById('session-arrow-' + sid);
+            if (!detail) return;
+            const open = detail.style.display !== 'none';
+            detail.style.display = open ? 'none' : 'block';
+            if (arrow) arrow.textContent = open ? '▶' : '▼';
+        }
     });
 
     // ── Modals ────────────────────────────────────────────────────────────
@@ -224,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
         const STATUT_LABEL = { planifiee: 'Planifiée', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
 
-        let html = '<div style="display:flex; flex-direction:column; gap:8px; padding:4px 0;">';
+        let html = '<div style="display:flex; flex-direction:column; gap:6px; padding:4px 0;">';
         data.forEach(function (s) {
             const badgeStyle = STATUT_BADGE[s.statut] || 'background:#f5f5f5; color:#666;';
             const badgeLabel = STATUT_LABEL[s.statut] || s.statut;
@@ -272,17 +282,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 }).join('');
             }
 
-            html += '<div style="border:1px solid #e0e0e0; border-radius:8px; padding:10px 14px; background:white;">';
-            html += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">';
+            // En-tête cliquable (repliée par défaut)
+            html += '<div style="border:1px solid #e0e0e0; border-radius:8px; overflow:hidden; background:white;">';
+            html += '<div data-action="toggle-session" data-id="' + s.session_id + '" '
+                + 'style="display:flex; align-items:center; gap:8px; padding:9px 14px; cursor:pointer; flex-wrap:wrap; user-select:none;">';
+            html += '<span id="session-arrow-' + s.session_id + '" style="font-size:10px; color:#999; flex-shrink:0;">▶</span>';
             html += '<a href="/sessions/' + s.session_id + '" style="font-family:\'Barlow Condensed\',sans-serif; font-size:15px; font-weight:700; text-decoration:none; color:#1a3a8f;">' + s.reference + '</a>';
             html += '<span style="font-size:13px; color:#555; font-weight:600;">' + s.famille + '</span>';
             html += '<span style="' + badgeStyle + ' padding:2px 8px; border-radius:8px; font-size:11px; font-weight:600;">' + badgeLabel + '</span>';
             if (dates.length) html += '<span style="font-size:11px; color:#888; margin-left:auto;">' + dates.join(' · ') + '</span>';
             html += '</div>';
-            html += '<div style="font-size:13px; display:flex; flex-direction:column; gap:3px;">';
+
+            // Corps repliable (caché par défaut)
+            html += '<div id="session-detail-' + s.session_id + '" style="display:none; border-top:1px solid #f0f0f0; padding:8px 14px 10px; font-size:13px; display:none; flex-direction:column; gap:3px;">';
             html += '<div><span style="color:#666; display:inline-block; width:68px;">Théorie :</span>' + theorieHtml + '</div>';
             html += '<div><span style="color:#666; display:inline-block; width:68px;">Pratique :</span>' + pratiqueHtml + '</div>';
-            html += '</div></div>';
+            html += '</div>';
+
+            html += '</div>';
         });
         html += '</div>';
         return html;
