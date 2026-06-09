@@ -395,24 +395,15 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     qr_b64 = _b64.b64encode(qr_buf.getvalue()).decode()
     qr_html = f'<img class="r-qr" src="data:image/png;base64,{qr_b64}">'
 
-    # Photo -> fetch manuel + base64 (WeasyPrint bloque les URLs externes)
-    photo_html = '<div class="r-photo-ph"></div>'
+    # Photo -> base64 pur stocké en DB, construire le data URI directement
     if s.photo:
-        try:
-            from urllib.request import urlopen
-            with urlopen(s.photo, timeout=8) as _r:
-                _raw = _r.read()
-                _ct = (_r.headers.get('Content-Type') or 'image/jpeg').split(';')[0].strip()
-                if not _ct.startswith('image/'):
-                    _ct = 'image/jpeg'
-                _pb64 = _b64.b64encode(_raw).decode()
-                photo_html = (
-                    f'<img style="width:11mm;height:12mm;display:block;'
-                    f'border:0.4mm solid #bbb;border-radius:0.6mm;" '
-                    f'src="data:{_ct};base64,{_pb64}">'
-                )
-        except Exception:
-            pass
+        _src = s.photo if s.photo.startswith('data:') else f'data:image/jpeg;base64,{s.photo}'
+        photo_html = (
+            f'<img style="width:22mm;height:28mm;display:block;'
+            f'border:0.4mm solid #bbb;border-radius:0.6mm;" src="{_src}">'
+        )
+    else:
+        photo_html = '<div class="r-photo-ph"></div>'
 
     # Logo organisme
     if cfg and cfg.logo_base64:
@@ -548,7 +539,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         f'.r-sign {{ font-size:5.2pt; color:{ANT}; display:flex; align-items:center; gap:0.8mm; padding-bottom:0.4mm; }}\n'
         f'.r-sign img {{ height:3.5mm; width:auto; max-width:8mm; object-fit:contain; }}\n'
         f'.r-photo {{ width:11mm; height:12mm; border:0.4mm solid #bbb; display:block; border-radius:0.6mm; }}\n'
-        f'.r-photo-ph {{ width:11mm; height:12mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }}\n'
+        f'.r-photo-ph {{ width:22mm; height:28mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }}\n'
         f'.r-sep {{ width:11mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }}\n'
         f'.r-qr {{ width:10mm; height:10mm; display:block; }}\n'
         f'.r-qr-text {{ font-size:3.8pt; color:{ANT}; text-align:center; line-height:1.25; font-style:italic; max-width:11mm; }}\n'
