@@ -603,7 +603,7 @@ function _buildCr80Html(data, cfg) {
         '.v-hdr { background:' + ANT + '; padding:1.3mm 2.5mm; flex-shrink:0; }',
         '.v-htitle { font-size:6pt; font-weight:900; color:#fff; line-height:1.2; }',
         '.v-hddn { font-size:4.3pt; font-weight:400; color:#bbb; font-style:italic; }',
-        '.v-hcarte { font-size:4.5pt; color:' + RED + '; font-weight:700; font-family:monospace; margin-top:0.2mm; }',
+        '.v-hcarte { font-size:5.2pt; color:' + RED + '; font-weight:700; font-family:monospace; margin-top:0.2mm; }',
         '.v-notices { padding:0.5mm 2.5mm; font-size:4.3pt; color:#666; line-height:1.3; flex-shrink:0; border-bottom:0.15mm solid #ebebeb; }',
         '.v-tbl { flex:1; padding:0 2.5mm; overflow:hidden; }',
         'table { width:100%; border-collapse:collapse; }',
