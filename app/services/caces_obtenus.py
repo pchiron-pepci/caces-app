@@ -55,11 +55,16 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
       2. Autre session ouverte (statut != terminee), même famille, ±12 mois → continuité
       3. Autre session clôturée (statut == terminee), même famille, ±12 mois → extension
 
-    Règles date_obtention :
-      Cas 1/2 : théorie ≤ pratique → date pratique
-      Cas 3   : théorie > pratique (toutes priorités) → date théorie
-      Cas 4   : extension (session clôturée) + théorie ≤ pratique → date pratique, date_echeance = CACES® initial
-               + extension + théorie > pratique → date théorie, date_echeance = CACES® initial
+    Règles de calcul (appliquées dans cet ordre) :
+      Cas 3 : théorie > pratique (TOUTES priorités, y compris extension)
+                → date_obtention = date_theo
+                → date_echeance = _date_echeance(famille, date_theo)
+      Cas 1/2 : théorie ≤ pratique, non-extension
+                → date_obtention = date_prat
+                → date_echeance = _date_echeance(famille, date_prat)
+      Cas 4 : extension (session clôturée, post_cloture=True) + théorie ≤ pratique
+                → date_obtention = date_prat
+                → date_echeance = date_echeance du 1er CacesObtenu valide (même famille), sinon calcul normal
     """
     rt = db.query(ResultatTheorie).filter(
         ResultatTheorie.stagiaire_id == ep.stagiaire_id,
@@ -92,9 +97,13 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
     date_theo = jour_theo.date
     date_prat = ep.date
 
-    if post_cloture:
-        # Extension depuis session clôturée : on respecte quand même la règle théorie > pratique
-        date_obtention = date_theo if date_theo > date_prat else date_prat
+    if date_theo > date_prat:
+        # Cas 3 : théorie après pratique (toutes priorités) → tout depuis date_theo
+        date_obtention = date_theo
+        echeance = _date_echeance(ep.famille, date_theo)
+    elif post_cloture:
+        # Cas 4 : extension + théorie ≤ pratique → date pratique, écheance = CACES® initial
+        date_obtention = date_prat
         caces_initial = (
             db.query(CacesObtenu)
             .filter(
@@ -106,12 +115,10 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
             .first()
         )
         echeance = caces_initial.date_echeance if caces_initial else _date_echeance(ep.famille, date_obtention)
-    elif date_theo <= date_prat:
-        date_obtention = date_prat
-        echeance = _date_echeance(ep.famille, date_obtention)
     else:
-        date_obtention = date_theo
-        echeance = _date_echeance(ep.famille, date_obtention)
+        # Cas 1/2 : théorie ≤ pratique, non-extension → date pratique
+        date_obtention = date_prat
+        echeance = _date_echeance(ep.famille, date_prat)
 
     return {
         "date_obtention": date_obtention,
