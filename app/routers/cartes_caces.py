@@ -109,7 +109,9 @@ def get_stagiaires(db: DBSession = Depends(get_db)):
         .order_by(Stagiaire.nom, Stagiaire.prenom)
         .all()
     )
-    return [{"id": s.id, "nom": s.nom, "prenom": s.prenom} for s in stagiaires]
+    return [{"id": s.id, "nom": s.nom, "prenom": s.prenom,
+             "date_naissance": s.date_naissance.isoformat() if s.date_naissance else None}
+            for s in stagiaires]
 
 
 @router.get("/familles/{stagiaire_id}")

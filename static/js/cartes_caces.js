@@ -201,10 +201,22 @@ async function chargerStagiaires() {
         const r = await fetch('/api/cartes-caces/stagiaires');
         if (!r.ok) return;
         const data = await r.json();
+        // Détecte les doublons nom+prénom pour ajouter la date de naissance
+        const counts = {};
+        data.forEach(function (s) {
+            const k = s.nom + '|' + s.prenom;
+            counts[k] = (counts[k] || 0) + 1;
+        });
         data.forEach(function (s) {
             const opt = document.createElement('option');
             opt.value = s.id;
-            opt.textContent = s.nom + ' ' + s.prenom;
+            const doublon = counts[s.nom + '|' + s.prenom] > 1;
+            let label = s.nom + ' ' + s.prenom;
+            if (doublon && s.date_naissance) {
+                const p = s.date_naissance.split('-');
+                label += ' (né' + (s.nom ? '' : 'e') + ' le ' + p[2] + '/' + p[1] + '/' + p[0] + ')';
+            }
+            opt.textContent = label;
             sel.appendChild(opt);
         });
     } catch (_) {}
