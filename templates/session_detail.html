@@ -31,7 +31,7 @@
             <button class="btn btn-secondary" onclick="reouvrirsession()">🔓 Reouvrir</button>
         {% elif session.statut != 'annulee' %}
     <a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary">✏️ Modifier</a>
-    <button class="btn btn-primary" onclick="cloturerSession()">Cloturer la session</button>
+    <button class="btn btn-danger" onclick="cloturerSession()">🔒 Cloturer la session</button>
 {% endif %}
     </div>
 </div>
