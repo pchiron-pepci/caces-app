@@ -128,6 +128,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Voir / modifier motif (ligne annulée)
+        // Tri colonnes CACES® validés
+        const btnSort = e.target.closest('[data-action="sort-valides"]');
+        if (btnSort) {
+            const key = btnSort.dataset.key;
+            if (_sortKey === key) {
+                _sortDir = -_sortDir;
+            } else {
+                _sortKey = key;
+                _sortDir = (key === 'numero_ordre' || key === 'date_obtention' || key === 'date_echeance') ? -1 : 1;
+            }
+            _renderValides();
+            return;
+        }
+
         const btnMotif = e.target.closest('[data-action="voir-motif"]');
         if (btnMotif) {
             const id = parseInt(btnMotif.dataset.id);
@@ -156,6 +170,19 @@ let _motifCategorie = '';
 let _motifFamille = '';
 const _carteData = {};
 const _validesData = {};
+let _validesArray = [];
+let _sortKey = 'numero_ordre';
+let _sortDir = -1; // -1 = desc
+
+const _SORT_COLS = [
+    { key: 'stagiaire',      label: 'Stagiaire' },
+    { key: 'famille',        label: 'Famille' },
+    { key: 'categorie',      label: 'Catégorie' },
+    { key: 'numero_ordre',   label: 'N°' },
+    { key: 'date_obtention', label: 'Obtention' },
+    { key: 'date_echeance',  label: 'Échéance' },
+    { key: 'statut',         label: 'Statut' },
+];
 
 // ===== PIN MODAL =====
 function ouvrirPin(titre, callback) {
@@ -268,6 +295,65 @@ function badgeStatut(statut) {
     if (statut === 'valide') return '<span class="badge" style="background:#e8f5e9;color:#2e7d32;">Validé</span>';
     if (statut === 'annule') return '<span class="badge" style="background:#fde8e8;color:#c62828;">Annulé</span>';
     return '';
+}
+
+// ===== TRI & RENDU VALIDÉS =====
+
+function _renderHeaderValides() {
+    const cols = _SORT_COLS.map(function (col) {
+        const active = _sortKey === col.key;
+        const arrow = active ? (_sortDir === 1 ? ' ▲' : ' ▼') : '';
+        return '<span data-action="sort-valides" data-key="' + col.key + '" '
+            + 'style="font-size:11px; font-weight:' + (active ? '800' : '600') + '; '
+            + 'color:' + (active ? '#1a237e' : '#888') + '; '
+            + 'cursor:pointer; user-select:none; text-transform:uppercase; letter-spacing:0.4px; '
+            + 'padding:4px 8px; border-radius:4px; '
+            + 'background:' + (active ? '#e8eaf6' : 'transparent') + '; '
+            + 'white-space:nowrap;">'
+            + col.label + arrow
+            + '</span>';
+    }).join('<span style="color:#ddd; margin:0 2px;">|</span>');
+
+    return '<div style="display:flex; align-items:center; flex-wrap:wrap; gap:2px; '
+        + 'background:#f7f8fc; border-radius:8px; padding:6px 10px; margin-bottom:10px; '
+        + 'border:1px solid #e8eef8;">'
+        + '<span style="font-size:10px; color:#aaa; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-right:6px;">Trier&nbsp;:</span>'
+        + cols
+        + '</div>';
+}
+
+function _sortValides(arr) {
+    return arr.slice().sort(function (a, b) {
+        let va, vb;
+        switch (_sortKey) {
+            case 'stagiaire':      va = (a.stagiaire_nom + ' ' + a.stagiaire_prenom).toLowerCase(); vb = (b.stagiaire_nom + ' ' + b.stagiaire_prenom).toLowerCase(); break;
+            case 'famille':        va = a.famille || ''; vb = b.famille || ''; break;
+            case 'categorie':      va = a.categorie || ''; vb = b.categorie || ''; break;
+            case 'numero_ordre':   va = a.numero_ordre || 0; vb = b.numero_ordre || 0; break;
+            case 'date_obtention': va = a.date_obtention || ''; vb = b.date_obtention || ''; break;
+            case 'date_echeance':  va = a.date_echeance || ''; vb = b.date_echeance || ''; break;
+            case 'statut':         va = a.statut || ''; vb = b.statut || ''; break;
+            default:               va = 0; vb = 0;
+        }
+        if (va < vb) return -1 * _sortDir;
+        if (va > vb) return  1 * _sortDir;
+        return 0;
+    });
+}
+
+function _renderValides() {
+    const headerEl = document.getElementById('header-valides');
+    const listEl = document.getElementById('liste-valides');
+    if (!headerEl || !listEl) return;
+
+    if (!_validesArray.length) {
+        headerEl.innerHTML = '';
+        listEl.innerHTML = '<p style="color:#718096; text-align:center; padding:24px;">Aucun CACES® validé.</p>';
+        return;
+    }
+
+    headerEl.innerHTML = _renderHeaderValides();
+    listEl.innerHTML = _sortValides(_validesArray).map(_renderLigne).join('');
 }
 
 // ===== RENDU CARTE À VALIDER =====
@@ -439,7 +525,8 @@ function _apresValider(id, numeroOrdre) {
         co.statut = 'valide';
         co.session_reference = co.session_ref_pratique || co.session_reference || '—';
         _validesData[co.id] = co;
-        _ajouterLigneValide(co);
+        _validesArray.push(co);
+        _renderValides();
     }
 }
 
@@ -451,31 +538,14 @@ function _apresRevisionCarte(id) {
 }
 
 function _apresAnnulation(id, motif) {
-    if (_validesData[id]) _validesData[id].motif_annulation = motif;
-    const el = document.getElementById('liste-valides');
-    if (!el) return;
-    const row = el.querySelector('[data-caces-id="' + id + '"]');
-    if (row) row.remove();
     const co = _validesData[id];
-    if (!co) return;
-    co.statut = 'annule';
-    co.motif_annulation = motif;
-    el.appendChild(_creerNoeudLigne(co));
+    if (co) {
+        co.statut = 'annule';
+        co.motif_annulation = motif;
+    }
+    _renderValides();
 }
 
-function _ajouterLigneValide(co) {
-    const el = document.getElementById('liste-valides');
-    if (!el) return;
-    _validesData[co.id] = co;
-    // Insérer en premier (validé tout en haut)
-    el.insertAdjacentHTML('afterbegin', _renderLigne(co));
-}
-
-function _creerNoeudLigne(co) {
-    const div = document.createElement('div');
-    div.innerHTML = _renderLigne(co);
-    return div.firstElementChild;
-}
 
 // ===== CHARGEMENT =====
 
@@ -498,25 +568,20 @@ async function chargerAValider() {
 }
 
 async function chargerValides() {
-    const el = document.getElementById('liste-valides');
-    el.innerHTML = '<p style="color:#718096;text-align:center;padding:24px;">Chargement...</p>';
+    const listEl = document.getElementById('liste-valides');
+    const headerEl = document.getElementById('header-valides');
+    listEl.innerHTML = '<p style="color:#718096;text-align:center;padding:24px;">Chargement...</p>';
+    if (headerEl) headerEl.innerHTML = '';
     Object.keys(_validesData).forEach(k => delete _validesData[k]);
+    _validesArray = [];
     try {
         const r = await fetch('/api/caces-obtenus/valides');
         if (!r.ok) throw new Error('Erreur ' + r.status);
         const data = await r.json();
-        if (!data.length) {
-            el.innerHTML = '<p style="color:#718096;text-align:center;padding:24px;">Aucun CACES® validé.</p>';
-            return;
-        }
-        // Trier : validés en haut (par numéro desc), annulés en bas
-        data.sort(function (a, b) {
-            if (a.statut !== b.statut) return a.statut === 'valide' ? -1 : 1;
-            return (b.numero_ordre || 0) - (a.numero_ordre || 0);
-        });
         data.forEach(co => { _validesData[co.id] = co; });
-        el.innerHTML = data.map(_renderLigne).join('');
+        _validesArray = data;
+        _renderValides();
     } catch (err) {
-        el.innerHTML = '<p style="color:red;text-align:center;padding:24px;">Erreur de chargement</p>';
+        listEl.innerHTML = '<p style="color:red;text-align:center;padding:24px;">Erreur de chargement</p>';
     }
 }
