@@ -10,6 +10,7 @@ from app.models.caces_obtenu import CacesObtenu
 from app.models.stagiaire import Stagiaire
 from app.models.session_epreuve import SessionEpreuve
 from app.models.testeur import Testeur
+from app.models.config_organisme import ConfigOrganisme
 
 router = APIRouter(prefix="/api/cartes-caces", tags=["Cartes CACES®"])
 
@@ -36,7 +37,6 @@ def _gen_numero(db: DBSession) -> str:
 
 
 def _testeurs_map(cos: list, db: DBSession) -> dict:
-    """Retourne {(stagiaire_id, session_id, categorie): testeur_nom}."""
     if not cos:
         return {}
     filtre = or_(*[
@@ -59,146 +59,187 @@ def _testeurs_map(cos: list, db: DBSession) -> dict:
     return result
 
 
-@router.get("/a-preparer")
-def get_a_preparer(db: DBSession = Depends(get_db)):
-    valides = db.query(CacesObtenu).filter(CacesObtenu.statut == "valide").all()
-    if not valides:
+def _img_uri(b64, nom):
+    if not b64:
+        return ""
+    ext = (nom or "").rsplit(".", 1)[-1].lower() if nom and "." in (nom or "") else "png"
+    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+            "gif": "image/gif", "webp": "image/webp"}.get(ext, "image/png")
+    return f"data:{mime};base64,{b64}"
+
+
+def _build_print_data(carte, s, cos, t_map, config):
+    cfg = config or ConfigOrganisme()
+    return {
+        "id": carte.id,
+        "numero_carte": carte.numero_carte,
+        "date_generation": carte.date_generation.isoformat(),
+        "stagiaire_id": s.id,
+        "stagiaire_nom": s.nom,
+        "stagiaire_prenom": s.prenom,
+        "photo_url": s.photo or "",
+        "famille": carte.famille,
+        "caces": [
+            {
+                "categorie": co.categorie,
+                "numero_ordre": co.numero_ordre,
+                "options_obtenues": co.options_obtenues or "",
+                "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
+                "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
+                "testeur_nom": t_map.get((co.stagiaire_id, co.session_id, co.categorie), ""),
+            }
+            for co in sorted(cos, key=lambda x: x.categorie)
+        ],
+        "config": {
+            "nom_organisme": cfg.nom_organisme or "",
+            "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
+            "url_verification_caces": cfg.url_verification_caces or "",
+        },
+    }
+
+
+# ===== LECTURE =====
+
+@router.get("/stagiaires")
+def get_stagiaires(db: DBSession = Depends(get_db)):
+    stag_ids = [r[0] for r in db.query(CacesObtenu.stagiaire_id).filter(CacesObtenu.statut == "valide").distinct().all()]
+    if not stag_ids:
         return []
+    stagiaires = (
+        db.query(Stagiaire)
+        .filter(Stagiaire.id.in_(stag_ids), Stagiaire.actif == True)
+        .order_by(Stagiaire.nom, Stagiaire.prenom)
+        .all()
+    )
+    return [{"id": s.id, "nom": s.nom, "prenom": s.prenom} for s in stagiaires]
 
-    # Familles déjà couvertes (en_preparation ou emise)
-    cartes_actives = db.query(CarteCaces).filter(
-        CarteCaces.statut.in_(["en_preparation", "emise"])
-    ).all()
-    couvertes = {(c.stagiaire_id, c.famille) for c in cartes_actives}
 
-    # Grouper par (stagiaire_id, famille) en excluant les couvertes
-    groupes: dict = {}
-    for co in valides:
-        key = (co.stagiaire_id, co.famille)
-        if key in couvertes:
-            continue
-        groupes.setdefault(key, []).append(co)
+@router.get("/familles/{stagiaire_id}")
+def get_familles(stagiaire_id: int, db: DBSession = Depends(get_db)):
+    rows = db.query(CacesObtenu.famille).filter(
+        CacesObtenu.stagiaire_id == stagiaire_id,
+        CacesObtenu.statut == "valide",
+    ).distinct().all()
+    return sorted([r[0] for r in rows])
 
-    if not groupes:
-        return []
 
-    stag_ids = {k[0] for k in groupes}
-    stagiaires = {s.id: s for s in db.query(Stagiaire).filter(Stagiaire.id.in_(stag_ids)).all()}
-    all_cos = [co for cos in groupes.values() for co in cos]
-    t_map = _testeurs_map(all_cos, db)
-
-    result = []
-    for (stag_id, famille), cos in sorted(groupes.items()):
-        s = stagiaires.get(stag_id)
-        if not s:
-            continue
-        caces_list = []
-        for co in cos:
-            testeur = t_map.get((co.stagiaire_id, co.session_id, co.categorie), "")
-            caces_list.append({
+@router.get("/caces-valides/{stagiaire_id}/{famille}")
+def get_caces_valides(stagiaire_id: int, famille: str, db: DBSession = Depends(get_db)):
+    s = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+    if not s:
+        raise HTTPException(status_code=404)
+    cos = (
+        db.query(CacesObtenu)
+        .filter(CacesObtenu.stagiaire_id == stagiaire_id, CacesObtenu.famille == famille, CacesObtenu.statut == "valide")
+        .order_by(CacesObtenu.categorie)
+        .all()
+    )
+    t_map = _testeurs_map(cos, db)
+    return {
+        "stagiaire_id": s.id,
+        "stagiaire_nom": s.nom,
+        "stagiaire_prenom": s.prenom,
+        "photo_url": s.photo or "",
+        "photo_manquante": not bool(s.photo),
+        "famille": famille,
+        "caces": [
+            {
                 "id": co.id,
                 "categorie": co.categorie,
                 "numero_ordre": co.numero_ordre,
+                "options_obtenues": co.options_obtenues or "",
                 "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
                 "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
-                "testeur_nom": testeur,
-            })
-        caces_list.sort(key=lambda x: x["categorie"])
-        result.append({
-            "stagiaire_id": stag_id,
-            "stagiaire_nom": s.nom,
-            "stagiaire_prenom": s.prenom,
-            "photo_manquante": not bool(s.photo),
-            "famille": famille,
-            "caces": caces_list,
-        })
-    return result
-
-
-@router.get("/en-preparation")
-def get_en_preparation(db: DBSession = Depends(get_db)):
-    cartes = db.query(CarteCaces).filter(CarteCaces.statut == "en_preparation").order_by(CarteCaces.date_generation.desc()).all()
-    if not cartes:
-        return []
-    stag_ids = {c.stagiaire_id for c in cartes}
-    stagiaires = {s.id: s for s in db.query(Stagiaire).filter(Stagiaire.id.in_(stag_ids)).all()}
-    result = []
-    for c in cartes:
-        s = stagiaires.get(c.stagiaire_id)
-        result.append({
-            "id": c.id,
-            "stagiaire_id": c.stagiaire_id,
-            "stagiaire_nom": s.nom if s else "?",
-            "stagiaire_prenom": s.prenom if s else "",
-            "famille": c.famille,
-            "numero_carte": c.numero_carte,
-            "date_generation": c.date_generation.isoformat(),
-            "statut": c.statut,
-        })
-    return result
+                "testeur_nom": t_map.get((co.stagiaire_id, co.session_id, co.categorie), ""),
+            }
+            for co in cos
+        ],
+    }
 
 
 @router.get("/emises")
 def get_emises(db: DBSession = Depends(get_db)):
-    cartes = db.query(CarteCaces).filter(
-        CarteCaces.statut.in_(["emise", "annulee"])
-    ).order_by(CarteCaces.date_generation.desc()).all()
+    cartes = (
+        db.query(CarteCaces)
+        .filter(CarteCaces.statut.in_(["emise", "remplacee", "annulee"]))
+        .order_by(CarteCaces.date_generation.desc())
+        .all()
+    )
     if not cartes:
         return []
     stag_ids = {c.stagiaire_id for c in cartes}
     stagiaires = {s.id: s for s in db.query(Stagiaire).filter(Stagiaire.id.in_(stag_ids)).all()}
-    result = []
-    for c in cartes:
-        s = stagiaires.get(c.stagiaire_id)
-        result.append({
+    return [
+        {
             "id": c.id,
             "stagiaire_id": c.stagiaire_id,
-            "stagiaire_nom": s.nom if s else "?",
-            "stagiaire_prenom": s.prenom if s else "",
+            "stagiaire_nom": stagiaires[c.stagiaire_id].nom if c.stagiaire_id in stagiaires else "?",
+            "stagiaire_prenom": stagiaires[c.stagiaire_id].prenom if c.stagiaire_id in stagiaires else "",
             "famille": c.famille,
             "numero_carte": c.numero_carte,
             "date_generation": c.date_generation.isoformat(),
             "statut": c.statut,
             "motif_annulation": c.motif_annulation or "",
-        })
-    return result
+        }
+        for c in cartes
+    ]
 
 
-@router.post("/preparer/{stagiaire_id}/{famille}")
-def preparer_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession = Depends(get_db)):
+@router.get("/reimprimer/{carte_id}")
+def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
+    carte = db.query(CarteCaces).filter(CarteCaces.id == carte_id).first()
+    if not carte:
+        raise HTTPException(status_code=404, detail="Carte introuvable")
+    s = db.query(Stagiaire).filter(Stagiaire.id == carte.stagiaire_id).first()
+    if not s:
+        raise HTTPException(status_code=404)
+    cos = (
+        db.query(CacesObtenu)
+        .filter(CacesObtenu.stagiaire_id == carte.stagiaire_id, CacesObtenu.famille == carte.famille, CacesObtenu.statut == "valide")
+        .all()
+    )
+    t_map = _testeurs_map(cos, db)
+    config = db.query(ConfigOrganisme).first()
+    return _build_print_data(carte, s, cos, t_map, config)
+
+
+# ===== ACTIONS =====
+
+@router.post("/emettre/{stagiaire_id}/{famille}")
+def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession = Depends(get_db)):
     if pin != PIN_ADMIN:
         raise HTTPException(status_code=403, detail="PIN incorrect")
-    existante = db.query(CarteCaces).filter(
+    s = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Stagiaire introuvable")
+    if not s.photo:
+        raise HTTPException(status_code=400, detail="Photo manquante — impossible d'émettre la carte")
+    cos = (
+        db.query(CacesObtenu)
+        .filter(CacesObtenu.stagiaire_id == stagiaire_id, CacesObtenu.famille == famille, CacesObtenu.statut == "valide")
+        .all()
+    )
+    if not cos:
+        raise HTTPException(status_code=400, detail="Aucun CACES® valide pour ce stagiaire / famille")
+    # Remplace l'ancienne carte émise
+    db.query(CarteCaces).filter(
         CarteCaces.stagiaire_id == stagiaire_id,
         CarteCaces.famille == famille,
-        CarteCaces.statut.in_(["en_preparation", "emise"]),
-    ).first()
-    if existante:
-        raise HTTPException(status_code=400, detail="Une carte est déjà en cours pour ce stagiaire / famille")
+        CarteCaces.statut == "emise",
+    ).update({"statut": "remplacee"})
     carte = CarteCaces(
         stagiaire_id=stagiaire_id,
         famille=famille,
         numero_carte=_gen_numero(db),
         date_generation=date.today(),
-        statut="en_preparation",
+        statut="emise",
     )
     db.add(carte)
     db.commit()
-    return {"ok": True, "id": carte.id, "numero_carte": carte.numero_carte}
-
-
-@router.post("/emettre/{carte_id}")
-def emettre_carte(carte_id: int, pin: str = "", db: DBSession = Depends(get_db)):
-    if pin != PIN_ADMIN:
-        raise HTTPException(status_code=403, detail="PIN incorrect")
-    carte = db.query(CarteCaces).filter(CarteCaces.id == carte_id).first()
-    if not carte:
-        raise HTTPException(status_code=404, detail="Carte introuvable")
-    if carte.statut != "en_preparation":
-        raise HTTPException(status_code=400, detail="La carte n'est pas en préparation")
-    carte.statut = "emise"
-    db.commit()
-    return {"ok": True}
+    db.refresh(carte)
+    t_map = _testeurs_map(cos, db)
+    config = db.query(ConfigOrganisme).first()
+    return _build_print_data(carte, s, cos, t_map, config)
 
 
 @router.post("/annuler/{carte_id}")

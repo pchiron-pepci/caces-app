@@ -4,21 +4,46 @@
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <h1 style="font-size:1.5rem; font-weight:700; color:#1a237e;">🪪 Cartes CACES®</h1>
-    <button id="btn-refresh" class="btn btn-secondary">🔄 Actualiser</button>
 </div>
 
 <div style="display:flex; flex-direction:column; gap:20px;">
 
+    <!-- Sélection stagiaire / famille -->
     <div class="card">
-        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">📋 Cartes à préparer</h2>
-        <div id="liste-a-preparer"><p style="color:#718096; text-align:center; padding:24px;">Chargement…</p></div>
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">🖨️ Émettre une carte</h2>
+        <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+                <label style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px;">Stagiaire</label>
+                <select id="sel-stagiaire" style="width:100%; border:1px solid #ddd; border-radius:8px; padding:8px 12px; font-size:14px;">
+                    <option value="">— Choisir un stagiaire —</option>
+                </select>
+            </div>
+            <div style="min-width:140px;">
+                <label style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px;">Famille</label>
+                <select id="sel-famille" disabled style="width:100%; border:1px solid #ddd; border-radius:8px; padding:8px 12px; font-size:14px; background:#f5f5f5;">
+                    <option value="">— Famille —</option>
+                </select>
+            </div>
+            <button data-action="voir-caces"
+                    style="background:#1a237e; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;">
+                🔍 Voir les CACES®
+            </button>
+        </div>
     </div>
 
-    <div class="card">
-        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">⏳ En préparation</h2>
-        <div id="liste-en-preparation"><p style="color:#718096; text-align:center; padding:24px;">Chargement…</p></div>
+    <!-- Résultats CACES® -->
+    <div id="section-caces" style="display:none;" class="card">
+        <div id="info-stagiaire" style="margin-bottom:14px;"></div>
+        <div id="tableau-caces"></div>
+        <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+            <button id="btn-emettre" data-action="emettre-carte" data-stag-id="" data-famille=""
+                    style="background:#1a237e; color:#fff; border:none; border-radius:10px; padding:11px 24px; font-size:14px; font-weight:700; cursor:pointer;">
+                🖨️ Générer et imprimer
+            </button>
+        </div>
     </div>
 
+    <!-- Cartes émises -->
     <div class="card">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:16px;">📇 Cartes émises</h2>
         <div id="liste-emises"><p style="color:#718096; text-align:center; padding:24px;">Chargement…</p></div>
@@ -26,19 +51,7 @@
 
 </div>
 
-<!-- Modal récapitulatif préparation -->
-<div id="modal-recap" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
-    <div class="card" style="width:520px; max-width:95%; padding:28px; box-shadow:0 8px 32px rgba(0,0,0,0.18); max-height:90vh; overflow-y:auto;">
-        <h3 id="recap-titre" style="margin-bottom:16px; font-size:16px; font-weight:700; color:#1a237e;"></h3>
-        <div id="recap-body" style="margin-bottom:16px;"></div>
-        <div style="display:flex; gap:8px; justify-content:flex-end;">
-            <button id="btn-recap-annuler" class="btn btn-secondary">Annuler</button>
-            <button id="btn-recap-confirmer" class="btn btn-primary" data-stag-id="" data-famille="">📇 Préparer la carte</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal motif annulation carte -->
+<!-- Modal motif annulation -->
 <div id="modal-motif-carte" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
     <div class="card" style="width:440px; max-width:90%; padding:28px; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
         <h3 style="margin-bottom:12px; font-size:15px; font-weight:700; color:#1a237e;">Motif de l'annulation</h3>
