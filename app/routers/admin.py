@@ -224,6 +224,8 @@ def get_config_organisme(db: Session = Depends(get_db)):
         "signataire_qualite": config.signataire_qualite or "",
         "signature_data_uri": _img_data_uri(config.signature_base64, config.signature_nom),
         "url_verification_caces": config.url_verification_caces or "",
+        "logo2_base64": config.logo2_base64 or "" if hasattr(config, 'logo2_base64') else "",
+        "logo2_data_uri": _img_data_uri(config.logo2_base64, config.logo2_nom) if hasattr(config, 'logo2_base64') else "",
     }
 
 @router.put("/config-organisme")
@@ -286,6 +288,38 @@ def supprimer_logo_organisme(pin: str, db: Session = Depends(get_db)):
         config.logo_nom = None
         db.commit()
     return {"message": "Logo supprimé"}
+
+@router.post("/config-organisme/logo2")
+async def upload_logo2_organisme(pin: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
+        raise HTTPException(status_code=400, detail="Format image invalide (png, jpg, gif, webp)")
+    contents = await file.read()
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if not config:
+        config = ConfigOrganisme()
+        db.add(config)
+    config.logo2_base64 = base64.b64encode(contents).decode()
+    config.logo2_nom = file.filename
+    db.commit()
+    return {"message": "Logo 2 mis à jour", "logo2_data_uri": _img_data_uri(config.logo2_base64, config.logo2_nom)}
+
+@router.delete("/config-organisme/logo2")
+def supprimer_logo2_organisme(pin: str, db: Session = Depends(get_db)):
+    PIN_SECRET = "1505"
+    if pin != PIN_SECRET:
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if config:
+        config.logo2_base64 = None
+        config.logo2_nom = None
+        db.commit()
+    return {"message": "Logo 2 supprimé"}
 
 @router.post("/config-organisme/signature")
 async def upload_signature_organisme(pin: str, file: UploadFile = File(...), db: Session = Depends(get_db)):

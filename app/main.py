@@ -300,6 +300,14 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS logo2_base64 TEXT"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS logo2_nom VARCHAR(200)"))
+        _conn.commit()
+except Exception:
+    pass
+
 app = FastAPI(
     title="NORYX Engins",
     description="Pilotage CACES® & Autorisation de conduite — PEPCI Formation",

@@ -22,3 +22,5 @@ class ConfigOrganisme(Base):
     signature_base64 = Column(Text, nullable=True)
     signature_nom = Column(String(200), nullable=True)
     url_verification_caces = Column(String(500), nullable=True)
+    logo2_base64 = Column(Text, nullable=True)
+    logo2_nom = Column(String(200), nullable=True)

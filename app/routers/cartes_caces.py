@@ -108,6 +108,7 @@ def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_c
             "signataire_prenom": cfg.signataire_prenom or "" if hasattr(cfg, 'signataire_prenom') else "",
             "signataire_qualite": cfg.signataire_qualite or "" if hasattr(cfg, 'signataire_qualite') else "",
             "numero_certificat": numero_certificat,
+            "logo2_uri": _img_uri(cfg.logo2_base64, cfg.logo2_nom) if hasattr(cfg, 'logo2_base64') else "",
         },
     }
 
@@ -289,6 +290,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
                 "signataire_prenom": cfg.signataire_prenom or "" if hasattr(cfg, 'signataire_prenom') else "",
                 "signataire_qualite": cfg.signataire_qualite or "" if hasattr(cfg, 'signataire_qualite') else "",
                 "numero_certificat": numero_certificat,
+                "logo2_uri": _img_uri(cfg.logo2_base64, cfg.logo2_nom) if hasattr(cfg, 'logo2_base64') else "",
             },
         }
 

@@ -584,10 +584,10 @@ function _buildCr80Html(data, cfg) {
         '.r-right { width:14.5mm; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:0.7mm; padding-top:0.2mm; }',
         '.r-fam-badge { display:inline-block; background:' + RED + '; color:#fff; font-size:6.5pt; font-weight:900;',
         '  padding:0.4mm 2mm; border-radius:0.7mm; margin-bottom:0.7mm; letter-spacing:0.1mm; white-space:nowrap; }',
-        '.r-nums { font-size:6.5pt; color:' + RED + '; font-weight:800; margin-bottom:0.4mm; letter-spacing:0.2mm; }',
-        '.r-nums .lbl { font-weight:400; color:#666; font-size:5.5pt; }',
-        '.r-titulaire { font-size:7.5pt; font-weight:900; font-style:italic; color:#111; margin-bottom:0.3mm; line-height:1.2; }',
-        '.r-ddn { font-size:5.5pt; color:#555; font-style:italic; }',
+        '.r-nums { font-size:8pt; color:' + RED + '; font-weight:800; margin-bottom:0.4mm; letter-spacing:0.2mm; }',
+        '.r-nums .lbl { font-weight:400; color:#666; font-size:6.5pt; }',
+        '.r-titulaire { font-size:9pt; font-weight:900; font-style:italic; color:#111; margin-bottom:0.3mm; line-height:1.2; }',
+        '.r-ddn { font-size:7pt; color:#555; font-style:italic; }',
         '.r-spacer { flex:1; min-height:0.5mm; }',
         '.r-org { font-size:5.5pt; color:' + ANT + '; font-weight:700; line-height:1.25; margin-bottom:0.25mm; }',
         '.r-siret { font-size:4.5pt; color:#666; margin-bottom:0.35mm; line-height:1.3; }',
@@ -601,9 +601,9 @@ function _buildCr80Html(data, cfg) {
         '.r-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.7mm 2.5mm; font-size:4.5pt; color:#555; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
-        '.v-hdr { background:' + ANT + '; padding:1.3mm 2.5mm; flex-shrink:0; }',
-        '.v-htitle { font-size:6pt; font-weight:900; color:#fff; line-height:1.2; }',
-        '.v-hddn { font-size:4.3pt; font-weight:400; color:#bbb; font-style:italic; }',
+        '.v-hdr { background:#fff; border-top:0.7mm solid ' + RED + '; border-bottom:0.25mm solid #e4e4e4; padding:1mm 2.5mm; flex-shrink:0; }',
+        '.v-htitle { font-size:6pt; font-weight:900; color:' + ANT + '; line-height:1.2; }',
+        '.v-hddn { font-size:4.3pt; font-weight:400; color:#666; font-style:italic; }',
         '.v-hcarte { font-size:5.2pt; color:' + RED + '; font-weight:700; font-family:monospace; margin-top:0.2mm; }',
         '.v-notices { padding:0.5mm 2.5mm; font-size:4.3pt; color:#666; line-height:1.3; flex-shrink:0; border-bottom:0.15mm solid #ebebeb; }',
         '.v-tbl { flex:1; padding:0 2.5mm; overflow:hidden; }',
@@ -654,7 +654,7 @@ function _buildCr80Html(data, cfg) {
         +       logoHtml
         +       (numeroCert ? '<div class="r-dekra">Cert. DEKRA n° ' + numeroCert + '</div>' : '')
         +     '</div>'
-        +     '<img class="r-logo-am" src="/static/img/assurance_maladie_caces.jpeg" />'
+        +     '<img class="r-logo-am" src="' + (cfg.logo2_uri || '/static/img/assurance_maladie_caces.jpeg') + '" />'
         +   '</div>'
         +   '<div class="r-subhdr">'
         +     '<span class="r-subhdr-title">Certificat d\'aptitude à la conduite en sécurité</span>'

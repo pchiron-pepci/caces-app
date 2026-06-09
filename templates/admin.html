@@ -344,6 +344,17 @@
                     onclick="supprimerLogoOrganisme()">🗑️ Supprimer le logo</button>
             </div>
 
+            <div style="border-top:1px solid #e8ecf4; margin:20px 0 16px;"></div>
+            <div style="font-size:13px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Logo 2 <span style="font-weight:400; font-size:11px; text-transform:none; color:#888;">(ex. Assurance Maladie — affiché à droite du header carte)</span></div>
+            <div id="config-logo2-preview" style="margin-bottom:12px;">
+                <span style="color:#888; font-size:13px;">— Aucun logo 2</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <input type="file" id="config-logo2-file" accept="image/*">
+                <button class="btn btn-danger" id="btn-suppr-logo2" style="padding:4px 10px; font-size:12px; display:none;"
+                    onclick="supprimerLogo2Organisme()">🗑️ Supprimer le logo 2</button>
+            </div>
+
             <div class="form-actions" style="margin-top:24px;">
                 <button class="btn btn-primary" onclick="sauvegarderConfigOrganisme()">💾 Enregistrer</button>
             </div>
@@ -876,6 +887,16 @@ async function chargerConfigOrganisme() {
         preview.innerHTML = '<span style="color:#888; font-size:13px;">— Aucun logo</span>';
         btnSuppr.style.display = 'none';
     }
+    const preview2 = document.getElementById('config-logo2-preview');
+    const btnSuppr2 = document.getElementById('btn-suppr-logo2');
+    if (data.logo2_base64) {
+        const src2 = data.logo2_base64.startsWith('data:image') ? data.logo2_base64 : 'data:image/png;base64,' + data.logo2_base64;
+        preview2.innerHTML = `<img src="${src2}" style="max-height:64px; border:1px solid #e8ecf4; border-radius:8px; padding:4px;">`;
+        btnSuppr2.style.display = '';
+    } else {
+        preview2.innerHTML = '<span style="color:#888; font-size:13px;">— Aucun logo 2</span>';
+        btnSuppr2.style.display = 'none';
+    }
     const sigPreview = document.getElementById('config-signature-preview');
     const btnSupprSig = document.getElementById('btn-suppr-signature');
     if (data.signature_data_uri) {
@@ -905,6 +926,19 @@ function sauvegarderConfigOrganisme() {
                 document.getElementById('btn-suppr-logo').style.display = '';
             }
             document.getElementById('config-logo-file').value = '';
+        }
+        const logo2File = document.getElementById('config-logo2-file').files[0];
+        if (logo2File) {
+            const fd = new FormData();
+            fd.append('file', logo2File);
+            const r = await fetch(`/admin/config-organisme/logo2?pin=${encodeURIComponent(pin)}`, { method: 'POST', body: fd });
+            if (!r.ok) { alert('Erreur upload logo 2'); return; }
+            const d = await r.json();
+            if (d.logo2_data_uri) {
+                document.getElementById('config-logo2-preview').innerHTML = `<img src="${d.logo2_data_uri}" style="max-height:64px; border:1px solid #e8ecf4; border-radius:8px; padding:4px;">`;
+                document.getElementById('btn-suppr-logo2').style.display = '';
+            }
+            document.getElementById('config-logo2-file').value = '';
         }
         const sigFile = document.getElementById('config-signature-file').files[0];
         if (sigFile) {
@@ -957,6 +991,14 @@ function supprimerLogoOrganisme() {
         const resp = await fetch(`/admin/config-organisme/logo?pin=${encodeURIComponent(pin)}`, { method: 'DELETE' });
         if (resp.ok) location.reload();
         else alert('Erreur suppression logo');
+    });
+}
+
+function supprimerLogo2Organisme() {
+    demanderPin('Supprimer le logo 2 ?', async (pin) => {
+        const resp = await fetch(`/admin/config-organisme/logo2?pin=${encodeURIComponent(pin)}`, { method: 'DELETE' });
+        if (resp.ok) location.reload();
+        else alert('Erreur suppression logo 2');
     });
 }
 
