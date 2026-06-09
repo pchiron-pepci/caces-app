@@ -205,7 +205,7 @@ def get_cartes_emises_stagiaire(id: int, db: Session = Depends(get_db)):
     from app.models.carte_caces import CarteCaces
     cartes = (
         db.query(CarteCaces)
-        .filter(CarteCaces.stagiaire_id == id, CarteCaces.statut == "emise")
+        .filter(CarteCaces.stagiaire_id == id, CarteCaces.statut.in_(["emise", "remplacee"]))
         .order_by(CarteCaces.date_generation.desc())
         .all()
     )
@@ -215,6 +215,7 @@ def get_cartes_emises_stagiaire(id: int, db: Session = Depends(get_db)):
             "numero_carte": c.numero_carte,
             "famille": c.famille,
             "date_generation": c.date_generation.isoformat() if c.date_generation else None,
+            "statut": c.statut,
         }
         for c in cartes
     ]
