@@ -67,19 +67,18 @@ def update_stagiaire(id: int, data: StagiaireCreate, db: Session = Depends(get_d
 
 @router.post("/photo/{id}")
 def upload_photo(id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    import base64 as _b64
     s = db.query(Stagiaire).filter(Stagiaire.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Stagiaire non trouve")
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
         raise HTTPException(status_code=400, detail="Format non supporte")
-    filename = f"stagiaire_{id}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
-    with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    s.photo = f"/uploads/photos/{filename}"
+    raw = file.file.read()
+    s.photo_base64 = _b64.b64encode(raw).decode()
+    s.photo = f"/uploads/photos/stagiaire_{id}{ext}"
     db.commit()
-    return {"message": "Photo uploadee", "photo": s.photo}
+    return {"message": "Photo uploadee", "photo_base64": True}
 
 @router.delete("/{id}")
 def delete_stagiaire(id: int, pin: str, db: Session = Depends(get_db)):

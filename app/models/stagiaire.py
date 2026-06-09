@@ -12,6 +12,7 @@ class Stagiaire(Base):
     telephone = Column(String(20), nullable=True)
     employeur = Column(String(200), nullable=True)
     photo = Column(String(500), nullable=True)
+    photo_base64 = Column(Text, nullable=True)
     note = Column(Text, nullable=True)
     date_creation = Column(DateTime, default=datetime.utcnow)
     actif = Column(Integer, default=1)

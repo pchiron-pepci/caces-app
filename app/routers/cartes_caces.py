@@ -87,7 +87,7 @@ def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_c
         "stagiaire_nom": s.nom,
         "stagiaire_prenom": s.prenom,
         "stagiaire_ddn": s.date_naissance.strftime("%d/%m/%Y") if s.date_naissance else "",
-        "photo_url": s.photo or "",
+        "photo_url": (s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or "",
         "famille": carte.famille,
         "famille_libelle": famille_libelle,
         "caces": [
@@ -166,8 +166,8 @@ def get_caces_valides(stagiaire_id: int, famille: str, db: DBSession = Depends(g
         "stagiaire_id": s.id,
         "stagiaire_nom": s.nom,
         "stagiaire_prenom": s.prenom,
-        "photo_url": s.photo or "",
-        "photo_manquante": not bool(s.photo),
+        "photo_url": (s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or "",
+        "photo_manquante": not bool(s.photo_base64 or s.photo),
         "famille": famille,
         "caces": [
             {
@@ -279,7 +279,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
             "stagiaire_nom": s.nom,
             "stagiaire_prenom": s.prenom,
             "stagiaire_ddn": s.date_naissance.strftime("%d/%m/%Y") if s.date_naissance else "",
-            "photo_url": s.photo or "",
+            "photo_url": (s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or "",
             "famille": carte.famille,
             "famille_libelle": famille_libelle,
             "caces": json.loads(carte.caces_json),
@@ -321,7 +321,7 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     s = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Stagiaire introuvable")
-    if not s.photo:
+    if not s.photo_base64 and not s.photo:
         raise HTTPException(status_code=400, detail="Photo manquante — impossible d'émettre la carte")
     cos = (
         db.query(CacesObtenu)
@@ -395,41 +395,28 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     qr_b64 = _b64.b64encode(qr_buf.getvalue()).decode()
     qr_html = f'<img class="r-qr" src="data:image/png;base64,{qr_b64}">'
 
-    # Photo -> 3 cas : chemin local /uploads/, URL https://, base64 brut
+    # Photo -> photo_base64 (DB) en priorité, fallback chemin fichier local
     photo_html = '<div class="r-photo-ph"></div>'
-    if s.photo:
+    _src = None
+    if s.photo_base64:
+        _src = f'data:image/jpeg;base64,{s.photo_base64}'
+    elif s.photo and s.photo.startswith('/'):
         import os as _os
-        _pv = s.photo
-        _src = None
-        if _pv.startswith('data:'):
-            _src = _pv
-        elif _pv.startswith('http://') or _pv.startswith('https://'):
+        _fs = '.' + s.photo
+        if _os.path.exists(_fs):
             try:
-                from urllib.request import urlopen as _uo
-                with _uo(_pv, timeout=8) as _r:
-                    _raw = _r.read()
-                    _ct = (_r.headers.get('Content-Type') or 'image/jpeg').split(';')[0].strip()
-                    _src = f'data:{_ct};base64,{_b64.b64encode(_raw).decode()}'
+                with open(_fs, 'rb') as _f:
+                    _raw = _f.read()
+                _ext = s.photo.rsplit('.', 1)[-1].lower() if '.' in s.photo else 'jpg'
+                _ct = 'image/jpeg' if _ext in ('jpg', 'jpeg') else f'image/{_ext}'
+                _src = f'data:{_ct};base64,{_b64.b64encode(_raw).decode()}'
             except Exception:
                 pass
-        elif _pv.startswith('/'):
-            _fs = '.' + _pv  # ./uploads/photos/stagiaire_1.png
-            if _os.path.exists(_fs):
-                try:
-                    with open(_fs, 'rb') as _f:
-                        _raw = _f.read()
-                    _ext = _pv.rsplit('.', 1)[-1].lower() if '.' in _pv else 'jpg'
-                    _ct = 'image/jpeg' if _ext in ('jpg', 'jpeg') else f'image/{_ext}'
-                    _src = f'data:{_ct};base64,{_b64.b64encode(_raw).decode()}'
-                except Exception:
-                    pass
-        else:
-            _src = f'data:image/jpeg;base64,{_pv}'
-        if _src:
-            photo_html = (
-                f'<img style="width:22mm;height:28mm;display:block;'
-                f'border:0.4mm solid #bbb;border-radius:0.6mm;" src="{_src}">'
-            )
+    if _src:
+        photo_html = (
+            f'<img style="width:22mm;height:28mm;display:block;'
+            f'border:0.4mm solid #bbb;border-radius:0.6mm;" src="{_src}">'
+        )
 
     # Logo organisme
     if cfg and cfg.logo_base64:

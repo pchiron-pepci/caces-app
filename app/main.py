@@ -470,6 +470,7 @@ def dashboard(request: Request):
         ).order_by(LieuHabilitation.famille, LieuHabilitation.categorie).all()
     stagiaires_sans_photo = db.query(Stagiaire).filter(
         text("stagiaires.actif = 1"),
+        or_(Stagiaire.photo_base64 == None, Stagiaire.photo_base64 == ""),
         or_(Stagiaire.photo == None, Stagiaire.photo == "")
     ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
     caces_a_valider_raw = db.query(CacesObtenu).filter(CacesObtenu.statut == "a_valider").all()
@@ -1210,7 +1211,7 @@ def page_verifier_carte(numero_carte: str, request: Request, db: DBSession = Dep
             "stagiaire_nom": s.nom if s else "",
             "stagiaire_prenom": s.prenom if s else "",
             "stagiaire_ddn": s.date_naissance if s else None,
-            "photo_url": s.photo or "" if s else "",
+            "photo_url": (s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or "" if s else "",
             "caces_list": caces_list,
             "config": config,
             "today": today,
