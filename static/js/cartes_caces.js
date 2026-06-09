@@ -637,7 +637,7 @@ function _buildCr80Html(data, cfg) {
         '.vopt { max-width:9mm; overflow:hidden; }',
         '.vlib { color:' + ANT + '; font-size:4.2pt; font-style:italic; font-weight:600; }',
         '.vhastest td { border-bottom:none !important; }',
-        '.vtestcell { padding:0mm 0.4mm 0.6mm !important; font-size:3.5pt; color:#999; font-style:italic; border-bottom:0.15mm solid #d8d8d8 !important; }',
+        '.vtestcell { padding:0.3mm 0.4mm 0.5mm !important; font-size:3.8pt; color:' + ANT + '; font-style:italic; font-weight:600; text-align:center; vertical-align:middle; border-bottom:0.15mm solid #d8d8d8 !important; }',
         '.v-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.6mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
