@@ -1171,7 +1171,6 @@ def health():
 @app.get("/verifier/{numero_carte}")
 def page_verifier_carte(numero_carte: str, request: Request, db: DBSession = Depends(get_db)):
     from datetime import date as _date, datetime as _dt
-    from datetime import date as _date, datetime as _dt
     config = db.query(ConfigOrganisme).first()
     today = _date.today()
     carte = db.query(CarteCaces).filter(CarteCaces.numero_carte == numero_carte).first()
@@ -1211,6 +1210,7 @@ def page_verifier_carte(numero_carte: str, request: Request, db: DBSession = Dep
             "stagiaire_nom": s.nom if s else "",
             "stagiaire_prenom": s.prenom if s else "",
             "stagiaire_ddn": s.date_naissance if s else None,
+            "photo_url": s.photo or "" if s else "",
             "caces_list": caces_list,
             "config": config,
             "today": today,
