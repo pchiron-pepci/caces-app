@@ -245,8 +245,8 @@ async function _chargerCacesValides(stagId, famille) {
                     ? co.options_obtenues.split(',').map(o => '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:1px 5px;font-size:11px;font-weight:700;">' + o.trim() + '</span>').join(' ')
                     : '—';
                 return '<tr>'
-                    + '<td style="font-weight:700; color:#1a237e; padding:8px 10px; white-space:nowrap;">' + co.categorie + '</td>'
                     + '<td style="font-size:13px; color:#333; padding:8px 10px;">' + (co.categorie_libelle || '—') + '</td>'
+                    + '<td style="font-weight:700; color:#1a237e; padding:8px 10px; white-space:nowrap;">' + co.categorie + '</td>'
                     + '<td style="padding:8px 10px;">' + opts + '</td>'
                     + '<td style="font-family:monospace; font-size:13px; padding:8px 10px;"><span style="background:#e8eaf6; padding:2px 8px; border-radius:4px;">' + _noFormate(co.numero_ordre) + '</span></td>'
                     + '<td style="font-size:13px; color:#444; padding:8px 10px; white-space:nowrap;">' + _fmtDate(co.date_obtention) + '</td>'
@@ -256,7 +256,7 @@ async function _chargerCacesValides(stagId, famille) {
             }).join('');
             tableEl.innerHTML = '<table class="table">'
                 + '<thead><tr>'
-                + '<th>Cat.</th><th>Libellé</th><th>Options</th><th>N° CACES®</th><th>Obtention</th><th>Échéance</th><th>Testeur</th>'
+                + '<th>Libellé</th><th>Cat.</th><th>Options</th><th>N° CACES®</th><th>Obtention</th><th>Échéance</th><th>Testeur</th>'
                 + '</tr></thead><tbody>' + rows + '</tbody></table>';
 
             // Bouton émettre
