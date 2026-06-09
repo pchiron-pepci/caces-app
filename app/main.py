@@ -763,10 +763,17 @@ def page_session_detail(request: Request, session_id: int):
     ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
 
     options_par_cat = {}
+    opt_incluse_set = set()
     for opt in db.query(OptionCategorie).filter(OptionCategorie.famille == session.famille).all():
         if opt.categorie not in options_par_cat:
             options_par_cat[opt.categorie] = []
-        options_par_cat[opt.categorie].append({"code": opt.code_option, "libelle": opt.libelle_option})
+        options_par_cat[opt.categorie].append({
+            "code": opt.code_option,
+            "libelle": opt.libelle_option,
+            "incluse": bool(opt.incluse),
+        })
+        if opt.incluse:
+            opt_incluse_set.add((opt.categorie, opt.code_option))
 
     epreuves_map = {}
     for e in epreuves:
@@ -851,8 +858,10 @@ def page_session_detail(request: Request, session_id: int):
                         total_ut += ut_par_cat.get(cat, 1.0)
                 if jtc.options_planifiees:
                     try:
-                        for opt_list in json.loads(jtc.options_planifiees).values():
-                            total_ut += len(opt_list) * 0.5
+                        for cat_code, opt_list in json.loads(jtc.options_planifiees).items():
+                            for opt_code in opt_list:
+                                if (cat_code, opt_code) not in opt_incluse_set:
+                                    total_ut += 0.5
                     except Exception:
                         pass
             nb_testeurs = math.ceil(total_ut / 6) if total_ut > 0 else 1
@@ -884,10 +893,12 @@ def page_session_detail(request: Request, session_id: int):
                         ut_planifie_candidat[stagiaire_id] = round(
                             ut_planifie_candidat.get(stagiaire_id, 0) + ut_par_cat.get(cat, 1.0), 1
                         )
-                for opt_list in j.candidats_options.get(stagiaire_id, {}).values():
-                    ut_planifie_candidat[stagiaire_id] = round(
-                        ut_planifie_candidat.get(stagiaire_id, 0) + len(opt_list) * 0.5, 1
-                    )
+                for cat_code, opt_list in j.candidats_options.get(stagiaire_id, {}).items():
+                    for opt_code in opt_list:
+                        if (cat_code, opt_code) not in opt_incluse_set:
+                            ut_planifie_candidat[stagiaire_id] = round(
+                                ut_planifie_candidat.get(stagiaire_id, 0) + 0.5, 1
+                            )
 
     resultats_theorie_par_jour = {}
     for j in jours_test:

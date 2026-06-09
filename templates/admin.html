@@ -57,7 +57,7 @@
                     <td></td>
                     <td style="padding-left:20px; color:#555; font-size:12px;">↳ <span class="badge" style="background:#e8eef8; color:#1a237e; font-size:11px;">{{ opt.code_option }}</span></td>
                     <td style="color:#555; font-size:12px; font-style:italic;">{{ opt.libelle_option }}</td>
-                    <td style="color:#555; font-size:12px;">0.5 UT</td>
+                    <td style="font-size:12px;">{% if opt.incluse %}<span style="color:#aaa; font-style:italic;">incluse</span>{% else %}<span style="color:#555;">+0.5 UT</span>{% endif %}</td>
                     <td colspan="2"></td>
                 </tr>
                 {% endfor %}

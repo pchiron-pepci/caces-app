@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from app.database import Base
 
 class OptionCategorie(Base):
@@ -9,3 +9,4 @@ class OptionCategorie(Base):
     categorie = Column(String(10), nullable=False)
     code_option = Column(String(10), nullable=False)
     libelle_option = Column(String(100), nullable=False)
+    incluse = Column(Boolean, default=False, nullable=False)

@@ -441,7 +441,19 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
         Categorie.famille_id == (famille.id if famille else 0),
         Categorie.code == data.categorie
     ).first()
-    options_count = len([o for o in (data.options_obtenues or "").split(",") if o.strip()])
+    from app.models.option_categorie import OptionCategorie
+    incluse_codes = {
+        opt.code_option
+        for opt in db.query(OptionCategorie).filter(
+            OptionCategorie.famille == data.famille,
+            OptionCategorie.categorie == data.categorie,
+            OptionCategorie.incluse == True,
+        ).all()
+    }
+    options_count = len([
+        o for o in (data.options_obtenues or "").split(",")
+        if o.strip() and o.strip() not in incluse_codes
+    ])
     ut = (cat.ut_pratique if cat else 1.0) + options_count * 0.5
 
     e = db.query(SessionEpreuve).filter(

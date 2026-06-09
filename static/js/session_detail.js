@@ -59,9 +59,11 @@ function calculerRecapUT() {
             utCand += ut;
             total += ut;
             cats.push(cb.value);
-            document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cb.value + '"]:checked').forEach(() => {
-                utCand += 0.5;
-                total += 0.5;
+            document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cb.value + '"]:checked').forEach(optCb => {
+                if (!optCb.dataset.incluse) {
+                    utCand += 0.5;
+                    total += 0.5;
+                }
             });
         });
         if (utCand > 0) {

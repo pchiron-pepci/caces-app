@@ -634,9 +634,9 @@
                             {% if options_par_cat.get(cat) %}
                             <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; padding-left:20px;">
                                 {% for opt in options_par_cat.get(cat, []) %}
-                                <label style="display:flex; align-items:center; gap:4px; font-size:11px; cursor:pointer; color:#555;">
-                                    <input type="checkbox" name="jp-opt-{{ sc.stagiaire_id }}-{{ cat }}" value="{{ opt.code }}">
-                                    {{ opt.code }}
+                                <label style="display:flex; align-items:center; gap:4px; font-size:11px; cursor:pointer; color:{% if opt.incluse %}#999{% else %}#555{% endif %};">
+                                    <input type="checkbox" name="jp-opt-{{ sc.stagiaire_id }}-{{ cat }}" value="{{ opt.code }}"{% if opt.incluse %} data-incluse="1"{% endif %} onchange="calculerRecapUT()">
+                                    {{ opt.code }}{% if opt.incluse %} <span style="font-size:10px; color:#aaa;">(incluse)</span>{% else %} <span style="font-size:10px; color:#888;">+0.5&nbsp;UT</span>{% endif %}
                                 </label>
                                 {% endfor %}
                             </div>

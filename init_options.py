@@ -1,4 +1,4 @@
-"""Peuple la table option_categorie avec les options CACES® disponibles par famille/catégorie."""
+"""Peuple la table option_categorie avec les options CACES(r) disponibles par famille/categorie."""
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,45 +11,52 @@ SessionLocal = sessionmaker(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 LIBELLES = {
-    "PE": "Porte-engins",
-    "TEL": "Télécommande",
-    "CC": "Conduite cabine",
-    "TR": "Translation sur rails",
+    "PE":  "Porte-engins",
+    "TEL": "Telecommande",
+    "CC":  "Conduite cabine",
+    "TR":  "Translation sur rails",
     "CEC": "Circulation en charge",
 }
 
+# (famille, categorie, [(code_option, incluse)])
+# incluse=True : option obligatoire incluse dans l'UT de la categorie (pas de +0.5 UT)
+# incluse=False : option facultative, ajoute +0.5 UT
 OPTIONS = [
-    ("R482", "A",      ["PE", "TEL"]),
-    ("R482", "B1",     ["PE", "TEL"]),
-    ("R482", "C1",     ["PE"]),
-    ("R482", "C2",     ["PE"]),
-    ("R482", "C3",     ["PE"]),
-    ("R482", "D",      ["PE", "TEL"]),
-    ("R482", "E",      ["PE"]),
-    ("R482", "H",      ["TEL"]),
-    ("R483", "A",      ["TEL", "CEC"]),
-    ("R483", "B",      ["TEL", "CEC"]),
-    ("R486", "A",      ["PE"]),
-    ("R486", "B",      ["PE"]),
-    ("R487", "1",      ["TEL", "CC", "TR"]),
-    ("R487", "2",      ["TEL", "CC", "TR"]),
-    ("R487", "3",      ["TEL", "CC", "TR"]),
-    ("R490", "Unique", ["TEL"]),
+    ("R482", "A",      [("PE", True),  ("TEL", False)]),
+    ("R482", "B1",     [("PE", False), ("TEL", False)]),
+    ("R482", "B2",     [("TEL", True)]),                   # conducteur accompagnant
+    ("R482", "C1",     [("PE", False)]),
+    ("R482", "C2",     [("PE", False)]),
+    ("R482", "C3",     [("PE", False)]),
+    ("R482", "D",      [("PE", False), ("TEL", False)]),
+    ("R482", "E",      [("PE", False)]),
+    ("R482", "G",      [("TEL", True)]),                   # telescopique, TEL incluse
+    ("R482", "H",      [("TEL", False)]),
+    ("R483", "A",      [("TEL", False), ("CEC", False)]),
+    ("R483", "B",      [("TEL", False), ("CEC", False)]),
+    ("R486", "A",      [("PE", False)]),
+    ("R486", "B",      [("PE", False)]),
+    ("R487", "1",      [("TEL", False), ("CC", False), ("TR", False)]),
+    ("R487", "2",      [("TEL", False), ("CC", False), ("TR", False)]),
+    ("R487", "3",      [("TEL", False), ("CC", False), ("TR", False)]),
+    ("R490", "Unique", [("TEL", False)]),
 ]
 
 db = SessionLocal()
 
-# Vider et repeupler
 db.query(OptionCategorie).delete()
-for famille, categorie, codes in OPTIONS:
-    for code in codes:
+count = 0
+for famille, categorie, opts in OPTIONS:
+    for code, incluse in opts:
         db.add(OptionCategorie(
             famille=famille,
             categorie=categorie,
             code_option=code,
-            libelle_option=LIBELLES[code]
+            libelle_option=LIBELLES[code],
+            incluse=incluse,
         ))
+        count += 1
 
 db.commit()
 db.close()
-print(f"✅ {sum(len(c) for _, _, c in OPTIONS)} options insérées.")
+print(f"{count} options inserees.")
