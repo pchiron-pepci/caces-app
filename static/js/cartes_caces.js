@@ -3,18 +3,19 @@ document.addEventListener('DOMContentLoaded', function () {
     chargerStagiaires();
     chargerEmises();
 
-    // --- Sélect stagiaire → charger familles ---
-    document.getElementById('sel-stagiaire').addEventListener('change', function () {
-        const stagId = this.value;
+    let _stagDdn = null; // DDN attendue pour le stagiaire sélectionné (YYYY-MM-DD)
+
+    function _resetFamille() {
+        const sel = document.getElementById('sel-famille');
+        sel.innerHTML = '<option value="">— —</option>';
+        sel.disabled = true;
+        sel.style.color = '#aaa';
+        sel.style.borderColor = '#ddd';
+        sel.style.background = '#f7f7f7';
+    }
+
+    function _chargerFamilles(stagId) {
         const selFamille = document.getElementById('sel-famille');
-        selFamille.innerHTML = '<option value="">— —</option>';
-        selFamille.disabled = true;
-        selFamille.style.color = '#aaa';
-        selFamille.style.borderColor = '#ddd';
-        selFamille.style.background = '#f7f7f7';
-        document.getElementById('section-caces').style.display = 'none';
-        document.getElementById('resultats-placeholder').style.display = 'flex';
-        if (!stagId) return;
         fetch('/api/cartes-caces/familles/' + stagId)
             .then(r => r.json())
             .then(function (familles) {
@@ -33,6 +34,39 @@ document.addEventListener('DOMContentLoaded', function () {
                 selFamille.style.borderColor = '#c8d8f0';
                 selFamille.style.background = '#fff';
             });
+    }
+
+    // --- Sélect stagiaire → confirmation DDN puis familles ---
+    document.getElementById('sel-stagiaire').addEventListener('change', function () {
+        const stagId = this.value;
+        _resetFamille();
+        document.getElementById('section-caces').style.display = 'none';
+        document.getElementById('resultats-placeholder').style.display = 'flex';
+
+        // Reset DDN section
+        const ddnSection = document.getElementById('ddn-section');
+        document.getElementById('input-ddn').value = '';
+        document.getElementById('ddn-erreur').textContent = '';
+        ddnSection.style.display = 'none';
+        _stagDdn = null;
+
+        if (!stagId) return;
+
+        const selectedOpt = this.options[this.selectedIndex];
+        _stagDdn = selectedOpt.dataset.ddn || null;
+
+        if (!_stagDdn) {
+            // Pas de DDN enregistrée → charger familles directement
+            _chargerFamilles(stagId);
+        } else {
+            ddnSection.style.display = 'block';
+            document.getElementById('input-ddn').focus();
+        }
+    });
+
+    // --- Enter sur le champ DDN ---
+    document.getElementById('input-ddn').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') document.querySelector('[data-action="confirmer-ddn"]').click();
     });
 
     // --- PIN modal ---
@@ -52,6 +86,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Délégation clics ---
     document.addEventListener('click', function (e) {
+
+        // Confirmer DDN
+        const btnDdn = e.target.closest('[data-action="confirmer-ddn"]');
+        if (btnDdn) {
+            const val = document.getElementById('input-ddn').value; // YYYY-MM-DD
+            const errEl = document.getElementById('ddn-erreur');
+            if (!val) { errEl.textContent = 'Saisissez la date de naissance.'; return; }
+            if (val !== _stagDdn) {
+                errEl.textContent = 'Date de naissance incorrecte — veuillez réessayer.';
+                document.getElementById('input-ddn').value = '';
+                document.getElementById('input-ddn').focus();
+                return;
+            }
+            errEl.textContent = '';
+            document.getElementById('ddn-section').style.display = 'none';
+            _chargerFamilles(document.getElementById('sel-stagiaire').value);
+            return;
+        }
 
         // Voir les CACES®
         const btnVoir = e.target.closest('[data-action="voir-caces"]');
@@ -210,6 +262,7 @@ async function chargerStagiaires() {
         data.forEach(function (s) {
             const opt = document.createElement('option');
             opt.value = s.id;
+            if (s.date_naissance) opt.dataset.ddn = s.date_naissance; // YYYY-MM-DD pour comparaison
             const doublon = counts[s.nom + '|' + s.prenom] > 1;
             let label = s.nom + ' ' + s.prenom;
             if (doublon && s.date_naissance) {

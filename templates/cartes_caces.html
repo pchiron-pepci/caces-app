@@ -24,6 +24,18 @@
                         <option value="">— Choisir —</option>
                     </select>
                 </div>
+                <!-- Confirmation DDN — apparaît après choix du stagiaire -->
+                <div id="ddn-section" style="display:none;">
+                    <label style="font-size:11px; font-weight:700; color:#888; display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.6px;">Date de naissance</label>
+                    <input type="date" id="input-ddn"
+                           style="width:100%; border:1.5px solid #c8d8f0; border-radius:8px; padding:9px 12px; font-size:13px; background:#fff; box-sizing:border-box;">
+                    <p id="ddn-erreur" style="color:#c62828; font-size:12px; min-height:14px; margin:5px 0 0;"></p>
+                    <button data-action="confirmer-ddn"
+                            style="margin-top:8px; width:100%; background:#1a237e; color:#fff; border:none; border-radius:8px; padding:9px 0; font-size:13px; font-weight:700; cursor:pointer;">
+                        ✓ Confirmer
+                    </button>
+                </div>
+
                 <div>
                     <label style="font-size:11px; font-weight:700; color:#888; display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.6px;">Famille</label>
                     <select id="sel-famille" disabled style="width:100%; border:1.5px solid #ddd; border-radius:8px; padding:9px 12px; font-size:13px; background:#f0f0f0; color:#aaa;">
