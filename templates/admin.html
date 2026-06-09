@@ -52,7 +52,7 @@
                 </tr>
                 {% set opt_key = c.famille_code + '__' + c.code %}
                 {% if opt_key in options_cat_map %}
-                {% for opt in options_cat_map[opt_key] %}
+                {% for opt in options_cat_map[opt_key] if not opt.incluse %}
                 <tr style="background:#f8f9ff;">
                     <td></td>
                     <td style="padding-left:20px; color:#555; font-size:12px;">↳ <span class="badge" style="background:#e8eef8; color:#1a237e; font-size:11px;">{{ opt.code_option }}</span></td>

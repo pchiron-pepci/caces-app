@@ -30,7 +30,7 @@ OPTIONS = [
     ("R482", "C3",     [("PE", False)]),
     ("R482", "D",      [("PE", False), ("TEL", False)]),
     ("R482", "E",      [("PE", False)]),
-    ("R482", "G",      [("TEL", True)]),                   # telescopique, TEL incluse
+    ("R482", "G",      [("TEL", True), ("PE", False)]),     # telescopique, TEL incluse, PE facultative
     ("R482", "H",      [("TEL", False)]),
     ("R483", "A",      [("TEL", False), ("CEC", False)]),
     ("R483", "B",      [("TEL", False), ("CEC", False)]),

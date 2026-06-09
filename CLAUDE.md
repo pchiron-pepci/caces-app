@@ -125,7 +125,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 
 1. **UT testeur** : max 6 UT/testeur/jour
 2. **Machines** : alerte si > 7 UT/catégorie/jour → `ceil(UT/7)` machines recommandées
-1b. **UT options** : seules les options **facultatives** (`incluse=False`) ajoutent **0.5 UT** ; les options incluses (`incluse=True`, ex. PE sur R482/A, TEL sur R482/G et R482/B2) sont déjà comprises dans l'UT de la catégorie — calculé dans `session_detail.js:calculerRecapUT()` (options cochées `jp-opt-{id}-{cat}`), `main.py` (total_ut planifié + ut_planifie_candidat via `options_planifiees`), `sessions.py:add_epreuve` (ut = cat.ut_pratique + nb_options × 0.5) ; affiché dans Cartographie admin comme lignes ↳ rattachées à leur catégorie (0.5 UT chacune)
+1b. **UT options** : seules les options **facultatives** (`incluse=False`) ajoutent **0.5 UT** ; les options incluses (`incluse=True`) sont déjà comprises dans l'UT de la catégorie (R482/A ut=1.5 PE incluse, R482/G ut=1.2 TEL incluse, R482/B2 ut normal TEL incluse) ; cartographie admin : seules les options facultatives affichées en sous-ligne — calculé dans `session_detail.js:calculerRecapUT()` (options cochées `jp-opt-{id}-{cat}`), `main.py` (total_ut planifié + ut_planifie_candidat via `options_planifiees`), `sessions.py:add_epreuve` (ut = cat.ut_pratique + nb_options × 0.5) ; affiché dans Cartographie admin comme lignes ↳ rattachées à leur catégorie (0.5 UT chacune)
 3. **Résultats théorie** : jamais écrasés, traçabilité totale
 4. **Meilleur résultat réussi** affiché sur la carte CACES® avec sa date
 5. **Grilles INRS** : règle 10-30% par thème, comptage sur jours actifs uniquement
