@@ -70,7 +70,7 @@ def _img_uri(b64, nom):
     return f"data:{mime};base64,{b64}"
 
 
-def _build_print_data(carte, s, cos, t_map, config):
+def _build_print_data(carte, s, cos, t_map, config, famille_libelle=""):
     cfg = config or ConfigOrganisme()
     return {
         "id": carte.id,
@@ -79,8 +79,10 @@ def _build_print_data(carte, s, cos, t_map, config):
         "stagiaire_id": s.id,
         "stagiaire_nom": s.nom,
         "stagiaire_prenom": s.prenom,
+        "stagiaire_ddn": s.date_naissance.strftime("%d/%m/%Y") if s.date_naissance else "",
         "photo_url": s.photo or "",
         "famille": carte.famille,
+        "famille_libelle": famille_libelle,
         "caces": [
             {
                 "categorie": co.categorie,
@@ -95,7 +97,15 @@ def _build_print_data(carte, s, cos, t_map, config):
         "config": {
             "nom_organisme": cfg.nom_organisme or "",
             "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
+            "signature_uri": _img_uri(cfg.signature_base64, cfg.signature_nom) if hasattr(cfg, 'signature_base64') else "",
             "url_verification_caces": cfg.url_verification_caces or "",
+            "adresse": cfg.adresse or "" if hasattr(cfg, 'adresse') else "",
+            "siret": cfg.siret or "" if hasattr(cfg, 'siret') else "",
+            "email": cfg.email or "" if hasattr(cfg, 'email') else "",
+            "telephone": cfg.telephone or "" if hasattr(cfg, 'telephone') else "",
+            "signataire_nom": cfg.signataire_nom or "" if hasattr(cfg, 'signataire_nom') else "",
+            "signataire_prenom": cfg.signataire_prenom or "" if hasattr(cfg, 'signataire_prenom') else "",
+            "signataire_qualite": cfg.signataire_qualite or "" if hasattr(cfg, 'signataire_qualite') else "",
         },
     }
 
@@ -245,6 +255,9 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
     config = db.query(ConfigOrganisme).first()
     cfg = config or ConfigOrganisme()
 
+    fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
+    famille_libelle = fam_obj.libelle if fam_obj else ""
+
     if carte.caces_json:
         # Snapshot figé à l'émission — impression fidèle à l'original
         return {
@@ -254,13 +267,23 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
             "stagiaire_id": s.id,
             "stagiaire_nom": s.nom,
             "stagiaire_prenom": s.prenom,
+            "stagiaire_ddn": s.date_naissance.strftime("%d/%m/%Y") if s.date_naissance else "",
             "photo_url": s.photo or "",
             "famille": carte.famille,
+            "famille_libelle": famille_libelle,
             "caces": json.loads(carte.caces_json),
             "config": {
                 "nom_organisme": cfg.nom_organisme or "",
                 "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
+                "signature_uri": _img_uri(cfg.signature_base64, cfg.signature_nom) if hasattr(cfg, 'signature_base64') else "",
                 "url_verification_caces": cfg.url_verification_caces or "",
+                "adresse": cfg.adresse or "" if hasattr(cfg, 'adresse') else "",
+                "siret": cfg.siret or "" if hasattr(cfg, 'siret') else "",
+                "email": cfg.email or "" if hasattr(cfg, 'email') else "",
+                "telephone": cfg.telephone or "" if hasattr(cfg, 'telephone') else "",
+                "signataire_nom": cfg.signataire_nom or "" if hasattr(cfg, 'signataire_nom') else "",
+                "signataire_prenom": cfg.signataire_prenom or "" if hasattr(cfg, 'signataire_prenom') else "",
+                "signataire_qualite": cfg.signataire_qualite or "" if hasattr(cfg, 'signataire_qualite') else "",
             },
         }
 
@@ -271,7 +294,9 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
         .all()
     )
     t_map = _testeurs_map(cos, db)
-    return _build_print_data(carte, s, cos, t_map, config)
+    fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
+    famille_libelle = fam_obj.libelle if fam_obj else ""
+    return _build_print_data(carte, s, cos, t_map, config, famille_libelle)
 
 
 # ===== ACTIONS =====
@@ -330,7 +355,8 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     db.commit()
     db.refresh(carte)
     config = db.query(ConfigOrganisme).first()
-    return _build_print_data(carte, s, cos, t_map, config)
+    famille_libelle = fam_obj.libelle if fam_obj else ""
+    return _build_print_data(carte, s, cos, t_map, config, famille_libelle)
 
 
 @router.post("/annuler/{carte_id}")

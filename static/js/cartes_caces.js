@@ -497,124 +497,240 @@ function _ouvrirImpressionCarte(data) {
 
 function _buildCarteHtml(data, format) {
     const isCr80 = format === 'cr80';
+    const cfg = data.config || {};
 
-    const logoHtml = data.config.logo_uri
-        ? '<img src="' + data.config.logo_uri + '" style="height:' + (isCr80 ? '7mm' : '14mm') + ';width:auto;max-width:' + (isCr80 ? '14mm' : '28mm') + ';object-fit:contain;" />'
+    if (isCr80) {
+        return _buildCr80Html(data, cfg);
+    } else {
+        return _buildA5Html(data, cfg);
+    }
+}
+
+function _buildCr80Html(data, cfg) {
+    // Numéros CACES® formattés (0427-0429-...)
+    const numsCaces = data.caces
+        .map(function (co) { return co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : ''; })
+        .filter(Boolean).join('-');
+
+    // Signataire complet
+    const sigNom = [cfg.signataire_prenom, cfg.signataire_nom].filter(Boolean).join(' ');
+    const sigLigne = [sigNom, cfg.signataire_qualite].filter(Boolean).join(' - ');
+
+    // Options présentes sur la carte
+    const allOpts = {};
+    data.caces.forEach(function (co) {
+        if (co.options_obtenues) {
+            co.options_obtenues.split(',').forEach(function (o) { allOpts[o.trim()] = true; });
+        }
+    });
+    const optLabels = { 'PE': 'Porte-engin', 'TE': 'Télécommande', 'TEL': 'Télécommande', 'CC': 'Conduite cabine', 'TR': 'Translation rails', 'CEC': 'Circulation en charge' };
+    const optLegend = Object.keys(allOpts).map(function (k) { return k + ' : ' + (optLabels[k] || k); }).join(' - ');
+
+    // RECTO — lignes du tableau verso
+    const versoRows = data.caces.map(function (co) {
+        const no = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+        const opts = co.options_obtenues || '';
+        const libelle = co.categorie_libelle || '';
+        return '<tr>'
+            + '<td class="vfam">' + data.famille + '</td>'
+            + '<td class="vcat">' + co.categorie + '</td>'
+            + '<td class="vno">' + no + '</td>'
+            + '<td class="vopt">' + opts + '</td>'
+            + '<td class="vdt">' + _fmtDateCourt(co.date_obtention) + '</td>'
+            + '<td class="vval">' + _fmtDateCourt(co.date_echeance) + '</td>'
+            + '<td class="vtest">' + (co.testeur_nom || '') + '</td>'
+            + '<td class="vlib">' + libelle + '</td>'
+            + '</tr>';
+    }).join('');
+
+    const css = [
+        '* { margin:0; padding:0; box-sizing:border-box; }',
+        '@page { size: 85.6mm 54mm; margin: 0; }',
+        'html, body { width:85.6mm; height:108mm; font-family:Arial,sans-serif; font-size:5.5pt; background:white; }',
+        '.page { width:85.6mm; height:54mm; overflow:hidden; position:relative; }',
+        '.page + .page { page-break-before: always; }',
+        /* RECTO */
+        '.recto { padding:1.5mm 2mm; display:flex; flex-direction:column; }',
+        '.r-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:0.5mm; }',
+        '.r-logo { height:8.5mm; width:auto; max-width:21mm; object-fit:contain; }',
+        '.r-logo-am { height:9.5mm; width:auto; max-width:24mm; object-fit:contain; }',
+        '.r-titre { font-size:5.8pt; font-weight:bold; text-align:center; color:#333; margin-bottom:1mm; }',
+        '.r-body { display:flex; align-items:flex-start; gap:1.5mm; flex:1; }',
+        '.r-left { flex:1; min-width:0; }',
+        '.r-fam { font-size:6pt; font-weight:bold; color:#1a237e; margin-bottom:0.5mm; }',
+        '.r-titulaire { margin-bottom:0.4mm; }',
+        '.r-titulaire .label { font-size:5pt; color:#666; }',
+        '.r-titulaire .val { font-size:5.5pt; font-weight:bold; font-style:italic; color:#111; }',
+        '.r-titulaire .ddn { font-size:5pt; font-style:italic; color:#555; }',
+        '.r-nums { font-size:5pt; margin-bottom:0.4mm; }',
+        '.r-nums .label { color:#666; }',
+        '.r-nums .val { font-style:italic; font-weight:600; color:#333; }',
+        '.r-carte { font-size:5pt; margin-bottom:0.2mm; }',
+        '.r-carte .org { font-weight:bold; }',
+        '.r-siret { font-size:4.8pt; color:#444; margin-bottom:0.4mm; }',
+        '.r-sign { font-size:4.8pt; color:#444; display:flex; align-items:center; gap:1mm; margin-bottom:0.5mm; }',
+        '.r-sign img { height:4mm; width:auto; max-width:9mm; object-fit:contain; opacity:0.85; }',
+        '.r-legal { font-size:4.2pt; color:#666; font-style:italic; font-weight:bold; text-align:center; margin-top:auto; line-height:1.3; }',
+        '.r-photo { width:9mm; height:12mm; object-fit:cover; border:0.3mm solid #bbb; flex-shrink:0; display:block; }',
+        '.r-photo-ph { width:9mm; height:12mm; background:#f0f0f0; border:0.3mm solid #bbb; flex-shrink:0; }',
+        /* VERSO */
+        '.verso { padding:1.5mm 2mm; display:flex; flex-direction:column; }',
+        '.v-head { font-size:6pt; font-weight:bold; color:#1a237e; margin-bottom:0.5mm; }',
+        '.v-sub { font-size:4.8pt; color:#555; margin-bottom:0.3mm; }',
+        '.v-opt-legend { font-size:4.5pt; color:#555; margin-bottom:1mm; }',
+        'table { width:100%; border-collapse:collapse; }',
+        'thead tr { background:#1a237e; color:white; }',
+        'th { font-size:4pt; padding:0.5mm 0.5mm; text-align:left; white-space:nowrap; }',
+        'td { font-size:4.8pt; padding:0.4mm 0.5mm; border-bottom:0.15mm solid #e8e8e8; }',
+        '.vfam, .vcat { font-weight:bold; color:#1a237e; }',
+        '.vno { font-family:monospace; }',
+        '.vval { font-weight:bold; color:#2e7d32; }',
+        '.vtest { color:#666; font-size:4.2pt; }',
+        '.vlib { color:#555; font-size:4.2pt; }',
+        '.v-footer { font-size:4.2pt; color:#666; font-style:italic; font-weight:bold; text-align:center; margin-top:auto; padding-top:1mm; line-height:1.3; }',
+        '@media print { html,body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }',
+    ].join('\n');
+
+    const logoHtml = cfg.logo_uri
+        ? '<img class="r-logo" src="' + cfg.logo_uri + '" />'
+        : '<span style="font-size:5pt;font-weight:bold;color:#1a237e;">' + (cfg.nom_organisme || '') + '</span>';
+
+    const photoHtml = data.photo_url
+        ? '<img class="r-photo" src="' + data.photo_url + '" />'
+        : '<div class="r-photo-ph"></div>';
+
+    const signHtml = cfg.signature_uri
+        ? '<img src="' + cfg.signature_uri + '" style="height:4mm;width:auto;max-width:9mm;object-fit:contain;opacity:0.85;" /> '
+        : '';
+
+    const organisme = cfg.nom_organisme || 'PEPCI Formation';
+    const adresse = cfg.adresse || '';
+    const carteDelivree = adresse
+        ? 'Carte délivrée par <span class="org">' + organisme + '</span> - ' + adresse
+        : 'Carte délivrée par <span class="org">' + organisme + '</span>';
+    const siretLine = [
+        cfg.siret ? 'Siret : ' + cfg.siret : '',
+        cfg.email ? 'email : ' + cfg.email : '',
+        cfg.telephone ? 'Tél. : ' + cfg.telephone : '',
+    ].filter(Boolean).join(' - ');
+
+    const versoLegend = optLegend
+        ? '<div class="v-opt-legend">*Option(s) = ' + optLegend + '</div>'
+        : '';
+
+    const versoSubR482 = data.famille === 'R482'
+        ? '<div class="v-sub">Option réseaux : Ne permet pas la délivrance d\'une AIPR</div>'
+        : '';
+
+    const verificationLine = cfg.url_verification_caces || cfg.email || '';
+
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + css + '</style></head><body>'
+
+        // ===== RECTO =====
+        + '<div class="page recto">'
+        + '<div class="r-top">'
+        + logoHtml
+        + '<img class="r-logo-am" src="/static/img/assurance_maladie_caces.jpeg" />'
+        + '</div>'
+        + '<div class="r-titre">Certificat d\'aptitude à la conduite en sécurité</div>'
+        + '<div class="r-body">'
+        + '<div class="r-left">'
+        + '<div class="r-fam">CACES® - ' + data.famille + (data.famille_libelle ? ' - ' + data.famille_libelle.toUpperCase() : '') + '</div>'
+        + '<div class="r-titulaire"><span class="label">Titulaire : </span><span class="val">' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + '</span>'
+        + (data.stagiaire_ddn ? ' <span class="ddn">- ' + data.stagiaire_ddn + '</span>' : '') + '</div>'
+        + (numsCaces ? '<div class="r-nums"><span class="label">N° certificats : </span><span class="val">' + numsCaces + '</span></div>' : '')
+        + '<div class="r-carte">' + carteDelivree + '</div>'
+        + (siretLine ? '<div class="r-siret">' + siretLine + '</div>' : '')
+        + (sigLigne ? '<div class="r-sign">' + signHtml + sigLigne + '</div>' : '')
+        + '</div>'
+        + photoHtml
+        + '</div>'
+        + '<div class="r-legal">La marque CACES® est protégée (INPI n° 03.3237295)<br>Document recto/verso. Toute copie doit comporter les 2 faces.</div>'
+        + '</div>'
+
+        // ===== VERSO =====
+        + '<div class="page verso">'
+        + '<div class="v-head">CACES® ' + data.famille + ' - Titulaire : ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + '</div>'
+        + versoSubR482
+        + versoLegend
+        + '<table>'
+        + '<thead><tr><th>Famille</th><th>Cat.</th><th>N° CACES®</th><th>Options</th><th>Obtention</th><th>Validité</th><th>Testeur</th><th>Libellé</th></tr></thead>'
+        + '<tbody>' + versoRows + '</tbody>'
+        + '</table>'
+        + '<div class="v-footer">'
+        + (verificationLine ? 'Vérification : ' + verificationLine + '<br>' : '')
+        + 'Document recto/verso. Toute copie doit comporter les 2 faces.'
+        + '</div>'
+        + '</div>'
+
+        + '</body></html>';
+}
+
+function _buildA5Html(data, cfg) {
+    const logoHtml = cfg.logo_uri
+        ? '<img src="' + cfg.logo_uri + '" style="height:14mm;width:auto;max-width:28mm;object-fit:contain;" />'
         : '';
 
     const photoHtml = data.photo_url
-        ? '<img src="' + data.photo_url + '" style="width:' + (isCr80 ? '14mm' : '28mm') + ';height:' + (isCr80 ? '18mm' : '36mm') + ';object-fit:cover;border:0.5mm solid #ccc;border-radius:1mm;display:block;" />'
-        : '<div style="width:' + (isCr80 ? '14mm' : '28mm') + ';height:' + (isCr80 ? '18mm' : '36mm') + ';background:#f0f0f0;border:0.5mm solid #ccc;border-radius:1mm;display:flex;align-items:center;justify-content:center;"><span style="font-size:' + (isCr80 ? '5pt' : '9pt') + ';color:#aaa;">Photo</span></div>';
-
-    const caceRows = data.caces.map(function (co) {
-        const no = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
-        const opts = co.options_obtenues ? co.options_obtenues : '';
-        if (isCr80) {
-            return '<tr>'
-                + '<td style="font-weight:700;color:#1a237e;">' + co.categorie + '</td>'
-                + '<td style="font-family:monospace;">' + no + '</td>'
-                + (opts ? '<td>' + opts + '</td>' : '')
-                + '<td>' + _fmtDateCourt(co.date_obtention) + '</td>'
-                + '<td>' + _fmtDateCourt(co.date_echeance) + '</td>'
-                + '</tr>';
-        } else {
-            return '<tr>'
-                + '<td style="font-weight:700;color:#1a237e;">' + co.categorie + '</td>'
-                + '<td style="font-family:monospace;">' + no + '</td>'
-                + '<td>' + (opts || '—') + '</td>'
-                + '<td>' + _fmtDate(co.date_obtention) + '</td>'
-                + '<td>' + _fmtDate(co.date_echeance) + '</td>'
-                + '<td style="color:#666;">' + (co.testeur_nom || '') + '</td>'
-                + '</tr>';
-        }
-    }).join('');
+        ? '<img src="' + data.photo_url + '" style="width:28mm;height:36mm;object-fit:cover;border:0.5mm solid #ccc;border-radius:1mm;display:block;" />'
+        : '<div style="width:28mm;height:36mm;background:#f0f0f0;border:0.5mm solid #ccc;border-radius:1mm;display:flex;align-items:center;justify-content:center;"><span style="font-size:9pt;color:#aaa;">Photo</span></div>';
 
     const hasOpts = data.caces.some(function (co) { return co.options_obtenues; });
 
-    const tableHead = isCr80
-        ? '<tr><th>Cat.</th><th>N° CACES®</th>' + (hasOpts ? '<th>Options</th>' : '') + '<th>Obtention</th><th>Échéance</th></tr>'
-        : '<tr><th>Catégorie</th><th>N° CACES®</th><th>Options</th><th>Obtention</th><th>Échéance</th><th>Testeur</th></tr>';
+    const caceRows = data.caces.map(function (co) {
+        const no = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+        const opts = co.options_obtenues || '—';
+        return '<tr>'
+            + '<td style="font-weight:700;color:#1a237e;">' + co.categorie + '</td>'
+            + '<td style="font-size:10pt;">' + (co.categorie_libelle || '—') + '</td>'
+            + '<td style="font-family:monospace;">' + no + '</td>'
+            + '<td>' + opts + '</td>'
+            + '<td>' + _fmtDate(co.date_obtention) + '</td>'
+            + '<td style="color:#2e7d32;font-weight:700;">' + _fmtDate(co.date_echeance) + '</td>'
+            + '<td style="color:#666;">' + (co.testeur_nom || '') + '</td>'
+            + '</tr>';
+    }).join('');
 
-    if (isCr80) {
-        return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
-            + '* { margin:0; padding:0; box-sizing:border-box; }'
-            + '@page { size: 85.6mm 54mm; margin: 0; }'
-            + 'body { width:85.6mm; height:54mm; font-family:Arial,sans-serif; background:white; overflow:hidden; }'
-            + '.carte { width:85.6mm; height:54mm; padding:2.5mm; display:flex; flex-direction:column; }'
-            + '.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5mm; }'
-            + '.org { font-size:5.5pt; font-weight:bold; color:#1a237e; flex:1; text-align:center; padding:0 1mm; }'
-            + '.num-carte { font-size:5pt; font-family:monospace; color:#1a237e; font-weight:bold; white-space:nowrap; }'
-            + '.divider { height:0.3mm; background:#1a237e; margin-bottom:1.5mm; }'
-            + '.body { display:flex; gap:2mm; flex:1; min-height:0; }'
-            + '.info { flex:1; min-width:0; }'
-            + '.nom { font-size:7pt; font-weight:bold; color:#1a237e; }'
-            + '.prenom { font-size:6pt; color:#555; margin-bottom:1mm; }'
-            + '.famille-badge { display:inline-block; background:#1a237e; color:white; font-size:5pt; font-weight:bold; padding:0.3mm 1.5mm; border-radius:1mm; margin-bottom:1mm; }'
-            + 'table { width:100%; border-collapse:collapse; }'
-            + 'th { font-size:4pt; text-transform:uppercase; color:#666; text-align:left; padding:0.4mm 0.5mm; border-bottom:0.2mm solid #ccc; }'
-            + 'td { font-size:5pt; padding:0.3mm 0.5mm; }'
-            + '.footer { font-size:4pt; color:#aaa; text-align:center; margin-top:1mm; border-top:0.2mm solid #eee; padding-top:0.5mm; }'
-            + '@media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }'
-            + '</style></head><body>'
-            + '<div class="carte">'
-            + '  <div class="header">'
-            + '    ' + logoHtml
-            + '    <span class="org">' + (data.config.nom_organisme || 'Certificat CACES®') + '</span>'
-            + '    <span class="num-carte">' + data.numero_carte + '</span>'
-            + '  </div>'
-            + '  <div class="divider"></div>'
-            + '  <div class="body">'
-            + '    <div>' + photoHtml + '</div>'
-            + '    <div class="info">'
-            + '      <div class="nom">' + data.stagiaire_nom + '</div>'
-            + '      <div class="prenom">' + data.stagiaire_prenom + '</div>'
-            + '      <span class="famille-badge">' + data.famille + '</span>'
-            + '      <table><thead>' + tableHead + '</thead><tbody>' + caceRows + '</tbody></table>'
-            + '    </div>'
-            + '  </div>'
-            + (data.config.url_verification_caces ? '<div class="footer">Vérification : ' + data.config.url_verification_caces + '</div>' : '')
-            + '</div>'
-            + '</body></html>';
-    } else {
-        // Format A5 landscape
-        return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
-            + '* { margin:0; padding:0; box-sizing:border-box; }'
-            + '@page { size: A5 landscape; margin: 0; }'
-            + 'body { width:210mm; height:148mm; font-family:Arial,sans-serif; background:white; overflow:hidden; }'
-            + '.carte { width:210mm; height:148mm; padding:8mm; display:flex; flex-direction:column; }'
-            + '.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4mm; }'
-            + '.org { font-size:11pt; font-weight:bold; color:#1a237e; flex:1; text-align:center; padding:0 4mm; }'
-            + '.num-carte { font-size:9pt; font-family:monospace; color:#1a237e; font-weight:bold; white-space:nowrap; }'
-            + '.divider { height:0.5mm; background:#1a237e; margin-bottom:4mm; }'
-            + '.body { display:flex; gap:6mm; flex:1; min-height:0; }'
-            + '.info { flex:1; min-width:0; }'
-            + '.nom { font-size:14pt; font-weight:bold; color:#1a237e; }'
-            + '.prenom { font-size:11pt; color:#555; margin-bottom:3mm; }'
-            + '.famille-badge { display:inline-block; background:#1a237e; color:white; font-size:10pt; font-weight:bold; padding:1mm 3mm; border-radius:2mm; margin-bottom:3mm; }'
-            + 'table { width:100%; border-collapse:collapse; }'
-            + 'th { font-size:8pt; text-transform:uppercase; color:#666; text-align:left; padding:2mm 2.5mm; border-bottom:0.4mm solid #ccc; background:#f5f5f5; }'
-            + 'td { font-size:10pt; padding:2mm 2.5mm; border-bottom:0.2mm solid #f0f0f0; }'
-            + '.footer { font-size:8pt; color:#aaa; text-align:center; margin-top:3mm; border-top:0.3mm solid #eee; padding-top:2mm; }'
-            + '@media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }'
-            + '</style></head><body>'
-            + '<div class="carte">'
-            + '  <div class="header">'
-            + '    ' + logoHtml
-            + '    <span class="org">' + (data.config.nom_organisme || 'Certificat CACES®') + '</span>'
-            + '    <span class="num-carte">' + data.numero_carte + '</span>'
-            + '  </div>'
-            + '  <div class="divider"></div>'
-            + '  <div class="body">'
-            + '    <div>' + photoHtml + '</div>'
-            + '    <div class="info">'
-            + '      <div class="nom">' + data.stagiaire_nom + '</div>'
-            + '      <div class="prenom">' + data.stagiaire_prenom + '</div>'
-            + '      <span class="famille-badge">' + data.famille + '</span>'
-            + '      <table><thead>' + tableHead + '</thead><tbody>' + caceRows + '</tbody></table>'
-            + '    </div>'
-            + '  </div>'
-            + (data.config.url_verification_caces ? '<div class="footer">Vérification : ' + data.config.url_verification_caces + '</div>' : '')
-            + '</div>'
-            + '</body></html>';
-    }
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + '* { margin:0; padding:0; box-sizing:border-box; }'
+        + '@page { size: A5 landscape; margin: 0; }'
+        + 'body { width:210mm; height:148mm; font-family:Arial,sans-serif; background:white; overflow:hidden; }'
+        + '.carte { width:210mm; height:148mm; padding:8mm; display:flex; flex-direction:column; }'
+        + '.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4mm; }'
+        + '.org { font-size:11pt; font-weight:bold; color:#1a237e; flex:1; text-align:center; padding:0 4mm; }'
+        + '.num-carte { font-size:9pt; font-family:monospace; color:#1a237e; font-weight:bold; white-space:nowrap; }'
+        + '.divider { height:0.5mm; background:#1a237e; margin-bottom:4mm; }'
+        + '.body { display:flex; gap:6mm; flex:1; min-height:0; }'
+        + '.info { flex:1; min-width:0; }'
+        + '.nom { font-size:14pt; font-weight:bold; color:#1a237e; }'
+        + '.prenom { font-size:11pt; color:#555; margin-bottom:3mm; }'
+        + '.famille-badge { display:inline-block; background:#1a237e; color:white; font-size:10pt; font-weight:bold; padding:1mm 3mm; border-radius:2mm; margin-bottom:3mm; }'
+        + 'table { width:100%; border-collapse:collapse; }'
+        + 'th { font-size:8pt; text-transform:uppercase; color:#666; text-align:left; padding:2mm 2.5mm; border-bottom:0.4mm solid #ccc; background:#f5f5f5; }'
+        + 'td { font-size:10pt; padding:2mm 2.5mm; border-bottom:0.2mm solid #f0f0f0; }'
+        + '.footer { font-size:8pt; color:#aaa; text-align:center; margin-top:3mm; border-top:0.3mm solid #eee; padding-top:2mm; }'
+        + '@media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }'
+        + '</style></head><body>'
+        + '<div class="carte">'
+        + '  <div class="header">'
+        + '    ' + logoHtml
+        + '    <span class="org">' + (cfg.nom_organisme || 'Certificat CACES®') + '</span>'
+        + '    <span class="num-carte">' + data.numero_carte + '</span>'
+        + '  </div>'
+        + '  <div class="divider"></div>'
+        + '  <div class="body">'
+        + '    <div>' + photoHtml + '</div>'
+        + '    <div class="info">'
+        + '      <div class="nom">' + data.stagiaire_nom + '</div>'
+        + '      <div class="prenom">' + data.stagiaire_prenom + (data.stagiaire_ddn ? ' <span style="font-size:9pt;color:#888;font-weight:400;">- ' + data.stagiaire_ddn + '</span>' : '') + '</div>'
+        + '      <span class="famille-badge">' + data.famille + (data.famille_libelle ? ' – ' + data.famille_libelle : '') + '</span>'
+        + '      <table>'
+        + '        <thead><tr><th>Cat.</th><th>Libellé</th><th>N° CACES®</th><th>Options</th><th>Obtention</th><th>Échéance</th><th>Testeur</th></tr></thead>'
+        + '        <tbody>' + caceRows + '</tbody>'
+        + '      </table>'
+        + '    </div>'
+        + '  </div>'
+        + (cfg.url_verification_caces ? '<div class="footer">Vérification : ' + cfg.url_verification_caces + '</div>' : '')
+        + '</div>'
+        + '</body></html>';
 }
