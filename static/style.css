@@ -277,8 +277,8 @@ body {
     transition: all 0.2s;
 }
 
-.btn-primary { background: #cc0000; color: white; }
-.btn-primary:hover { background: #aa0000; }
+.btn-primary { background: var(--blue); color: white; }
+.btn-primary:hover { background: var(--blue-light); }
 .btn-danger { background: var(--red); color: white; }
 .btn-danger:hover { background: #b71c1c; }
 .btn-secondary { background: var(--gray); color: var(--dark); }
