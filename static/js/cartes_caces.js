@@ -619,6 +619,7 @@ function _buildCr80Html(data, cfg) {
         '.v-htitle { font-size:6pt; font-weight:900; color:' + ANT + '; line-height:1.2; }',
         '.v-hddn { font-size:4.3pt; font-weight:400; color:' + ANT + '; font-style:italic; }',
         '.v-hcarte { font-size:5.2pt; color:' + RED + '; font-weight:700; font-family:monospace; margin-top:0.2mm; }',
+        '.v-hdate { color:' + ANT + '; font-weight:400; font-family:Arial,sans-serif; font-size:4.5pt; }',
         '.v-notices { padding:0.5mm 2.5mm; font-size:4.3pt; color:' + ANT + '; line-height:1.3; flex-shrink:0; border-bottom:0.15mm solid #e0e0e0; }',
         '.v-tbl { flex:1; padding:0 2.5mm; overflow:hidden; }',
         'table { width:100%; border-collapse:collapse; }',
@@ -637,7 +638,7 @@ function _buildCr80Html(data, cfg) {
         '.vopt { max-width:9mm; overflow:hidden; }',
         '.vlib { color:' + ANT + '; font-size:4.2pt; font-style:italic; font-weight:600; }',
         '.vhastest td { border-bottom:none !important; }',
-        '.vtestcell { padding:0.3mm 0.4mm 0.5mm !important; font-size:3.8pt; color:' + ANT + '; font-style:italic; font-weight:600; text-align:center; vertical-align:middle; border-bottom:0.15mm solid #d8d8d8 !important; }',
+        '.vtestcell { padding:0.3mm 0.4mm 0.5mm !important; font-size:3.8pt; color:' + ANT + '; font-style:italic; font-weight:600; vertical-align:middle; border-bottom:0.15mm solid #d8d8d8 !important; }',
         '.v-ftr { flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0;',
         '  padding:0.6mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic;',
         '  text-align:center; line-height:1.3; }',
@@ -700,7 +701,7 @@ function _buildCr80Html(data, cfg) {
         +   '<div class="v-hdr">'
         +     '<div class="v-hdr-info">'
         +       '<div class="v-htitle">CACES® ' + data.famille + ' — ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + ddn + '</div>'
-        +       '<div class="v-hcarte">N° ' + data.numero_carte + '</div>'
+        +       '<div class="v-hcarte">N° ' + data.numero_carte + (data.date_generation ? ' <span class="v-hdate">· ' + _fmtDateCourt(data.date_generation) + '</span>' : '') + '</div>'
         +     '</div>'
         +     (cfg.logo2_uri ? '<img class="v-logo2" src="' + cfg.logo2_uri + '" />' : '')
         +   '</div>'
