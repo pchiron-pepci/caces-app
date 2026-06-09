@@ -585,11 +585,14 @@ def page_admin(request: Request):
     for ho in all_hab_options:
         options_habs.setdefault(ho.habilitation_id, []).append(ho.code_option)
     # Options par (famille, categorie) pour l'onglet Cartographie
-    # Seules les options facultatives (incluse=False) sont affichees en sous-ligne
-    options_cat_map = {}
-    for opt in db.query(OptionCategorie).filter(OptionCategorie.incluse != True).all():
+    options_cat_map = {}       # facultatives (incluse=False) → sous-lignes
+    options_incluses_map = {}  # obligatoires (incluse=True) → annotation sur ligne catégorie
+    for opt in db.query(OptionCategorie).all():
         key = f"{opt.famille}__{opt.categorie}"
-        options_cat_map.setdefault(key, []).append(opt)
+        if opt.incluse:
+            options_incluses_map.setdefault(key, []).append(opt)
+        else:
+            options_cat_map.setdefault(key, []).append(opt)
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -602,6 +605,7 @@ def page_admin(request: Request):
             "lieux": lieux,
             "options_habs": options_habs,
             "options_cat_map": options_cat_map,
+            "options_incluses_map": options_incluses_map,
         }
     )
 

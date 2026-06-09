@@ -46,7 +46,12 @@
                     <td><strong>{{ c.famille_code }}</strong></td>
                     <td><span class="badge blue">{{ c.code }}</span></td>
                     <td>{{ c.libelle }}</td>
-                    <td>{{ c.ut_pratique }} UT</td>
+                    <td>{{ c.ut_pratique }} UT
+                        {% set incl_key = c.famille_code + '__' + c.code %}
+                        {% if incl_key in options_incluses_map %}
+                        <br><span style="font-size:10px; color:#888; font-style:italic;">incl. {% for o in options_incluses_map[incl_key] %}{{ o.code_option }}{% if not loop.last %}, {% endif %}{% endfor %} obligatoire{% if options_incluses_map[incl_key]|length > 1 %}s{% endif %}</span>
+                        {% endif %}
+                    </td>
                     <td>{{ c.date_habilitation or '—' }}</td>
                     <td><button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="desactiverHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">🔒 Désactiver</button></td>
                 </tr>
