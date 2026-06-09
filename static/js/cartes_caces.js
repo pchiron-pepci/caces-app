@@ -570,8 +570,8 @@ function _buildCr80Html(data, cfg) {
         '  -webkit-print-color-adjust:exact; print-color-adjust:exact; }',
         '.page { width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; }',
         '.page + .page { page-break-before:always; }',
-        '.r-hdr { background:' + ANT + '; height:11mm; display:flex; align-items:center; padding:0 2.5mm;',
-        '  justify-content:space-between; flex-shrink:0; gap:1.5mm; }',
+        '.r-hdr { background:#fff; height:11mm; display:flex; align-items:center; padding:0 2.5mm;',
+        '  justify-content:space-between; flex-shrink:0; gap:1.5mm; border-bottom:0.5mm solid ' + RED + '; }',
         '.r-logo  { height:8.5mm; width:auto; max-width:22mm; object-fit:contain; }',
         '.r-logo-am { height:10mm; width:auto; max-width:24mm; object-fit:contain; }',
         '.r-subhdr { background:#fff; border-bottom:0.3mm solid #e4e4e4; padding:0.55mm 2.5mm;',
@@ -627,7 +627,7 @@ function _buildCr80Html(data, cfg) {
 
     const logoHtml = cfg.logo_uri
         ? '<img class="r-logo" src="' + cfg.logo_uri + '" />'
-        : '<span style="font-size:5.5pt;font-weight:900;color:#fff;">' + (organisme || 'CACES®') + '</span>';
+        : '<span style="font-size:5.5pt;font-weight:900;color:' + ANT + ';">' + (organisme || 'CACES®') + '</span>';
 
     const photoHtml = data.photo_url
         ? '<img class="r-photo" src="' + data.photo_url + '" />'
