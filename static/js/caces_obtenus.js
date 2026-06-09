@@ -25,10 +25,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     document.getElementById('motif-select').addEventListener('change', function () {
         const label = document.getElementById('motif-detail-label');
-        if (this.value === 'Autre') {
+        const hint = document.getElementById('motif-hint');
+        if (this.value === 'CACES® annulé') {
+            label.innerHTML = 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
+            hint.textContent = 'Le CACES® est invalidé suite à une décision réglementaire ou administrative. Vous pouvez bloquer les résultats sources pour empêcher toute re-certification automatique.';
+        } else if (this.value === 'Autre') {
             label.innerHTML = 'Détail <span style="color:#c62828;">*</span>';
+            hint.textContent = 'Décrivez le motif dans le champ ci-dessous.';
         } else {
             label.innerHTML = 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
+            hint.textContent = '';
         }
         const showBlocage = (this.value === 'CACES® annulé');
         document.getElementById('motif-blocage-section').style.display = showBlocage ? 'block' : 'none';
@@ -210,8 +216,16 @@ function ouvrirMotif(titre, motifInitial, onConfirme, categorie, famille) {
     label.innerHTML = parsed.select === 'Autre'
         ? 'Détail <span style="color:#c62828;">*</span>'
         : 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
-    const showBlocage = (parsed.select === 'Non conforme' || parsed.select === 'CACES® annulé');
+    const showBlocage = (parsed.select === 'CACES® annulé');
     document.getElementById('motif-blocage-section').style.display = showBlocage ? 'block' : 'none';
+    const hint = document.getElementById('motif-hint');
+    if (parsed.select === 'CACES® annulé') {
+        hint.textContent = 'Le CACES® est invalidé suite à une décision réglementaire ou administrative. Vous pouvez bloquer les résultats sources pour empêcher toute re-certification automatique.';
+    } else if (parsed.select === 'Autre') {
+        hint.textContent = 'Décrivez le motif dans le champ ci-dessous.';
+    } else {
+        hint.textContent = '';
+    }
     document.getElementById('chk-bloquer-pratique').checked = false;
     document.getElementById('chk-bloquer-theorie').checked = false;
     if (_motifCategorie) document.getElementById('chk-pratique-label').textContent = 'Bloquer le résultat pratique (catégorie ' + _motifCategorie + ')';
