@@ -265,6 +265,15 @@ function _confirmerMotif() {
 }
 
 // ===== UTILITAIRES =====
+function _nomDdn(co) {
+    let label = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
+    if (co.stagiaire_ddn) {
+        const p = co.stagiaire_ddn.split('-');
+        label += ' (' + p[2] + '/' + p[1] + '/' + p[0] + ')';
+    }
+    return label;
+}
+
 function fmtDate(iso) {
     if (!iso) return '—';
     const [y, m, d] = iso.split('-');
@@ -346,7 +355,7 @@ function _renderValides() {
 // ===== RENDU CARTE À VALIDER =====
 function renderCarteAValider(co) {
     _carteData[co.id] = co;
-    const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
+    const nomComplet = _nomDdn(co);
 
     const options = co.options_obtenues
         ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">${o.trim()}</span>`).join(' ')
@@ -429,7 +438,7 @@ function renderCarteAValider(co) {
 
 function _renderLigne(co, idx) {
     const annule = co.statut === 'annule';
-    const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
+    const nomComplet = _nomDdn(co);
     const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
     const bg = annule ? '#f7f7f7' : (idx % 2 === 0 ? '#fff' : '#f5f7ff');
 
@@ -455,9 +464,10 @@ function _renderLigne(co, idx) {
         <div style="width:68px;min-width:68px;">${noBadge}</div>
         <div style="width:82px;min-width:82px;">${badgeStatut(co.statut)}</div>
         <div style="flex:1;min-width:130px;font-size:13px;font-weight:700;color:#1a237e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:10px;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</div>
-        <div style="width:116px;min-width:116px;display:flex;flex-direction:column;gap:1px;padding-right:6px;">
-            <span style="font-size:11px;color:#555;font-weight:700;">${co.famille}</span>
-            <span style="font-size:11px;background:#1a237e;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;display:inline-block;width:fit-content;">${co.categorie}</span>
+        <div style="width:116px;min-width:116px;display:flex;flex-direction:row;align-items:center;gap:5px;padding-right:6px;flex-wrap:nowrap;">
+            <span style="font-size:11px;color:#555;font-weight:700;white-space:nowrap;">${co.famille}</span>
+            <span style="font-size:10px;color:#bbb;">·</span>
+            <span style="font-size:11px;background:#1a237e;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;white-space:nowrap;">${co.categorie}</span>
         </div>
         <div style="width:84px;min-width:84px;display:flex;flex-wrap:wrap;gap:2px;align-items:center;">${options}</div>
         <div style="width:132px;min-width:132px;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">${co.testeur_nom || '<span style="color:#ccc;">—</span>'}</div>

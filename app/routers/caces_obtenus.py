@@ -41,6 +41,7 @@ def _enrich_base(co: CacesObtenu, stagiaires: dict, sessions: dict) -> dict:
         "stagiaire_id": co.stagiaire_id,
         "stagiaire_nom": s.nom if s else "?",
         "stagiaire_prenom": s.prenom if s else "?",
+        "stagiaire_ddn": s.date_naissance.isoformat() if s and s.date_naissance else None,
         "session_id": co.session_id,
         "session_reference": _ref(sess),
         "famille": co.famille,
