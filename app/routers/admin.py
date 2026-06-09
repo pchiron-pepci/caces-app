@@ -11,7 +11,7 @@ from datetime import date
 from typing import Optional, List
 
 router = APIRouter(prefix="/admin", tags=["Administration"])
-
+    
 class HabilitationCreate(BaseModel):
     testeur_id: int
     famille: str
@@ -271,7 +271,7 @@ async def upload_logo_organisme(pin: str, file: UploadFile = File(...), db: Sess
     config.logo_base64 = base64.b64encode(contents).decode()
     config.logo_nom = file.filename
     db.commit()
-    return {"message": "Logo mis à jour"}
+    return {"message": "Logo mis à jour", "logo_data_uri": _img_data_uri(config.logo_base64, config.logo_nom)}
 
 @router.delete("/config-organisme/logo")
 def supprimer_logo_organisme(pin: str, db: Session = Depends(get_db)):
@@ -303,7 +303,7 @@ async def upload_signature_organisme(pin: str, file: UploadFile = File(...), db:
     config.signature_base64 = base64.b64encode(contents).decode()
     config.signature_nom = file.filename
     db.commit()
-    return {"message": "Signature mise à jour"}
+    return {"message": "Signature mise à jour", "signature_data_uri": _img_data_uri(config.signature_base64, config.signature_nom)}
 
 @router.delete("/config-organisme/signature")
 def supprimer_signature_organisme(pin: str, db: Session = Depends(get_db)):

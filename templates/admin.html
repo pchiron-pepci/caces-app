@@ -897,6 +897,13 @@ function sauvegarderConfigOrganisme() {
             fd.append('file', logoFile);
             const r = await fetch(`/admin/config-organisme/logo?pin=${encodeURIComponent(pin)}`, { method: 'POST', body: fd });
             if (!r.ok) { alert('Erreur upload logo'); return; }
+            const logoData = await r.json();
+            if (logoData.logo_data_uri) {
+                const preview = document.getElementById('config-logo-preview');
+                preview.innerHTML = `<img src="${logoData.logo_data_uri}" style="max-height:64px; border:1px solid #e8ecf4; border-radius:8px; padding:4px;">`;
+                document.getElementById('btn-suppr-logo').style.display = '';
+            }
+            document.getElementById('config-logo-file').value = '';
         }
         const sigFile = document.getElementById('config-signature-file').files[0];
         if (sigFile) {
@@ -904,6 +911,13 @@ function sauvegarderConfigOrganisme() {
             fd.append('file', sigFile);
             const r = await fetch(`/admin/config-organisme/signature?pin=${encodeURIComponent(pin)}`, { method: 'POST', body: fd });
             if (!r.ok) { alert('Erreur upload signature'); return; }
+            const sigData = await r.json();
+            if (sigData.signature_data_uri) {
+                const sigPreview = document.getElementById('config-signature-preview');
+                sigPreview.innerHTML = `<img src="${sigData.signature_data_uri}" style="max-height:80px; border:1px solid #e8ecf4; border-radius:8px; padding:4px; background:#fff;">`;
+                document.getElementById('btn-suppr-signature').style.display = '';
+            }
+            document.getElementById('config-signature-file').value = '';
         }
         const payload = {
             nom_organisme: document.getElementById('config-nom').value,
@@ -927,12 +941,10 @@ function sauvegarderConfigOrganisme() {
             body: JSON.stringify(payload)
         });
         if (respNom.ok) {
-            document.getElementById('config-logo-file').value = '';
-            document.getElementById('config-signature-file').value = '';
             const msg = document.getElementById('config-organisme-msg');
-            msg.textContent = '✅ Configuration sauvegardée — rechargement...';
+            msg.textContent = '✅ Configuration sauvegardée.';
             msg.style.display = 'block';
-            setTimeout(() => location.reload(), 800);
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
         } else {
             alert('Erreur lors de la sauvegarde');
         }
