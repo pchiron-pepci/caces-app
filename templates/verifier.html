@@ -174,9 +174,9 @@
                         <td class="col-val">
                             {% if c.date_echeance_fmt %}
                                 {% if c.echeance_expired %}
-                                    <span class="badge-expired">⚠️ Expiré le {{ c.date_echeance_fmt }}</span>
+                                    <span class="badge-expired">{{ c.date_echeance_fmt }}</span>
                                 {% else %}
-                                    <span class="badge-valid">✅ Valide jusqu'au {{ c.date_echeance_fmt }}</span>
+                                    <span class="badge-valid">{{ c.date_echeance_fmt }}</span>
                                 {% endif %}
                             {% else %}—{% endif %}
                         </td>
