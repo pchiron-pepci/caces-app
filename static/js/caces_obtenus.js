@@ -264,8 +264,8 @@ function renderCarteAValider(co) {
             </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-            <div style="display:flex;gap:20px;font-size:13px;">
-                <div><span style="color:#666;">Obtention</span><span style="font-weight:700;color:#1a237e;margin-left:6px;">${fmtDate(co.date_obtention)}</span></div>
+            <div style="display:flex;gap:20px;font-size:13px;align-items:center;">
+                <div style="background:#e8eaf6;border-radius:8px;padding:5px 12px;"><span style="font-weight:700;color:#555;">📅 Obtention présumée&nbsp;:</span> <span style="font-weight:800;color:#1a237e;font-size:14px;">${fmtDate(co.date_obtention)}</span></div>
                 <div><span style="color:#666;">Échéance</span><span style="font-weight:700;color:#388e3c;margin-left:6px;">${fmtDate(co.date_echeance)}</span></div>
             </div>
             <div id="caces-card-${co.id}-actions" style="display:flex;gap:10px;align-items:center;">
