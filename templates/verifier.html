@@ -47,6 +47,7 @@
         table.caces thead th { background: #f0f2f7; color: #555; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 7px 6px; text-align: left; border-bottom: 2px solid #dde3f0; white-space: nowrap; }
         table.caces tbody tr { border-bottom: 1px solid #f0f4fb; }
         table.caces tbody tr:last-child { border-bottom: none; }
+        table.caces tbody tr:has(+ .row-testeur) { border-bottom: none; }
         table.caces tbody td { padding: 8px 6px; vertical-align: middle; }
         .col-cat  { width: auto; }
         .col-no   { width: 52px; white-space: nowrap; }
@@ -55,7 +56,7 @@
         .col-val  { width: 72px; white-space: nowrap; }
         .cat-code { font-weight: 800; color: #1a237e; }
         .cat-lib  { font-size: 0.7rem; color: #888; display: block; margin-top: 2px; }
-        .cat-test { font-size: 0.68rem; color: #aaa; display: block; margin-top: 2px; font-style: italic; }
+        .row-testeur td { padding: 2px 6px 7px 6px; font-size: 0.7rem; color: #999; font-style: italic; border-bottom: 1px solid #f0f4fb; }
         .no-caces { font-family: monospace; font-weight: 700; font-size: 0.78rem; }
         .opt-badge { display: inline-block; background: #e8eef8; color: #1a237e; font-size: 0.65rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; margin-right: 2px; margin-bottom: 1px; }
         .date-std { font-weight: 600; font-size: 0.78rem; }
@@ -164,7 +165,6 @@
                         <td class="col-cat">
                             <span class="cat-code">{{ c.categorie }}</span>
                             {% if c.categorie_libelle %}<span class="cat-lib">{{ c.categorie_libelle }}</span>{% endif %}
-                            {% if c.testeur_nom %}<span class="cat-test">{{ c.testeur_nom }}</span>{% endif %}
                         </td>
                         <td class="col-no"><span class="no-caces">{% if c.numero_ordre %}{{ "%04d" % c.numero_ordre }}{% else %}—{% endif %}</span></td>
                         <td class="col-opt">
@@ -183,6 +183,11 @@
                             {% else %}—{% endif %}
                         </td>
                     </tr>
+                    {% if c.testeur_nom %}
+                    <tr class="row-testeur">
+                        <td colspan="5">Testeur : {{ c.testeur_nom }}</td>
+                    </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
