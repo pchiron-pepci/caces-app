@@ -129,6 +129,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Télécharger PDF protégé
+        const btnPdf = e.target.closest('[data-action="telecharger-pdf"]');
+        if (btnPdf) {
+            window.open('/api/cartes-caces/' + btnPdf.dataset.id + '/pdf', '_blank');
+            return;
+        }
+
         // Réimprimer
         const btnReimprimer = e.target.closest('[data-action="reimprimer-carte"]');
         if (btnReimprimer) {
@@ -407,6 +414,8 @@ function _renderEmise(carte) {
         ? '<div style="display:flex;gap:6px;">'
             + '<button data-action="reimprimer-carte" data-id="' + carte.id + '" title="Réimprimer" '
             + 'style="background:none;border:1px solid #1a237e;color:#1a237e;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">🖨️</button>'
+            + '<button data-action="telecharger-pdf" data-id="' + carte.id + '" title="Télécharger PDF protégé" '
+            + 'style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">📥</button>'
             + '<button data-action="annuler-carte" data-id="' + carte.id + '" data-num="' + carte.numero_carte + '" title="Annuler" '
             + 'style="background:none;border:1px solid #c62828;color:#c62828;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">❌</button>'
             + '</div>'
@@ -678,7 +687,7 @@ function _buildCr80Html(data, cfg) {
         +       photoHtml
         +       '<div class="r-sep"></div>'
         +       '<div id="qr" data-url="' + (verifyUrl || data.numero_carte) + '"></div>'
-        +       '<div class="r-qr-text">Scanner pour vérifier</div>'
+        +       '<div class="r-qr-text">Scanner · Vérifier</div>'
         +     '</div>'
         +   '</div>'
         +   '<div class="r-ftr">La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire</div>'

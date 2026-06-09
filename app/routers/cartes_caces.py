@@ -374,6 +374,305 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
 
 
+def _generate_cr80_pdf(carte, s, cfg, caces_list: list, verify_url: str) -> bytes:
+    """Génère un PDF CR80 recto/verso avec reportlab."""
+    import base64 as _b64
+    from io import BytesIO as _BIO
+    import qrcode as _qr
+    from reportlab.pdfgen.canvas import Canvas
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.lib.utils import ImageReader
+    from reportlab.platypus import Table, TableStyle
+
+    W, H = 85.6 * mm, 54.0 * mm
+    RED = colors.HexColor('#c62828')
+    ANT = colors.HexColor('#2b2b2b')
+    GRAY = colors.HexColor('#f0f0f0')
+
+    buf = _BIO()
+    c = Canvas(buf, pagesize=(W, H))
+
+    # ── RECTO ──────────────────────────────────────────────────────────────
+    # Footer strip
+    c.setFillColor(GRAY)
+    c.rect(0, 0, W, 4 * mm, fill=1, stroke=0)
+    c.setFillColor(RED)
+    c.rect(0, 0, W, 1.5 * mm, fill=1, stroke=0)
+
+    # Org/signature text in footer
+    org_name = (cfg.nom_organisme or '') if cfg else ''
+    c.setFont('Helvetica-Bold', 4.5)
+    c.setFillColor(ANT)
+    c.drawString(2 * mm, 2.7 * mm, org_name)
+    sig = ''
+    if cfg and getattr(cfg, 'signataire_nom', None):
+        sig = f"{cfg.signataire_prenom or ''} {cfg.signataire_nom}".strip()
+        if getattr(cfg, 'signataire_qualite', None):
+            sig += f" — {cfg.signataire_qualite}"
+    if sig:
+        c.setFont('Helvetica', 4)
+        c.drawString(2 * mm, 1.8 * mm, sig)
+
+    # Header (top 15mm), red border-bottom
+    c.setStrokeColor(RED)
+    c.setLineWidth(0.5)
+    c.line(0, H - 15 * mm, W, H - 15 * mm)
+
+    # Logo organisme
+    if cfg and getattr(cfg, 'logo_base64', None):
+        try:
+            logo_data = _b64.b64decode(cfg.logo_base64)
+            logo_rdr = ImageReader(_BIO(logo_data))
+            c.drawImage(logo_rdr, 2 * mm, H - 14 * mm, width=24 * mm, height=12 * mm,
+                        preserveAspectRatio=True, anchor='nw', mask='auto')
+        except Exception:
+            c.setFont('Helvetica-Bold', 6)
+            c.setFillColor(ANT)
+            c.drawString(2 * mm, H - 8 * mm, org_name or 'CACES®')
+
+    # Assurance Maladie logo
+    try:
+        c.drawImage('static/img/assurance_maladie_caces.jpeg',
+                    W - 28 * mm, H - 14.5 * mm, width=26 * mm, height=13 * mm,
+                    preserveAspectRatio=True, anchor='nw', mask='auto')
+    except Exception:
+        pass
+
+    # DEKRA cert
+    numeroCert = ''
+    if cfg and getattr(cfg, 'numero_certificat', None):
+        numeroCert = cfg.numero_certificat
+    if numeroCert:
+        c.setFont('Helvetica-Bold', 3.8)
+        c.setFillColor(ANT)
+        c.drawString(2 * mm, H - 15.5 * mm, f'Cert. DEKRA n° {numeroCert}')
+
+    # Sub-header "Certificat d'aptitude..."
+    c.setFont('Helvetica-Oblique', 5.5)
+    c.setFillColor(ANT)
+    c.drawString(2 * mm, H - 17.5 * mm, "Certificat d'aptitude à la conduite en sécurité")
+    c.setStrokeColor(colors.HexColor('#e4e4e4'))
+    c.setLineWidth(0.3)
+    c.line(0, H - 18.5 * mm, W, H - 18.5 * mm)
+
+    # Body area
+    body_top = H - 19 * mm  # y coord of top of body
+    right_w = 13 * mm
+    right_x = W - right_w - 1.5 * mm
+
+    # CACES® family badge
+    badge_h = 3.5 * mm
+    c.setFillColor(RED)
+    c.roundRect(2 * mm, body_top - badge_h, 52 * mm, badge_h, 0.7 * mm, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont('Helvetica-Bold', 6)
+    fam_label = f"CACES® {carte.famille}"
+    c.drawString(3 * mm, body_top - badge_h + 0.8 * mm, fam_label)
+
+    # N° CACES
+    nums = [f"{co.get('numero_ordre', 0):04d}" for co in caces_list if co.get('numero_ordre')]
+    if nums:
+        c.setFont('Helvetica-Bold', 7.5)
+        c.setFillColor(RED)
+        c.drawString(2 * mm, body_top - 7.5 * mm, f"N° {' · '.join(nums)}")
+
+    # Name
+    nom = f"{s.nom.upper()} {s.prenom}"
+    if len(nom) > 24:
+        nom = nom[:23] + '…'
+    c.setFont('Helvetica-Bold', 9)
+    c.setFillColor(ANT)
+    c.drawString(2 * mm, body_top - 12 * mm, nom)
+
+    # DOB
+    if s.date_naissance:
+        c.setFont('Helvetica-Oblique', 6.5)
+        c.drawString(2 * mm, body_top - 15.5 * mm, f"Né(e) le {s.date_naissance.strftime('%d/%m/%Y')}")
+
+    # Right column: photo
+    photo_h, photo_w = 12 * mm, 11 * mm
+    photo_x = right_x + (right_w - photo_w) / 2
+    photo_y = body_top - photo_h
+    photo_drawn = False
+    if s.photo:
+        try:
+            import requests as _req
+            resp = _req.get(s.photo, timeout=5)
+            if resp.status_code == 200:
+                photo_rdr = ImageReader(_BIO(resp.content))
+                c.drawImage(photo_rdr, photo_x, photo_y, width=photo_w, height=photo_h,
+                            preserveAspectRatio=False, mask='auto')
+                c.setStrokeColor(colors.HexColor('#bbbbbb'))
+                c.setLineWidth(0.4)
+                c.rect(photo_x, photo_y, photo_w, photo_h, fill=0, stroke=1)
+                photo_drawn = True
+        except Exception:
+            pass
+    if not photo_drawn:
+        c.setFillColor(colors.HexColor('#eeeeee'))
+        c.rect(photo_x, photo_y, photo_w, photo_h, fill=1, stroke=0)
+
+    # Separator
+    sep_y = photo_y - 0.6 * mm
+    c.setStrokeColor(colors.HexColor('#d0d0d0'))
+    c.setLineWidth(0.3)
+    c.line(right_x, sep_y, right_x + right_w, sep_y)
+
+    # QR code
+    qr_size = 10 * mm
+    qr_y = sep_y - qr_size - 0.4 * mm
+    qr_x = right_x + (right_w - qr_size) / 2
+    try:
+        qr_img = _qr.make(verify_url or carte.numero_carte)
+        qr_buf = _BIO()
+        qr_img.save(qr_buf, format='PNG')
+        qr_buf.seek(0)
+        c.drawImage(ImageReader(qr_buf), qr_x, qr_y, width=qr_size, height=qr_size, mask='auto')
+    except Exception:
+        pass
+
+    # QR label
+    c.setFont('Helvetica-Oblique', 3.5)
+    c.setFillColor(ANT)
+    c.drawCentredString(right_x + right_w / 2, qr_y - 1.5 * mm, 'Scanner · Vérifier')
+
+    # Recto footer text
+    c.setFont('Helvetica-Oblique', 3.3)
+    c.setFillColor(colors.HexColor('#555555'))
+    c.drawCentredString(W / 2, 0.8 * mm, "La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire")
+
+    c.showPage()
+
+    # ── VERSO ──────────────────────────────────────────────────────────────
+    # Red top strip + red header border-bottom
+    c.setFillColor(RED)
+    c.rect(0, H - 1.5 * mm, W, 1.5 * mm, fill=1, stroke=0)
+    c.setStrokeColor(RED)
+    c.setLineWidth(0.7)
+    c.line(0, H - 9.5 * mm, W, H - 9.5 * mm)
+
+    c.setFont('Helvetica-Bold', 5.5)
+    c.setFillColor(ANT)
+    titre = f"CACES® {carte.famille} — {s.nom} {s.prenom}"
+    if s.date_naissance:
+        titre += f" ({s.date_naissance.strftime('%d/%m/%Y')})"
+    c.drawString(2 * mm, H - 5.5 * mm, titre)
+    c.setFont('Courier-Bold', 4.8)
+    c.setFillColor(RED)
+    c.drawString(2 * mm, H - 8.8 * mm, f"N° {carte.numero_carte}")
+
+    # CACES® table
+    from datetime import datetime as _dtv
+    def _fd(iso):
+        if not iso:
+            return '—'
+        try:
+            return _dtv.fromisoformat(iso[:10]).strftime('%d/%m/%y')
+        except Exception:
+            return iso
+
+    headers = ['Fam.', 'Cat.', 'Opt.', 'N° CACES®', 'Obtention', 'Échéance', 'Testeur']
+    rows = [headers]
+    for co in caces_list:
+        no = f"{co['numero_ordre']:04d}" if co.get('numero_ordre') else '—'
+        rows.append([
+            carte.famille,
+            co.get('categorie', ''),
+            co.get('options_obtenues', '') or '—',
+            no,
+            _fd(co.get('date_obtention')),
+            _fd(co.get('date_echeance')),
+            (co.get('testeur_nom') or '—')[:18],
+        ])
+
+    col_widths = [7 * mm, 7 * mm, 11 * mm, 13 * mm, 13 * mm, 13 * mm, None]
+    col_widths[-1] = W - 4 * mm - sum(w for w in col_widths[:-1])
+
+    tbl = Table(rows, colWidths=col_widths, rowHeights=None)
+    tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), ANT),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 3.8),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 4.3),
+        ('FONTNAME', (3, 1), (3, -1), 'Courier-Bold'),
+        ('FONTSIZE', (3, 1), (3, -1), 4.3),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 1),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+        ('LEFTPADDING', (0, 0), (-1, -1), 1.5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 1),
+        ('GRID', (0, 0), (-1, -1), 0.1, colors.HexColor('#e0e0e0')),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#555555')),
+    ]))
+    tbl_w, tbl_h = tbl.wrapOn(c, W - 4 * mm, H)
+    tbl.drawOn(c, 2 * mm, H - 10.5 * mm - tbl_h)
+
+    # Verso footer
+    c.setFillColor(GRAY)
+    c.rect(0, 0, W, 3.5 * mm, fill=1, stroke=0)
+    c.setFont('Helvetica-Oblique', 3.3)
+    c.setFillColor(colors.HexColor('#555555'))
+    if verify_url:
+        c.drawCentredString(W / 2, 1.5 * mm, f'Vérification : {verify_url}')
+    c.drawCentredString(W / 2, 0.4 * mm, 'Document recto/verso · Toute copie doit comporter les 2 faces')
+
+    c.save()
+    return buf.getvalue()
+
+
+def _protect_pdf(pdf_bytes: bytes, owner_password: str = "NORYX-CACES-PEPCI") -> bytes:
+    """Chiffre le PDF : impression autorisée, modification interdite."""
+    from io import BytesIO as _BIO
+    from pypdf import PdfWriter, PdfReader
+    reader = PdfReader(_BIO(pdf_bytes))
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+    # permissions_flag : bit 3 (print=4) + bit 12 (print high quality=2048) = 2052
+    writer.encrypt(
+        user_password="",
+        owner_password=owner_password,
+        use_128bit=True,
+        permissions_flag=2052,
+    )
+    out = _BIO()
+    writer.write(out)
+    out.seek(0)
+    return out.read()
+
+
+@router.get("/{carte_id}/pdf")
+def telecharger_pdf(carte_id: int, db: DBSession = Depends(get_db)):
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO as _BIO
+    carte = db.query(CarteCaces).filter(CarteCaces.id == carte_id).first()
+    if not carte:
+        raise HTTPException(status_code=404, detail="Carte introuvable")
+    s = db.query(Stagiaire).filter(Stagiaire.id == carte.stagiaire_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Stagiaire introuvable")
+    config = db.query(ConfigOrganisme).first()
+    cfg = config or ConfigOrganisme()
+    caces_list = json.loads(carte.caces_json) if carte.caces_json else []
+    verify_url = _build_verify_url(cfg, carte.numero_carte)
+    pdf_bytes = _generate_cr80_pdf(carte, s, cfg, caces_list, verify_url)
+    protected = _protect_pdf(pdf_bytes)
+    filename = f"CACES-{carte.numero_carte}.pdf"
+    return StreamingResponse(
+        _BIO(protected),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(protected)),
+        }
+    )
+
+
 @router.post("/annuler/{carte_id}")
 def annuler_carte(carte_id: int, pin: str = "", data: Optional[AnnulerData] = Body(default=None), db: DBSession = Depends(get_db)):
     if pin != PIN_ADMIN:
