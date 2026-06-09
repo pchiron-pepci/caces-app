@@ -30,6 +30,7 @@ def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famil
         .filter(
             ResultatTheorie.stagiaire_id == stagiaire_id,
             ResultatTheorie.obtenue == True,
+            ResultatTheorie.bloque != True,
             ResultatTheorie.session_id != session_id_pratique,
             SessionModel.famille == famille,
             JourTest.date >= limite_avant,
@@ -63,6 +64,7 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
         ResultatTheorie.stagiaire_id == ep.stagiaire_id,
         ResultatTheorie.session_id == ep.session_id,
         ResultatTheorie.obtenue == True,
+        ResultatTheorie.bloque != True,
     ).order_by(ResultatTheorie.id.asc()).first()
 
     post_cloture = False
@@ -127,7 +129,10 @@ def calculer_et_synchroniser(db: Session) -> list:
 
     Appelé automatiquement lors de la clôture d'une session.
     """
-    epreuves_ok = db.query(SessionEpreuve).filter(SessionEpreuve.obtenue == True).all()
+    epreuves_ok = db.query(SessionEpreuve).filter(
+        SessionEpreuve.obtenue == True,
+        SessionEpreuve.bloque != True,
+    ).all()
 
     for ep in epreuves_ok:
         calc = _calculer_pour_epreuve(ep, db)

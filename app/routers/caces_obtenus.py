@@ -19,6 +19,8 @@ PIN_ADMIN = "1505"
 
 class AnnulerData(BaseModel):
     motif: Optional[str] = None
+    bloquer_pratique: bool = False
+    bloquer_theorie: bool = False
 
 
 class MotifUpdate(BaseModel):
@@ -257,9 +259,43 @@ def annuler_caces(caces_id: int, pin: str = "", data: Optional[AnnulerData] = Bo
     co = db.query(CacesObtenu).filter(CacesObtenu.id == caces_id).first()
     if not co:
         raise HTTPException(status_code=404, detail="Non trouvé")
+    motif = data.motif if data and data.motif else None
+    bloquer_pratique = data.bloquer_pratique if data else False
+    bloquer_theorie = data.bloquer_theorie if data else False
+
     co.statut = "annule"
-    co.motif_annulation = (data.motif if data and data.motif else None)
-    # Supprimer les doublons a_valider pour les mêmes clés — seront recalculés au prochain /a-valider
+    co.motif_annulation = motif
+
+    # Bloquer SE si demandé (empêche re-création auto CACES®)
+    if bloquer_pratique:
+        ep = (
+            db.query(SessionEpreuve)
+            .filter(
+                SessionEpreuve.session_id == co.session_id,
+                SessionEpreuve.stagiaire_id == co.stagiaire_id,
+                SessionEpreuve.categorie == co.categorie,
+                SessionEpreuve.obtenue == True,
+            )
+            .first()
+        )
+        if ep:
+            ep.bloque = True
+
+    # Bloquer RT si demandé (toute la famille pour ce stagiaire dans cette session)
+    if bloquer_theorie:
+        rts = (
+            db.query(ResultatTheorie)
+            .filter(
+                ResultatTheorie.session_id == co.session_id,
+                ResultatTheorie.stagiaire_id == co.stagiaire_id,
+                ResultatTheorie.obtenue == True,
+            )
+            .all()
+        )
+        for rt in rts:
+            rt.bloque = True
+
+    # Supprimer les doublons a_valider — seront recalculés au prochain /a-valider si non bloqués
     db.query(CacesObtenu).filter(
         CacesObtenu.id != caces_id,
         CacesObtenu.stagiaire_id == co.stagiaire_id,

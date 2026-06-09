@@ -47,3 +47,4 @@ class ResultatTheorie(Base):
     theme5_ok = Column(Boolean, nullable=True)
     obtenue = Column(Boolean, nullable=True)
     dispense = Column(Boolean, default=False)
+    bloque = Column(Boolean, default=False, nullable=False)

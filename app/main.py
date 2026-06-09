@@ -248,6 +248,14 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE"))
+        _conn.execute(text("ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
         _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS carte_caces (
                 id SERIAL PRIMARY KEY,

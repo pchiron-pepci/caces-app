@@ -30,6 +30,12 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             label.innerHTML = 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
         }
+        const showBlocage = (this.value === 'Non conforme' || this.value === 'CACES® annulé');
+        document.getElementById('motif-blocage-section').style.display = showBlocage ? 'block' : 'none';
+        if (!showBlocage) {
+            document.getElementById('chk-bloquer-pratique').checked = false;
+            document.getElementById('chk-bloquer-theorie').checked = false;
+        }
         document.getElementById('motif-erreur').textContent = '​';
     });
 
@@ -86,18 +92,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (btnAnnuler) {
             const id = parseInt(btnAnnuler.dataset.id);
             const nom = btnAnnuler.dataset.nom;
-            ouvrirMotif('Motif de l\'annulation du CACES® de ' + nom, '', function (motif) {
+            const categorie = btnAnnuler.dataset.categorie || '';
+            const famille = btnAnnuler.dataset.famille || '';
+            ouvrirMotif('Motif de l\'annulation du CACES® de ' + nom, '', function ({ motif, bloquerPratique, bloquerTheorie }) {
                 fermerMotif();
                 ouvrirPin('Confirmer l\'annulation du CACES® de ' + nom + ' ?', async function (pin) {
                     const r = await fetch('/api/caces-obtenus/annuler/' + id + '?pin=' + encodeURIComponent(pin), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ motif: motif }),
+                        body: JSON.stringify({ motif: motif, bloquer_pratique: bloquerPratique, bloquer_theorie: bloquerTheorie }),
                     });
                     if (r.ok) _apresAnnulation(id, motif);
                     return r;
                 });
-            });
+            }, categorie, famille);
             return;
         }
 
@@ -119,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const id = parseInt(btnMotif.dataset.id);
             const nom = btnMotif.dataset.nom || '';
             const motifActuel = (_validesData[id] && _validesData[id].motif_annulation) || '';
-            ouvrirMotif('Motif d\'annulation' + (nom ? ' — ' + nom : ''), motifActuel, function (motif) {
+            ouvrirMotif('Motif d\'annulation' + (nom ? ' — ' + nom : ''), motifActuel, function ({ motif }) {
                 fermerMotif();
                 ouvrirPin('Modifier le motif ?', async function (pin) {
                     const r = await fetch('/api/caces-obtenus/' + id + '/motif?pin=' + encodeURIComponent(pin), {
@@ -138,6 +146,8 @@ document.addEventListener('DOMContentLoaded', function () {
 // ===== ÉTAT =====
 let _pinCallback = null;
 let _motifCallback = null;
+let _motifCategorie = '';
+let _motifFamille = '';
 const _carteData = {};
 const _validesData = {};
 
@@ -177,7 +187,7 @@ function fermerPin() {
 }
 
 // ===== MOTIF MODAL =====
-const _MOTIF_OPTS = ['Erreur administrative', 'Non conforme'];
+const _MOTIF_OPTS = ['Erreur administrative', 'Non conforme', 'CACES® annulé'];
 
 function _parseMotif(stored) {
     for (const opt of _MOTIF_OPTS) {
@@ -187,8 +197,10 @@ function _parseMotif(stored) {
     return { select: stored ? 'Autre' : '', detail: stored || '' };
 }
 
-function ouvrirMotif(titre, motifInitial, onConfirme) {
+function ouvrirMotif(titre, motifInitial, onConfirme, categorie, famille) {
     _motifCallback = onConfirme;
+    _motifCategorie = categorie || '';
+    _motifFamille = famille || '';
     document.getElementById('motif-titre').textContent = titre;
     const parsed = _parseMotif(motifInitial || '');
     const sel = document.getElementById('motif-select');
@@ -198,6 +210,12 @@ function ouvrirMotif(titre, motifInitial, onConfirme) {
     label.innerHTML = parsed.select === 'Autre'
         ? 'Détail <span style="color:#c62828;">*</span>'
         : 'Détail <span style="color:#888; font-weight:400;">(optionnel)</span>';
+    const showBlocage = (parsed.select === 'Non conforme' || parsed.select === 'CACES® annulé');
+    document.getElementById('motif-blocage-section').style.display = showBlocage ? 'block' : 'none';
+    document.getElementById('chk-bloquer-pratique').checked = false;
+    document.getElementById('chk-bloquer-theorie').checked = false;
+    if (_motifCategorie) document.getElementById('chk-pratique-label').textContent = 'Bloquer le résultat pratique (catégorie ' + _motifCategorie + ')';
+    if (_motifFamille) document.getElementById('chk-theorie-label').textContent = 'Bloquer le résultat théorique (famille ' + _motifFamille + ')';
     document.getElementById('motif-erreur').textContent = '​';
     document.getElementById('modal-motif').style.display = 'flex';
     setTimeout(function () { sel.focus(); }, 50);
@@ -220,7 +238,9 @@ function _confirmerMotif() {
         return;
     }
     const motif = detail ? sel + ' — ' + detail : sel;
-    if (_motifCallback) _motifCallback(motif);
+    const bloquerPratique = document.getElementById('chk-bloquer-pratique').checked;
+    const bloquerTheorie = document.getElementById('chk-bloquer-theorie').checked;
+    if (_motifCallback) _motifCallback({ motif, bloquerPratique, bloquerTheorie });
 }
 
 // ===== UTILITAIRES =====
@@ -332,7 +352,7 @@ function _renderLigne(co) {
         ? `<button data-action="voir-motif" data-id="${co.id}" data-nom="${nomComplet}"
                 title="${co.motif_annulation ? 'Motif : ' + co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
                 style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;">📝</button>`
-        : `<button data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}"
+        : `<button data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}" data-categorie="${co.categorie}" data-famille="${co.famille}"
                 style="background:#fff;border:2px solid #c62828;color:#c62828;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
                 ↩ Annuler
             </button>`;

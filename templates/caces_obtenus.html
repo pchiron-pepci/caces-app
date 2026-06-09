@@ -35,8 +35,18 @@
             <option value="">— Choisir —</option>
             <option value="Erreur administrative">Erreur administrative</option>
             <option value="Non conforme">Non conforme</option>
+            <option value="CACES® annulé">CACES® annulé</option>
             <option value="Autre">Autre</option>
         </select>
+        <div id="motif-blocage-section" style="display:none; background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:12px; margin-bottom:12px;">
+            <p style="font-size:12px; font-weight:700; color:#e65100; margin:0 0 8px;">⚠️ Blocage des résultats sources</p>
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; margin-bottom:6px;">
+                <input type="checkbox" id="chk-bloquer-pratique"> <span id="chk-pratique-label">Bloquer le résultat pratique</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+                <input type="checkbox" id="chk-bloquer-theorie"> <span id="chk-theorie-label">Bloquer le résultat théorique</span>
+            </label>
+        </div>
         <label id="motif-detail-label" style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:6px;">Détail <span style="color:#888; font-weight:400;">(optionnel)</span></label>
         <textarea id="motif-input" rows="3" placeholder="Précisions éventuelles…"
                   style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 12px; font-size:14px; resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>

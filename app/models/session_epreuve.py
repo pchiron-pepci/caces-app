@@ -47,3 +47,4 @@ class SessionEpreuve(Base):
     # Note testeur
     note_testeur = Column(Text, nullable=True)
     options_obtenues = Column(String(200), nullable=True)
+    bloque = Column(Boolean, default=False, nullable=False)
