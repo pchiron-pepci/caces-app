@@ -416,8 +416,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
                 pass
     if _src:
         photo_html = (
-            f'<div class="r-photo"><img style="max-width:20mm;max-height:25mm;'
-            f'width:auto;height:auto;object-fit:contain;display:block;" src="{_src}"></div>'
+            f'<div class="r-photo"><img style="width:22mm;height:22mm;max-width:22mm;max-height:22mm;object-fit:cover;display:block;" src="{_src}"></div>'
         )
 
     # Logo organisme
@@ -542,7 +541,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         f'.r-subhdr-title {{ font-size:6.5pt; color:{ANT}; font-style:italic; }}\n'
         f'.r-body {{ display:flex; flex:1; padding:1.2mm 2.5mm 0; gap:2mm; min-height:0; overflow:hidden; }}\n'
         f'.r-left {{ flex:1; min-width:0; display:flex; flex-direction:column; }}\n'
-        f'.r-right {{ width:14.5mm; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:0.7mm; padding-top:0.2mm; }}\n'
+        f'.r-right {{ width:23mm; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:0.7mm; padding-top:0.2mm; }}\n'
         f'.r-fam-badge {{ display:inline-block; background:{RED}; color:#fff; font-size:6.5pt; font-weight:900; padding:0.4mm 2mm; border-radius:0.7mm; margin-bottom:0.7mm; letter-spacing:0.1mm; white-space:nowrap; }}\n'
         f'.r-nums {{ font-size:8pt; color:{RED}; font-weight:800; margin-top:1.5mm; margin-bottom:0.4mm; letter-spacing:0.2mm; }}\n'
         f'.r-nums .lbl {{ font-weight:400; color:{ANT}; font-size:6.5pt; }}\n'
@@ -553,11 +552,11 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         f'.r-siret {{ font-size:5pt; color:{ANT}; margin-bottom:0.35mm; line-height:1.3; }}\n'
         f'.r-sign {{ font-size:5.2pt; color:{ANT}; display:flex; align-items:center; gap:0.8mm; padding-bottom:0.4mm; }}\n'
         f'.r-sign img {{ height:3.5mm; width:auto; max-width:8mm; object-fit:contain; }}\n'
-        f'.r-photo {{ width:13mm; height:17mm; overflow:hidden; flex-shrink:0; border:0.4mm solid #bbb; border-radius:0.6mm; display:flex; align-items:center; justify-content:center; }}\n'
-        f'.r-photo-ph {{ width:13mm; height:17mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }}\n'
-        f'.r-sep {{ width:11mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }}\n'
-        f'.r-qr {{ width:10mm; height:10mm; display:block; }}\n'
-        f'.r-qr-text {{ font-size:3.8pt; color:{ANT}; text-align:center; line-height:1.25; font-style:italic; max-width:11mm; }}\n'
+        f'.r-photo {{ width:22mm; height:22mm; max-width:22mm; max-height:22mm; overflow:hidden; flex-shrink:0; border:0.4mm solid #bbb; border-radius:0.6mm; display:flex; align-items:center; justify-content:center; }}\n'
+        f'.r-photo-ph {{ width:22mm; height:22mm; background:#eee; border:0.4mm solid #bbb; border-radius:0.6mm; }}\n'
+        f'.r-sep {{ width:22mm; height:0.25mm; background:#d0d0d0; margin:0.4mm 0 0.2mm; flex-shrink:0; }}\n'
+        f'.r-qr {{ width:22mm; height:22mm; display:block; }}\n'
+        f'.r-qr-text {{ font-size:3.8pt; color:{ANT}; text-align:center; line-height:1.25; font-style:italic; max-width:22mm; }}\n'
         f'.r-ftr {{ flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0; padding:0.7mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic; text-align:center; line-height:1.3; }}\n'
         f'.v-hdr {{ background:#fff; border-bottom:0.7mm solid {RED}; padding:0.6mm 2.5mm; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:1mm; }}\n'
         f'.v-hdr-info {{ flex:1; min-width:0; }}\n'
