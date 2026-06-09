@@ -701,7 +701,7 @@ function _buildCr80Html(data, cfg) {
         +   '<div class="v-hdr">'
         +     '<div class="v-hdr-info">'
         +       '<div class="v-htitle">CACES® ' + data.famille + ' — ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + ddn + '</div>'
-        +       '<div class="v-hcarte">N° ' + data.numero_carte + (data.date_generation ? ' <span class="v-hdate">· Édité le ' + _fmtDateCourt(data.date_generation) + '</span>' : '') + '</div>'
+        +       '<div class="v-hcarte">N° ' + data.numero_carte + (data.date_generation ? ' <span class="v-hdate">· Édition du ' + _fmtDateCourt(data.date_generation) + '</span>' : '') + '</div>'
         +     '</div>'
         +     (cfg.logo2_uri ? '<img class="v-logo2" src="' + cfg.logo2_uri + '" />' : '')
         +   '</div>'
