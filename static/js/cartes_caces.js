@@ -533,7 +533,7 @@ function _buildCr80Html(data, cfg) {
         cfg.telephone ? 'Tél. ' + cfg.telephone : '',
     ].filter(Boolean).join(' · ');
 
-    const verifyUrl = cfg.url_verification_caces || '';
+    const verifyUrl = cfg.verify_url || '';
     const numeroCert = cfg.numero_certificat || '';
 
     // Verso rows — Options next to Cat.

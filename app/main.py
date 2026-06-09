@@ -1151,6 +1151,55 @@ def page_utilisateurs(request: Request):
 def health():
     return {"status": "ok"}
 
+
+@app.get("/verifier/{numero_carte}")
+def page_verifier_carte(numero_carte: str, request: Request, db: DBSession = Depends(get_db)):
+    from datetime import date as _date, datetime as _dt
+    config = db.query(ConfigOrganisme).first()
+    carte = db.query(CarteCaces).filter(CarteCaces.numero_carte == numero_carte).first()
+    if not carte:
+        return templates.TemplateResponse(
+            request=request,
+            name="verifier.html",
+            context={"statut": "introuvable", "numero_carte": numero_carte, "config": config},
+        )
+    s = db.query(Stagiaire).filter(Stagiaire.id == carte.stagiaire_id).first()
+    today = _date.today()
+    raw = json.loads(carte.caces_json) if carte.caces_json else []
+
+    def _fmt(iso):
+        if not iso:
+            return ""
+        try:
+            return _dt.fromisoformat(iso[:10]).strftime("%d/%m/%Y")
+        except Exception:
+            return iso
+
+    caces_list = [
+        {**c,
+         "date_obtention_fmt": _fmt(c.get("date_obtention")),
+         "date_echeance_fmt": _fmt(c.get("date_echeance")),
+         "echeance_expired": bool(c.get("date_echeance") and c["date_echeance"][:10] < today.isoformat()),
+         }
+        for c in raw
+    ]
+    return templates.TemplateResponse(
+        request=request,
+        name="verifier.html",
+        context={
+            "statut": carte.statut,
+            "numero_carte": carte.numero_carte,
+            "date_generation": carte.date_generation,
+            "famille": carte.famille,
+            "stagiaire_nom": s.nom if s else "",
+            "stagiaire_prenom": s.prenom if s else "",
+            "stagiaire_ddn": s.date_naissance if s else None,
+            "caces_list": caces_list,
+            "config": config,
+            "today": today,
+        },
+    )
+
 @app.get("/login")
 def page_login(request: Request):
     return templates.TemplateResponse(

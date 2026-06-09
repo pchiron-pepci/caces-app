@@ -71,6 +71,12 @@ def _img_uri(b64, nom):
     return f"data:{mime};base64,{b64}"
 
 
+def _build_verify_url(cfg, numero_carte: str) -> str:
+    base = (cfg.url_verification_caces if cfg and cfg.url_verification_caces
+            else "https://caces-app.onrender.com/verifier/")
+    return base.rstrip('/') + '/' + numero_carte
+
+
 def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_certificat=""):
     cfg = config or ConfigOrganisme()
     return {
@@ -99,7 +105,7 @@ def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_c
             "nom_organisme": cfg.nom_organisme or "",
             "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
             "signature_uri": _img_uri(cfg.signature_base64, cfg.signature_nom) if hasattr(cfg, 'signature_base64') else "",
-            "url_verification_caces": cfg.url_verification_caces or "",
+            "verify_url": _build_verify_url(cfg, carte.numero_carte),
             "adresse": cfg.adresse or "" if hasattr(cfg, 'adresse') else "",
             "siret": cfg.siret or "" if hasattr(cfg, 'siret') else "",
             "email": cfg.email or "" if hasattr(cfg, 'email') else "",
@@ -281,7 +287,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
                 "nom_organisme": cfg.nom_organisme or "",
                 "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
                 "signature_uri": _img_uri(cfg.signature_base64, cfg.signature_nom) if hasattr(cfg, 'signature_base64') else "",
-                "url_verification_caces": cfg.url_verification_caces or "",
+                "verify_url": _build_verify_url(cfg, carte.numero_carte),
                 "adresse": cfg.adresse or "" if hasattr(cfg, 'adresse') else "",
                 "siret": cfg.siret or "" if hasattr(cfg, 'siret') else "",
                 "email": cfg.email or "" if hasattr(cfg, 'email') else "",
