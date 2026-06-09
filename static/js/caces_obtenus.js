@@ -103,17 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Toggle sources validés
-        const btnVToggle = e.target.closest('[data-action="toggle-vsources"]');
-        if (btnVToggle) {
-            const id = btnVToggle.dataset.id;
-            const src = document.getElementById('vsources-' + id);
-            const arr = document.getElementById('varrow-' + id);
-            const ouvert = src.style.display === 'flex';
-            src.style.display = ouvert ? 'none' : 'flex';
-            arr.textContent = ouvert ? '▶' : '▼';
-            return;
-        }
 
         // Voir / modifier motif (ligne annulée)
         // Tri colonnes CACES® validés
@@ -290,22 +279,21 @@ function badgeStatut(statut) {
 function _renderHeaderValides() {
     const cols = _SORT_COLS.map(function (col) {
         const active = _sortKey === col.key;
-        const arrow = active ? (_sortDir === 1 ? ' ▲' : ' ▼') : '';
+        const arrow = active ? (_sortDir === 1 ? ' ▲' : ' ▼') : ' ↕';
         return '<span data-action="sort-valides" data-key="' + col.key + '" '
             + 'style="font-size:11px; font-weight:' + (active ? '800' : '600') + '; '
             + 'color:' + (active ? '#1a237e' : '#888') + '; '
-            + 'cursor:pointer; user-select:none; text-transform:uppercase; letter-spacing:0.4px; '
-            + 'padding:4px 8px; border-radius:4px; '
+            + 'cursor:pointer; user-select:none; text-transform:uppercase; letter-spacing:0.5px; '
+            + 'padding:3px 6px; border-radius:4px; '
             + 'background:' + (active ? '#e8eaf6' : 'transparent') + '; '
-            + 'white-space:nowrap;">'
-            + col.label + arrow
+            + 'white-space:nowrap; transition:color .15s;">'
+            + col.label + '<span style="opacity:0.5;font-size:10px;">' + arrow + '</span>'
             + '</span>';
-    }).join('<span style="color:#ddd; margin:0 2px;">|</span>');
+    }).join('<span style="color:#e0e0e0; margin:0 1px; font-size:11px;">·</span>');
 
-    return '<div style="display:flex; align-items:center; flex-wrap:wrap; gap:2px; '
-        + 'background:#f7f8fc; border-radius:8px; padding:6px 10px; margin-bottom:10px; '
-        + 'border:1px solid #e8eef8;">'
-        + '<span style="font-size:10px; color:#aaa; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-right:6px;">Trier&nbsp;:</span>'
+    return '<div style="display:flex; align-items:center; flex-wrap:wrap; gap:1px; '
+        + 'padding:7px 16px 7px 16px; margin-bottom:10px; '
+        + 'border-bottom:1px solid #eef0f6;">'
         + cols
         + '</div>';
 }
@@ -431,80 +419,74 @@ function renderCarteAValider(co) {
 function _renderLigne(co) {
     const annule = co.statut === 'annule';
     const nomComplet = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
-    const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : null;
+    const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
 
-    const noBadge = noFormate
-        ? (annule
-            ? `<span style="font-family:monospace;font-size:13px;font-weight:700;text-decoration:line-through;color:#999;">${noFormate}</span>`
-            : `<span style="background:#1a237e;color:#fff;border-radius:6px;padding:3px 8px;font-size:16px;font-weight:700;font-family:monospace;white-space:nowrap;">${noFormate}</span>`)
-        : `<span style="color:#999;font-size:13px;">—</span>`;
+    const noBadge = annule
+        ? `<span style="font-family:monospace;font-size:13px;font-weight:700;text-decoration:line-through;color:#aaa;">${noFormate}</span>`
+        : `<span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 10px;font-size:14px;font-weight:700;font-family:monospace;white-space:nowrap;">${noFormate}</span>`;
 
     const options = co.options_obtenues
         ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">${o.trim()}</span>`).join(' ')
         : '';
 
-    const testeurHtml = co.testeur_nom
-        ? `<span style="font-size:12px;color:#555;">| Testeur&nbsp;: <strong>${co.testeur_nom}</strong></span>`
+    const motifHtml = annule && co.motif_annulation
+        ? `<div style="font-size:11px;color:#999;margin-top:3px;font-style:italic;">Motif : "${co.motif_annulation}"</div>`
         : '';
 
     const actionHtml = annule
         ? `<button data-action="voir-motif" data-id="${co.id}" data-nom="${nomComplet}"
                 title="${co.motif_annulation ? 'Motif : ' + co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
-                style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;">📝</button>`
+                style="background:none;border:none;cursor:pointer;font-size:12px;color:#999;padding:2px 4px;font-weight:600;">📝 Voir motif</button>`
         : `<button data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}" data-categorie="${co.categorie}" data-famille="${co.famille}"
-                style="background:#fff;border:2px solid #c62828;color:#c62828;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
-                ↩ Annuler
+                style="background:none;border:none;cursor:pointer;font-size:12px;color:#e65100;font-weight:600;padding:2px 0;white-space:nowrap;">
+                ↩ Annuler ce CACES®
             </button>`;
 
-    const motifHtml = annule && co.motif_annulation
-        ? `<div style="font-size:12px;color:#888;margin-top:4px;font-style:italic;">Motif : "${co.motif_annulation}"</div>`
-        : '';
+    return `
+    <div data-caces-id="${co.id}"
+         style="border:1px solid ${annule ? '#e8e8e8' : '#c8d8f0'};border-radius:12px;overflow:hidden;margin-bottom:8px;background:#fff;${annule ? 'opacity:0.65;' : ''}box-shadow:0 1px 3px rgba(0,0,0,0.05);">
 
-    const optionsPratique = co.options_pratique
-        ? co.options_pratique.split(',').map(o => `<span style="background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:1px 5px;font-size:11px;">${o.trim()}</span>`).join(' ')
-        : '';
-
-    const sourcesHtml = `<div id="vsources-${co.id}" style="display:none;background:#f8f9ff;border-radius:8px;padding:10px 14px;margin-top:8px;flex-direction:column;gap:6px;">
-        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-            <span style="width:70px;color:#666;font-weight:600;">🎓 Théorie</span>
-            <a href="/sessions/${co.session_id_theorie}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_theorie || '—'}</a>
-            <span style="color:#444;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
-            <span style="color:#2e7d32;font-weight:700;">✅</span>
-            ${co.testeur_nom_theorie ? `<span style="font-size:12px;color:#555;">| Testeur&nbsp;: <strong>${co.testeur_nom_theorie}</strong></span>` : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-            <span style="width:70px;color:#666;font-weight:600;">🔧 Pratique</span>
-            <a href="/sessions/${co.session_id_pratique}" target="_blank" style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_pratique || '—'}</a>
-            <span style="color:#444;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
-            <span style="color:#2e7d32;font-weight:700;">✅</span>
-            <span style="font-size:13px;font-weight:700;background:#e8eaf6;color:#283593;padding:1px 6px;border-radius:4px;">${co.categorie}</span>
-            ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
-            ${co.testeur_nom ? `<span style="font-size:12px;color:#555;">| Testeur&nbsp;: <strong>${co.testeur_nom}</strong></span>` : ''}
-        </div>
-    </div>`;
-
-    const toggleHtml = `<button data-action="toggle-vsources" data-id="${co.id}"
-            style="background:none;border:none;cursor:pointer;font-size:12px;color:#1a237e;font-weight:600;padding:0;display:flex;align-items:center;gap:4px;">
-            <span id="varrow-${co.id}">▶</span> Voir les sources
-        </button>`;
-
-    return `<div data-caces-id="${co.id}" style="border:1px solid ${annule ? '#e8e8e8' : '#c8d8f0'};border-radius:12px;padding:10px 16px;margin-bottom:8px;background:#fff;${annule ? 'opacity:0.6;' : ''}box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <!-- Header -->
+        <div style="background:${annule ? '#f5f5f5' : '#f0f2f7'};border-bottom:1px solid ${annule ? '#e8e8e8' : '#dde3f0'};padding:9px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             ${noBadge}
             ${badgeStatut(co.statut)}
             <span style="font-size:14px;font-weight:700;color:#1a237e;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</span>
-            <span style="font-weight:700;color:#1a237e;font-size:12px;">${co.famille}</span>
-            <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:800;">${co.categorie}</span>
+            <span style="font-weight:700;color:#555;font-size:12px;background:#e8eaf6;padding:2px 7px;border-radius:4px;">${co.famille}</span>
+            <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:800;">${co.categorie}</span>
             ${options}
-            ${testeurHtml}
-            <span style="font-size:12px;color:#555;">📅 <strong>${fmtDate(co.date_obtention)}</strong></span>
-            <span style="font-size:12px;color:#555;">⏳ <strong style="color:#2e7d32;">${fmtDate(co.date_echeance)}</strong></span>
-            <span style="flex:1;"></span>
-            ${toggleHtml}
+        </div>
+
+        <!-- Body 2 colonnes -->
+        <div style="display:flex;align-items:stretch;">
+
+            <!-- Gauche : dates -->
+            <div style="width:190px;min-width:190px;padding:12px 16px;border-right:2px solid #e8eef8;background:#fafbff;display:flex;flex-direction:column;gap:10px;justify-content:center;">
+                <div>
+                    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">📅 Obtention</div>
+                    <div style="font-size:16px;font-weight:800;color:#1a237e;">${fmtDate(co.date_obtention)}</div>
+                </div>
+                <div>
+                    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">⏳ Échéance</div>
+                    <div style="font-size:14px;font-weight:700;color:#2e7d32;">${fmtDate(co.date_echeance)}</div>
+                </div>
+            </div>
+
+            <!-- Droite : testeur + motif -->
+            <div style="flex:1;padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:4px;">
+                ${co.testeur_nom
+                    ? `<div style="font-size:13px;color:#555;">🧑‍🏫 Testeur : <strong>${co.testeur_nom}</strong></div>`
+                    : `<div style="font-size:12px;color:#bbb;font-style:italic;">Testeur non renseigné</div>`
+                }
+                ${motifHtml}
+            </div>
+
+        </div>
+
+        <!-- Footer : actions -->
+        <div style="border-top:1px solid #f0f0f0;padding:7px 16px;display:flex;justify-content:flex-end;background:#fafbff;">
             ${actionHtml}
         </div>
-        ${motifHtml}
-        ${sourcesHtml}
+
     </div>`;
 }
 
