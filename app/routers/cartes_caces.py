@@ -395,11 +395,24 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     qr_b64 = _b64.b64encode(qr_buf.getvalue()).decode()
     qr_html = f'<img class="r-qr" src="data:image/png;base64,{qr_b64}">'
 
-    # Photo -> dimensions inline (WeasyPrint ne gere pas bien object-fit)
-    photo_html = (
-        f'<img style="width:11mm;height:12mm;display:block;border:0.4mm solid #bbb;border-radius:0.6mm;" src="{_esc(s.photo)}">'
-        if s.photo else '<div class="r-photo-ph"></div>'
-    )
+    # Photo -> fetch manuel + base64 (WeasyPrint bloque les URLs externes)
+    photo_html = '<div class="r-photo-ph"></div>'
+    if s.photo:
+        try:
+            from urllib.request import urlopen
+            with urlopen(s.photo, timeout=8) as _r:
+                _raw = _r.read()
+                _ct = (_r.headers.get('Content-Type') or 'image/jpeg').split(';')[0].strip()
+                if not _ct.startswith('image/'):
+                    _ct = 'image/jpeg'
+                _pb64 = _b64.b64encode(_raw).decode()
+                photo_html = (
+                    f'<img style="width:11mm;height:12mm;display:block;'
+                    f'border:0.4mm solid #bbb;border-radius:0.6mm;" '
+                    f'src="data:{_ct};base64,{_pb64}">'
+                )
+        except Exception:
+            pass
 
     # Logo organisme
     if cfg and cfg.logo_base64:
