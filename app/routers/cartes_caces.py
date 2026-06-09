@@ -395,15 +395,41 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     qr_b64 = _b64.b64encode(qr_buf.getvalue()).decode()
     qr_html = f'<img class="r-qr" src="data:image/png;base64,{qr_b64}">'
 
-    # Photo -> base64 pur stocké en DB, construire le data URI directement
+    # Photo -> 3 cas : chemin local /uploads/, URL https://, base64 brut
+    photo_html = '<div class="r-photo-ph"></div>'
     if s.photo:
-        _src = s.photo if s.photo.startswith('data:') else f'data:image/jpeg;base64,{s.photo}'
-        photo_html = (
-            f'<img style="width:22mm;height:28mm;display:block;'
-            f'border:0.4mm solid #bbb;border-radius:0.6mm;" src="{_src}">'
-        )
-    else:
-        photo_html = '<div class="r-photo-ph"></div>'
+        import os as _os
+        _pv = s.photo
+        _src = None
+        if _pv.startswith('data:'):
+            _src = _pv
+        elif _pv.startswith('http://') or _pv.startswith('https://'):
+            try:
+                from urllib.request import urlopen as _uo
+                with _uo(_pv, timeout=8) as _r:
+                    _raw = _r.read()
+                    _ct = (_r.headers.get('Content-Type') or 'image/jpeg').split(';')[0].strip()
+                    _src = f'data:{_ct};base64,{_b64.b64encode(_raw).decode()}'
+            except Exception:
+                pass
+        elif _pv.startswith('/'):
+            _fs = '.' + _pv  # ./uploads/photos/stagiaire_1.png
+            if _os.path.exists(_fs):
+                try:
+                    with open(_fs, 'rb') as _f:
+                        _raw = _f.read()
+                    _ext = _pv.rsplit('.', 1)[-1].lower() if '.' in _pv else 'jpg'
+                    _ct = 'image/jpeg' if _ext in ('jpg', 'jpeg') else f'image/{_ext}'
+                    _src = f'data:{_ct};base64,{_b64.b64encode(_raw).decode()}'
+                except Exception:
+                    pass
+        else:
+            _src = f'data:image/jpeg;base64,{_pv}'
+        if _src:
+            photo_html = (
+                f'<img style="width:22mm;height:28mm;display:block;'
+                f'border:0.4mm solid #bbb;border-radius:0.6mm;" src="{_src}">'
+            )
 
     # Logo organisme
     if cfg and cfg.logo_base64:
