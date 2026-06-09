@@ -55,6 +55,7 @@
         .col-val  { width: 72px; white-space: nowrap; }
         .cat-code { font-weight: 800; color: #1a237e; }
         .cat-lib  { font-size: 0.7rem; color: #888; display: block; margin-top: 2px; }
+        .cat-test { font-size: 0.68rem; color: #aaa; display: block; margin-top: 2px; font-style: italic; }
         .no-caces { font-family: monospace; font-weight: 700; font-size: 0.78rem; }
         .opt-badge { display: inline-block; background: #e8eef8; color: #1a237e; font-size: 0.65rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; margin-right: 2px; margin-bottom: 1px; }
         .date-std { font-weight: 600; font-size: 0.78rem; }
@@ -163,6 +164,7 @@
                         <td class="col-cat">
                             <span class="cat-code">{{ c.categorie }}</span>
                             {% if c.categorie_libelle %}<span class="cat-lib">{{ c.categorie_libelle }}</span>{% endif %}
+                            {% if c.testeur_nom %}<span class="cat-test">{{ c.testeur_nom }}</span>{% endif %}
                         </td>
                         <td class="col-no"><span class="no-caces">{% if c.numero_ordre %}{{ "%04d" % c.numero_ordre }}{% else %}—{% endif %}</span></td>
                         <td class="col-opt">
