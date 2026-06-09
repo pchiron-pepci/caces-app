@@ -654,6 +654,7 @@ const START_DIRECT = {{ 'true' if start_direct is defined and start_direct else 
 const START_STAGIAIRE_ID = {{ start_stagiaire_id if start_stagiaire_id is defined else 'null' }};
 const START_NOM = "{{ start_nom if start_nom is defined else '' }}";
 const START_PRENOM = "{{ start_prenom if start_prenom is defined else '' }}";
+const START_DDN = "{{ start_ddn if start_ddn is defined else '' }}";
 
 let questions = [];
 let reponses = {};
@@ -745,12 +746,13 @@ document.getElementById('select-candidat').addEventListener('change', function()
 
 if (START_DIRECT && START_STAGIAIRE_ID) {
     stagiaireId = START_STAGIAIRE_ID;
-    const headerEl = document.getElementById('header-candidat');
-    if (headerEl) headerEl.textContent = START_NOM + ' ' + START_PRENOM;
+    const nomComplet = START_NOM + ' ' + START_PRENOM;
+    document.getElementById('identite-nom').textContent = nomComplet;
+    document.getElementById('identite-info').textContent = START_DDN ? 'Date de naissance le ' + START_DDN : '';
+    document.getElementById('header-candidat').textContent = nomComplet;
+    document.getElementById('confirm-identite').checked = false;
     document.getElementById('ecran-selection').style.display = 'none';
-    document.getElementById('ecran-identite').style.display = 'none';
-    document.getElementById('ecran-consignes').style.display = 'none';
-    demarrerTest();
+    document.getElementById('ecran-identite').style.display = 'block';
 }
 
 // ECRAN 1 → 2

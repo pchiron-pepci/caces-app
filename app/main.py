@@ -1060,6 +1060,7 @@ def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: i
             "start_stagiaire_id": stagiaire_id,
             "start_nom": stagiaire.nom if stagiaire else "",
             "start_prenom": stagiaire.prenom if stagiaire else "",
+            "start_ddn": stagiaire.date_naissance.isoformat() if stagiaire and stagiaire.date_naissance else "",
         }
     )
 
