@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     chargerStagiaires();
     chargerEmises();
 
-    let _stagDdn = null; // DDN attendue pour le stagiaire sélectionné (YYYY-MM-DD)
+    let _resolvedStagId = null; // ID résolu après sélection (+DDN si homonymes)
 
     function _resetFamille() {
         const sel = document.getElementById('sel-famille');
@@ -36,37 +36,38 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // --- Sélect stagiaire → confirmation DDN puis familles ---
+    // --- Sélect stagiaire → si homonymes, montrer select DDN, sinon charger familles ---
     document.getElementById('sel-stagiaire').addEventListener('change', function () {
-        const stagId = this.value;
+        const nomPrenom = this.value;
+        _resolvedStagId = null;
         _resetFamille();
         document.getElementById('section-caces').style.display = 'none';
         document.getElementById('resultats-placeholder').style.display = 'flex';
+        document.getElementById('ddn-section').style.display = 'none';
 
-        // Reset DDN section
-        const ddnSection = document.getElementById('ddn-section');
-        document.getElementById('input-ddn').value = '';
-        document.getElementById('ddn-erreur').textContent = '';
-        ddnSection.style.display = 'none';
-        _stagDdn = null;
+        if (!nomPrenom) return;
 
-        if (!stagId) return;
-
-        const selectedOpt = this.options[this.selectedIndex];
-        _stagDdn = selectedOpt.dataset.ddn || null;
-
-        if (!_stagDdn) {
-            // Pas de DDN enregistrée → charger familles directement
-            _chargerFamilles(stagId);
+        const groupe = _stagiairesParNom[nomPrenom] || [];
+        if (groupe.length === 1) {
+            _resolvedStagId = groupe[0].id;
+            _chargerFamilles(_resolvedStagId);
         } else {
-            ddnSection.style.display = 'block';
-            document.getElementById('input-ddn').focus();
+            // Plusieurs homonymes → proposer le choix de la DDN
+            const selDdn = document.getElementById('sel-ddn');
+            selDdn.innerHTML = '<option value="">— Choisir la date de naissance —</option>';
+            groupe.forEach(function (p) {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                if (p.ddn) {
+                    const parts = p.ddn.split('-');
+                    opt.textContent = parts[2] + '/' + parts[1] + '/' + parts[0];
+                } else {
+                    opt.textContent = 'Date inconnue';
+                }
+                selDdn.appendChild(opt);
+            });
+            document.getElementById('ddn-section').style.display = 'block';
         }
-    });
-
-    // --- Enter sur le champ DDN ---
-    document.getElementById('input-ddn').addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') document.querySelector('[data-action="confirmer-ddn"]').click();
     });
 
     // --- PIN modal ---
@@ -87,34 +88,26 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Délégation clics ---
     document.addEventListener('click', function (e) {
 
-        // Confirmer DDN
+        // Confirmer DDN (sélection parmi les homonymes)
         const btnDdn = e.target.closest('[data-action="confirmer-ddn"]');
         if (btnDdn) {
-            const val = document.getElementById('input-ddn').value; // YYYY-MM-DD
-            const errEl = document.getElementById('ddn-erreur');
-            if (!val) { errEl.textContent = 'Saisissez la date de naissance.'; return; }
-            if (val !== _stagDdn) {
-                errEl.textContent = 'Date de naissance incorrecte — veuillez réessayer.';
-                document.getElementById('input-ddn').value = '';
-                document.getElementById('input-ddn').focus();
-                return;
-            }
-            errEl.textContent = '';
+            const val = document.getElementById('sel-ddn').value;
+            if (!val) return;
+            _resolvedStagId = parseInt(val, 10);
             document.getElementById('ddn-section').style.display = 'none';
-            _chargerFamilles(document.getElementById('sel-stagiaire').value);
+            _chargerFamilles(_resolvedStagId);
             return;
         }
 
         // Voir les CACES®
         const btnVoir = e.target.closest('[data-action="voir-caces"]');
         if (btnVoir) {
-            const stagId = document.getElementById('sel-stagiaire').value;
             const famille = document.getElementById('sel-famille').value;
-            if (!stagId || !famille) {
+            if (!_resolvedStagId || !famille) {
                 alert('Choisissez un stagiaire et une famille.');
                 return;
             }
-            _chargerCacesValides(stagId, famille);
+            _chargerCacesValides(_resolvedStagId, famille);
             return;
         }
 
@@ -247,29 +240,26 @@ function _noFormate(n) {
 }
 
 // ===== CHARGEMENT STAGIAIRES =====
+// Groupes par nom+prénom pour la résolution des homonymes
+const _stagiairesParNom = {};
+
 async function chargerStagiaires() {
     const sel = document.getElementById('sel-stagiaire');
     try {
         const r = await fetch('/api/cartes-caces/stagiaires');
         if (!r.ok) return;
         const data = await r.json();
-        // Détecte les doublons nom+prénom pour ajouter la date de naissance
-        const counts = {};
+        // Construire les groupes
         data.forEach(function (s) {
-            const k = s.nom + '|' + s.prenom;
-            counts[k] = (counts[k] || 0) + 1;
+            const key = s.nom + ' ' + s.prenom;
+            if (!_stagiairesParNom[key]) _stagiairesParNom[key] = [];
+            _stagiairesParNom[key].push({ id: s.id, ddn: s.date_naissance || null });
         });
-        data.forEach(function (s) {
+        // Une seule option par nom unique (la valeur = clé nom+prénom)
+        Object.keys(_stagiairesParNom).sort().forEach(function (nom) {
             const opt = document.createElement('option');
-            opt.value = s.id;
-            if (s.date_naissance) opt.dataset.ddn = s.date_naissance; // YYYY-MM-DD pour comparaison
-            const doublon = counts[s.nom + '|' + s.prenom] > 1;
-            let label = s.nom + ' ' + s.prenom;
-            if (doublon && s.date_naissance) {
-                const p = s.date_naissance.split('-');
-                label += ' (né' + (s.nom ? '' : 'e') + ' le ' + p[2] + '/' + p[1] + '/' + p[0] + ')';
-            }
-            opt.textContent = label;
+            opt.value = nom;
+            opt.textContent = nom;
             sel.appendChild(opt);
         });
     } catch (_) {}
