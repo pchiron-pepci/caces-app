@@ -348,19 +348,15 @@ function ouvrirAjoutCandidat() {
     document.getElementById('candidat-title').textContent = 'Ajouter un candidat';
     document.getElementById('sc-id').value = '';
     document.getElementById('sc-stagiaire').value = '';
-    document.getElementById('sc-rgpd').value = 'true';
-    document.getElementById('sc-photo').value = 'true';
     document.getElementById('sc-theorie').value = 'normal';
     document.getElementById('field-stagiaire').style.display = 'block';
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
-function editerCandidat(id, stagiaireId, theorie_dispensee, rgpd, photo) {
+function editerCandidat(id, stagiaireId, theorie_dispensee) {
     document.getElementById('candidat-title').textContent = 'Modifier candidat';
     document.getElementById('sc-id').value = id;
     document.getElementById('sc-stagiaire').value = stagiaireId;
-    document.getElementById('sc-rgpd').value = rgpd ? 'true' : 'false';
-    document.getElementById('sc-photo').value = photo ? 'true' : 'false';
     document.getElementById('sc-theorie').value = theorie_dispensee ? 'dispense' : 'normal';
     document.getElementById('field-stagiaire').style.display = 'none';
     document.getElementById('modal-candidat').style.display = 'flex';

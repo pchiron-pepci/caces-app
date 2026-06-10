@@ -547,20 +547,44 @@
                     <td>{{ sc.stagiaire.employeur or '—' }}</td>
                     <td>
                         {% set cs = consentements_map.get(sc.stagiaire_id) %}
-                        {% if cs and cs.horodatage %}
-                            {% if cs.rgpd_accepte and cs.photo_accepte and cs.plaintes_atteste %}
-                                <button data-action="ouvrir-rgpd-relire"
-                                    data-session-id="{{ session.id }}"
-                                    data-stagiaire-id="{{ sc.stagiaire_id }}"
-                                    style="background:#2e7d32; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">✅ RGPD</button>
+                        {% if session.statut == 'terminee' %}
+                            {# Clôturée : figé — relire ou badge selon signature #}
+                            {% if cs and cs.horodatage %}
+                                {% if cs.rgpd_accepte and cs.photo_accepte and cs.plaintes_atteste %}
+                                    <button data-action="ouvrir-rgpd-relire"
+                                        data-session-id="{{ session.id }}"
+                                        data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                        style="background:#2e7d32; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">✅ RGPD</button>
+                                {% else %}
+                                    <button data-action="ouvrir-rgpd-relire"
+                                        data-session-id="{{ session.id }}"
+                                        data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                        style="background:#e65100; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">⚠️ RGPD</button>
+                                {% endif %}
                             {% else %}
-                                <button data-action="ouvrir-rgpd-relire"
-                                    data-session-id="{{ session.id }}"
-                                    data-stagiaire-id="{{ sc.stagiaire_id }}"
-                                    style="background:#e65100; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">⚠️ RGPD</button>
+                                <span class="badge red">Non signé</span>
                             {% endif %}
                         {% else %}
-                            {% if session.statut != 'terminee' %}
+                            {# Session active : toujours overlay (relance possible) #}
+                            {% if cs and cs.horodatage %}
+                                {% if cs.rgpd_accepte and cs.photo_accepte and cs.plaintes_atteste %}
+                                    <button data-action="ouvrir-rgpd-overlay"
+                                        data-session-id="{{ session.id }}"
+                                        data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                        data-nom="{{ sc.stagiaire.nom }}"
+                                        data-prenom="{{ sc.stagiaire.prenom }}"
+                                        data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
+                                        style="background:#2e7d32; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">✅ RGPD</button>
+                                {% else %}
+                                    <button data-action="ouvrir-rgpd-overlay"
+                                        data-session-id="{{ session.id }}"
+                                        data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                        data-nom="{{ sc.stagiaire.nom }}"
+                                        data-prenom="{{ sc.stagiaire.prenom }}"
+                                        data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
+                                        style="background:#e65100; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">⚠️ RGPD</button>
+                                {% endif %}
+                            {% else %}
                                 <button data-action="ouvrir-rgpd-overlay"
                                     data-session-id="{{ session.id }}"
                                     data-stagiaire-id="{{ sc.stagiaire_id }}"
@@ -568,8 +592,6 @@
                                     data-prenom="{{ sc.stagiaire.prenom }}"
                                     data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
                                     style="background:#cc0000; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">⏳ RGPD</button>
-                            {% else %}
-                                <span class="badge red">Non signé</span>
                             {% endif %}
                         {% endif %}
                     </td>
