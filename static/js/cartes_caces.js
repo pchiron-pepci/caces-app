@@ -691,7 +691,9 @@ function _buildCr80Html(data, cfg) {
         +     '<div class="r-right">'
         +       photoHtml
         +       '<div class="r-sep"></div>'
-        +       '<div id="qr" data-url="' + (verifyUrl || data.numero_carte) + '"></div>'
+        +       '<a href="' + (verifyUrl || '') + '" target="_blank" style="display:block;text-decoration:none;">'
+        +         '<div id="qr" data-url="' + (verifyUrl || data.numero_carte) + '"></div>'
+        +       '</a>'
         +       '<div class="r-qr-text">Scanner · Vérifier</div>'
         +     '</div>'
         +   '</div>'
@@ -716,7 +718,7 @@ function _buildCr80Html(data, cfg) {
         +     '</table>'
         +   '</div>'
         +   '<div class="v-ftr">'
-        +     (verifyUrl ? 'Vérification : ' + verifyUrl + ' — ' : '')
+        +     (verifyUrl ? 'Vérification : <a href="' + verifyUrl + '" target="_blank" style="color:inherit;">' + verifyUrl + '</a> — ' : '')
         +     'Document recto/verso. Toute copie doit comporter les 2 faces.'
         +   '</div>'
         + '</div>'

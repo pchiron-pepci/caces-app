@@ -395,7 +395,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     qr_buf = _BIO()
     qr_img.save(qr_buf, format='PNG')
     qr_b64 = _b64.b64encode(qr_buf.getvalue()).decode()
-    qr_html = f'<img class="r-qr" src="data:image/png;base64,{qr_b64}">'
+    qr_html = f'<a href="{verify_url}" target="_blank" style="display:block;text-decoration:none;"><img class="r-qr" src="data:image/png;base64,{qr_b64}"></a>'
 
     # Photo -> photo_base64 (DB) en priorité, fallback chemin fichier local
     photo_html = '<div class="r-photo-ph"></div>'
@@ -590,7 +590,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     siret_html = f'<div class="r-siret">{siret_line}</div>' if siret_line else ''
     sign_bloc = f'<div class="r-sign">{sign_html}{_esc(sig_ligne)}</div>' if sig_ligne else ''
     edition_html = f' <span class="v-hdate">· Édition du {_esc(date_gen_str)}</span>' if date_gen_str else ''
-    verif_html = f'Vérification : {_esc(verify_url)} — ' if verify_url else ''
+    verif_html = (f'Vérification : <a href="{verify_url}" target="_blank" style="color:inherit;">{_esc(verify_url)}</a> — ' if verify_url else '')
 
     return (
         '<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><style>' + css + '</style></head><body>\n'
