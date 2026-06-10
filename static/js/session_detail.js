@@ -619,6 +619,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnDirect.addEventListener('click', async function() {
             if (!_rgpdStag) return;
             await _envoyerVerification();
+            document.getElementById('overlay-rgpd').style.display = 'none';
             window.open('/consentement/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId + '?direct=1', '_blank');
         });
     }
