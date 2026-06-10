@@ -422,21 +422,29 @@
                                 {% if att and att.horodatage %}
                                     <button data-action="ouvrir-neutralite-relire"
                                         data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}"
-                                        style="background:#2e7d32; color:white; border:none; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:700; cursor:pointer;">✅</button>
+                                        style="background:#e8f5e9; border:1.5px solid #2e7d32; border-radius:6px; cursor:pointer; font-size:15px; padding:2px 6px; line-height:1;"
+                                        title="Attestation signée — voir preuve">⚖️</button>
                                 {% else %}
-                                    <span style="display:inline-block; background:#e0e0e0; color:#888; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:700;">⏳</span>
+                                    <span style="font-size:15px; opacity:0.2; line-height:1;" title="Non signé">⚖️</span>
                                 {% endif %}
                             {% else %}
-                                <button data-action="ouvrir-neutralite-overlay"
-                                    data-jour-id="{{ j.id }}"
-                                    data-stagiaire-id="{{ sc.stagiaire_id }}"
-                                    data-nom="{{ sc.stagiaire.nom }}"
-                                    data-prenom="{{ sc.stagiaire.prenom }}"
-                                    data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
-                                    data-testeur="{{ j.testeur_nom }}"
-                                    style="background:{% if att and att.horodatage %}#2e7d32{% else %}#cc0000{% endif %}; color:white; border:none; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:700; cursor:pointer;">
-                                    {% if att and att.horodatage %}✅{% else %}⏳{% endif %}
-                                </button>
+                                {% if att and att.horodatage %}
+                                    <button data-action="ouvrir-neutralite-overlay"
+                                        data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                        data-nom="{{ sc.stagiaire.nom }}" data-prenom="{{ sc.stagiaire.prenom }}"
+                                        data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
+                                        data-testeur="{{ j.testeur_nom }}"
+                                        style="background:#e8f5e9; border:1.5px solid #2e7d32; border-radius:6px; cursor:pointer; font-size:15px; padding:2px 6px; line-height:1;"
+                                        title="Attestation signée — cliquer pour relancer">⚖️</button>
+                                {% else %}
+                                    <button data-action="ouvrir-neutralite-overlay"
+                                        data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                        data-nom="{{ sc.stagiaire.nom }}" data-prenom="{{ sc.stagiaire.prenom }}"
+                                        data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
+                                        data-testeur="{{ j.testeur_nom }}"
+                                        style="background:none; border:none; cursor:pointer; font-size:15px; opacity:0.35; padding:2px; line-height:1;"
+                                        title="Attestation neutralité — cliquer pour démarrer">⚖️</button>
+                                {% endif %}
                             {% endif %}
                         </td>
                         <td>
