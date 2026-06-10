@@ -619,7 +619,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnDirect.addEventListener('click', async function() {
             if (!_rgpdStag) return;
             await _envoyerVerification();
-            window.open('/consentement/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId, '_blank');
+            window.open('/consentement/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId + '?direct=1', '_blank');
         });
     }
 });

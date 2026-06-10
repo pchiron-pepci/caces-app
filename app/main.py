@@ -1062,7 +1062,7 @@ def page_consentement_relire(request: Request, session_id: int, stagiaire_id: in
     )
 
 @app.get("/consentement/{session_id}/{stagiaire_id}")
-def page_consentement(request: Request, session_id: int, stagiaire_id: int):
+def page_consentement(request: Request, session_id: int, stagiaire_id: int, direct: int = 0):
     from datetime import date
     db = SessionLocal()
     session = db.query(Session).filter(Session.id == session_id).first()
@@ -1078,6 +1078,7 @@ def page_consentement(request: Request, session_id: int, stagiaire_id: int):
             "session": session,
             "stagiaire": stagiaire,
             "today": today,
+            "mode_direct": bool(direct),
         }
     )
 

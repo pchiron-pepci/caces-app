@@ -293,8 +293,11 @@
         <div class="ecran-ok">
             <div class="ecran-ok-icon">✅</div>
             <div class="ecran-ok-titre">Consentement enregistré</div>
-            <div style="font-size:14px; color:#666; line-height:1.6;">Votre consentement a été enregistré avec succès.</div>
-            <div class="ecran-ok-remise">REMETTEZ LA TABLETTE AU TESTEUR</div>
+            {% if mode_direct %}
+            <div class="ecran-ok-remise">Merci. Remettez la tablette au testeur ou au formateur.</div>
+            {% else %}
+            <div style="font-size:16px; color:#444; line-height:1.6; margin-top:16px;">Merci, votre consentement est enregistré.<br>Vous pouvez fermer cette page.</div>
+            {% endif %}
         </div>
     </div>
 </div>
