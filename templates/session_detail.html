@@ -38,10 +38,10 @@
 
 <!-- RECAPITULATIF SESSION - lecture seule -->
 <div class="card" style="margin-bottom:16px;">
-    <div class="card-header">
-        <h2>Récapitulatif session</h2>
+    <div class="card-header" style="border-left:4px solid #cc0000; background:#2d2d2d;">
+        <h2 style="color:white;">Récapitulatif session</h2>
     </div>
-    <div style="overflow-x:auto; padding:8px;">
+    <div style="overflow-x:auto; padding:8px; background:#f7f8fa;">
         <table class="table" id="tableau-sequencage">
             <thead>
                 <tr>
@@ -115,10 +115,10 @@
 
 <!-- RECAPITULATIF SEQUENCAGE -->
 <div class="card" style="margin-bottom:16px;">
-    <div class="card-header" style="border-left:4px solid #cc0000;">
-        <h2>Récapitulatif séquençage</h2>
+    <div class="card-header" style="border-left:4px solid #cc0000; background:#2d2d2d;">
+        <h2 style="color:white;">Récapitulatif séquençage</h2>
     </div>
-    <div style="padding:8px;">
+    <div style="padding:8px; background:#f7f8fa;">
         {% for date, entry in jours_par_date.items() %}
         <div style="margin-bottom:{% if not loop.last %}24px{% else %}8px{% endif %};">
             <!-- Bandeau en-tête jour fusionné -->
