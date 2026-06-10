@@ -107,6 +107,22 @@
                         <strong>{{ ut_candidat.get(sc.stagiaire_id, 0) }}</strong>/{{ ut_planifie_candidat.get(sc.stagiaire_id, 0) }}
                     </td>
                 </tr>
+                {% set t_stag = testeur_initiales_par_stag_cat.get(sc.stagiaire_id, {}) %}
+                {% if t_stag %}
+                <tr style="background:#f0f2f7;">
+                    <td style="padding:1px 8px; height:20px;"></td>
+                    <td></td>
+                    {% for cat in categories %}
+                    <td style="text-align:center; padding:2px;">
+                        {% set t_info = t_stag.get(cat) %}
+                        {% if t_info %}
+                            <span style="font-size:10px; color:#555; font-weight:600; letter-spacing:0.5px;" title="{{ t_info.nom }}">{{ t_info.initiales }}</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td></td>
+                </tr>
+                {% endif %}
                 {% endfor %}
             </tbody>
         </table>

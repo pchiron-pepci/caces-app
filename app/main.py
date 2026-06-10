@@ -313,6 +313,12 @@ def ut_ligne(base_ut: float, cat_code: str, options: list, opt_incluse_set: set)
     base_ut = 0.0 pour option-seule (catégorie non planifiée en base)."""
     return round(base_ut + sum(0.5 for o in options if (cat_code, o) not in opt_incluse_set), 1)
 
+def _initiales_testeur(nom_complet: str) -> str:
+    parts = nom_complet.strip().split()
+    if len(parts) >= 2:
+        return (parts[0][:2] + parts[1][0]).upper()
+    return parts[0][:3].upper() if parts else "?"
+
 app = FastAPI(
     title="NORYX Engins",
     description="Pilotage CACES® & Autorisation de conduite — PEPCI Formation",
@@ -799,6 +805,14 @@ def page_session_detail(request: Request, session_id: int):
             if e.obtenue and not epreuves_map[key].obtenue:
                 epreuves_map[key] = e
 
+    testeur_initiales_par_stag_cat = {}
+    for (stag_id, cat), e in epreuves_map.items():
+        if e.testeur_id and e.testeur_nom and e.testeur_nom != "?":
+            testeur_initiales_par_stag_cat.setdefault(stag_id, {})[cat] = {
+                "initiales": _initiales_testeur(e.testeur_nom),
+                "nom": e.testeur_nom,
+            }
+
     ut_candidat = {}
     for e in epreuves:
         ut_candidat[e.stagiaire_id] = ut_candidat.get(e.stagiaire_id, 0) + e.ut
@@ -990,6 +1004,7 @@ def page_session_detail(request: Request, session_id: int):
             "options_par_cat": options_par_cat,
             "opt_incluse_set": opt_incluse_set,
             "ut_planifie_par_stag_cat": ut_planifie_par_stag_cat,
+            "testeur_initiales_par_stag_cat": testeur_initiales_par_stag_cat,
             "jours_par_date": jours_par_date,
             "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date]
         }
