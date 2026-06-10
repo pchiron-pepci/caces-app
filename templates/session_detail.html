@@ -357,6 +357,7 @@
         {% endif %}
     </div>
 
+    <style>.table-pratique td { padding: 5px 8px; } .table-pratique th { padding: 6px 8px; }</style>
     <!-- EPREUVES PRATIQUES -->
     <div class="card">
         <div class="card-header">
@@ -397,7 +398,7 @@
                     
 
             <!-- Tableau candidats × catégories avec résultats -->
-            <table class="table" style="margin-bottom:0;">
+            <table class="table table-pratique" style="margin-bottom:0;">
                 <thead>
                     <tr>
                         <th style="width:52px; text-align:center;">Neutr.</th>
@@ -418,14 +419,15 @@
                     {% set att = attestations_neutralite_map.get((j.id, sc.stagiaire_id)) %}
                     <tr>
                         <td style="text-align:center; vertical-align:middle;">
+                            {% set _svg_balance %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="7" y1="22" x2="17" y2="22"/><line x1="2" y1="7" x2="22" y2="7"/><line x1="6" y1="7" x2="6" y2="13"/><line x1="18" y1="7" x2="18" y2="13"/><path d="M3 13 A3 3 0 0 1 9 13"/><path d="M15 13 A3 3 0 0 1 21 13"/></svg>{% endset %}
                             {% if session.statut == 'terminee' %}
                                 {% if att and att.horodatage %}
                                     <button data-action="ouvrir-neutralite-relire"
                                         data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}"
-                                        style="background:#e8f5e9; border:1.5px solid #2e7d32; border-radius:6px; cursor:pointer; font-size:15px; padding:2px 6px; line-height:1;"
-                                        title="Attestation signée — voir preuve">⚖️</button>
+                                        style="background:#e8f5e9; border:1.5px solid #2e7d32; border-radius:6px; cursor:pointer; padding:3px 7px; color:#2e7d32; line-height:1;"
+                                        title="Attestation signée — voir preuve">{{ _svg_balance | safe }}</button>
                                 {% else %}
-                                    <span style="font-size:15px; opacity:0.2; line-height:1;" title="Non signé">⚖️</span>
+                                    <span style="display:inline-block; background:#f3f4f6; border:1.5px solid #e0e0e0; border-radius:6px; padding:3px 7px; color:#c0c0c0; line-height:1;" title="Non signé">{{ _svg_balance | safe }}</span>
                                 {% endif %}
                             {% else %}
                                 {% if att and att.horodatage %}
@@ -434,16 +436,16 @@
                                         data-nom="{{ sc.stagiaire.nom }}" data-prenom="{{ sc.stagiaire.prenom }}"
                                         data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
                                         data-testeur="{{ j.testeur_nom }}"
-                                        style="background:#e8f5e9; border:1.5px solid #2e7d32; border-radius:6px; cursor:pointer; font-size:15px; padding:2px 6px; line-height:1;"
-                                        title="Attestation signée — cliquer pour relancer">⚖️</button>
+                                        style="background:#e8f5e9; border:1.5px solid #2e7d32; border-radius:6px; cursor:pointer; padding:3px 7px; color:#2e7d32; line-height:1;"
+                                        title="Attestation signée — cliquer pour relancer">{{ _svg_balance | safe }}</button>
                                 {% else %}
                                     <button data-action="ouvrir-neutralite-overlay"
                                         data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}"
                                         data-nom="{{ sc.stagiaire.nom }}" data-prenom="{{ sc.stagiaire.prenom }}"
                                         data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
                                         data-testeur="{{ j.testeur_nom }}"
-                                        style="background:none; border:none; cursor:pointer; font-size:15px; opacity:0.35; padding:2px; line-height:1;"
-                                        title="Attestation neutralité — cliquer pour démarrer">⚖️</button>
+                                        style="background:#f3f4f6; border:1.5px solid #9ca3af; border-radius:6px; cursor:pointer; padding:3px 7px; color:#4b5563; line-height:1;"
+                                        title="Attestation neutralité — cliquer pour démarrer">{{ _svg_balance | safe }}</button>
                                 {% endif %}
                             {% endif %}
                         </td>
@@ -502,7 +504,7 @@
                 </tbody>
  <tfoot>
     <tr style="background:#f0f2f7; font-size:12px;">
-        <td style="font-weight:700; color:#555;">Total jour</td>
+        <td colspan="2" style="font-weight:700; color:#555;">Total jour</td>
         {% for cat in categories %}
         {% set ut_cat_val = j.ut_total_cat.get(cat, 0) %}
         <td style="text-align:center;">
