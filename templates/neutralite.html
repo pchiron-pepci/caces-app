@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attestation de neutralité</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f6fa; min-height: 100vh; color: #1a1a2e; }
+
+        .header { background: #cc0000; color: white; padding: 16px 20px; }
+        .header-title { font-size: 15px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        .header-sub { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+        .screen { max-width: 600px; margin: 0 auto; padding: 24px 16px 80px; display: none; }
+        .screen.active { display: block; }
+
+        .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); margin-bottom: 14px; }
+        .card-titre { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #cc0000; margin-bottom: 14px; }
+
+        .candidat-nom { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+        .candidat-ddn { color: #666; font-size: 14px; }
+
+        .texte-officiel {
+            font-size: 14px; line-height: 1.7; color: #333;
+            background: #f8f8f8; border-left: 3px solid #cc0000;
+            padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 20px;
+        }
+
+        .checkbox-label {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: #fff8e1; border: 2px solid #ffe082; border-radius: 12px;
+            padding: 16px; cursor: pointer; transition: border-color 0.2s;
+        }
+        .checkbox-label.checked { border-color: #2e7d32; background: #e8f5e9; }
+        .checkbox-label input { width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px; cursor: pointer; accent-color: #2e7d32; }
+        .checkbox-label span { font-size: 14px; font-weight: 700; color: #333; line-height: 1.5; }
+
+        .btn-suivant {
+            width: 100%; padding: 16px; background: #cc0000; color: white;
+            border: none; border-radius: 12px; font-size: 16px; font-weight: 800;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 20px;
+            transition: opacity 0.2s;
+        }
+        .btn-suivant:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-suivant:not(:disabled) { background: #1a237e; }
+
+        .date-text { text-align: center; font-size: 14px; color: #888; margin-bottom: 16px; }
+
+        canvas {
+            border: 2px solid #e0e0e0; border-radius: 12px; background: white;
+            width: 100%; max-width: 520px; height: 180px; display: block; touch-action: none;
+        }
+        .canvas-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-effacer {
+            flex: 1; padding: 10px; background: #f0f2f7; border: none;
+            border-radius: 10px; font-size: 13px; font-weight: 700; color: #555; cursor: pointer;
+        }
+        .btn-valider {
+            flex: 2; padding: 10px; background: #1a237e; color: white;
+            border: none; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer;
+        }
+        .btn-valider:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .ecran-ok { text-align: center; padding: 40px 20px; }
+        .ecran-ok-icon { font-size: 64px; margin-bottom: 16px; }
+        .ecran-ok-titre { font-size: 22px; font-weight: 800; color: #1a237e; margin-bottom: 12px; }
+        .ecran-ok-msg { font-size: 16px; color: #444; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-title">Attestation de neutralité</div>
+    <div class="header-sub">Épreuve pratique CACES®</div>
+</div>
+
+<!-- ÉCRAN 1 : ITEM -->
+<div class="screen active" id="ecran-item">
+    <div class="card">
+        <div class="card-titre">Candidat</div>
+        <div class="candidat-nom">{{ stagiaire.nom }} {{ stagiaire.prenom }}</div>
+        {% if stagiaire.date_naissance %}
+        <div class="candidat-ddn">Né(e) le {{ stagiaire.date_naissance.strftime('%d/%m/%Y') }}</div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-titre">Attestation obligatoire</div>
+        <div class="texte-officiel">
+            En application du référentiel de certification des OTC (dit RC 2020) et des Recommandations CACES®, j'atteste sur l'honneur que le formateur et le testeur de l'épreuve pratique sont deux personnes différentes.
+        </div>
+        <label class="checkbox-label" id="cb-label">
+            <input type="checkbox" id="cb-atteste" onchange="majBouton()">
+            <span>J'atteste que le formateur et le testeur sont deux personnes différentes</span>
+        </label>
+        <button class="btn-suivant" id="btn-suivant" disabled onclick="allerSignature()">
+            Suivant — Signer
+        </button>
+    </div>
+</div>
+
+<!-- ÉCRAN 2 : SIGNATURE -->
+<div class="screen" id="ecran-signature">
+    <div class="card">
+        <div class="card-titre">Signature du candidat</div>
+        <div class="date-text">Fait le {{ today.strftime('%d/%m/%Y') }}</div>
+        <canvas id="sig-canvas"></canvas>
+        <div class="canvas-actions">
+            <button class="btn-effacer" onclick="effacerSignature()">Effacer</button>
+            <button class="btn-valider" id="btn-valider" disabled onclick="soumettre()">Valider ✓</button>
+        </div>
+    </div>
+</div>
+
+<!-- ÉCRAN 3 : CONFIRMATION -->
+<div class="screen" id="ecran-confirmation">
+    <div class="card">
+        <div class="ecran-ok">
+            <div class="ecran-ok-icon">✅</div>
+            <div class="ecran-ok-titre">Attestation enregistrée</div>
+            <div class="ecran-ok-msg">Montrez votre résultat au testeur.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const JOUR_TEST_ID = {{ jour_test_id }};
+const STAGIAIRE_ID = {{ stagiaire_id }};
+
+function majBouton() {
+    const cb = document.getElementById('cb-atteste');
+    const label = document.getElementById('cb-label');
+    const btn = document.getElementById('btn-suivant');
+    label.classList.toggle('checked', cb.checked);
+    btn.disabled = !cb.checked;
+}
+
+function allerSignature() {
+    document.getElementById('ecran-item').classList.remove('active');
+    document.getElementById('ecran-signature').classList.add('active');
+    initCanvas();
+}
+
+// ---- Canvas signature ----
+let canvas, ctx, drawing = false, hasTrait = false;
+
+function initCanvas() {
+    canvas = document.getElementById('sig-canvas');
+    ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = '#1a237e';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); startDraw(e.touches[0]); }, {passive: false});
+    canvas.addEventListener('touchmove', e => { e.preventDefault(); draw(e.touches[0]); }, {passive: false});
+    canvas.addEventListener('touchend', stopDraw);
+}
+
+function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function startDraw(e) { drawing = true; ctx.beginPath(); const p = pos(e); ctx.moveTo(p.x, p.y); }
+function draw(e) {
+    if (!drawing) return;
+    const p = pos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    hasTrait = true;
+    document.getElementById('btn-valider').disabled = false;
+}
+function stopDraw() { drawing = false; }
+function effacerSignature() {
+    if (canvas && ctx) { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    hasTrait = false;
+    document.getElementById('btn-valider').disabled = true;
+}
+
+async function soumettre() {
+    if (!hasTrait) return;
+    const sigBase64 = canvas.toDataURL('image/png');
+    try {
+        const resp = await fetch('/api/neutralite/' + JOUR_TEST_ID + '/' + STAGIAIRE_ID, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ signature_base64: sigBase64 })
+        });
+        if (resp.ok) {
+            document.getElementById('ecran-signature').classList.remove('active');
+            document.getElementById('ecran-confirmation').classList.add('active');
+        } else {
+            alert('Erreur lors de l\'enregistrement.');
+        }
+    } catch(e) {
+        alert('Erreur réseau.');
+    }
+}
+</script>
+</body>
+</html>

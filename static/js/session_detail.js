@@ -633,3 +633,116 @@ function ouvrirRGPDOverlay(sessionId, stagiaireId, nom, prenom, ddn) {
     document.getElementById('rgpd-qr-code').innerHTML = '';
     document.getElementById('overlay-rgpd').style.display = 'flex';
 }
+
+// ====== NEUTRALITÉ OVERLAY ======
+
+var _neutraliteStag = null;
+var _neutraliteVerifEnvoye = false;
+
+function _neutraliteMajChoix() {
+    var sel = document.getElementById('neutralite-verificateur');
+    var cb = document.getElementById('neutralite-identite-cb');
+    var choix = document.getElementById('neutralite-choix');
+    if (sel && cb && choix) {
+        choix.style.display = (sel.value && cb.checked) ? 'block' : 'none';
+    }
+}
+
+document.getElementById('neutralite-identite-cb') && document.getElementById('neutralite-identite-cb').addEventListener('change', _neutraliteMajChoix);
+
+async function _envoyerVerificationNeutralite() {
+    if (_neutraliteVerifEnvoye || !_neutraliteStag) return true;
+    var sel = document.getElementById('neutralite-verificateur');
+    var verificateur = sel ? sel.value : '';
+    if (!verificateur) return false;
+    try {
+        var resp = await fetch(
+            '/api/neutralite/' + _neutraliteStag.jourId + '/' + _neutraliteStag.stagiaireId + '/verification',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ verificateur_identite: verificateur })
+            }
+        );
+        if (resp.ok) { _neutraliteVerifEnvoye = true; return true; }
+    } catch (e) { /* continue */ }
+    return false;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var cbN = document.getElementById('neutralite-identite-cb');
+    if (cbN) cbN.addEventListener('change', _neutraliteMajChoix);
+
+    var selN = document.getElementById('neutralite-verificateur');
+    if (selN) selN.addEventListener('change', _neutraliteMajChoix);
+
+    var btnNQr = document.getElementById('btn-neutralite-qr');
+    if (btnNQr) {
+        btnNQr.addEventListener('click', async function() {
+            var qrContainer = document.getElementById('neutralite-qr-container');
+            var alreadyVisible = qrContainer.style.display !== 'none';
+            if (!alreadyVisible) {
+                await _envoyerVerificationNeutralite();
+                var url = window.location.origin + '/neutralite/' + _neutraliteStag.jourId + '/' + _neutraliteStag.stagiaireId;
+                document.getElementById('neutralite-qr-code').innerHTML = '';
+                new QRCode(document.getElementById('neutralite-qr-code'), {
+                    text: url,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#cc0000',
+                    colorLight: '#ffffff'
+                });
+            }
+            qrContainer.style.display = alreadyVisible ? 'none' : 'block';
+        });
+    }
+
+    var btnNDirect = document.getElementById('btn-neutralite-direct');
+    if (btnNDirect) {
+        btnNDirect.addEventListener('click', async function() {
+            if (!_neutraliteStag) return;
+            await _envoyerVerificationNeutralite();
+            document.getElementById('overlay-neutralite').style.display = 'none';
+            window.open('/neutralite/' + _neutraliteStag.jourId + '/' + _neutraliteStag.stagiaireId + '?direct=1', '_blank');
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="ouvrir-neutralite-overlay"]')) {
+            var btn = e.target.closest('[data-action="ouvrir-neutralite-overlay"]');
+            ouvrirNeutraliteOverlay(
+                btn.dataset.jourId,
+                btn.dataset.stagiaireId,
+                btn.dataset.nom,
+                btn.dataset.prenom,
+                btn.dataset.ddn,
+                btn.dataset.testeur
+            );
+            return;
+        }
+        if (e.target.closest('[data-action="ouvrir-neutralite-relire"]')) {
+            var btn = e.target.closest('[data-action="ouvrir-neutralite-relire"]');
+            window.open('/neutralite/' + btn.dataset.jourId + '/' + btn.dataset.stagiaireId + '/relire', '_blank');
+            return;
+        }
+        if (e.target.closest('[data-action="fermer-neutralite-overlay"]')) {
+            document.getElementById('overlay-neutralite').style.display = 'none';
+            return;
+        }
+    });
+});
+
+function ouvrirNeutraliteOverlay(jourId, stagiaireId, nom, prenom, ddn, testeur) {
+    _neutraliteStag = { jourId: jourId, stagiaireId: stagiaireId };
+    _neutraliteVerifEnvoye = false;
+    document.getElementById('neutralite-nom').textContent = nom + ' ' + prenom;
+    document.getElementById('neutralite-ddn').textContent = ddn ? 'Né(e) le ' + ddn : '';
+    var sel = document.getElementById('neutralite-verificateur');
+    sel.value = testeur || '';
+    document.getElementById('neutralite-identite-cb').checked = false;
+    document.getElementById('neutralite-choix').style.display = 'none';
+    document.getElementById('neutralite-qr-container').style.display = 'none';
+    document.getElementById('neutralite-qr-code').innerHTML = '';
+    document.getElementById('overlay-neutralite').style.display = 'flex';
+    _neutraliteMajChoix();
+}

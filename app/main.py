@@ -30,6 +30,7 @@ from app.models.option_categorie import OptionCategorie
 from app.models.caces_obtenu import CacesObtenu
 from app.models.carte_caces import CarteCaces
 from app.models.consentement_rgpd import ConsentementRGPD
+from app.models.attestation_neutralite import AttestationNeutralite
 
 from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
@@ -38,6 +39,7 @@ from app.routers import caces_obtenus
 from app.routers import cartes_caces
 from app.routers import dev
 from app.routers import consentements
+from app.routers import neutralite
 from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
@@ -416,6 +418,7 @@ app.include_router(caces_obtenus.router)
 app.include_router(cartes_caces.router)
 app.include_router(dev.router)
 app.include_router(consentements.router)
+app.include_router(neutralite.router)
 
 @app.get("/")
 def dashboard(request: Request):
@@ -1006,6 +1009,14 @@ def page_session_detail(request: Request, session_id: int):
         key=lambda x: x["nom_complet"]
     )
 
+    jours_pratiques_ids = [j.id for j in jours_test if j.type == 'pratique']
+    attestations_neutralite_list = db.query(AttestationNeutralite).filter(
+        AttestationNeutralite.jour_test_id.in_(jours_pratiques_ids)
+    ).all() if jours_pratiques_ids else []
+    attestations_neutralite_map = {
+        (a.jour_test_id, a.stagiaire_id): a for a in attestations_neutralite_list
+    }
+
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -1035,6 +1046,7 @@ def page_session_detail(request: Request, session_id: int):
             "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date],
             "consentements_map": consentements_map,
             "verificateurs_liste": verificateurs_liste,
+            "attestations_neutralite_map": attestations_neutralite_map,
         }
     )
 
@@ -1081,6 +1093,53 @@ def page_consentement(request: Request, session_id: int, stagiaire_id: int, dire
             "mode_direct": bool(direct),
         }
     )
+
+@app.get("/neutralite/{jour_test_id}/{stagiaire_id}/relire")
+def page_neutralite_relire(request: Request, jour_test_id: int, stagiaire_id: int):
+    db = SessionLocal()
+    from app.models.jour_test import JourTest
+    jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
+    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+    attestation = db.query(AttestationNeutralite).filter(
+        AttestationNeutralite.jour_test_id == jour_test_id,
+        AttestationNeutralite.stagiaire_id == stagiaire_id
+    ).first()
+    session = db.query(Session).filter(Session.id == jour.session_id).first() if jour else None
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="neutralite_relire.html",
+        context={
+            "attestation": attestation,
+            "stagiaire": stagiaire,
+            "jour": jour,
+            "session": session,
+        }
+    )
+
+
+@app.get("/neutralite/{jour_test_id}/{stagiaire_id}")
+def page_neutralite(request: Request, jour_test_id: int, stagiaire_id: int, direct: int = 0):
+    db = SessionLocal()
+    from app.models.jour_test import JourTest
+    jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
+    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+    from datetime import date
+    today = date.today()
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="neutralite.html",
+        context={
+            "jour_test_id": jour_test_id,
+            "stagiaire_id": stagiaire_id,
+            "stagiaire": stagiaire,
+            "jour": jour,
+            "today": today,
+            "mode_direct": bool(direct),
+        }
+    )
+
 
 @app.get("/sessions/{session_id}/theorie/{stagiaire_id}/detail")
 def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jour_id: int = None):

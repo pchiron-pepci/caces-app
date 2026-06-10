@@ -400,6 +400,7 @@
             <table class="table" style="margin-bottom:0;">
                 <thead>
                     <tr>
+                        <th style="width:52px; text-align:center;">Neutr.</th>
                         <th>Candidat</th>
                         {% for cat in categories %}
                         <th style="text-align:center; font-size:12px;">
@@ -414,7 +415,30 @@
                     {% for sc in session_candidats %}
                     {% if sc.stagiaire_id in j.candidats_ids %}
                     {% set cats_jour = j.candidats_categories.get(sc.stagiaire_id, []) %}
+                    {% set att = attestations_neutralite_map.get((j.id, sc.stagiaire_id)) %}
                     <tr>
+                        <td style="text-align:center; vertical-align:middle;">
+                            {% if session.statut == 'terminee' %}
+                                {% if att and att.horodatage %}
+                                    <button data-action="ouvrir-neutralite-relire"
+                                        data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                        style="background:#2e7d32; color:white; border:none; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:700; cursor:pointer;">✅</button>
+                                {% else %}
+                                    <span style="display:inline-block; background:#e0e0e0; color:#888; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:700;">⏳</span>
+                                {% endif %}
+                            {% else %}
+                                <button data-action="ouvrir-neutralite-overlay"
+                                    data-jour-id="{{ j.id }}"
+                                    data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                    data-nom="{{ sc.stagiaire.nom }}"
+                                    data-prenom="{{ sc.stagiaire.prenom }}"
+                                    data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
+                                    data-testeur="{{ j.testeur_nom }}"
+                                    style="background:{% if att and att.horodatage %}#2e7d32{% else %}#cc0000{% endif %}; color:white; border:none; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:700; cursor:pointer;">
+                                    {% if att and att.horodatage %}✅{% else %}⏳{% endif %}
+                                </button>
+                            {% endif %}
+                        </td>
                         <td>
                             <strong>{{ nddn(sc.stagiaire) }}</strong>
                             {% if session.statut != 'terminee' %}
@@ -1001,6 +1025,49 @@
     data-fin="{{ session.date_pratique_fin or '' }}"
     data-nb-equipements="{{ equipements|length }}">
 </div>
+<!-- OVERLAY NEUTRALITÉ -->
+<div id="overlay-neutralite" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:3000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:20px; padding:28px; max-width:460px; width:92%; position:relative; max-height:92vh; overflow-y:auto;">
+        <button data-action="fermer-neutralite-overlay" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#666; line-height:1;">✕</button>
+        <h2 style="font-size:17px; font-weight:800; margin-bottom:18px; padding-right:32px;">Attestation de neutralité</h2>
+
+        <div style="background:#f5f5f5; border-radius:12px; padding:16px; margin-bottom:18px;">
+            <div style="font-size:14px; font-weight:800; color:#1a1a2e; margin-bottom:4px;" id="neutralite-nom"></div>
+            <div style="font-size:13px; color:#666;" id="neutralite-ddn"></div>
+        </div>
+
+        <label style="display:block; font-size:13px; font-weight:700; color:#555; margin-bottom:6px;">Vérificateur d'identité</label>
+        <select id="neutralite-verificateur" style="width:100%; padding:10px 12px; border:1.5px solid #e0e0e0; border-radius:10px; font-size:14px; margin-bottom:14px;" onchange="_neutraliteMajChoix()">
+            <option value="">-- Sélectionner --</option>
+            {% for v in verificateurs_liste %}
+            <option value="{{ v.nom_complet }}">{{ v.nom_complet }}{% if v.role == 'testeur' %} (testeur){% endif %}</option>
+            {% endfor %}
+        </select>
+
+        <label style="display:flex; align-items:flex-start; gap:12px; padding:14px; background:#fff8e1; border-radius:12px; margin-bottom:18px; cursor:pointer; border:1px solid #ffe082;">
+            <input type="checkbox" id="neutralite-identite-cb" style="width:20px; height:20px; margin-top:2px; flex-shrink:0; cursor:pointer;">
+            <span style="font-size:14px; color:#333; line-height:1.5;">J'ai vérifié l'identité du candidat (pièce d'identité, carte professionnelle…)</span>
+        </label>
+
+        <div id="neutralite-choix" style="display:none;">
+            <div id="neutralite-qr-container" style="display:none; text-align:center; margin-bottom:14px; padding:16px; background:#f5f5f5; border-radius:12px;">
+                <div id="neutralite-qr-code" style="display:inline-block;"></div>
+                <p style="font-size:12px; color:#666; margin-top:10px;">Le candidat scanne ce QR code</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-neutralite-qr"
+                    style="flex:1; padding:12px; background:#1a237e; color:white; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer;">
+                    📱 QR Code
+                </button>
+                <button id="btn-neutralite-direct"
+                    style="flex:1; padding:12px; background:#cc0000; color:white; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer;">
+                    📲 Tablette directe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- OVERLAY RGPD -->
 <div id="overlay-rgpd" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:3000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:20px; padding:28px; max-width:460px; width:92%; position:relative; max-height:92vh; overflow-y:auto;">
