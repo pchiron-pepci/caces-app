@@ -36,10 +36,11 @@ OPTIONS = [
     ("R483", "B",      [("TEL", False), ("CEC", False)]),
     ("R486", "A",      [("PE", False)]),
     ("R486", "B",      [("PE", False)]),
+    ("R486", "C",      [("PE", True)]),                    # PE incluse dans l'UT
     ("R487", "1",      [("TEL", False), ("CC", False), ("TR", False)]),
     ("R487", "2",      [("TEL", False), ("CC", False), ("TR", False)]),
     ("R487", "3",      [("TEL", False), ("CC", False), ("TR", False)]),
-    ("R490", "Unique", [("TEL", False)]),
+    ("R490", "1",      [("TEL", False)]),
 ]
 
 db = SessionLocal()
