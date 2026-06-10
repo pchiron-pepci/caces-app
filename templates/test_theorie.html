@@ -642,7 +642,7 @@
         </div>
         <div id="res-themes"></div>
     </div>
-    <div class="fin-msg" id="fin-msg" data-instr="{% if start_direct %}Montrez le résultat au formateur, puis fermez cette fenêtre.{% else %}Rendez la tablette au formateur / testeur.{% endif %}"></div>
+    <div class="fin-msg" id="fin-msg"></div>
     <div style="text-align:center; margin-top:32px; padding:24px;">
         <p style="font-size:2.4rem; font-weight:900; color:#1a237e; letter-spacing:0.04em; line-height:1.2; text-transform:uppercase;">
             REMETTEZ LA TABLETTE<br>AU TESTEUR
@@ -1051,8 +1051,8 @@ function afficherResultat(r) {
     document.getElementById('res-themes').innerHTML = html;
 
     const nom = document.getElementById('header-candidat').textContent;
-    const finMsgEl = document.getElementById('fin-msg');
-    finMsgEl.innerHTML = '<strong>' + nom + '</strong><br>' + finMsgEl.dataset.instr;
+    document.getElementById('fin-msg').innerHTML =
+        '<strong>' + nom + '</strong><br>Montrez votre résultat au testeur.';
 }
 </script>
 
