@@ -88,17 +88,15 @@
                                 <span class="badge blue" style="font-size:11px;">{{ epreuve.ut }} UT</span>
                             {% endif %}
                         {% else %}
-                            {% set ns = namespace(planifie=false) %}
-                            {% for j in jours_test %}
-                            {% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}
-                            {% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}
-                            {% set ns.planifie = true %}
-                            {% endif %}
-                            {% endif %}
-                            {% endfor %}
-                            {% if ns.planifie %}
-                                {% set ut_cell_plan = ut_planifie_par_stag_cat.get(sc.stagiaire_id, {}).get(cat, 0) %}
-                                <span style="font-size:11px; color:#1a237e; font-weight:600;">{{ ut_cell_plan if ut_cell_plan > 0 else ut_par_cat.get(cat, 1) }} UT</span>
+                            {% set ut_cell_plan = ut_planifie_par_stag_cat.get(sc.stagiaire_id, {}).get(cat, 0) %}
+                            {% if ut_cell_plan > 0 %}
+                                {% set ns2 = namespace(in_cats=false) %}
+                                {% for j in jours_test %}{% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}{% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}{% set ns2.in_cats = true %}{% endif %}{% endif %}{% endfor %}
+                                {% if ns2.in_cats %}
+                                    <span style="font-size:11px; color:#1a237e; font-weight:600;">{{ ut_cell_plan }} UT</span>
+                                {% else %}
+                                    <span style="font-size:11px; color:#e65100; font-weight:600; background:#ffe0b2; border-radius:6px; padding:2px 8px;">{{ ut_cell_plan }} UT</span>
+                                {% endif %}
                             {% else %}
                                 <span style="color:#ddd; font-size:11px;">—</span>
                             {% endif %}
