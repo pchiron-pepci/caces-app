@@ -1041,8 +1041,11 @@ function afficherResultat(r) {
     document.getElementById('res-themes').innerHTML = html;
 
     const nom = document.getElementById('header-candidat').textContent;
+    const finInstr = START_DIRECT
+        ? 'Montrez le résultat au formateur, puis fermez cette fenêtre.'
+        : 'Rendez la tablette au formateur / testeur.';
     document.getElementById('fin-msg').innerHTML =
-        '<strong>' + nom + '</strong><br>Remettez la tablette au testeur';
+        '<strong>' + nom + '</strong><br>' + finInstr;
 }
 </script>
 
