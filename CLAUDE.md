@@ -151,12 +151,12 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 
 | Modèle | Table | Notes |
 |---|---|---|
-| `Famille` | `familles` | R482, R483, R484, R485, R486, R487, R489, R490 |
+| `Famille` | `familles` | R482, R483 (Grues mobiles — cats A, B), R484, R485 (cats 1, 2), R486 (cats A, B, C), R487 (Grues à tour — cats 1, 2, 3), R489 (cats 1A, 1B, 2A, 2B, 3, 4, 5, 6, 7), R490 (cat 1 unique) |
 | `Categorie` | `categories` | `ut_pratique`, `pepci_habilite`, `est_option` |
 | `Session` | `sessions` | `famille`, `lieu_id`, `statut`, `reference` |
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
 | `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
-| `SessionEpreuve` | `sessions_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` |
+| `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` |
 | `ResultatTheorie` | `resultats_theorie` | jamais écrasé ; `bloque` Boolean défaut False — positionné comme SE, empêche la recherche de théorie dans `calculer_et_synchroniser` |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete ; `option_pe`/`option_tel` legacy — remplacés par `HabilitationOption` |
 | `OptionCategorie` | `option_categorie` | table de référence des options disponibles par famille/catégorie ; codes : PE=Porte-engins, TEL=Télécommande, CC=Conduite cabine, TR=Translation sur rails, CEC=Circulation en charge ; `incluse` Boolean (défaut False) : option obligatoire incluse dans l'UT de la catégorie (pas de +0.5 UT) vs option facultative ; peuplé par `init_options.py` |
@@ -182,8 +182,17 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `migrate_option_incluse.py` | `ALTER TABLE option_categorie ADD COLUMN incluse BOOLEAN DEFAULT FALSE` | à exécuter |
 | `migrate_ut_categories.py` | R482/A `ut_pratique=1.5`, R482/G `ut_pratique=1.2` | à exécuter |
 | `migrate_token_verification.py` | `ALTER TABLE carte_caces ADD COLUMN token_verification VARCHAR(36)` + backfill UUID | à exécuter |
+| `migrate_r483_r487_r490.py` | Swap libellés R483↔R487, déplace cats A/B vers R483, crée cats 1/2/3 sous R487, supprime cats parasites R483 et R490/2-3/OPT-TEL | à exécuter |
 
-Après migrations : relancer `python init_options.py` pour peupler les flags `incluse`.
+Ordre d'exécution sur prod (toutes migrations puis init_options) :
+```
+python migrate_photo_base64.py
+python migrate_option_incluse.py
+python migrate_ut_categories.py
+python migrate_token_verification.py
+python migrate_r483_r487_r490.py
+python init_options.py
+```
 
 ---
 

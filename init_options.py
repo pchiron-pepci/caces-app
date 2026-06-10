@@ -37,9 +37,9 @@ OPTIONS = [
     ("R486", "A",      [("PE", False)]),
     ("R486", "B",      [("PE", False)]),
     ("R486", "C",      [("PE", True)]),                    # PE incluse dans l'UT
-    ("R487", "1",      [("TEL", False), ("CC", False), ("TR", False)]),
-    ("R487", "2",      [("TEL", False), ("CC", False), ("TR", False)]),
-    ("R487", "3",      [("TEL", False), ("CC", False), ("TR", False)]),
+    ("R487", "1",      [("CEC", True),  ("TEL", False), ("TR", False)]),  # CEC incluse, grues a tour type 1
+    ("R487", "2",      [("CEC", True),  ("TEL", False), ("TR", False)]),  # CEC incluse, grues a tour type 2
+    ("R487", "3",      [("TEL", True),  ("CEC", False), ("TR", False)]),  # TEL incluse, fleche relevable
     ("R490", "1",      [("TEL", False)]),
 ]
 
