@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consentement RGPD — Document de preuve</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f6fa;
+            min-height: 100vh;
+            color: #1a1a2e;
+        }
+
+        .header {
+            background: #cc0000;
+            color: white;
+            padding: 16px 20px;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header-sub {
+            font-size: 13px;
+            opacity: 0.85;
+            margin-top: 4px;
+        }
+
+        .screen {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 24px 16px 60px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            margin-bottom: 14px;
+        }
+
+        .card-titre {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #cc0000;
+            margin-bottom: 14px;
+        }
+
+        .badge-ok {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge-non {
+            display: inline-block;
+            background: #fce4ec;
+            color: #c62828;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .item-row:last-child { border: none; }
+
+        .item-titre {
+            font-size: 14px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .sig-img {
+            max-width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .proof-line {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-family: monospace;
+        }
+
+        @media print {
+            .btn-print { display: none; }
+            body { background: white; }
+            .card { box-shadow: none; border: 1px solid #e0e0e0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-title">Consentement RGPD — Document de preuve</div>
+    <div class="header-sub">PEPCI Formation</div>
+</div>
+
+<div class="screen">
+
+{% if consentement and consentement.horodatage %}
+
+    <div class="card">
+        <div class="card-titre">Titulaire</div>
+        <div style="font-size:22px; font-weight:800; margin-bottom:6px;">{{ stagiaire.nom }} {{ stagiaire.prenom }}</div>
+        {% if stagiaire.date_naissance %}
+        <div style="color:#666; font-size:14px;">Né(e) le {{ stagiaire.date_naissance.strftime('%d/%m/%Y') }}</div>
+        {% endif %}
+        {% if stagiaire.employeur %}
+        <div style="color:#666; font-size:14px; margin-top:2px;">{{ stagiaire.employeur }}</div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-titre">Session</div>
+        <div style="font-size:15px; font-weight:700;">{{ session.famille }} — {{ session.reference or 'Session sans référence' }}</div>
+        {% if session.date_pratique_debut %}
+        <div style="color:#666; font-size:13px; margin-top:4px;">{{ session.date_pratique_debut.strftime('%d/%m/%Y') }}</div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-titre">Réponses aux items</div>
+
+        <div class="item-row">
+            <div class="item-titre">1. Traitement des données personnelles</div>
+            <div>
+                {% if consentement.rgpd_accepte %}
+                    <span class="badge-ok">Autorisé</span>
+                {% else %}
+                    <span class="badge-non">Non autorisé</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="item-row">
+            <div class="item-titre">2. Traitement de la photographie</div>
+            <div>
+                {% if consentement.photo_accepte %}
+                    <span class="badge-ok">Autorisé</span>
+                {% else %}
+                    <span class="badge-non">Non autorisé</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="item-row">
+            <div class="item-titre">3. Plaintes et réclamations</div>
+            <div>
+                {% if consentement.plaintes_atteste %}
+                    <span class="badge-ok">Attesté</span>
+                {% else %}
+                    <span class="badge-non">Non attesté</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-titre">Signature</div>
+        {% if consentement.signature_base64 %}
+        <img class="sig-img" src="{{ consentement.signature_base64 }}" alt="Signature du candidat">
+        {% endif %}
+        <div style="margin-top:14px; font-size:16px; font-weight:700;">
+            Fait le {{ consentement.horodatage.strftime('%d/%m/%Y') }}
+        </div>
+    </div>
+
+    <div class="card" style="background:#f8f8f8;">
+        <div class="card-titre" style="color:#888;">Informations de preuve</div>
+        <div class="proof-line">Horodatage UTC : {{ consentement.horodatage.strftime('%Y-%m-%d %H:%M:%S') }} UTC</div>
+        {% if consentement.ip_address %}
+        <div class="proof-line">Adresse IP : {{ consentement.ip_address }}</div>
+        {% endif %}
+        <div class="proof-line">Session #{{ session.id }} — Candidat #{{ stagiaire.id }}</div>
+    </div>
+
+    <button class="btn-print" onclick="window.print()"
+        style="width:100%; padding:14px; background:#333; color:white; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:16px;">
+        🖨️ Imprimer
+    </button>
+
+{% else %}
+
+    <div class="card" style="text-align:center; padding:48px 24px;">
+        <div style="font-size:52px; margin-bottom:16px;">📋</div>
+        <div style="font-size:18px; font-weight:700; color:#666;">Aucun consentement enregistré</div>
+        <div style="font-size:14px; color:#999; margin-top:8px;">{{ stagiaire.nom }} {{ stagiaire.prenom }}</div>
+    </div>
+
+{% endif %}
+
+</div>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Consentement RGPD — PEPCI Formation</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f6fa;
+            min-height: 100vh;
+            color: #1a1a2e;
+        }
+
+        .header {
+            background: #cc0000;
+            color: white;
+            padding: 14px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .header-title {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .header-candidat {
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .screen {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 20px 16px 60px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            margin-bottom: 14px;
+        }
+
+        /* Bloc légal */
+        .bloc-legal-titre {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .bloc-legal {
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 12px;
+            color: #555;
+            line-height: 1.65;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        /* Items de consentement */
+        .item-titre {
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #cc0000;
+            margin-bottom: 12px;
+        }
+
+        .item-texte {
+            font-size: 13px;
+            color: #444;
+            line-height: 1.65;
+            margin-bottom: 18px;
+        }
+
+        .btn-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-reponse {
+            padding: 14px 8px;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            background: #f5f5f5;
+            color: #333;
+            transition: all 0.15s ease;
+            text-align: center;
+        }
+
+        .btn-reponse:active { transform: scale(0.97); }
+
+        .btn-reponse.sel-oui {
+            background: #2e7d32;
+            color: white;
+            border-color: #2e7d32;
+        }
+
+        .btn-reponse.sel-non {
+            background: #e65100;
+            color: white;
+            border-color: #e65100;
+        }
+
+        /* Bouton principal */
+        .btn-action {
+            width: 100%;
+            padding: 18px;
+            background: #cc0000;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-action:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-action:not(:disabled):hover { background: #aa0000; }
+        .btn-action:not(:disabled):active { transform: scale(0.99); }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 14px;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:active { transform: scale(0.98); }
+
+        /* Canvas signature */
+        #sig-canvas {
+            display: block;
+            width: 100%;
+            height: 200px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 12px;
+            touch-action: none;
+            cursor: crosshair;
+            background: white;
+        }
+
+        #sig-canvas.has-sig {
+            border-color: #cc0000;
+            border-style: solid;
+        }
+
+        .date-fait-le {
+            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        /* Écran confirmation */
+        .ecran-ok {
+            text-align: center;
+            padding: 32px 16px;
+        }
+
+        .ecran-ok-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .ecran-ok-titre {
+            font-size: 26px;
+            font-weight: 800;
+            color: #2e7d32;
+            margin-bottom: 12px;
+        }
+
+        .ecran-ok-remise {
+            font-size: 17px;
+            font-weight: 800;
+            color: #1a1a2e;
+            background: #f5f5f5;
+            border-radius: 14px;
+            padding: 20px;
+            margin-top: 24px;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-title">PEPCI Formation — Consentement RGPD</div>
+    <div class="header-candidat">{{ stagiaire.nom }} {{ stagiaire.prenom }}</div>
+</div>
+
+<!-- ÉCRAN 1 : ITEMS -->
+<div id="ecran-consentement" class="screen">
+
+    <div class="card">
+        <div class="bloc-legal-titre">Informations légales concernant le traitement</div>
+        <div class="bloc-legal">
+            Le responsable du traitement des données personnelles est PEPCI SAS. Ces données ne sont pas collectées à d'autres fins que répondre aux exigences du référentiel de certification des OTC, et éditer le certificat. Les données traitées sont limitées à la liste suivante : nom, prénom, date de naissance, signature, employeur (feuille de présence) et photographie du visage (donnée biométrique). Les données sont conservées cinq ans par PEPCI SAS. Elles peuvent être communiquées au commanditaire de l'examen CACES®, qui n'est pas obligatoirement le candidat titulaire du certificat en cas de réussite. Elles ne sont pas transférées dans un pays hors union européenne. Aucun duplicata de CACES® ne sera délivré à quelque demandeur que ce soit, y compris au commanditaire ou au titulaire, dès lors que l'un ou l'autre a accusé réception du certificat original dématérialisé. Le candidat à l'examen CACES® dispose d'un droit d'accès, de rectification, de modification, de limitation du traitement, de retrait, d'effacement, d'opposition et de portabilité de ses données personnelles. Une modification (hors correction d'une erreur de l'OTC) ou un effacement des données entraine la perte du certificat pour son titulaire, l'OTC ne pouvant plus justifier de la conformité de l'identité du titulaire avec le certificat numéroté qui lui a été attribué. Pour toute réclamation au sujet du traitement de données personnelles, s'adresser à : formation@pepci.fr.
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="item-titre">1. Traitement des données personnelles</div>
+        <div class="item-texte">
+            En application du règlement européen n° 2016/679 (dit Règlement Général sur la Protection des Données - RGPD), par ma signature ci-dessus, j'autorise / je n'autorise pas l'Organisme Testeur Certifié (OTC) PEPCI SAS à collecter, traiter et archiver mes données personnelles pour procéder à mon examen en vue de l'obtention du Certificat d'Aptitude à la Conduite en Sécurité (CACES®). J'ai bien conscience qu'en cas de refus, il ne pourra pas être procédé à mon évaluation, qui sera néanmoins facturée au commanditaire.
+        </div>
+        <div class="btn-pair">
+            <button class="btn-reponse" data-item="rgpd" data-val="true">J'autorise</button>
+            <button class="btn-reponse" data-item="rgpd" data-val="false">Je n'autorise pas</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="item-titre">2. Traitement de la photographie</div>
+        <div class="item-texte">
+            En application du règlement européen n° 2016/679 (dit Règlement Général sur la Protection des Données - RGPD), par ma signature ci-dessus, j'autorise / je n'autorise pas l'Organisme Testeur Certifié (OTC) PEPCI SAS à me photographier et à utiliser ma photographie pour établir, le cas échéant, mon certificat. J'ai bien conscience que la photographie est un élément devant obligatoirement figurer sur mon certificat pour que son authenticité puisse être reconnue. En cas de refus, je devrai imprimer mon certificat dématérialisé, et y apposer une photographie d'identité moi-même. Le refus d'être photographié n'entraine pas l'impossibilité de délivrer un certificat.
+        </div>
+        <div class="btn-pair">
+            <button class="btn-reponse" data-item="photo" data-val="true">J'autorise</button>
+            <button class="btn-reponse" data-item="photo" data-val="false">Je n'autorise pas</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="item-titre">3. Plaintes et réclamations</div>
+        <div class="item-texte">
+            En application du Référentiel National de certification Qualité des organismes de formation (dit RNQ) et du référentiel de certification des OTC (dit RC 2020), j'atteste / je n'atteste pas que je suis informé que pour toute plainte ou réclamation concernant une session de tests CACES®, je dois exposer par écrit les motifs de ma requête à : reclamation@pepci.fr.
+        </div>
+        <div class="btn-pair">
+            <button class="btn-reponse" data-item="plaintes" data-val="true">J'atteste</button>
+            <button class="btn-reponse" data-item="plaintes" data-val="false">Je n'atteste pas</button>
+        </div>
+    </div>
+
+    <button id="btn-signer" class="btn-action" disabled>✍️ Apposer ma signature →</button>
+
+</div>
+
+<!-- ÉCRAN 2 : SIGNATURE -->
+<div id="ecran-signature" class="screen" style="display:none;">
+    <div class="card">
+        <div class="date-fait-le">Fait le {{ today }}</div>
+        <p style="font-size:13px; color:#666; margin-bottom:14px; text-align:center;">Tracez votre signature dans le cadre ci-dessous</p>
+        <canvas id="sig-canvas"></canvas>
+        <button id="btn-effacer" class="btn-secondary">↺ Effacer la signature</button>
+    </div>
+    <button id="btn-valider-sig" class="btn-action" disabled>✅ Valider ma signature</button>
+    <button id="btn-retour-items" class="btn-secondary">← Retour aux items</button>
+</div>
+
+<!-- ÉCRAN 3 : CONFIRMATION -->
+<div id="ecran-confirmation" class="screen" style="display:none;">
+    <div class="card">
+        <div class="ecran-ok">
+            <div class="ecran-ok-icon">✅</div>
+            <div class="ecran-ok-titre">Consentement enregistré</div>
+            <div style="font-size:14px; color:#666; line-height:1.6;">Votre consentement a été enregistré avec succès.</div>
+            <div class="ecran-ok-remise">REMETTEZ LA TABLETTE AU TESTEUR</div>
+        </div>
+    </div>
+</div>
+
+<script>
+var SESSION_ID = {{ session.id }};
+var STAGIAIRE_ID = {{ stagiaire.id }};
+
+var reponses = { rgpd: null, photo: null, plaintes: null };
+
+document.querySelectorAll('.btn-reponse').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var item = this.dataset.item;
+        var val = this.dataset.val === 'true';
+        reponses[item] = val;
+        document.querySelectorAll('.btn-reponse[data-item="' + item + '"]').forEach(function(b) {
+            b.classList.remove('sel-oui', 'sel-non');
+        });
+        this.classList.add(val ? 'sel-oui' : 'sel-non');
+        if (reponses.rgpd !== null && reponses.photo !== null && reponses.plaintes !== null) {
+            document.getElementById('btn-signer').disabled = false;
+        }
+    });
+});
+
+document.getElementById('btn-signer').addEventListener('click', function() {
+    document.getElementById('ecran-consentement').style.display = 'none';
+    document.getElementById('ecran-signature').style.display = 'block';
+    window.scrollTo(0, 0);
+    initCanvas();
+});
+
+document.getElementById('btn-retour-items').addEventListener('click', function() {
+    document.getElementById('ecran-signature').style.display = 'none';
+    document.getElementById('ecran-consentement').style.display = 'block';
+    window.scrollTo(0, 0);
+});
+
+var isDrawing = false;
+var lastX = 0, lastY = 0;
+var hasSigned = false;
+var canvasInited = false;
+
+function initCanvas() {
+    if (canvasInited) return;
+    canvasInited = true;
+    var canvas = document.getElementById('sig-canvas');
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    canvas.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        isDrawing = true;
+        var p = getTouchPos(e, canvas);
+        lastX = p.x; lastY = p.y;
+    }, {passive: false});
+
+    canvas.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+        if (!isDrawing) return;
+        var p = getTouchPos(e, canvas);
+        drawLine(canvas, lastX, lastY, p.x, p.y);
+        lastX = p.x; lastY = p.y;
+    }, {passive: false});
+
+    canvas.addEventListener('touchend', function() {
+        isDrawing = false;
+        onSignatureActivity();
+    });
+
+    canvas.addEventListener('mousedown', function(e) {
+        isDrawing = true;
+        var p = getMousePos(e, canvas);
+        lastX = p.x; lastY = p.y;
+    });
+
+    canvas.addEventListener('mousemove', function(e) {
+        if (!isDrawing) return;
+        var p = getMousePos(e, canvas);
+        drawLine(canvas, lastX, lastY, p.x, p.y);
+        lastX = p.x; lastY = p.y;
+    });
+
+    canvas.addEventListener('mouseup', function() {
+        isDrawing = false;
+        onSignatureActivity();
+    });
+}
+
+function getTouchPos(e, canvas) {
+    var rect = canvas.getBoundingClientRect();
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+}
+
+function getMousePos(e, canvas) {
+    var rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function drawLine(canvas, x1, y1, x2, y2) {
+    var ctx = canvas.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+}
+
+function onSignatureActivity() {
+    hasSigned = true;
+    document.getElementById('sig-canvas').classList.add('has-sig');
+    document.getElementById('btn-valider-sig').disabled = false;
+}
+
+document.getElementById('btn-effacer').addEventListener('click', function() {
+    var canvas = document.getElementById('sig-canvas');
+    var ctx = canvas.getContext('2d');
+    var rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    hasSigned = false;
+    canvas.classList.remove('has-sig');
+    document.getElementById('btn-valider-sig').disabled = true;
+});
+
+document.getElementById('btn-valider-sig').addEventListener('click', async function() {
+    if (!hasSigned) return;
+    this.disabled = true;
+    this.textContent = '⏳ Enregistrement...';
+    var canvas = document.getElementById('sig-canvas');
+    var signature = canvas.toDataURL('image/png');
+    try {
+        var resp = await fetch('/api/consentements/' + SESSION_ID + '/' + STAGIAIRE_ID, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                rgpd_accepte: reponses.rgpd,
+                photo_accepte: reponses.photo,
+                plaintes_atteste: reponses.plaintes,
+                signature_base64: signature
+            })
+        });
+        if (resp.ok) {
+            document.getElementById('ecran-signature').style.display = 'none';
+            document.getElementById('ecran-confirmation').style.display = 'block';
+            window.scrollTo(0, 0);
+        } else {
+            alert('Erreur lors de l\'enregistrement. Réessayez.');
+            this.disabled = false;
+            this.textContent = '✅ Valider ma signature';
+        }
+    } catch (err) {
+        alert('Erreur réseau. Vérifiez la connexion et réessayez.');
+        this.disabled = false;
+        this.textContent = '✅ Valider ma signature';
+    }
+});
+</script>
+</body>
+</html>

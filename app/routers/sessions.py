@@ -10,6 +10,7 @@ from app.models.testeur import Testeur
 from app.models.categorie import Categorie, Famille
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille
+from app.models.consentement_rgpd import ConsentementRGPD
 from app.services.tirage_grille import (
     tirer_grille, calculer_resultat_theorie,
     tirer_themes_phase2, enregistrer_tirage_themes,
@@ -142,6 +143,28 @@ def cloturer_session(id: int, db: DBSession = Depends(get_db)):
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
+
+    candidats_actifs = db.query(SessionCandidat).filter(
+        SessionCandidat.session_id == id,
+        SessionCandidat.actif == True
+    ).all()
+    consentements = {
+        c.stagiaire_id: c
+        for c in db.query(ConsentementRGPD).filter(ConsentementRGPD.session_id == id).all()
+    }
+    en_attente = []
+    for sc in candidats_actifs:
+        c = consentements.get(sc.stagiaire_id)
+        if not c or c.horodatage is None:
+            stag = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
+            nom = f"{stag.nom} {stag.prenom}" if stag else str(sc.stagiaire_id)
+            en_attente.append(nom)
+    if en_attente:
+        raise HTTPException(
+            status_code=400,
+            detail="Consentement RGPD manquant pour : " + ", ".join(en_attente)
+        )
+
     s.statut = "terminee"
     db.commit()
     # Recalcule les CacesObtenu a_valider : les théories issues de cette session

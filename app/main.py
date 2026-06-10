@@ -29,6 +29,7 @@ from app.models.non_conformite import NonConformite
 from app.models.option_categorie import OptionCategorie
 from app.models.caces_obtenu import CacesObtenu
 from app.models.carte_caces import CarteCaces
+from app.models.consentement_rgpd import ConsentementRGPD
 
 from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
@@ -36,6 +37,7 @@ from app.routers import non_conformites
 from app.routers import caces_obtenus
 from app.routers import cartes_caces
 from app.routers import dev
+from app.routers import consentements
 from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
@@ -413,6 +415,7 @@ app.include_router(non_conformites.router)
 app.include_router(caces_obtenus.router)
 app.include_router(cartes_caces.router)
 app.include_router(dev.router)
+app.include_router(consentements.router)
 
 @app.get("/")
 def dashboard(request: Request):
@@ -980,6 +983,11 @@ def page_session_detail(request: Request, session_id: int):
     stagiaires = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
 
+    consentements_list = db.query(ConsentementRGPD).filter(
+        ConsentementRGPD.session_id == session_id
+    ).all()
+    consentements_map = {c.stagiaire_id: c for c in consentements_list}
+
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -1006,7 +1014,51 @@ def page_session_detail(request: Request, session_id: int):
             "ut_planifie_par_stag_cat": ut_planifie_par_stag_cat,
             "testeur_initiales_par_stag_cat": testeur_initiales_par_stag_cat,
             "jours_par_date": jours_par_date,
-            "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date]
+            "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date],
+            "consentements_map": consentements_map,
+        }
+    )
+
+@app.get("/consentement/{session_id}/{stagiaire_id}/relire")
+def page_consentement_relire(request: Request, session_id: int, stagiaire_id: int):
+    from datetime import date
+    db = SessionLocal()
+    session = db.query(Session).filter(Session.id == session_id).first()
+    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+    consentement = db.query(ConsentementRGPD).filter(
+        ConsentementRGPD.session_id == session_id,
+        ConsentementRGPD.stagiaire_id == stagiaire_id
+    ).first()
+    db.close()
+    if not session or not stagiaire:
+        return {"error": "Non trouvé"}
+    return templates.TemplateResponse(
+        request=request,
+        name="consentement_relire.html",
+        context={
+            "session": session,
+            "stagiaire": stagiaire,
+            "consentement": consentement,
+        }
+    )
+
+@app.get("/consentement/{session_id}/{stagiaire_id}")
+def page_consentement(request: Request, session_id: int, stagiaire_id: int):
+    from datetime import date
+    db = SessionLocal()
+    session = db.query(Session).filter(Session.id == session_id).first()
+    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+    db.close()
+    if not session or not stagiaire:
+        return {"error": "Non trouvé"}
+    today = date.today().strftime('%d/%m/%Y')
+    return templates.TemplateResponse(
+        request=request,
+        name="consentement.html",
+        context={
+            "session": session,
+            "stagiaire": stagiaire,
+            "today": today,
         }
     )
 

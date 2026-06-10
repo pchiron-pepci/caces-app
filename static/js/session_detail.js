@@ -523,3 +523,81 @@ function _executerRetraitAvecPin(jourId, stagiaireId, nom) {
         else { const d = await resp.json(); document.getElementById('pin-error').textContent = d.detail || 'Code PIN incorrect !'; document.getElementById('pin-error').style.display = 'block'; }
     };
 }
+
+// ====== RGPD OVERLAY ======
+
+var _rgpdStag = null;
+var _rgpdQrGenerated = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Délégation clics RGPD
+    document.addEventListener('click', function(e) {
+        var btnOverlay = e.target.closest('[data-action="ouvrir-rgpd-overlay"]');
+        if (btnOverlay) {
+            ouvrirRGPDOverlay(
+                btnOverlay.dataset.sessionId,
+                btnOverlay.dataset.stagiaireId,
+                btnOverlay.dataset.nom,
+                btnOverlay.dataset.prenom,
+                btnOverlay.dataset.ddn
+            );
+            return;
+        }
+        var btnRelire = e.target.closest('[data-action="ouvrir-rgpd-relire"]');
+        if (btnRelire) {
+            window.open('/consentement/' + btnRelire.dataset.sessionId + '/' + btnRelire.dataset.stagiaireId + '/relire', '_blank');
+            return;
+        }
+        if (e.target.closest('[data-action="fermer-rgpd-overlay"]')) {
+            document.getElementById('overlay-rgpd').style.display = 'none';
+            return;
+        }
+    });
+
+    var cbIdentite = document.getElementById('rgpd-identite-cb');
+    if (cbIdentite) {
+        cbIdentite.addEventListener('change', function() {
+            document.getElementById('rgpd-choix').style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    var btnQr = document.getElementById('btn-rgpd-qr');
+    if (btnQr) {
+        btnQr.addEventListener('click', function() {
+            var qrContainer = document.getElementById('rgpd-qr-container');
+            if (!_rgpdQrGenerated && _rgpdStag) {
+                var url = window.location.origin + '/consentement/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId;
+                new QRCode(document.getElementById('rgpd-qr-code'), {
+                    text: url,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#cc0000',
+                    colorLight: '#ffffff'
+                });
+                _rgpdQrGenerated = true;
+            }
+            qrContainer.style.display = qrContainer.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+
+    var btnDirect = document.getElementById('btn-rgpd-direct');
+    if (btnDirect) {
+        btnDirect.addEventListener('click', function() {
+            if (_rgpdStag) {
+                window.open('/consentement/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId, '_blank');
+            }
+        });
+    }
+});
+
+function ouvrirRGPDOverlay(sessionId, stagiaireId, nom, prenom, ddn) {
+    _rgpdStag = { sessionId: sessionId, stagiaireId: stagiaireId };
+    _rgpdQrGenerated = false;
+    document.getElementById('rgpd-nom').textContent = nom + ' ' + prenom;
+    document.getElementById('rgpd-ddn').textContent = ddn ? 'Né(e) le ' + ddn : '';
+    document.getElementById('rgpd-identite-cb').checked = false;
+    document.getElementById('rgpd-choix').style.display = 'none';
+    document.getElementById('rgpd-qr-container').style.display = 'none';
+    document.getElementById('rgpd-qr-code').innerHTML = '';
+    document.getElementById('overlay-rgpd').style.display = 'flex';
+}
