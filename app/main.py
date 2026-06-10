@@ -308,6 +308,11 @@ try:
 except Exception:
     pass
 
+def ut_ligne(base_ut: float, cat_code: str, options: list, opt_incluse_set: set) -> float:
+    """UT pour une catégorie + ses options cochées.
+    base_ut = 0.0 pour option-seule (catégorie non planifiée en base)."""
+    return round(base_ut + sum(0.5 for o in options if (cat_code, o) not in opt_incluse_set), 1)
+
 app = FastAPI(
     title="NORYX Engins",
     description="Pilotage CACES® & Autorisation de conduite — PEPCI Formation",
@@ -856,23 +861,27 @@ def page_session_detail(request: Request, session_id: int):
                 j.candidats_options[jtc.stagiaire_id] = {}
 
         if j.type == 'pratique':
-            total_ut = 0
+            j.ut_cand_cat = {}   # {stag_id: {cat: ut}} — inclut option-seule (base=0)
+            j.ut_total_cat = {}  # {cat: ut total jour tous candidats}
             for jtc in jtcs:
-                cats = jtc.categories.split(",") if jtc.categories else []
-                for cat in cats:
-                    cat = cat.strip()
-                    if cat:
-                        total_ut += ut_par_cat.get(cat, 1.0)
+                cats_base = {c.strip() for c in (jtc.categories or "").split(",") if c.strip()}
+                opts = {}
                 if jtc.options_planifiees:
                     try:
-                        for cat_code, opt_list in json.loads(jtc.options_planifiees).items():
-                            for opt_code in opt_list:
-                                if (cat_code, opt_code) not in opt_incluse_set:
-                                    total_ut += 0.5
+                        opts = json.loads(jtc.options_planifiees)
                     except Exception:
                         pass
+                cand_d = {}
+                for cat in cats_base | set(opts.keys()):
+                    base = ut_par_cat.get(cat, 1.0) if cat in cats_base else 0.0
+                    cand_d[cat] = ut_ligne(base, cat, opts.get(cat, []), opt_incluse_set)
+                j.ut_cand_cat[jtc.stagiaire_id] = cand_d
+                for cat, ut in cand_d.items():
+                    j.ut_total_cat[cat] = round(j.ut_total_cat.get(cat, 0.0) + ut, 1)
+            j.ut_cand_total = {sid: round(sum(d.values()), 1) for sid, d in j.ut_cand_cat.items()}
+            total_ut = round(sum(j.ut_cand_total.values()), 1)
             nb_testeurs = math.ceil(total_ut / 6) if total_ut > 0 else 1
-            j.total_ut = round(total_ut, 1)
+            j.total_ut = total_ut
             j.nb_testeurs = nb_testeurs
             j.ut_libres = round((nb_testeurs * 6) - total_ut, 1)
             epreuves_jour = db.query(SessionEpreuve).filter(
@@ -885,27 +894,28 @@ def page_session_detail(request: Request, session_id: int):
                     j.candidats_epreuves[ep.stagiaire_id] = []
                 j.candidats_epreuves[ep.stagiaire_id].append(ep.categorie)
         else:
+            j.ut_cand_cat = {}
+            j.ut_total_cat = {}
+            j.ut_cand_total = {}
             j.total_ut = 0
             j.nb_testeurs = 0
             j.ut_libres = 0
             j.candidats_epreuves = {}
 
     ut_planifie_candidat = {}
+    ut_planifie_par_stag_cat = {}
     for j in jours_test:
         if j.type == 'pratique':
-            for stagiaire_id, cats in j.candidats_categories.items():
-                for cat in cats:
-                    cat = cat.strip()
-                    if cat:
-                        ut_planifie_candidat[stagiaire_id] = round(
-                            ut_planifie_candidat.get(stagiaire_id, 0) + ut_par_cat.get(cat, 1.0), 1
-                        )
-                for cat_code, opt_list in j.candidats_options.get(stagiaire_id, {}).items():
-                    for opt_code in opt_list:
-                        if (cat_code, opt_code) not in opt_incluse_set:
-                            ut_planifie_candidat[stagiaire_id] = round(
-                                ut_planifie_candidat.get(stagiaire_id, 0) + 0.5, 1
-                            )
+            for stag_id, cand_d in j.ut_cand_cat.items():
+                ut_planifie_candidat[stag_id] = round(
+                    ut_planifie_candidat.get(stag_id, 0.0) + j.ut_cand_total[stag_id], 1
+                )
+                if stag_id not in ut_planifie_par_stag_cat:
+                    ut_planifie_par_stag_cat[stag_id] = {}
+                for cat, ut in cand_d.items():
+                    ut_planifie_par_stag_cat[stag_id][cat] = round(
+                        ut_planifie_par_stag_cat[stag_id].get(cat, 0.0) + ut, 1
+                    )
 
     resultats_theorie_par_jour = {}
     for j in jours_test:
@@ -964,6 +974,7 @@ def page_session_detail(request: Request, session_id: int):
             "testeurs": testeurs_list,
             "options_par_cat": options_par_cat,
             "opt_incluse_set": opt_incluse_set,
+            "ut_planifie_par_stag_cat": ut_planifie_par_stag_cat,
             "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date]
         }
     )

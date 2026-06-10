@@ -53,12 +53,12 @@ function calculerRecapUT() {
         const labelEl = candCb.closest('div') ? candCb.closest('div').querySelector('label') : null;
         const nom = labelEl ? labelEl.textContent.trim() : stagiaireId;
         let utCand = 0;
-        const cats = [];
+        const checkedCats = new Set();
         document.querySelectorAll('[name="jp-cat-' + stagiaireId + '"]:checked').forEach(cb => {
             const ut = window.UT_PAR_CAT[cb.value] || 1.0;
             utCand += ut;
             total += ut;
-            cats.push(cb.value);
+            checkedCats.add(cb.value);
             document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cb.value + '"]:checked').forEach(optCb => {
                 if (!optCb.dataset.incluse) {
                     utCand += 0.5;
@@ -66,9 +66,18 @@ function calculerRecapUT() {
                 }
             });
         });
+        // Option-seule : options cochées pour catégories NON cochées (base = 0, option = +0.5)
+        document.querySelectorAll('[name^="jp-opt-' + stagiaireId + '-"]:checked').forEach(optCb => {
+            const prefix = 'jp-opt-' + stagiaireId + '-';
+            const cat = optCb.name.slice(prefix.length);
+            if (!checkedCats.has(cat) && !optCb.dataset.incluse) {
+                utCand += 0.5;
+                total += 0.5;
+            }
+        });
         if (utCand > 0) {
             html += '<div style="display:flex; justify-content:space-between; padding:3px 0;">' +
-                '<span><strong>' + nom + '</strong> : ' + cats.join(', ') + '</span>' +
+                '<span><strong>' + nom + '</strong> : ' + Array.from(checkedCats).join(', ') + '</span>' +
                 '<span><strong>' + utCand.toFixed(1) + ' UT</strong></span></div>';
         }
     });
