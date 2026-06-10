@@ -6,6 +6,7 @@
     <title>NORYX Engins - {{ nom_organisme() }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    <script>(function(){var p=localStorage.getItem('sidebar');if(p)document.documentElement.classList.add('sidebar-'+p);})();</script>
 </head>
 <body>
     <div class="sidebar">
@@ -17,33 +18,33 @@
         </div>
         <nav class="sidebar-nav">
             <a href="/" class="nav-item {% if page == 'dashboard' %}active{% endif %}">
-                📊 Dashboard
+                📊 <span class="nav-item-text">Dashboard</span>
             </a>
             <a href="/stagiaires" class="nav-item {% if page == 'stagiaires' %}active{% endif %}">
-                👥 Stagiaires
+                👥 <span class="nav-item-text">Stagiaires</span>
             </a>
             <a href="/sessions" class="nav-item {% if page == 'sessions' %}active{% endif %}">
-                📋 Sessions
+                📋 <span class="nav-item-text">Sessions</span>
             </a>
             <a href="/caces-obtenus" class="nav-item {% if page == 'caces_obtenus' %}active{% endif %}">
-                🏆 CACES® Obtenus
+                🏆 <span class="nav-item-text">CACES® Obtenus</span>
             </a>
             <a href="/cartes-caces" class="nav-item {% if page == 'cartes_caces' %}active{% endif %}">
-                🪪 Cartes CACES®
+                🪪 <span class="nav-item-text">Cartes CACES®</span>
             </a>
             <div class="nav-separator"></div>
             <a href="/statistiques" class="nav-item {% if page == 'statistiques' %}active{% endif %}">
-                📈 Statistiques
+                📈 <span class="nav-item-text">Statistiques</span>
             </a>
             <a href="/non-conformites" class="nav-item {% if page == 'non_conformites' %}active{% endif %}">
-                ⚠️ Non-conformités
+                ⚠️ <span class="nav-item-text">Non-conformités</span>
             </a>
             <div class="nav-separator"></div>
             <a href="/testeurs" class="nav-item {% if page == 'testeurs' %}active{% endif %}">
-                👨‍🏫 Testeurs
+                👨‍🏫 <span class="nav-item-text">Testeurs</span>
             </a>
             <a href="/admin" class="nav-item {% if page == 'admin' %}active{% endif %}">
-                ⚙️ Administration
+                ⚙️ <span class="nav-item-text">Administration</span>
             </a>
         </nav>
         {% set _num_cert = numero_certificat() %}
@@ -56,7 +57,10 @@
 
     <div class="main">
         <div class="topbar">
-            <h1 class="page-title">{% block title %}{% endblock %}</h1>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button class="btn-hamburger" onclick="toggleSidebar()" title="Réduire / déplier le menu">☰</button>
+                <h1 class="page-title">{% block title %}{% endblock %}</h1>
+            </div>
             <div class="topbar-right">
                 <span class="user-badge">👤 <a href="/profil" style="color:inherit; text-decoration:none;"><span id="user-nom">—</span></a></span>
                 <button onclick="seDeconnecter()"
@@ -71,6 +75,22 @@
     </div>
 
     <script>
+    // Sidebar toggle
+    function toggleSidebar() {
+        var html = document.documentElement;
+        var isMobile = window.matchMedia('(max-width: 768px)').matches;
+        var isOpen = html.classList.contains('sidebar-expanded') ||
+                     (!html.classList.contains('sidebar-collapsed') && !isMobile);
+        html.classList.remove('sidebar-expanded', 'sidebar-collapsed');
+        if (isOpen) {
+            html.classList.add('sidebar-collapsed');
+            localStorage.setItem('sidebar', 'collapsed');
+        } else {
+            html.classList.add('sidebar-expanded');
+            localStorage.setItem('sidebar', 'expanded');
+        }
+    }
+
     // Verification authentification
     const token = localStorage.getItem('token');
     const pageCourante = window.location.pathname;

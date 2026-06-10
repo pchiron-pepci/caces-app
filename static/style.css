@@ -31,6 +31,8 @@ body {
     position: fixed;
     height: 100vh;
     z-index: 100;
+    overflow: hidden;
+    transition: width 0.2s ease;
 }
 
 .sidebar-logo {
@@ -110,12 +112,27 @@ body {
     margin-top: 4px;
 }
 
+/* HAMBURGER */
+.btn-hamburger {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #555;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.btn-hamburger:hover { background: var(--gray); }
+
 /* MAIN */
 .main {
     margin-left: var(--sidebar-width);
     flex: 1;
     display: flex;
     flex-direction: column;
+    transition: margin-left 0.2s ease;
 }
 
 .topbar {
@@ -386,11 +403,44 @@ a:hover { color: #aa0000; }
 
 .tab:hover { color: var(--blue); }
 
-/* RESPONSIVE */
+/* SIDEBAR — ÉTAT RÉTRACTÉ (forcé JS ou media query) */
+html.sidebar-collapsed .sidebar { width: 60px; }
+html.sidebar-collapsed .main { margin-left: 60px; }
+html.sidebar-collapsed .nav-item-text,
+html.sidebar-collapsed .logo-sub,
+html.sidebar-collapsed .cert-date,
+html.sidebar-collapsed .sidebar-footer { display: none; }
+html.sidebar-collapsed .nav-item,
+html.sidebar-collapsed .nav-item.active {
+    justify-content: center;
+    padding: 12px 8px;
+    border-left: none;
+}
+
+/* SIDEBAR — ÉTAT DÉPLOYÉ FORCÉ (override media query sur petits écrans) */
+html.sidebar-expanded .sidebar { width: var(--sidebar-width); }
+html.sidebar-expanded .main { margin-left: var(--sidebar-width); }
+html.sidebar-expanded .nav-item-text { display: inline; }
+html.sidebar-expanded .logo-sub,
+html.sidebar-expanded .cert-date { display: block; }
+html.sidebar-expanded .sidebar-footer { display: block; }
+html.sidebar-expanded .nav-item { justify-content: flex-start; padding: 12px 20px; }
+html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px solid #cc0000; }
+
+/* RESPONSIVE — défaut sur petits écrans, respecte sidebar-expanded */
 @media (max-width: 768px) {
-    .sidebar { width: 60px; }
-    .logo-sub, .nav-item span, .cert-date, .sidebar-footer { display: none; }
-    .main { margin-left: 60px; }
+    html:not(.sidebar-expanded) .sidebar { width: 60px; }
+    html:not(.sidebar-expanded) .main { margin-left: 60px; }
+    html:not(.sidebar-expanded) .nav-item-text,
+    html:not(.sidebar-expanded) .logo-sub,
+    html:not(.sidebar-expanded) .cert-date,
+    html:not(.sidebar-expanded) .sidebar-footer { display: none; }
+    html:not(.sidebar-expanded) .nav-item,
+    html:not(.sidebar-expanded) .nav-item.active {
+        justify-content: center;
+        padding: 12px 8px;
+        border-left: none;
+    }
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .dashboard-grid { grid-template-columns: 1fr; }
 }
