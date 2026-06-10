@@ -119,40 +119,45 @@
         <h2>Récapitulatif séquençage</h2>
     </div>
     <div style="padding:8px;">
-        {% for j in jours_test %}
+        {% for date, entry in jours_par_date.items() %}
         <div style="margin-bottom:{% if not loop.last %}24px{% else %}8px{% endif %};">
-            <!-- Bandeau en-tête jour -->
-            <div style="border-left:3px solid {% if j.type == 'theorie' %}#1a237e{% else %}#cc0000{% endif %}; background:{% if j.type == 'theorie' %}#f0f4ff{% else %}#fff5f5{% endif %}; padding:7px 12px; border-radius:4px; margin-bottom:6px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:13px;">
-                <strong>{{ j.date.strftime('%d/%m/%Y') }}</strong>
-                <span class="badge" style="background:{% if j.type == 'theorie' %}#e3f2fd; color:#1a237e{% else %}#fce4ec; color:#c62828{% endif %}; font-size:11px;">{{ 'Théorie' if j.type == 'theorie' else 'Pratique' }}</span>
-                <span style="color:#555;">{{ j.testeur_nom }}</span>
-                {% if j.type == 'pratique' and j.total_ut > 0 %}
-                <span style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %}; font-weight:700;">{{ j.total_ut }} UT</span>
+            <!-- Bandeau en-tête jour fusionné -->
+            <div style="border-left:3px solid #cc0000; background:#fff5f5; padding:7px 12px; border-radius:4px; margin-bottom:6px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:13px;">
+                <strong>{{ date.strftime('%d/%m/%Y') }}</strong>
+                {% if entry.testeurs %}
+                <span style="color:#555;">{{ entry.testeurs | join(' · ') }}</span>
+                {% endif %}
+                {% if entry.total_ut > 0 %}
+                <span style="color:{% if entry.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %}; font-weight:700;">{{ entry.total_ut }} UT pratique</span>
                 {% endif %}
             </div>
-            <!-- Tableau jour -->
+            <!-- Tableau fusionné théorie + pratique -->
             <div style="overflow-x:auto;">
-            <table class="table" style="margin:0; font-size:12px;">
+            <table class="table" style="margin:0;">
                 <thead>
                     <tr>
-                        <th style="min-width:140px;">Candidat</th>
-                        <th style="text-align:center; min-width:55px;">Théo</th>
+                        <th style="min-width:150px;">Candidat</th>
+                        <th style="text-align:center; min-width:60px;">Théo</th>
                         {% for cat in categories %}
-                        <th style="text-align:center; min-width:90px;">{{ cat }}</th>
+                        <th style="text-align:center; min-width:90px;">
+                            {{ cat }}<br>
+                            <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }} UT</span>
+                        </th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for sc in session_candidats %}
-                    {% if sc.stagiaire_id in j.candidats_ids %}
+                    {% if sc.stagiaire_id in entry.candidats_ids %}
                     <tr>
-                        <td>{{ nddn(sc.stagiaire) }}</td>
-                        <!-- Colonne Théo -->
+                        <td><strong>{{ nddn(sc.stagiaire) }}</strong></td>
+                        <!-- Théo : cherche dans tous les jours théorie de cette date -->
                         <td style="text-align:center;">
-                            {% if j.type == 'theorie' %}
-                                {% set rt = resultats_theorie_par_jour.get(j.id, {}).get(sc.stagiaire_id) %}
-                                {% if rt %}
-                                    <span style="font-weight:700; color:{% if rt.obtenue %}#2e7d32{% else %}#c62828{% endif %};">1.0</span>
+                            {% set ns_t = namespace(in_theorie=false, rt=none) %}
+                            {% for j in entry.jours %}{% if j.type == 'theorie' and sc.stagiaire_id in j.candidats_ids %}{% set ns_t.in_theorie = true %}{% set ns_t.rt = resultats_theorie_par_jour.get(j.id, {}).get(sc.stagiaire_id) %}{% endif %}{% endfor %}
+                            {% if ns_t.in_theorie %}
+                                {% if ns_t.rt %}
+                                    <span style="font-weight:700; color:{% if ns_t.rt.obtenue %}#2e7d32{% else %}#c62828{% endif %};">1.0</span>
                                 {% else %}
                                     <span style="font-weight:600; color:#1a237e;">1.0</span>
                                 {% endif %}
@@ -160,18 +165,13 @@
                                 <span style="color:#ddd;">—</span>
                             {% endif %}
                         </td>
-                        <!-- Colonnes catégories -->
+                        <!-- Catégories : cherche dans tous les jours pratique de cette date -->
                         {% for cat in categories %}
                         <td style="text-align:center;">
-                            {% if j.type == 'pratique' %}
-                                {% set ut_cell = j.ut_cand_cat.get(sc.stagiaire_id, {}).get(cat, 0) %}
-                                {% if ut_cell > 0 %}
-                                    {% set is_os = cat not in j.candidats_categories.get(sc.stagiaire_id, []) %}
-                                    {% set opts = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}
-                                    <span style="font-weight:700; color:{% if is_os %}#e65100{% else %}#1a237e{% endif %};{% if is_os %} background:#ffe0b2; border-radius:4px; padding:1px 5px;{% endif %}">{{ ut_cell }}</span>{% for opt in opts %}{% if (cat, opt) in opt_incluse_set %}<span style="color:#aaa; font-size:10px;"> · {{ opt }}</span>{% else %}<span style="color:#e65100; font-size:10px; font-weight:600;"> · {{ opt }} +0,5</span>{% endif %}{% endfor %}
-                                {% else %}
-                                    <span style="color:#ddd;">—</span>
-                                {% endif %}
+                            {% set ns_c = namespace(ut=0, opts=[], is_os=false) %}
+                            {% for j in entry.jours %}{% if j.type == 'pratique' %}{% set ut_j = j.ut_cand_cat.get(sc.stagiaire_id, {}).get(cat, 0) %}{% if ut_j > 0 %}{% set ns_c.ut = ut_j %}{% set ns_c.opts = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}{% set ns_c.is_os = cat not in j.candidats_categories.get(sc.stagiaire_id, []) %}{% endif %}{% endif %}{% endfor %}
+                            {% if ns_c.ut > 0 %}
+                                <span style="font-weight:700; color:{% if ns_c.is_os %}#e65100{% else %}#1a237e{% endif %};{% if ns_c.is_os %} background:#ffe0b2; border-radius:4px; padding:1px 5px;{% endif %}">{{ ns_c.ut }}</span>{% for opt in ns_c.opts %}{% if (cat, opt) in opt_incluse_set %}<span style="color:#aaa; font-size:11px;"> · {{ opt }}</span>{% else %}<span style="color:#e65100; font-size:11px; font-weight:600;"> · {{ opt }}</span>{% endif %}{% endfor %}
                             {% else %}
                                 <span style="color:#ddd;">—</span>
                             {% endif %}
@@ -182,26 +182,22 @@
                     {% endfor %}
                 </tbody>
                 <tfoot>
-                    <tr style="background:#f0f2f7; font-size:11px; color:#555;">
+                    <tr style="background:#f0f2f7; font-size:12px; color:#555;">
                         <td style="font-weight:700;">Cumul</td>
-                        <!-- Cumul Théo -->
+                        <!-- Cumul Théo : nb candidats présents en théorie ce jour -->
                         <td style="text-align:center;">
-                            {% if j.type == 'theorie' %}
-                                {% set ns_th = namespace(nb=0) %}
-                                {% for sc in session_candidats %}{% if sc.stagiaire_id in j.candidats_ids %}{% set rt = resultats_theorie_par_jour.get(j.id, {}).get(sc.stagiaire_id) %}{% if rt %}{% set ns_th.nb = ns_th.nb + 1 %}{% endif %}{% endif %}{% endfor %}
-                                {% if ns_th.nb > 0 %}<span style="color:#1a237e; font-weight:700;">{{ ns_th.nb }} cand.</span>{% endif %}
-                            {% endif %}
+                            {% set ns_th = namespace(nb=0) %}
+                            {% for j in entry.jours %}{% if j.type == 'theorie' %}{% set ns_th.nb = ns_th.nb + j.candidats_ids | length %}{% endif %}{% endfor %}
+                            {% if ns_th.nb > 0 %}<span style="color:#1a237e; font-weight:700;">{{ ns_th.nb }} cand.</span>{% endif %}
                         </td>
-                        <!-- Cumul par catégorie -->
+                        <!-- Cumul catégories : agrège tous les jours pratique de la date -->
                         {% for cat in categories %}
                         <td style="text-align:center;">
-                            {% if j.type == 'pratique' %}
-                                {% set ut_col = j.ut_total_cat.get(cat, 0) %}
-                                {% if ut_col > 0 %}
-                                    {% set ns_nb = namespace(nb=0) %}
-                                    {% for sc in session_candidats %}{% if sc.stagiaire_id in j.candidats_ids %}{% if cat in j.ut_cand_cat.get(sc.stagiaire_id, {}) %}{% set ns_nb.nb = ns_nb.nb + 1 %}{% endif %}{% endif %}{% endfor %}
-                                    <span style="color:#555;">{{ ns_nb.nb }} cand.</span><br><span style="color:#1a237e; font-weight:700;">{{ ut_col }} UT</span>
-                                {% endif %}
+                            {% set ns_u = namespace(ut=0.0, nb=0) %}
+                            {% for j in entry.jours %}{% if j.type == 'pratique' %}{% set ns_u.ut = ns_u.ut + j.ut_total_cat.get(cat, 0) %}{% for sc in session_candidats %}{% if sc.stagiaire_id in j.candidats_ids and cat in j.ut_cand_cat.get(sc.stagiaire_id, {}) %}{% set ns_u.nb = ns_u.nb + 1 %}{% endif %}{% endfor %}{% endif %}{% endfor %}
+                            {% if ns_u.ut > 0 %}
+                                <span style="color:#555;">{{ ns_u.nb }} cand.</span><br>
+                                <span style="color:#1a237e; font-weight:700;">{{ ns_u.ut | round(1) }} UT</span>
                             {% endif %}
                         </td>
                         {% endfor %}
@@ -211,7 +207,7 @@
             </div>
         </div>
         {% endfor %}
-        {% if not jours_test %}
+        {% if not jours_par_date %}
         <div style="padding:16px; text-align:center; color:#888; font-size:13px;">Aucun jour planifié.</div>
         {% endif %}
     </div>

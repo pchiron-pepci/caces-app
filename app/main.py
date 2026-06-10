@@ -902,6 +902,21 @@ def page_session_detail(request: Request, session_id: int):
             j.ut_libres = 0
             j.candidats_epreuves = {}
 
+    # Groupement jours par date pour récap séquençage (fusion théorie+pratique)
+    jours_par_date: dict = {}
+    for j in jours_test:
+        d = j.date
+        if d not in jours_par_date:
+            jours_par_date[d] = {"jours": [], "candidats_ids": [], "testeurs": [], "total_ut": 0.0}
+        entry = jours_par_date[d]
+        entry["jours"].append(j)
+        for sid in j.candidats_ids:
+            if sid not in entry["candidats_ids"]:
+                entry["candidats_ids"].append(sid)
+        if j.testeur_nom and j.testeur_nom != "—" and j.testeur_nom not in entry["testeurs"]:
+            entry["testeurs"].append(j.testeur_nom)
+        entry["total_ut"] = round(entry["total_ut"] + j.total_ut, 1)
+
     ut_planifie_candidat = {}
     ut_planifie_par_stag_cat = {}
     for j in jours_test:
@@ -975,6 +990,7 @@ def page_session_detail(request: Request, session_id: int):
             "options_par_cat": options_par_cat,
             "opt_incluse_set": opt_incluse_set,
             "ut_planifie_par_stag_cat": ut_planifie_par_stag_cat,
+            "jours_par_date": jours_par_date,
             "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date]
         }
     )
