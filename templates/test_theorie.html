@@ -601,6 +601,10 @@
             <button class="btn-nav btn-precedent" id="btn-precedent" onclick="precedent()" disabled>← Precedente</button>
             <button class="btn-nav btn-suivant" id="btn-suivant" onclick="suivant()">Suivante →</button>
         </div>
+        <button id="btn-voir-recap" onclick="afficherRecap()"
+            style="display:none; margin-top:10px; width:100%; padding:12px; background:#1a237e; color:white; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer;">
+            📋 Voir le récap
+        </button>
     </div>
 </div>
 
@@ -662,6 +666,7 @@ let questionActuelle = 0;
 let stagiaireId = null;
 let timerInterval = null;
 let tempsRestant = 60 * 60;
+let recapDebloque = false;
 
 function demarrerTimer() {
     document.getElementById('timer').style.display = 'block';
@@ -764,6 +769,7 @@ function allerConfirmation() {
     // RESET complet pour le nouveau candidat
     reponses = {};
     questionActuelle = 0;
+    recapDebloque = false;
     questions.forEach((q, idx) => {
         const el = document.getElementById('rq-' + q.theme + '-' + q.idx_theme);
         if (el) el.className = 'recap-q vide';
@@ -863,6 +869,10 @@ function afficherQuestion(idx) {
     questionActuelle = idx;
     const q = questions[idx];
     if (!q) return;
+
+    if (idx === questions.length - 1) recapDebloque = true;
+    const btnVR = document.getElementById('btn-voir-recap');
+    if (btnVR) btnVR.style.display = recapDebloque ? 'block' : 'none';
 
     document.getElementById('q-num').textContent = idx + 1;
     const pct = Math.round((idx + 1) / questions.length * 100);
