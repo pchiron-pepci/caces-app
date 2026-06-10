@@ -654,7 +654,7 @@
 const SESSION_ID = {{ session_id }};
 const JOUR_ID = {{ jour_id }};
 const GRILLE_ID = {{ grille_id if grille_id else 'null' }};
-const START_DIRECT = {{ 'true' if start_direct is defined and start_direct else 'false' }};
+const START_DIRECT = {{ 'true' if start_direct else 'false' }};
 const START_STAGIAIRE_ID = {{ start_stagiaire_id if start_stagiaire_id is defined else 'null' }};
 const START_NOM = "{{ start_nom if start_nom is defined else '' }}";
 const START_PRENOM = "{{ start_prenom if start_prenom is defined else '' }}";
