@@ -1185,17 +1185,21 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/verifier/{numero_carte}")
-def page_verifier_carte(numero_carte: str, request: Request, db: DBSession = Depends(get_db)):
+@app.get("/verifier/{token}")
+def page_verifier_carte(token: str, request: Request, db: DBSession = Depends(get_db)):
     from datetime import date as _date, datetime as _dt
     config = db.query(ConfigOrganisme).first()
     today = _date.today()
-    carte = db.query(CarteCaces).filter(CarteCaces.numero_carte == numero_carte).first()
+    from app.models.carte_caces import CarteCaces as _CC
+    carte = (
+        db.query(_CC).filter(_CC.token_verification == token).first()
+        or db.query(_CC).filter(_CC.numero_carte == token).first()
+    )
     if not carte:
         return templates.TemplateResponse(
             request=request,
             name="verifier.html",
-            context={"statut": "introuvable", "numero_carte": numero_carte, "config": config, "today": today},
+            context={"statut": "introuvable", "numero_carte": token, "config": config, "today": today},
         )
     s = db.query(Stagiaire).filter(Stagiaire.id == carte.stagiaire_id).first()
     raw = json.loads(carte.caces_json) if carte.caces_json else []
@@ -1225,8 +1229,8 @@ def page_verifier_carte(numero_carte: str, request: Request, db: DBSession = Dep
             "date_generation": carte.date_generation,
             "famille": carte.famille,
             "stagiaire_nom": s.nom if s else "",
-            "stagiaire_prenom": s.prenom if s else "",
-            "stagiaire_ddn": s.date_naissance if s else None,
+            "stagiaire_prenom": ((s.prenom[0] + ".") if s and s.prenom else ""),
+            "stagiaire_ddn_annee": s.date_naissance.year if s and s.date_naissance else None,
             "photo_url": (s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or "" if s else "",
             "caces_list": caces_list,
             "config": config,

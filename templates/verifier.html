@@ -142,8 +142,9 @@
                 {% endif %}
                 <div>
                     <div class="tit-name">{{ stagiaire_nom }} {{ stagiaire_prenom }}</div>
-                    {% if stagiaire_ddn %}<div class="tit-ddn">Né(e) le {{ stagiaire_ddn.strftime("%d/%m/%Y") }}</div>{% endif %}
+                    {% if stagiaire_ddn_annee %}<div class="tit-ddn">Né(e) en {{ stagiaire_ddn_annee }}</div>{% endif %}
                     <span class="tit-fam">CACES® {{ famille }}</span>
+                    <div style="font-size:0.7rem; color:#aaa; margin-top:4px; font-style:italic;">Données partiellement masquées conformément au RGPD</div>
                 </div>
             </div>
 

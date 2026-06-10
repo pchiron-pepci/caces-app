@@ -7,6 +7,7 @@ class CarteCaces(Base):
     stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
     famille = Column(String(20), nullable=False)
     numero_carte = Column(String(30), unique=True, nullable=False)
+    token_verification = Column(String(36), unique=True, nullable=True)
     date_generation = Column(Date, nullable=False)
     statut = Column(String(20), nullable=False, default="en_preparation")
     motif_annulation = Column(String(500), nullable=True)

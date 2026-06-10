@@ -73,10 +73,10 @@ def _img_uri(b64, nom):
     return f"data:{mime};base64,{b64}"
 
 
-def _build_verify_url(cfg, numero_carte: str) -> str:
+def _build_verify_url(cfg, token: str) -> str:
     base = (cfg.url_verification_caces if cfg and cfg.url_verification_caces
             else "https://caces-app.onrender.com/verifier/")
-    return base.rstrip('/') + '/' + numero_carte
+    return base.rstrip('/') + '/' + token
 
 
 def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_certificat=""):
@@ -107,7 +107,7 @@ def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_c
             "nom_organisme": cfg.nom_organisme or "",
             "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
             "signature_uri": _img_uri(cfg.signature_base64, cfg.signature_nom) if hasattr(cfg, 'signature_base64') else "",
-            "verify_url": _build_verify_url(cfg, carte.numero_carte),
+            "verify_url": _build_verify_url(cfg, carte.token_verification or carte.numero_carte),
             "adresse": cfg.adresse or "" if hasattr(cfg, 'adresse') else "",
             "siret": cfg.siret or "" if hasattr(cfg, 'siret') else "",
             "email": cfg.email or "" if hasattr(cfg, 'email') else "",
@@ -289,7 +289,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
                 "nom_organisme": cfg.nom_organisme or "",
                 "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
                 "signature_uri": _img_uri(cfg.signature_base64, cfg.signature_nom) if hasattr(cfg, 'signature_base64') else "",
-                "verify_url": _build_verify_url(cfg, carte.numero_carte),
+                "verify_url": _build_verify_url(cfg, carte.token_verification or carte.numero_carte),
                 "adresse": cfg.adresse or "" if hasattr(cfg, 'adresse') else "",
                 "siret": cfg.siret or "" if hasattr(cfg, 'siret') else "",
                 "email": cfg.email or "" if hasattr(cfg, 'email') else "",
@@ -358,10 +358,12 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
         CarteCaces.famille == famille,
         CarteCaces.statut == "emise",
     ).update({"statut": "remplacee"})
+    import uuid as _uuid
     carte = CarteCaces(
         stagiaire_id=stagiaire_id,
         famille=famille,
         numero_carte=_gen_numero(db),
+        token_verification=str(_uuid.uuid4()),
         date_generation=date.today(),
         statut="emise",
         caces_json=caces_snapshot,
@@ -685,7 +687,7 @@ def telecharger_pdf(carte_id: int, db: DBSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Stagiaire introuvable")
     cfg = db.query(ConfigOrganisme).first() or ConfigOrganisme()
     caces_list = json.loads(carte.caces_json) if carte.caces_json else []
-    verify_url = _build_verify_url(cfg, carte.numero_carte)
+    verify_url = _build_verify_url(cfg, carte.token_verification or carte.numero_carte)
     fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
     famille_libelle = fam_obj.libelle if fam_obj else ""
     doc_cert = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == "certificat_organisme").first()
