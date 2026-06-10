@@ -126,9 +126,11 @@
                 <strong>{{ date.strftime('%d/%m/%Y') }}</strong>
                 {% if entry.testeurs %}
                     <span class="badge" style="background:#cc0000; color:white; font-size:12px;">{{ entry.testeurs[0] }}</span>
-                    {% if entry.testeurs | length > 1 %}
-                    <span style="color:#555;">{{ entry.testeurs[1:] | join(', ') }}</span>
-                    {% endif %}
+                {% endif %}
+                {% set ns_ts = namespace(parts=[]) %}
+                {% for j in entry.jours %}{% if j.testeurs_sup %}{% set ns_ts.parts = ns_ts.parts + [j.testeurs_sup] %}{% endif %}{% endfor %}
+                {% if ns_ts.parts %}
+                    <span style="color:#555;">{{ ns_ts.parts | join(', ') }}</span>
                 {% endif %}
                 {% for j in entry.jours %}{% if j.type == 'pratique' and j.total_ut > 0 %}
                 <span style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %}; font-weight:700;">{{ j.total_ut }} UT</span>
@@ -253,6 +255,13 @@
                         {% if j.testeur_nom %}
                             <span style="margin-left:8px; color:#666; font-size:13px;">Testeur principal : {{ j.testeur_nom }}</span>
                         {% endif %}
+                        {% if session.statut != 'terminee' %}
+                            <input type="text" data-action="save-testeurs-sup" data-jour-id="{{ j.id }}"
+                                value="{{ j.testeurs_sup or '' }}" placeholder="Testeurs sup."
+                                style="margin-left:12px; border:none; border-bottom:1px dashed #ccc; font-size:12px; color:#555; width:200px; background:transparent; outline:none;">
+                        {% elif j.testeurs_sup %}
+                            <span style="margin-left:12px; color:#666; font-size:12px;">{{ j.testeurs_sup }}</span>
+                        {% endif %}
                     </div>
                     <div style="display:flex; gap:8px;">
                         {% if session.statut != 'terminee' %}
@@ -351,6 +360,13 @@
                     <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                     <span class="badge orange" style="margin-left:8px;">Pratique</span>
                     <span style="margin-left:8px; color:#666; font-size:13px;">Testeur principal : {{ j.testeur_nom }}</span>
+                    {% if session.statut != 'terminee' %}
+                        <input type="text" data-action="save-testeurs-sup" data-jour-id="{{ j.id }}"
+                            value="{{ j.testeurs_sup or '' }}" placeholder="Testeurs sup."
+                            style="margin-left:12px; border:none; border-bottom:1px dashed #ccc; font-size:12px; color:#555; width:200px; background:transparent; outline:none;">
+                    {% elif j.testeurs_sup %}
+                        <span style="margin-left:12px; color:#666; font-size:12px;">{{ j.testeurs_sup }}</span>
+                    {% endif %}
                     <span style="margin-left:8px; color:#888; font-size:12px;">{{ j.candidats_ids|length }} candidat(s)</span>
                 </div>
                 <div style="display:flex; gap:8px;">

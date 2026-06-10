@@ -29,6 +29,9 @@ class JourModifData(BaseModel):
     date: Optional[str] = None
     testeur_id: Optional[int] = None
 
+class TesteurSupData(BaseModel):
+    testeurs_sup: Optional[str] = None
+
 class SessionCreate(BaseModel):
     famille: str
     lieu_id: int
@@ -547,6 +550,15 @@ def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSess
         j.testeur_id = data.testeur_id
     db.commit()
     return {"message": "Jour modifie"}
+
+@router.patch("/{session_id}/jours/{jour_id}/testeurs-sup")
+def update_testeurs_sup(session_id: int, jour_id: int, data: TesteurSupData, db: DBSession = Depends(get_db)):
+    j = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
+    if not j:
+        raise HTTPException(status_code=404, detail="Jour non trouvé")
+    j.testeurs_sup = data.testeurs_sup or None
+    db.commit()
+    return {"message": "OK"}
 
 @router.get("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/check-theorie")
 def check_resultat_theorie_candidat(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):

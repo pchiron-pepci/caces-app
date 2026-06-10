@@ -12,6 +12,7 @@ class JourTest(Base):
     grille_id = Column(Integer, ForeignKey("grilles_theorie.id"), nullable=True)
     tirage_themes_json = Column(Text, nullable=True)
     note = Column(Text, nullable=True)
+    testeurs_sup = Column(Text, nullable=True)
     actif = Column(Boolean, default=True)
 
 class JourTestCandidat(Base):

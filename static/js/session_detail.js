@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const btn = e.target.closest('.btn-retirer-candidat-jour');
         if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom, btn.dataset.type);
     });
+    document.addEventListener('focusout', function(e) {
+        const inp = e.target.closest('[data-action="save-testeurs-sup"]');
+        if (inp) saveTesteursSup(inp.dataset.jourId, inp.value);
+    });
     document.addEventListener('change', function(e) {
         const cb = e.target;
         if (!cb.matches('[name^="jp-cat-"]') || cb.checked) return;
@@ -91,6 +95,14 @@ function calculerRecapUT() {
         '<span>Total : <strong style="color:' + couleurTotal + '">' + total.toFixed(1) + ' UT</strong></span>' +
         '<span>Testeurs necessaires : <strong style="color:#1a237e;">' + nbTesteurs + '</strong></span>' +
         '<span>UT libres : <strong style="color:' + couleurLibres + '">' + utLibres.toFixed(1) + '</strong></span></div>';
+}
+
+async function saveTesteursSup(jourId, value) {
+    await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/testeurs-sup', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ testeurs_sup: value || null })
+    });
 }
 
 async function toggleIdentite(jourId, stagiaireId, btn) {
