@@ -113,6 +113,110 @@
     </div>
 </div>
 
+<!-- RECAPITULATIF SEQUENCAGE -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-header" style="border-left:4px solid #cc0000;">
+        <h2>Récapitulatif séquençage</h2>
+    </div>
+    <div style="padding:8px;">
+        {% for j in jours_test %}
+        <div style="margin-bottom:{% if not loop.last %}24px{% else %}8px{% endif %};">
+            <!-- Bandeau en-tête jour -->
+            <div style="border-left:3px solid {% if j.type == 'theorie' %}#1a237e{% else %}#cc0000{% endif %}; background:{% if j.type == 'theorie' %}#f0f4ff{% else %}#fff5f5{% endif %}; padding:7px 12px; border-radius:4px; margin-bottom:6px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:13px;">
+                <strong>{{ j.date.strftime('%d/%m/%Y') }}</strong>
+                <span class="badge" style="background:{% if j.type == 'theorie' %}#e3f2fd; color:#1a237e{% else %}#fce4ec; color:#c62828{% endif %}; font-size:11px;">{{ 'Théorie' if j.type == 'theorie' else 'Pratique' }}</span>
+                <span style="color:#555;">{{ j.testeur_nom }}</span>
+                {% if j.type == 'pratique' and j.total_ut > 0 %}
+                <span style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %}; font-weight:700;">{{ j.total_ut }} UT</span>
+                {% endif %}
+            </div>
+            <!-- Tableau jour -->
+            <div style="overflow-x:auto;">
+            <table class="table" style="margin:0; font-size:12px;">
+                <thead>
+                    <tr>
+                        <th style="min-width:140px;">Candidat</th>
+                        <th style="text-align:center; min-width:55px;">Théo</th>
+                        {% for cat in categories %}
+                        <th style="text-align:center; min-width:90px;">{{ cat }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sc in session_candidats %}
+                    {% if sc.stagiaire_id in j.candidats_ids %}
+                    <tr>
+                        <td>{{ nddn(sc.stagiaire) }}</td>
+                        <!-- Colonne Théo -->
+                        <td style="text-align:center;">
+                            {% if j.type == 'theorie' %}
+                                {% set rt = resultats_theorie_par_jour.get(j.id, {}).get(sc.stagiaire_id) %}
+                                {% if rt %}
+                                    <span style="font-weight:700; color:{% if rt.obtenue %}#2e7d32{% else %}#c62828{% endif %};">1.0</span>
+                                {% else %}
+                                    <span style="font-weight:600; color:#1a237e;">1.0</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color:#ddd;">—</span>
+                            {% endif %}
+                        </td>
+                        <!-- Colonnes catégories -->
+                        {% for cat in categories %}
+                        <td style="text-align:center;">
+                            {% if j.type == 'pratique' %}
+                                {% set ut_cell = j.ut_cand_cat.get(sc.stagiaire_id, {}).get(cat, 0) %}
+                                {% if ut_cell > 0 %}
+                                    {% set is_os = cat not in j.candidats_categories.get(sc.stagiaire_id, []) %}
+                                    {% set opts = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}
+                                    <span style="font-weight:700; color:{% if is_os %}#e65100{% else %}#1a237e{% endif %};{% if is_os %} background:#ffe0b2; border-radius:4px; padding:1px 5px;{% endif %}">{{ ut_cell }}</span>{% for opt in opts %}{% if (cat, opt) in opt_incluse_set %}<span style="color:#aaa; font-size:10px;"> · {{ opt }}</span>{% else %}<span style="color:#e65100; font-size:10px; font-weight:600;"> · {{ opt }} +0,5</span>{% endif %}{% endfor %}
+                                {% else %}
+                                    <span style="color:#ddd;">—</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color:#ddd;">—</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background:#f0f2f7; font-size:11px; color:#555;">
+                        <td style="font-weight:700;">Cumul</td>
+                        <!-- Cumul Théo -->
+                        <td style="text-align:center;">
+                            {% if j.type == 'theorie' %}
+                                {% set ns_th = namespace(nb=0) %}
+                                {% for sc in session_candidats %}{% if sc.stagiaire_id in j.candidats_ids %}{% set rt = resultats_theorie_par_jour.get(j.id, {}).get(sc.stagiaire_id) %}{% if rt %}{% set ns_th.nb = ns_th.nb + 1 %}{% endif %}{% endif %}{% endfor %}
+                                {% if ns_th.nb > 0 %}<span style="color:#1a237e; font-weight:700;">{{ ns_th.nb }} cand.</span>{% endif %}
+                            {% endif %}
+                        </td>
+                        <!-- Cumul par catégorie -->
+                        {% for cat in categories %}
+                        <td style="text-align:center;">
+                            {% if j.type == 'pratique' %}
+                                {% set ut_col = j.ut_total_cat.get(cat, 0) %}
+                                {% if ut_col > 0 %}
+                                    {% set ns_nb = namespace(nb=0) %}
+                                    {% for sc in session_candidats %}{% if sc.stagiaire_id in j.candidats_ids %}{% if cat in j.ut_cand_cat.get(sc.stagiaire_id, {}) %}{% set ns_nb.nb = ns_nb.nb + 1 %}{% endif %}{% endif %}{% endfor %}
+                                    <span style="color:#555;">{{ ns_nb.nb }} cand.</span><br><span style="color:#1a237e; font-weight:700;">{{ ut_col }} UT</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tfoot>
+            </table>
+            </div>
+        </div>
+        {% endfor %}
+        {% if not jours_test %}
+        <div style="padding:16px; text-align:center; color:#888; font-size:13px;">Aucun jour planifié.</div>
+        {% endif %}
+    </div>
+</div>
+
 <div style="display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
     <button class="tab-btn active-tab" onclick="showTab('sequencage', this)">Sequencage</button>
     <button class="tab-btn" onclick="showTab('candidats', this)">Candidats ({{ session_candidats|length }})</button>
