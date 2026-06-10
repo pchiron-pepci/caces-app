@@ -28,61 +28,57 @@ def init_data():
         # === CATEGORIES ===
         categories = [
             # R482 - Engins de chantier
-            Categorie(famille_id=r482.id, code="A",       libelle="Engins compacts",                              ut_pratique=1.5,  pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r482.id, code="B1",      libelle="Engins extraction deplacement sequentiel",     ut_pratique=1.0,  pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r482.id, code="B2",      libelle="Engins extraction rotatifs",                   ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r482.id, code="B3",      libelle="Engins extraction a chenilles",                ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r482.id, code="C1",      libelle="Engins chargement deplacement alternatif",     ut_pratique=1.0,  pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r482.id, code="C2",      libelle="Engins chargement rotatifs",                   ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r482.id, code="C3",      libelle="Engins chargement a chenilles",                ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r482.id, code="D",       libelle="Engins de compactage",                        ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r482.id, code="E",       libelle="Engins de finissage",                         ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r482.id, code="F",       libelle="Chariots manutention tout terrain",            ut_pratique=1.0,  pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r482.id, code="G",       libelle="Engins de forage et fondations",               ut_pratique=1.2,  pepci_habilite=False),
-            Categorie(famille_id=r482.id, code="OPT-TEL", libelle="Option Telecommande",                          ut_pratique=0.5,  pepci_habilite=True,  est_option=True),
-            Categorie(famille_id=r482.id, code="OPT-PE",  libelle="Option Porte-Engins",                          ut_pratique=0.5,  pepci_habilite=True,  est_option=True),
+            Categorie(famille_id=r482.id, code="A",       libelle="Engins compacts",                              ut_pratique=1.5,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r482.id, code="B1",      libelle="Engins extraction deplacement sequentiel",     ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r482.id, code="B2",      libelle="Engins extraction rotatifs",                   ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="B3",      libelle="Engins extraction a chenilles",                ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="C1",      libelle="Engins chargement deplacement alternatif",     ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r482.id, code="C2",      libelle="Engins chargement rotatifs",                   ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="C3",      libelle="Engins chargement a chenilles",                ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="D",       libelle="Engins de compactage",                        ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="E",       libelle="Engins de finissage",                         ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="F",       libelle="Chariots manutention tout terrain",            ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r482.id, code="G",       libelle="Engins de forage et fondations",               ut_pratique=1.2,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="OPT-TEL", libelle="Option Telecommande",                          ut_pratique=0.5,  pepci_habilite=True,  actif=True, est_option=True),
+            Categorie(famille_id=r482.id, code="OPT-PE",  libelle="Option Porte-Engins",                          ut_pratique=0.5,  pepci_habilite=True,  actif=True, est_option=True),
 
-            # R483 - Grues a tour
-            Categorie(famille_id=r483.id, code="1",       libelle="Grues a tour a montage automatise",            ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r483.id, code="2",       libelle="Grues a tour a montage non automatise",        ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r483.id, code="3",       libelle="Grues a tour a fleche relevable",              ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r483.id, code="4",       libelle="Grues a tour sur porteur",                     ut_pratique=1.0,  pepci_habilite=False),
+            # R483 - Grues mobiles (cats A et B — migration R483/R487 appliquee en prod)
+            Categorie(famille_id=r483.id, code="A",       libelle="Grues mobiles cat A",                          ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r483.id, code="B",       libelle="Grues mobiles cat B",                          ut_pratique=1.0,  pepci_habilite=False, actif=True),
 
             # R484 - Ponts roulants
-            Categorie(famille_id=r484.id, code="1",       libelle="Ponts roulants de cat 1",                      ut_pratique=0.75, pepci_habilite=False),
-            Categorie(famille_id=r484.id, code="2",       libelle="Ponts roulants de cat 2",                      ut_pratique=0.75, pepci_habilite=False),
-            Categorie(famille_id=r484.id, code="OPT-SOL", libelle="Option Commande au Sol",                       ut_pratique=0.5,  pepci_habilite=False, est_option=True),
+            Categorie(famille_id=r484.id, code="1",       libelle="Ponts roulants de cat 1",                      ut_pratique=0.75, pepci_habilite=False, actif=True),
+            Categorie(famille_id=r484.id, code="2",       libelle="Ponts roulants de cat 2",                      ut_pratique=0.75, pepci_habilite=False, actif=True),
+            Categorie(famille_id=r484.id, code="OPT-SOL", libelle="Option Commande au Sol",                       ut_pratique=0.5,  pepci_habilite=False, actif=True, est_option=True),
 
             # R485 - Gerbeurs
-            Categorie(famille_id=r485.id, code="1",       libelle="Gerbeurs cat 1",                               ut_pratique=0.75, pepci_habilite=False),
-            Categorie(famille_id=r485.id, code="2",       libelle="Gerbeurs cat 2",                               ut_pratique=0.75, pepci_habilite=False),
+            Categorie(famille_id=r485.id, code="1",       libelle="Gerbeurs cat 1",                               ut_pratique=0.75, pepci_habilite=False, actif=True),
+            Categorie(famille_id=r485.id, code="2",       libelle="Gerbeurs cat 2",                               ut_pratique=0.75, pepci_habilite=False, actif=True),
 
             # R486 - PEMP
-            Categorie(famille_id=r486.id, code="A",       libelle="PEMP du groupe A",                             ut_pratique=1.0,  pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r486.id, code="B",       libelle="PEMP du groupe B",                             ut_pratique=1.0,  pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r486.id, code="C",       libelle="PEMP du groupe C",                             ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r486.id, code="OPT-PE",  libelle="Option Porte-Engins PEMP",                     ut_pratique=0.5,  pepci_habilite=False, est_option=True),
+            Categorie(famille_id=r486.id, code="A",       libelle="PEMP du groupe A",                             ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r486.id, code="B",       libelle="PEMP du groupe B",                             ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r486.id, code="C",       libelle="PEMP du groupe C",                             ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r486.id, code="OPT-PE",  libelle="Option Porte-Engins PEMP",                     ut_pratique=0.5,  pepci_habilite=False, actif=True, est_option=True),
 
-            # R487 - Grues mobiles
-            Categorie(famille_id=r487.id, code="A",       libelle="Grues mobiles cat A",                          ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r487.id, code="B",       libelle="Grues mobiles cat B",                          ut_pratique=1.0,  pepci_habilite=False),
+            # R487 - Grues a tour (cats 1/2/3 — migration R483/R487 appliquee en prod)
+            Categorie(famille_id=r487.id, code="1",       libelle="Grue a tour a montage par elements, fleche distributrice", ut_pratique=1.2, pepci_habilite=False, actif=True),
+            Categorie(famille_id=r487.id, code="2",       libelle="Grue a tour a montage par elements, fleche relevable",     ut_pratique=1.0, pepci_habilite=False, actif=True),
+            Categorie(famille_id=r487.id, code="3",       libelle="Grue a tour a montage automatise",                         ut_pratique=1.0, pepci_habilite=False, actif=True),
 
             # R489 - Chariots
-            Categorie(famille_id=r489.id, code="1A",      libelle="Transpalettes a conducteur porte",             ut_pratique=0.5,  pepci_habilite=False),
-            Categorie(famille_id=r489.id, code="1B",      libelle="Transpalettes et preparateurs commandes",      ut_pratique=0.75, pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r489.id, code="2A",      libelle="Chariots a mat retractable cat 2A",            ut_pratique=0.5,  pepci_habilite=False),
-            Categorie(famille_id=r489.id, code="2B",      libelle="Chariots a mat retractable cat 2B",            ut_pratique=0.5,  pepci_habilite=False),
-            Categorie(famille_id=r489.id, code="3",       libelle="Chariots elevateurs en porte-a-faux",          ut_pratique=1.0,  pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r489.id, code="4",       libelle="Chariots a mat retractable cat 4",             ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r489.id, code="5",       libelle="Chariots elevateurs a mat retractable",        ut_pratique=0.75, pepci_habilite=True,  date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r489.id, code="6",       libelle="Chariots a plateau porteur",                   ut_pratique=0.75, pepci_habilite=False),
-            Categorie(famille_id=r489.id, code="7",       libelle="Chariots a mat retractable cat 7",             ut_pratique=0.75, pepci_habilite=False),
+            Categorie(famille_id=r489.id, code="1A",      libelle="Transpalettes a conducteur porte",             ut_pratique=0.5,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r489.id, code="1B",      libelle="Transpalettes et preparateurs commandes",      ut_pratique=0.75, pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r489.id, code="2A",      libelle="Chariots a mat retractable cat 2A",            ut_pratique=0.5,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r489.id, code="2B",      libelle="Chariots a mat retractable cat 2B",            ut_pratique=0.5,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r489.id, code="3",       libelle="Chariots elevateurs en porte-a-faux",          ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r489.id, code="4",       libelle="Chariots a mat retractable cat 4",             ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r489.id, code="5",       libelle="Chariots elevateurs a mat retractable",        ut_pratique=0.75, pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
+            Categorie(famille_id=r489.id, code="6",       libelle="Chariots a plateau porteur",                   ut_pratique=0.75, pepci_habilite=False, actif=True),
+            Categorie(famille_id=r489.id, code="7",       libelle="Chariots a mat retractable cat 7",             ut_pratique=0.75, pepci_habilite=False, actif=True),
 
-            # R490 - Grues de chargement
-            Categorie(famille_id=r490.id, code="1",       libelle="Grues de chargement cat 1",                    ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r490.id, code="2",       libelle="Grues de chargement cat 2",                    ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r490.id, code="3",       libelle="Grues de chargement cat 3",                    ut_pratique=1.0,  pepci_habilite=False),
-            Categorie(famille_id=r490.id, code="OPT-TEL", libelle="Option Telecommande R490",                     ut_pratique=0.5,  pepci_habilite=False, est_option=True),
+            # R490 - Grues de chargement (cat 1 unique — migration R490 appliquee en prod)
+            Categorie(famille_id=r490.id, code="1",       libelle="Grues de chargement cat 1",                    ut_pratique=1.0,  pepci_habilite=False, actif=True),
         ]
         db.add_all(categories)
         db.flush()
