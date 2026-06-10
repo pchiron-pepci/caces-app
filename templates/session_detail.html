@@ -168,7 +168,6 @@
                     <thead>
                         <tr>
                             <th>Candidat</th>
-                            <th style="text-align:center; width:80px;">Identite</th>
                             <th style="text-align:center;">T1/12</th>
                             <th style="text-align:center;">T2/28</th>
                             <th style="text-align:center;">T3/44</th>
@@ -188,16 +187,6 @@
                                 <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}" data-type="{{ j.type }}"
                                     class="btn-retirer-candidat-jour"
                                     style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
-                                {% endif %}
-                            </td>
-                            <td style="text-align:center;">
-                                {% if session.statut != 'terminee' %}
-                                <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
-                                    style="background:none; border:none; cursor:pointer; font-size:20px;">
-                                    {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
-                                </button>
-                                {% else %}
-                                    {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
                                 {% endif %}
                             </td>
                             {% if sc.theorie_dispensee %}
@@ -275,7 +264,6 @@
                 <thead>
                     <tr>
                         <th>Candidat</th>
-                        <th style="text-align:center; width:60px;">Identité</th>
                         {% for cat in categories %}
                         <th style="text-align:center; font-size:12px;">
                             {{ cat }}<br>
@@ -296,16 +284,6 @@
                             <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}"
                                 class="btn-retirer-candidat-jour"
                                 style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
-                            {% endif %}
-                        </td>
-                        <td style="text-align:center;">
-                            {% if session.statut != 'terminee' %}
-                            <button onclick="toggleIdentite({{ j.id }}, {{ sc.stagiaire_id }}, this)"
-                                style="background:none; border:none; cursor:pointer; font-size:18px;">
-                                {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
-                            </button>
-                            {% else %}
-                                {{ '✅' if j.identites_verifiees.get(sc.stagiaire_id) else '⬜' }}
                             {% endif %}
                         </td>
                         {% for cat in categories %}
