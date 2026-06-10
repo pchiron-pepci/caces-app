@@ -758,12 +758,14 @@ def page_session_detail(request: Request, session_id: int):
     epreuves = db.query(SessionEpreuve).filter(SessionEpreuve.session_id == session_id).all()
 
     famille = db.query(Famille).filter(Famille.code == session.famille).first()
+    # Tri texte suffisant pour les codes actuels (A, B1, C1… ; 1A, 1B… ; 1, 2, 3…).
+    # Si un code à deux chiffres apparaît un jour (ex. "10"), il se classerait avant "2" — revoir alors.
     categories_obj = db.query(Categorie).filter(
         Categorie.famille_id == (famille.id if famille else 0),
         Categorie.pepci_habilite == True,
         Categorie.actif == True,
         Categorie.est_option == False
-    ).all() if famille else []
+    ).order_by(Categorie.code).all() if famille else []
     categories = [c.code for c in categories_obj]
     ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
 

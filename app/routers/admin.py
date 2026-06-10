@@ -46,10 +46,12 @@ def get_categories_famille(famille: str, db: Session = Depends(get_db)):
     f = db.query(Famille).filter(Famille.code == famille).first()
     if not f:
         raise HTTPException(status_code=404, detail="Famille non trouvee")
+    # Tri texte suffisant pour les codes actuels (A, B1… ; 1A, 1B… ; 1, 2, 3…).
+    # Si un code à deux chiffres apparaît un jour (ex. "10"), il se classerait avant "2" — revoir alors.
     cats = db.query(Categorie).filter(
         Categorie.famille_id == f.id,
         Categorie.actif == True
-    ).all()
+    ).order_by(Categorie.code).all()
     return [{"code": c.code, "libelle": c.libelle} for c in cats]
 
 @router.post("/categorie/{id}/activer")
