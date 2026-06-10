@@ -58,9 +58,9 @@ with engine.connect() as conn:
         ), {"fid": fid_487, "c": code}).fetchone()
         if not existing:
             conn.execute(text(
-                "INSERT INTO categories (famille_id, code, libelle, ut_pratique, pepci_habilite, est_option)"
-                " VALUES (:fid, :code, :libelle, :ut, :ph, :eo)"
-            ), {"fid": fid_487, "code": code, "libelle": libelle, "ut": ut, "ph": False, "eo": False})
+                "INSERT INTO categories (famille_id, code, libelle, ut_pratique, pepci_habilite, est_option, actif)"
+                " VALUES (:fid, :code, :libelle, :ut, :ph, :eo, :actif)"
+            ), {"fid": fid_487, "code": code, "libelle": libelle, "ut": ut, "ph": False, "eo": False, "actif": True})
     conn.commit()
     print("OK — cats R487/1/2/3 creees")
 
