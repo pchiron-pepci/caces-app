@@ -32,8 +32,8 @@ OPTIONS = [
     ("R482", "E",      [("PE", False)]),
     ("R482", "G",      [("TEL", True), ("PE", False)]),     # telescopique, TEL incluse, PE facultative
     ("R482", "H",      [("TEL", False)]),
-    ("R483", "A",      [("TEL", False), ("CEC", False)]),
-    ("R483", "B",      [("TEL", False), ("CEC", False)]),
+    ("R483", "A",      [("CC", True),  ("CEC", True),  ("TEL", False)]),  # CC+CEC incluses, TEL facultative
+    ("R483", "B",      [("CC", True),  ("CEC", False), ("TEL", False)]),  # CC incluse, CEC+TEL facultatives
     ("R486", "A",      [("PE", False)]),
     ("R486", "B",      [("PE", False)]),
     ("R486", "C",      [("PE", True)]),                    # PE incluse dans l'UT
