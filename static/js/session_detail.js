@@ -195,7 +195,16 @@ async function sauvegarderJourPratique() {
             const optCbs = document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cat + '"]:checked');
             if (optCbs.length > 0) options[cat] = Array.from(optCbs).map(o => o.value);
         });
-        if (cats.length > 0) candidats_pratique.push({ stagiaire_id: stagiaireId, categories: cats, options });
+        // Option-seule : options cochées pour catégories NON cochées
+        document.querySelectorAll('[name^="jp-opt-' + stagiaireId + '-"]:checked').forEach(optCb => {
+            const prefix = 'jp-opt-' + stagiaireId + '-';
+            const cat = optCb.name.slice(prefix.length);
+            if (!cats.includes(cat)) {
+                if (!options[cat]) options[cat] = [];
+                if (!options[cat].includes(optCb.value)) options[cat].push(optCb.value);
+            }
+        });
+        if (cats.length > 0 || Object.keys(options).length > 0) candidats_pratique.push({ stagiaire_id: stagiaireId, categories: cats, options });
     });
     if (candidats_pratique.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     if (jourId) {
