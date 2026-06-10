@@ -316,6 +316,7 @@
                                 {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
                                 {% set ut_jour.total = ut_jour.total + ut_par_cat.get(cat, 1) %}
                                 {% set opts_planif = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}
+                                {% for opt_code in opts_planif %}{% if (cat, opt_code) not in opt_incluse_set %}{% set ut_jour.total = ut_jour.total + 0.5 %}{% endif %}{% endfor %}
                                 {% if epreuve and epreuve.obtenue == True %}
 <span class="badge green" style="font-size:11px;">{{ ut_par_cat.get(cat, 1) }} UT ✓</span>
     {% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = opts_planif if opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}

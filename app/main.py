@@ -963,6 +963,7 @@ def page_session_detail(request: Request, session_id: int):
             "stagiaires": stagiaires,
             "testeurs": testeurs_list,
             "options_par_cat": options_par_cat,
+            "opt_incluse_set": opt_incluse_set,
             "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date]
         }
     )
