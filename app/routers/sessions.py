@@ -170,8 +170,6 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
     sc = db.query(SessionCandidat).filter(SessionCandidat.id == id).first()
     if not sc:
         raise HTTPException(status_code=404, detail="Candidat non trouve")
-    sc.rgpd_accepte = data.rgpd_accepte
-    sc.photo_accepte = data.photo_accepte
     sc.theorie_dispensee = data.theorie_dispensee
     db.commit()
     return {"message": "Candidat mis a jour"}

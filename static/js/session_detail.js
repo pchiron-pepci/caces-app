@@ -373,8 +373,6 @@ async function sauvegarderCandidat() {
     const data = {
         session_id: window.SESSION_ID,
         stagiaire_id: parseInt(document.getElementById('sc-stagiaire').value),
-        rgpd_accepte: document.getElementById('sc-rgpd').value === 'true',
-        photo_accepte: document.getElementById('sc-photo').value === 'true',
         theorie_dispensee: document.getElementById('sc-theorie').value === 'dispense'
     };
     if (!id && !data.stagiaire_id) { alert('Choisir un stagiaire !'); return; }
