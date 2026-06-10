@@ -527,7 +527,35 @@ function _executerRetraitAvecPin(jourId, stagiaireId, nom) {
 // ====== RGPD OVERLAY ======
 
 var _rgpdStag = null;
-var _rgpdQrGenerated = false;
+var _rgpdVerifEnvoye = false;
+
+function _rgpdMajChoix() {
+    var sel = document.getElementById('rgpd-verificateur');
+    var cb = document.getElementById('rgpd-identite-cb');
+    var choix = document.getElementById('rgpd-choix');
+    if (sel && cb && choix) {
+        choix.style.display = (sel.value && cb.checked) ? 'block' : 'none';
+    }
+}
+
+async function _envoyerVerification() {
+    if (_rgpdVerifEnvoye || !_rgpdStag) return true;
+    var sel = document.getElementById('rgpd-verificateur');
+    var verificateur = sel ? sel.value : '';
+    if (!verificateur) return false;
+    try {
+        var resp = await fetch(
+            '/api/consentements/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId + '/verification',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ verificateur_identite: verificateur })
+            }
+        );
+        if (resp.ok) { _rgpdVerifEnvoye = true; return true; }
+    } catch (e) { /* continue */ }
+    return false;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     // Délégation clics RGPD
@@ -556,17 +584,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var cbIdentite = document.getElementById('rgpd-identite-cb');
     if (cbIdentite) {
-        cbIdentite.addEventListener('change', function() {
-            document.getElementById('rgpd-choix').style.display = this.checked ? 'block' : 'none';
-        });
+        cbIdentite.addEventListener('change', _rgpdMajChoix);
+    }
+
+    var selVerif = document.getElementById('rgpd-verificateur');
+    if (selVerif) {
+        selVerif.addEventListener('change', _rgpdMajChoix);
     }
 
     var btnQr = document.getElementById('btn-rgpd-qr');
     if (btnQr) {
-        btnQr.addEventListener('click', function() {
+        btnQr.addEventListener('click', async function() {
             var qrContainer = document.getElementById('rgpd-qr-container');
-            if (!_rgpdQrGenerated && _rgpdStag) {
+            var alreadyVisible = qrContainer.style.display !== 'none';
+            // Envoyer la vérification au premier affichage du QR
+            if (!alreadyVisible) {
+                await _envoyerVerification();
                 var url = window.location.origin + '/consentement/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId;
+                document.getElementById('rgpd-qr-code').innerHTML = '';
                 new QRCode(document.getElementById('rgpd-qr-code'), {
                     text: url,
                     width: 200,
@@ -574,27 +609,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     colorDark: '#cc0000',
                     colorLight: '#ffffff'
                 });
-                _rgpdQrGenerated = true;
             }
-            qrContainer.style.display = qrContainer.style.display === 'none' ? 'block' : 'none';
+            qrContainer.style.display = alreadyVisible ? 'none' : 'block';
         });
     }
 
     var btnDirect = document.getElementById('btn-rgpd-direct');
     if (btnDirect) {
-        btnDirect.addEventListener('click', function() {
-            if (_rgpdStag) {
-                window.open('/consentement/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId, '_blank');
-            }
+        btnDirect.addEventListener('click', async function() {
+            if (!_rgpdStag) return;
+            await _envoyerVerification();
+            window.open('/consentement/' + _rgpdStag.sessionId + '/' + _rgpdStag.stagiaireId, '_blank');
         });
     }
 });
 
 function ouvrirRGPDOverlay(sessionId, stagiaireId, nom, prenom, ddn) {
     _rgpdStag = { sessionId: sessionId, stagiaireId: stagiaireId };
-    _rgpdQrGenerated = false;
+    _rgpdVerifEnvoye = false;
     document.getElementById('rgpd-nom').textContent = nom + ' ' + prenom;
     document.getElementById('rgpd-ddn').textContent = ddn ? 'Né(e) le ' + ddn : '';
+    document.getElementById('rgpd-verificateur').value = '';
     document.getElementById('rgpd-identite-cb').checked = false;
     document.getElementById('rgpd-choix').style.display = 'none';
     document.getElementById('rgpd-qr-container').style.display = 'none';

@@ -8,6 +8,10 @@ from datetime import datetime
 router = APIRouter(prefix="/api/consentements", tags=["Consentements"])
 
 
+class VerificationCreate(BaseModel):
+    verificateur_identite: str
+
+
 class ConsentementCreate(BaseModel):
     rgpd_accepte: bool
     photo_accepte: bool
@@ -33,6 +37,33 @@ def get_statuts(session_id: int, db: DBSession = Depends(get_db)):
     return result
 
 
+@router.post("/{session_id}/{stagiaire_id}/verification")
+async def enregistrer_verification(
+    session_id: int,
+    stagiaire_id: int,
+    data: VerificationCreate,
+    db: DBSession = Depends(get_db)
+):
+    now = datetime.utcnow()
+    existing = db.query(ConsentementRGPD).filter(
+        ConsentementRGPD.session_id == session_id,
+        ConsentementRGPD.stagiaire_id == stagiaire_id
+    ).first()
+    if existing:
+        existing.verificateur_identite = data.verificateur_identite
+        existing.horodatage_verification = now
+    else:
+        c = ConsentementRGPD(
+            session_id=session_id,
+            stagiaire_id=stagiaire_id,
+            verificateur_identite=data.verificateur_identite,
+            horodatage_verification=now
+        )
+        db.add(c)
+    db.commit()
+    return {"ok": True}
+
+
 @router.post("/{session_id}/{stagiaire_id}")
 async def upsert_consentement(
     session_id: int,
@@ -50,6 +81,7 @@ async def upsert_consentement(
     ).first()
 
     if existing:
+        # Mise à jour uniquement des champs signature — ne pas écraser la vérification
         existing.rgpd_accepte = data.rgpd_accepte
         existing.photo_accepte = data.photo_accepte
         existing.plaintes_atteste = data.plaintes_atteste

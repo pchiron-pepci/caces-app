@@ -8,6 +8,12 @@ class ConsentementRGPD(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, nullable=False)
     stagiaire_id = Column(Integer, nullable=False)
+
+    # Vérification d'identité (formateur, côté overlay)
+    verificateur_identite = Column(String(200), nullable=True)
+    horodatage_verification = Column(DateTime, nullable=True)
+
+    # Signature candidat (côté page consentement)
     rgpd_accepte = Column(Boolean, nullable=True)
     photo_accepte = Column(Boolean, nullable=True)
     plaintes_atteste = Column(Boolean, nullable=True)

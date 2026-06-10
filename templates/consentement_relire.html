@@ -184,20 +184,48 @@
     </div>
 
     <div class="card">
+        <div class="card-titre">Chronologie</div>
+
+        {% if consentement.horodatage_verification and consentement.verificateur_identite %}
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid #f0f0f0;">
+            <div>
+                <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Identité vérifiée par</div>
+                <div style="font-size:15px; font-weight:700; color:#1a1a2e;">{{ consentement.verificateur_identite }}</div>
+            </div>
+            <div style="text-align:right; flex-shrink:0; margin-left:16px;">
+                <div style="font-size:14px; font-weight:700;">{{ consentement.horodatage_verification.strftime('%d/%m/%Y') }}</div>
+                <div style="font-size:13px; color:#666;">{{ consentement.horodatage_verification.strftime('%H:%M') }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0;">
+            <div>
+                <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:4px;">Signé par le candidat</div>
+                <div style="font-size:15px; font-weight:700; color:#1a1a2e;">{{ stagiaire.nom }} {{ stagiaire.prenom }}</div>
+            </div>
+            <div style="text-align:right; flex-shrink:0; margin-left:16px;">
+                <div style="font-size:14px; font-weight:700;">{{ consentement.horodatage.strftime('%d/%m/%Y') }}</div>
+                <div style="font-size:13px; color:#666;">{{ consentement.horodatage.strftime('%H:%M') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
         <div class="card-titre">Signature</div>
         {% if consentement.signature_base64 %}
         <img class="sig-img" src="{{ consentement.signature_base64 }}" alt="Signature du candidat">
         {% endif %}
-        <div style="margin-top:14px; font-size:16px; font-weight:700;">
-            Fait le {{ consentement.horodatage.strftime('%d/%m/%Y') }}
-        </div>
     </div>
 
     <div class="card" style="background:#f8f8f8;">
         <div class="card-titre" style="color:#888;">Informations de preuve</div>
-        <div class="proof-line">Horodatage UTC : {{ consentement.horodatage.strftime('%Y-%m-%d %H:%M:%S') }} UTC</div>
+        {% if consentement.horodatage_verification %}
+        <div class="proof-line">Vérif. identité UTC : {{ consentement.horodatage_verification.strftime('%Y-%m-%d %H:%M:%S') }} UTC</div>
+        {% endif %}
+        <div class="proof-line">Signature UTC : {{ consentement.horodatage.strftime('%Y-%m-%d %H:%M:%S') }} UTC</div>
         {% if consentement.ip_address %}
-        <div class="proof-line">Adresse IP : {{ consentement.ip_address }}</div>
+        <div class="proof-line">Adresse IP (candidat) : {{ consentement.ip_address }}</div>
         {% endif %}
         <div class="proof-line">Session #{{ session.id }} — Candidat #{{ stagiaire.id }}</div>
     </div>

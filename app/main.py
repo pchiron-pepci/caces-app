@@ -988,6 +988,24 @@ def page_session_detail(request: Request, session_id: int):
     ).all()
     consentements_map = {c.stagiaire_id: c for c in consentements_list}
 
+    _verif_testeurs = [
+        {"nom_complet": f"{t.nom} {t.prenom}", "role": "testeur"}
+        for t in db.query(Testeur).filter(
+            Testeur.actif == True,
+            Testeur.etat.in_(["actif", "suspendu"])
+        ).order_by(Testeur.nom, Testeur.prenom).all()
+    ]
+    _verif_utilisateurs = [
+        {"nom_complet": f"{u.nom} {u.prenom}", "role": u.role or "utilisateur"}
+        for u in db.query(Utilisateur).filter(
+            Utilisateur.actif == True
+        ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
+    ]
+    verificateurs_liste = sorted(
+        _verif_testeurs + _verif_utilisateurs,
+        key=lambda x: x["nom_complet"]
+    )
+
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -1016,6 +1034,7 @@ def page_session_detail(request: Request, session_id: int):
             "jours_par_date": jours_par_date,
             "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date],
             "consentements_map": consentements_map,
+            "verificateurs_liste": verificateurs_liste,
         }
     )
 
