@@ -248,13 +248,27 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     tirage_json = None
     if data.type == "theorie":
         from datetime import datetime
+        from app.models.utilisations_themes import UtilisationTheme as UT
         annee = datetime.now().year
-        try:
-            tirage = tirer_themes_phase2(session.famille, session_id, annee, db)
-            enregistrer_tirage_themes(session_id, session.famille, annee, tirage, db)
-            tirage_json = tirage_to_json(tirage)
-        except ValueError:
-            tirage_json = None
+        tirages_existants = (
+            db.query(UT)
+            .filter(UT.session_id == session_id, UT.famille == session.famille)
+            .order_by(UT.theme)
+            .all()
+        )
+        if tirages_existants:
+            grille_map = {
+                g.id: g.numero
+                for g in db.query(GrilleTheorie).filter(GrilleTheorie.famille == session.famille).all()
+            }
+            tirage_json = json.dumps({str(t.theme): grille_map.get(t.grille_id, 0) for t in tirages_existants})
+        else:
+            try:
+                tirage = tirer_themes_phase2(session.famille, session_id, annee, db)
+                enregistrer_tirage_themes(session_id, session.famille, annee, tirage, db)
+                tirage_json = tirage_to_json(tirage)
+            except ValueError:
+                tirage_json = None
 
     jour = JourTest(
         session_id=session_id,
@@ -358,9 +372,20 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
 
     if j.type == "theorie":
         from app.models.utilisations_themes import UtilisationTheme
-        db.query(UtilisationTheme).filter(
-            UtilisationTheme.session_id == j.session_id
-        ).delete()
+        autres_jours_theorie = (
+            db.query(JourTest)
+            .filter(
+                JourTest.session_id == j.session_id,
+                JourTest.type == "theorie",
+                JourTest.actif == True,
+                JourTest.id != j.id
+            )
+            .count()
+        )
+        if autres_jours_theorie == 0:
+            db.query(UtilisationTheme).filter(
+                UtilisationTheme.session_id == j.session_id
+            ).delete()
         # Supprimer résultats théorie
         db.query(ResultatTheorie).filter(
             ResultatTheorie.jour_test_id == j.id

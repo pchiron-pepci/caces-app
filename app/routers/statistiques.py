@@ -68,12 +68,18 @@ def _build_stats(famille, annee, db):
 
     stats_par_theme = {}
     alertes = []
-    total_sessions = 0
+    total_sessions = (
+        db.query(UtilisationTheme.session_id)
+        .filter(
+            UtilisationTheme.famille == famille,
+            UtilisationTheme.annee == annee
+        )
+        .distinct()
+        .count()
+    )
 
     for theme in themes:
         total_theme = sum(usage[theme].values()) or 1
-        if theme == themes[0]:
-            total_sessions = total_theme
 
         grilles_stats = []
         for g in grilles:
