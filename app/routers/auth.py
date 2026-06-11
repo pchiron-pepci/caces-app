@@ -126,6 +126,7 @@ class UtilisateurUpdate(BaseModel):
     telephone: Optional[str] = None
     role_referent: Optional[str] = None
     actif: Optional[bool] = None
+    mot_de_passe: Optional[str] = None
 
     @validator('role')
     def role_valide(cls, v):
@@ -174,6 +175,7 @@ def modifier_utilisateur(id: int, data: UtilisateurUpdate, current_user: Utilisa
     if data.telephone is not None: u.telephone = data.telephone or None
     if data.role_referent is not None: u.role_referent = data.role_referent or None
     if data.actif is not None: u.actif = data.actif
+    if data.mot_de_passe: u.mot_de_passe = hasher_mot_de_passe(data.mot_de_passe)
     db.commit()
     return {"message": "Utilisateur mis a jour"}
 

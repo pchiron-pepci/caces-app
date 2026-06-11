@@ -63,7 +63,7 @@
                 <input type="text" id="user-referent" placeholder="Ex: Référent technique R482, R486">
             </div>
             <div class="form-field" style="grid-column:span 2;" id="field-mdp">
-                <label>Mot de passe *</label>
+                <label id="label-mdp">Mot de passe *</label>
                 <input type="password" id="user-mdp" placeholder="••••••••">
             </div>
         </div>
@@ -154,7 +154,9 @@ function editerUser(id) {
     document.getElementById('user-role').value = u.role;
     document.getElementById('user-referent').value = u.role_referent || '';
     document.getElementById('user-mdp').value = '';
-    document.getElementById('field-mdp').style.display = 'none';
+    document.getElementById('user-mdp').placeholder = 'Laisser vide pour ne pas modifier';
+    document.getElementById('label-mdp').textContent = 'Nouveau mot de passe';
+    document.getElementById('field-mdp').style.display = 'block';
     document.getElementById('modal-user').style.display = 'flex';
 }
 
@@ -168,6 +170,8 @@ function ouvrirAjout() {
     document.getElementById('user-role').value = 'testeur';
     document.getElementById('user-referent').value = '';
     document.getElementById('user-mdp').value = '';
+    document.getElementById('user-mdp').placeholder = '••••••••';
+    document.getElementById('label-mdp').textContent = 'Mot de passe *';
     document.getElementById('field-mdp').style.display = 'block';
     document.getElementById('modal-user').style.display = 'flex';
 }
@@ -200,10 +204,12 @@ async function sauvegarderUser() {
                 return;
             }
             fermerPinUser();
+            const body = { nom, prenom, email, role, telephone, role_referent };
+            if (mdp) body.mot_de_passe = mdp;
             const resp = await fetch('/api/auth/utilisateurs/' + id, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nom, prenom, email, role, telephone, role_referent })
+                body: JSON.stringify(body)
             });
             if (resp.ok) { fermerModal(); chargerUsers(); }
             else alert('Erreur lors de la modification !');
