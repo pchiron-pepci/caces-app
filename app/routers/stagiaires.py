@@ -111,6 +111,16 @@ def upload_photo_base64(id: int, payload: PhotoBase64Payload, db: Session = Depe
     db.commit()
     return {"ok": True}
 
+@router.delete("/{id}/photo")
+def supprimer_photo(id: int, db: Session = Depends(get_db)):
+    s = db.query(Stagiaire).filter(Stagiaire.id == id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Stagiaire non trouvé")
+    s.photo_base64 = None
+    s.photo = None
+    db.commit()
+    return {"ok": True}
+
 @router.delete("/{id}")
 def delete_stagiaire(id: int, pin: str, db: Session = Depends(get_db)):
     PIN_SECRET = "1505"

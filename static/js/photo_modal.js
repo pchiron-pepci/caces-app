@@ -68,6 +68,22 @@ function _chargerFichierPhoto(file) {
     reader.readAsDataURL(file);
 }
 
+function _clearPhotoCells(stagiaireId) {
+    document.querySelectorAll('.photo-cell[data-stag-id="' + stagiaireId + '"]').forEach(function(cell) {
+        var img = cell.querySelector('img.photo-img');
+        if (img) img.remove();
+        var ov = cell.querySelector('.photo-overlay');
+        if (ov) ov.remove();
+        if (!cell.querySelector('.photo-placeholder')) {
+            var ph = document.createElement('div');
+            ph.className = 'photo-placeholder';
+            ph.style.fontSize = '20px';
+            ph.textContent = '👤';
+            cell.appendChild(ph);
+        }
+    });
+}
+
 function _updatePhotoCells(stagiaireId, base64DataUri) {
     document.querySelectorAll('.photo-cell[data-stag-id="' + stagiaireId + '"]').forEach(function(cell) {
         var ph = cell.querySelector('.photo-placeholder');
@@ -86,6 +102,23 @@ function _updatePhotoCells(stagiaireId, base64DataUri) {
             cell.appendChild(ov);
         }
     });
+}
+
+async function supprimerPhoto() {
+    if (!_photoStagiaireId) return;
+    if (!confirm('Supprimer la photo ?')) return;
+    try {
+        var resp = await fetch('/stagiaires/' + _photoStagiaireId + '/photo', { method: 'DELETE' });
+        if (resp.ok) {
+            _clearPhotoCells(_photoStagiaireId);
+            fermerPhotoModal();
+        } else {
+            var err = await resp.json().catch(function() { return {}; });
+            alert('Erreur : ' + (err.detail || 'Échec de la suppression'));
+        }
+    } catch(e) {
+        alert('Erreur réseau.');
+    }
 }
 
 async function validerPhoto() {
@@ -128,6 +161,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="supprimer-photo"]')) {
+            supprimerPhoto();
+            return;
+        }
         var cell = e.target.closest('.photo-cell[data-stag-id]');
         if (!cell) return;
         var img = cell.querySelector('img.photo-img');
