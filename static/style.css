@@ -238,6 +238,41 @@ body {
     color: var(--dark);
 }
 
+/* PHOTO CELL */
+.photo-cell {
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+.photo-cell-round { border-radius: 50%; border: 2px solid #1a3a8f; }
+.photo-cell .photo-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: inherit;
+}
+.photo-cell .photo-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s;
+    color: white; font-size: 11px; font-weight: 700;
+    border-radius: inherit;
+}
+.photo-cell:hover .photo-overlay { opacity: 1; }
+.photo-cell .photo-placeholder {
+    width: 100%; height: 100%;
+    background: #e8eaf6;
+    border: 1.5px dashed #9fa8da;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    border-radius: inherit;
+    box-sizing: border-box;
+}
+
 /* TABLE */
 .table {
     width: 100%;

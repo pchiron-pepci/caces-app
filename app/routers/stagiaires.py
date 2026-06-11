@@ -80,6 +80,37 @@ def upload_photo(id: int, file: UploadFile = File(...), db: Session = Depends(ge
     db.commit()
     return {"message": "Photo uploadee", "photo_base64": True}
 
+class PhotoBase64Payload(BaseModel):
+    photo_base64: str
+
+@router.post("/{id}/photo-upload")
+def upload_photo_base64(id: int, payload: PhotoBase64Payload, db: Session = Depends(get_db)):
+    import base64 as _b64
+    from io import BytesIO
+    from PIL import Image
+    s = db.query(Stagiaire).filter(Stagiaire.id == id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Stagiaire non trouvé")
+    b64_str = payload.photo_base64
+    if ',' in b64_str:
+        b64_str = b64_str.split(',', 1)[1]
+    try:
+        raw = _b64.b64decode(b64_str)
+        img = Image.open(BytesIO(raw)).convert('RGB')
+        w, h = img.size
+        if max(w, h) > 600:
+            ratio = 600 / max(w, h)
+            img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
+        buf = BytesIO()
+        img.save(buf, format='JPEG', quality=80)
+        final_b64 = _b64.b64encode(buf.getvalue()).decode()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Image invalide : {exc}")
+    s.photo_base64 = final_b64
+    s.photo = f"/uploads/photos/stagiaire_{id}.jpg"
+    db.commit()
+    return {"ok": True}
+
 @router.delete("/{id}")
 def delete_stagiaire(id: int, pin: str, db: Session = Depends(get_db)):
     PIN_SECRET = "1505"
