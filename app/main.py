@@ -492,8 +492,10 @@ def _verifier_role(path: str, method: str, role: str):
             return False
         if method in ("PUT", "DELETE") and _re.match(r"^/api/testeurs/\d+$", base):
             return False
-        # Tout sous /stagiaires/ est interdit sauf /stagiaires/{id}/consultation
-        if base.startswith("/stagiaires/") and not _re.match(r"^/stagiaires/\d+/consultation$", base):
+        # Tout sous /stagiaires/ est interdit sauf consultation + upload/suppression photo
+        if base.startswith("/stagiaires/") and not _re.match(
+            r"^/stagiaires/\d+/(consultation|photo-upload|photo)$", base
+        ):
             return False
     return True
 
