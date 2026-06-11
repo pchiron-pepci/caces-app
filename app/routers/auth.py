@@ -101,7 +101,7 @@ def update_profil(data: ProfilUpdate, current_user: Utilisateur = Depends(get_ut
     db.commit()
     return {"message": "Profil mis a jour"}
 
-ROLES_VALIDES = {"admin", "formateur", "testeur", "utilisateur", "terrain"}
+ROLES_VALIDES = {"admin", "utilisateur", "terrain"}
 
 class UtilisateurCreate(BaseModel):
     nom: str

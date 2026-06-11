@@ -52,8 +52,6 @@
                 <label>Role *</label>
                 <select id="user-role">
                     <option value="terrain">Formateur / Testeur (terrain)</option>
-                    <option value="testeur">Testeur</option>
-                    <option value="formateur">Formateur</option>
                     <option value="admin">Administrateur</option>
                     <option value="utilisateur">Utilisateur</option>
                 </select>
@@ -167,7 +165,7 @@ function ouvrirAjout() {
     document.getElementById('user-prenom').value = '';
     document.getElementById('user-email').value = '';
     document.getElementById('user-tel').value = '';
-    document.getElementById('user-role').value = 'testeur';
+    document.getElementById('user-role').value = 'terrain';
     document.getElementById('user-referent').value = '';
     document.getElementById('user-mdp').value = '';
     document.getElementById('user-mdp').placeholder = '••••••••';
