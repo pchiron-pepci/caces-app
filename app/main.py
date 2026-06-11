@@ -1378,7 +1378,8 @@ def page_verifier_carte(token: str, request: Request, db: DBSession = Depends(ge
             context={"statut": "introuvable", "numero_carte": token, "config": config, "today": today},
         )
     s = db.query(Stagiaire).filter(Stagiaire.id == carte.stagiaire_id).first()
-    raw = json.loads(carte.caces_json) if carte.caces_json else []
+    from app.routers.cartes_caces import _parse_snapshot
+    raw, frozen_photo = _parse_snapshot(carte.caces_json)
 
     def _fmt(iso):
         if not iso:
@@ -1407,7 +1408,10 @@ def page_verifier_carte(token: str, request: Request, db: DBSession = Depends(ge
             "stagiaire_nom": s.nom if s else "",
             "stagiaire_prenom": ((s.prenom[0] + ".") if s and s.prenom else ""),
             "stagiaire_ddn_annee": s.date_naissance.year if s and s.date_naissance else None,
-            "photo_url": (s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or "" if s else "",
+            "photo_url": (
+                f"data:image/jpeg;base64,{frozen_photo}" if frozen_photo
+                else ((s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or "" if s else "")
+            ),
             "caces_list": caces_list,
             "config": config,
             "today": today,

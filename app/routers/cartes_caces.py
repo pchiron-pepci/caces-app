@@ -73,6 +73,18 @@ def _img_uri(b64, nom):
     return f"data:{mime};base64,{b64}"
 
 
+def _parse_snapshot(caces_json: str):
+    """Retourne (caces_list, photo_b64) depuis caces_json.
+    Ancien format = tableau JSON → photo_b64 vide (fallback sur stagiaire vivant).
+    Nouveau format = {"photo_base64": ..., "caces": [...]} → photo figée."""
+    if not caces_json:
+        return [], ""
+    data = json.loads(caces_json)
+    if isinstance(data, list):
+        return data, ""
+    return data.get("caces", []), data.get("photo_base64", "")
+
+
 def _build_verify_url(cfg, token: str) -> str:
     base = (cfg.url_verification_caces if cfg and cfg.url_verification_caces
             else "https://caces-app.onrender.com/verifier/")
@@ -192,9 +204,10 @@ def get_caces_carte(carte_id: int, db: DBSession = Depends(get_db)):
     carte = db.query(CarteCaces).filter(CarteCaces.id == carte_id).first()
     if not carte:
         raise HTTPException(status_code=404, detail="Carte introuvable")
-    # Snapshot stocké à l'émission — retourner directement si disponible
+    # Snapshot stocké à l'émission — retourner la liste CACES® seule
     if carte.caces_json:
-        return json.loads(carte.caces_json)
+        caces_list, _ = _parse_snapshot(carte.caces_json)
+        return caces_list
     # Fallback pour les cartes legacy sans snapshot
     cos = (
         db.query(CacesObtenu)
@@ -273,6 +286,11 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
 
     if carte.caces_json:
         # Snapshot figé à l'émission — impression fidèle à l'original
+        caces_list, frozen_photo = _parse_snapshot(carte.caces_json)
+        photo_url = (
+            f"data:image/jpeg;base64,{frozen_photo}" if frozen_photo
+            else (s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or ""
+        )
         return {
             "id": carte.id,
             "numero_carte": carte.numero_carte,
@@ -281,10 +299,10 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
             "stagiaire_nom": s.nom,
             "stagiaire_prenom": s.prenom,
             "stagiaire_ddn": s.date_naissance.strftime("%d/%m/%Y") if s.date_naissance else "",
-            "photo_url": (s.photo_base64 and f"data:image/jpeg;base64,{s.photo_base64}") or s.photo or "",
+            "photo_url": photo_url,
             "famille": carte.famille,
             "famille_libelle": famille_libelle,
-            "caces": json.loads(carte.caces_json),
+            "caces": caces_list,
             "config": {
                 "nom_organisme": cfg.nom_organisme or "",
                 "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
@@ -333,24 +351,27 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     if not cos:
         raise HTTPException(status_code=400, detail="Aucun CACES® valide pour ce stagiaire / famille")
 
-    # Snapshot figé à l'émission
+    # Snapshot figé à l'émission — photo incluse pour immuabilité
     t_map = _testeurs_map(cos, db)
     fam_obj = db.query(Famille).filter(Famille.code == famille).first()
     libelles: dict = {}
     if fam_obj:
         libelles = {c.code: c.libelle or "" for c in db.query(Categorie).filter(Categorie.famille_id == fam_obj.id).all()}
-    caces_snapshot = json.dumps([
-        {
-            "categorie": co.categorie,
-            "categorie_libelle": libelles.get(co.categorie, ""),
-            "numero_ordre": co.numero_ordre,
-            "options_obtenues": co.options_obtenues or "",
-            "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
-            "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
-            "testeur_nom": t_map.get((co.stagiaire_id, co.session_id, co.categorie), ""),
-        }
-        for co in sorted(cos, key=lambda x: x.categorie)
-    ], ensure_ascii=False)
+    caces_snapshot = json.dumps({
+        "photo_base64": s.photo_base64 or "",
+        "caces": [
+            {
+                "categorie": co.categorie,
+                "categorie_libelle": libelles.get(co.categorie, ""),
+                "numero_ordre": co.numero_ordre,
+                "options_obtenues": co.options_obtenues or "",
+                "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
+                "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
+                "testeur_nom": t_map.get((co.stagiaire_id, co.session_id, co.categorie), ""),
+            }
+            for co in sorted(cos, key=lambda x: x.categorie)
+        ],
+    }, ensure_ascii=False)
 
     # Remplace l'ancienne carte émise
     db.query(CarteCaces).filter(
@@ -378,7 +399,7 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
 
 
-def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='', numero_certificat=''):
+def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='', numero_certificat='', photo_b64=None):
     """Genere le HTML CR80 recto/verso identique au template JS, pour WeasyPrint."""
     import base64 as _b64
     from io import BytesIO as _BIO
@@ -399,10 +420,12 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     qr_b64 = _b64.b64encode(qr_buf.getvalue()).decode()
     qr_html = f'<a href="{verify_url}" target="_blank" style="display:block;text-decoration:none;"><img class="r-qr" src="data:image/png;base64,{qr_b64}"></a>'
 
-    # Photo -> photo_base64 (DB) en priorité, fallback chemin fichier local
+    # Photo : snapshot figé en priorité, fallback stagiaire vivant (cartes anciennes)
     photo_html = '<div class="r-photo-ph"></div>'
     _src = None
-    if s.photo_base64:
+    if photo_b64:
+        _src = f'data:image/jpeg;base64,{photo_b64}'
+    elif s.photo_base64:
         _src = f'data:image/jpeg;base64,{s.photo_base64}'
     elif s.photo and s.photo.startswith('/'):
         import os as _os
@@ -686,13 +709,13 @@ def telecharger_pdf(carte_id: int, db: DBSession = Depends(get_db)):
     if not s:
         raise HTTPException(status_code=404, detail="Stagiaire introuvable")
     cfg = db.query(ConfigOrganisme).first() or ConfigOrganisme()
-    caces_list = json.loads(carte.caces_json) if carte.caces_json else []
+    caces_list, frozen_photo = _parse_snapshot(carte.caces_json)
     verify_url = _build_verify_url(cfg, carte.token_verification or carte.numero_carte)
     fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
     famille_libelle = fam_obj.libelle if fam_obj else ""
     doc_cert = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == "certificat_organisme").first()
     numero_certificat = doc_cert.numero_certificat or "" if doc_cert else ""
-    html = _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle, numero_certificat)
+    html = _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle, numero_certificat, photo_b64=frozen_photo)
     pdf_bytes = _html_to_pdf(html)
     protected = _protect_pdf(pdf_bytes)
     def _safe(txt):
