@@ -353,56 +353,67 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 from app.templates_instance import templates
 
-def _get_nom_organisme():
+import time as _time
+
+_organisme_cache: dict = {}
+_ORGANISME_TTL = 60  # secondes
+
+def _load_organisme_config():
+    now = _time.monotonic()
+    if _organisme_cache.get("ts", 0) + _ORGANISME_TTL > now:
+        return _organisme_cache.get("data")
+    db = SessionLocal()
     try:
-        db = SessionLocal()
-        config = db.query(ConfigOrganisme).first()
-        db.close()
-        return config.nom_organisme if config and config.nom_organisme else "PEPCI Formation"
+        data = db.query(ConfigOrganisme).first()
+        _organisme_cache["data"] = data
+        _organisme_cache["ts"] = now
+        return data
     except Exception:
-        return "PEPCI Formation"
+        return _organisme_cache.get("data")
+    finally:
+        db.close()
+
+_certificat_cache: dict = {}
+
+def _load_certificat():
+    now = _time.monotonic()
+    if _certificat_cache.get("ts", 0) + _ORGANISME_TTL > now:
+        return _certificat_cache.get("data")
+    db = SessionLocal()
+    try:
+        data = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == 'certificat_organisme').first()
+        _certificat_cache["data"] = data
+        _certificat_cache["ts"] = now
+        return data
+    except Exception:
+        return _certificat_cache.get("data")
+    finally:
+        db.close()
+
+def _get_nom_organisme():
+    config = _load_organisme_config()
+    return config.nom_organisme if config and config.nom_organisme else "PEPCI Formation"
 
 def _get_logo_organisme():
-    try:
-        db = SessionLocal()
-        config = db.query(ConfigOrganisme).first()
-        db.close()
-        if config and config.logo_base64 and config.logo_nom:
-            ext = config.logo_nom.rsplit('.', 1)[-1].lower()
-            mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
-            return f"data:{mime};base64,{config.logo_base64}"
-        return ""
-    except Exception:
-        return ""
+    config = _load_organisme_config()
+    if config and config.logo_base64 and config.logo_nom:
+        ext = config.logo_nom.rsplit('.', 1)[-1].lower()
+        mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'gif': 'image/gif', 'webp': 'image/webp'}.get(ext, 'image/png')
+        return f"data:{mime};base64,{config.logo_base64}"
+    return ""
 
 def _get_numero_certificat():
-    try:
-        db = SessionLocal()
-        doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == 'certificat_organisme').first()
-        db.close()
-        return doc.numero_certificat if doc and doc.numero_certificat else ""
-    except Exception:
-        return ""
+    doc = _load_certificat()
+    return doc.numero_certificat if doc and doc.numero_certificat else ""
 
 def _get_config_organisme():
-    try:
-        db = SessionLocal()
-        config = db.query(ConfigOrganisme).first()
-        db.close()
-        return config
-    except Exception:
-        return None
+    return _load_organisme_config()
 
 def _get_date_validite_certificat():
-    try:
-        db = SessionLocal()
-        doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == 'certificat_organisme').first()
-        db.close()
-        if doc and doc.date_validite:
-            return doc.date_validite.strftime('%d/%m/%Y')
-        return ""
-    except Exception:
-        return ""
+    doc = _load_certificat()
+    if doc and doc.date_validite:
+        return doc.date_validite.strftime('%d/%m/%Y')
+    return ""
 
 templates.env.globals['nom_organisme'] = _get_nom_organisme
 templates.env.globals['logo_organisme'] = _get_logo_organisme
@@ -587,196 +598,199 @@ def dashboard(request: Request):
     limite_4ans = today - timedelta(days=4*365)
     limite_2ans = today - timedelta(days=2*365)
     db = SessionLocal()
-    testeurs_list = db.query(Testeur).filter(
-        Testeur.actif == True,
-        Testeur.etat.in_(["actif", "suspendu"])
-    ).order_by(Testeur.nom, Testeur.prenom).all()
-    for t in testeurs_list:
-        t.habilitations = db.query(HabilitationTesteur).filter(
-            HabilitationTesteur.testeur_id == t.id,
-            HabilitationTesteur.actif == True
+    try:
+        testeurs_list = db.query(Testeur).filter(
+            Testeur.actif == True,
+            Testeur.etat.in_(["actif", "suspendu"])
+        ).order_by(Testeur.nom, Testeur.prenom).all()
+        for t in testeurs_list:
+            t.habilitations = db.query(HabilitationTesteur).filter(
+                HabilitationTesteur.testeur_id == t.id,
+                HabilitationTesteur.actif == True
+            ).all()
+        stats = {
+            "stagiaires": db.query(Stagiaire).filter(Stagiaire.actif == 1).count(),
+            "cartes": 0,
+            "sessions": db.query(Session).count(),
+            "expirations": 0
+        }
+        docs_list = db.query(DocumentOfficiel).all()
+        docs_map = {d.type: d for d in docs_list}
+        referents = db.query(Utilisateur).filter(
+            Utilisateur.role_referent != None,
+            Utilisateur.role_referent != '',
+            Utilisateur.actif == True
         ).all()
-    stats = {
-        "stagiaires": db.query(Stagiaire).filter(Stagiaire.actif == 1).count(),
-        "cartes": 0,
-        "sessions": db.query(Session).count(),
-        "expirations": 0
-    }
-    docs_list = db.query(DocumentOfficiel).all()
-    docs_map = {d.type: d for d in docs_list}
-    referents = db.query(Utilisateur).filter(
-        Utilisateur.role_referent != None,
-        Utilisateur.role_referent != '',
-        Utilisateur.actif == True
-    ).all()
-    nc_ouvertes = db.query(NonConformite).filter(
-        NonConformite.statut.in_(["ouvert", "en_cours"])
-    ).order_by(NonConformite.date.desc()).all()
-    sessions_actives = db.query(Session).filter(
-        Session.statut.in_(["planifiee", "en_cours"])
-    ).order_by(Session.date_theorie, Session.date_pratique_debut).all()
-    alertes_testeurs = []
-    for t in testeurs_list:
-        alertes = []
-        if not t.attestation_prevention_pdf:
-            alertes.append({"label": "Attestation prévention manquante", "couleur": "rouge"})
-        elif t.attestation_prevention_date and t.attestation_prevention_date < limite_4ans:
-            alertes.append({"label": "Attestation prévention > 4 ans", "couleur": "orange"})
-        if not t.visite_medicale_pdf:
-            alertes.append({"label": "Visite médicale manquante", "couleur": "rouge"})
-        elif t.visite_medicale_date and t.visite_medicale_date < limite_2ans:
-            alertes.append({"label": "Visite médicale > 2 ans", "couleur": "orange"})
-        if t.date_prochain_controle and t.date_prochain_controle < today:
-            alertes.append({"label": "Prochain contrôle dépassé", "couleur": "rouge"})
-        if alertes:
-            alertes_testeurs.append({"testeur": t, "alertes": alertes})
-    familles_carto = db.query(Famille).filter(Famille.actif == True).order_by(Famille.code).all()
-    for f in familles_carto:
-        f.categories_habilites = db.query(Categorie).filter(
-            Categorie.famille_id == f.id,
-            Categorie.pepci_habilite == True,
-            Categorie.actif == True,
-            Categorie.est_option == False
-        ).order_by(Categorie.code).all()
-    familles_carto = [f for f in familles_carto if f.categories_habilites]
-    lieux_cdt = db.query(Lieu).filter(Lieu.type == "cdt", Lieu.actif == True).order_by(Lieu.nom).all()
-    for lieu in lieux_cdt:
-        lieu.habilitations = db.query(LieuHabilitation).filter(
-            LieuHabilitation.lieu_id == lieu.id,
-            LieuHabilitation.actif == True
-        ).order_by(LieuHabilitation.famille, LieuHabilitation.categorie).all()
-    stagiaires_sans_photo = db.query(Stagiaire).filter(
-        text("stagiaires.actif = 1"),
-        or_(Stagiaire.photo_base64 == None, Stagiaire.photo_base64 == ""),
-        or_(Stagiaire.photo == None, Stagiaire.photo == "")
-    ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
-    caces_a_valider_raw = db.query(CacesObtenu).filter(CacesObtenu.statut == "a_valider").all()
-    _stag_ids = {co.stagiaire_id for co in caces_a_valider_raw}
-    _stag_map = {s.id: s for s in db.query(Stagiaire).filter(Stagiaire.id.in_(_stag_ids)).all()} if _stag_ids else {}
-    caces_a_valider = [
-        {
-            "id": co.id,
-            "stagiaire_nom": (_stag_map.get(co.stagiaire_id).nom if _stag_map.get(co.stagiaire_id) else "?"),
-            "stagiaire_prenom": (_stag_map.get(co.stagiaire_id).prenom if _stag_map.get(co.stagiaire_id) else ""),
-            "famille": co.famille,
-            "categorie": co.categorie,
-            "date_obtention": co.date_obtention.strftime('%d/%m/%Y') if co.date_obtention else "—",
-        }
-        for co in caces_a_valider_raw
-    ]
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard.html",
-        context={
-            "page": "dashboard",
-            "stats": stats,
-            "testeurs": testeurs_list,
-            "docs": docs_map,
-            "today": today,
-            "referents": referents,
-            "nc_ouvertes": nc_ouvertes,
-            "sessions_actives": sessions_actives,
-            "alertes_testeurs": alertes_testeurs,
-            "familles_carto": familles_carto,
-            "lieux_cdt": lieux_cdt,
-            "stagiaires_sans_photo": stagiaires_sans_photo,
-            "caces_a_valider": caces_a_valider,
-        }
-    )
+        nc_ouvertes = db.query(NonConformite).filter(
+            NonConformite.statut.in_(["ouvert", "en_cours"])
+        ).order_by(NonConformite.date.desc()).all()
+        sessions_actives = db.query(Session).filter(
+            Session.statut.in_(["planifiee", "en_cours"])
+        ).order_by(Session.date_theorie, Session.date_pratique_debut).all()
+        alertes_testeurs = []
+        for t in testeurs_list:
+            alertes = []
+            if not t.attestation_prevention_pdf:
+                alertes.append({"label": "Attestation prévention manquante", "couleur": "rouge"})
+            elif t.attestation_prevention_date and t.attestation_prevention_date < limite_4ans:
+                alertes.append({"label": "Attestation prévention > 4 ans", "couleur": "orange"})
+            if not t.visite_medicale_pdf:
+                alertes.append({"label": "Visite médicale manquante", "couleur": "rouge"})
+            elif t.visite_medicale_date and t.visite_medicale_date < limite_2ans:
+                alertes.append({"label": "Visite médicale > 2 ans", "couleur": "orange"})
+            if t.date_prochain_controle and t.date_prochain_controle < today:
+                alertes.append({"label": "Prochain contrôle dépassé", "couleur": "rouge"})
+            if alertes:
+                alertes_testeurs.append({"testeur": t, "alertes": alertes})
+        familles_carto = db.query(Famille).filter(Famille.actif == True).order_by(Famille.code).all()
+        for f in familles_carto:
+            f.categories_habilites = db.query(Categorie).filter(
+                Categorie.famille_id == f.id,
+                Categorie.pepci_habilite == True,
+                Categorie.actif == True,
+                Categorie.est_option == False
+            ).order_by(Categorie.code).all()
+        familles_carto = [f for f in familles_carto if f.categories_habilites]
+        lieux_cdt = db.query(Lieu).filter(Lieu.type == "cdt", Lieu.actif == True).order_by(Lieu.nom).all()
+        for lieu in lieux_cdt:
+            lieu.habilitations = db.query(LieuHabilitation).filter(
+                LieuHabilitation.lieu_id == lieu.id,
+                LieuHabilitation.actif == True
+            ).order_by(LieuHabilitation.famille, LieuHabilitation.categorie).all()
+        stagiaires_sans_photo = db.query(Stagiaire).filter(
+            text("stagiaires.actif = 1"),
+            or_(Stagiaire.photo_base64 == None, Stagiaire.photo_base64 == ""),
+            or_(Stagiaire.photo == None, Stagiaire.photo == "")
+        ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
+        caces_a_valider_raw = db.query(CacesObtenu).filter(CacesObtenu.statut == "a_valider").all()
+        _stag_ids = {co.stagiaire_id for co in caces_a_valider_raw}
+        _stag_map = {s.id: s for s in db.query(Stagiaire).filter(Stagiaire.id.in_(_stag_ids)).all()} if _stag_ids else {}
+        caces_a_valider = [
+            {
+                "id": co.id,
+                "stagiaire_nom": (_stag_map.get(co.stagiaire_id).nom if _stag_map.get(co.stagiaire_id) else "?"),
+                "stagiaire_prenom": (_stag_map.get(co.stagiaire_id).prenom if _stag_map.get(co.stagiaire_id) else ""),
+                "famille": co.famille,
+                "categorie": co.categorie,
+                "date_obtention": co.date_obtention.strftime('%d/%m/%Y') if co.date_obtention else "—",
+            }
+            for co in caces_a_valider_raw
+        ]
+        return templates.TemplateResponse(
+            request=request,
+            name="dashboard.html",
+            context={
+                "page": "dashboard",
+                "stats": stats,
+                "testeurs": testeurs_list,
+                "docs": docs_map,
+                "today": today,
+                "referents": referents,
+                "nc_ouvertes": nc_ouvertes,
+                "sessions_actives": sessions_actives,
+                "alertes_testeurs": alertes_testeurs,
+                "familles_carto": familles_carto,
+                "lieux_cdt": lieux_cdt,
+                "stagiaires_sans_photo": stagiaires_sans_photo,
+                "caces_a_valider": caces_a_valider,
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/stagiaires")
 def page_stagiaires(request: Request):
     db = SessionLocal()
-    liste = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="stagiaires.html",
-        context={
-            "page": "stagiaires",
-            "stagiaires": liste
-        }
-    )
+    try:
+        liste = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
+        return templates.TemplateResponse(
+            request=request,
+            name="stagiaires.html",
+            context={
+                "page": "stagiaires",
+                "stagiaires": liste
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/stagiaires/{stagiaire_id}/consultation")
 def page_stagiaire_consultation(request: Request, stagiaire_id: int, session_id: int = None):
     from datetime import date as _date
     _u = getattr(request.state, "user", None)
     db = SessionLocal()
-
-    stagiaire = db.query(Stagiaire).filter(
-        Stagiaire.id == stagiaire_id,
-        Stagiaire.actif == 1
-    ).first()
-    if not stagiaire:
-        db.close()
-        raise HTTPException(status_code=404)
-
-    # Terrain : le stagiaire doit appartenir à au moins une session non clôturée
-    if _u and _u.role == "terrain":
-        accessible = db.query(SessionCandidat).join(
-            Session, Session.id == SessionCandidat.session_id
-        ).filter(
-            SessionCandidat.stagiaire_id == stagiaire_id,
-            SessionCandidat.actif == True,
-            Session.statut != "terminee"
+    try:
+        stagiaire = db.query(Stagiaire).filter(
+            Stagiaire.id == stagiaire_id,
+            Stagiaire.actif == 1
         ).first()
-        if not accessible:
-            db.close()
-            return _HTMLResponse(_403_HTML, status_code=403)
+        if not stagiaire:
+            raise HTTPException(status_code=404)
 
-    caces_valides = db.query(CacesObtenu).filter(
-        CacesObtenu.stagiaire_id == stagiaire_id,
-        CacesObtenu.statut == "valide"
-    ).order_by(CacesObtenu.famille, CacesObtenu.categorie).all()
+        # Terrain : le stagiaire doit appartenir à au moins une session non clôturée
+        if _u and _u.role == "terrain":
+            accessible = db.query(SessionCandidat).join(
+                Session, Session.id == SessionCandidat.session_id
+            ).filter(
+                SessionCandidat.stagiaire_id == stagiaire_id,
+                SessionCandidat.actif == True,
+                Session.statut != "terminee"
+            ).first()
+            if not accessible:
+                return _HTMLResponse(_403_HTML, status_code=403)
 
-    consentement = db.query(ConsentementRGPD).filter(
-        ConsentementRGPD.stagiaire_id == stagiaire_id
-    ).order_by(ConsentementRGPD.id.desc()).first()
+        caces_valides = db.query(CacesObtenu).filter(
+            CacesObtenu.stagiaire_id == stagiaire_id,
+            CacesObtenu.statut == "valide"
+        ).order_by(CacesObtenu.famille, CacesObtenu.categorie).all()
 
-    # Historique sessions : calcul serveur (terrain ne peut pas appeler l'API /historique)
-    candidatures = db.query(SessionCandidat).filter(
-        SessionCandidat.stagiaire_id == stagiaire_id,
-        SessionCandidat.actif == True
-    ).all()
-    historique = []
-    for sc in candidatures:
-        sess = db.query(Session).filter(Session.id == sc.session_id).first()
-        if not sess:
-            continue
-        rt = db.query(ResultatTheorie).filter(
-            ResultatTheorie.session_id == sc.session_id,
-            ResultatTheorie.stagiaire_id == stagiaire_id,
-            ResultatTheorie.obtenue == True
-        ).order_by(ResultatTheorie.id.asc()).first()
-        if not rt:
+        consentement = db.query(ConsentementRGPD).filter(
+            ConsentementRGPD.stagiaire_id == stagiaire_id
+        ).order_by(ConsentementRGPD.id.desc()).first()
+
+        # Historique sessions : calcul serveur (terrain ne peut pas appeler l'API /historique)
+        candidatures = db.query(SessionCandidat).filter(
+            SessionCandidat.stagiaire_id == stagiaire_id,
+            SessionCandidat.actif == True
+        ).all()
+        historique = []
+        for sc in candidatures:
+            sess = db.query(Session).filter(Session.id == sc.session_id).first()
+            if not sess:
+                continue
             rt = db.query(ResultatTheorie).filter(
                 ResultatTheorie.session_id == sc.session_id,
-                ResultatTheorie.stagiaire_id == stagiaire_id
-            ).order_by(ResultatTheorie.id.desc()).first()
-        epreuves = db.query(SessionEpreuve).filter(
-            SessionEpreuve.session_id == sc.session_id,
-            SessionEpreuve.stagiaire_id == stagiaire_id
-        ).order_by(SessionEpreuve.categorie).all()
-        historique.append({"session": sess, "theorie": rt, "epreuves": epreuves})
-    historique.sort(key=lambda x: x["session"].id, reverse=True)
+                ResultatTheorie.stagiaire_id == stagiaire_id,
+                ResultatTheorie.obtenue == True
+            ).order_by(ResultatTheorie.id.asc()).first()
+            if not rt:
+                rt = db.query(ResultatTheorie).filter(
+                    ResultatTheorie.session_id == sc.session_id,
+                    ResultatTheorie.stagiaire_id == stagiaire_id
+                ).order_by(ResultatTheorie.id.desc()).first()
+            epreuves = db.query(SessionEpreuve).filter(
+                SessionEpreuve.session_id == sc.session_id,
+                SessionEpreuve.stagiaire_id == stagiaire_id
+            ).order_by(SessionEpreuve.categorie).all()
+            historique.append({"session": sess, "theorie": rt, "epreuves": epreuves})
+        historique.sort(key=lambda x: x["session"].id, reverse=True)
 
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="stagiaire_consultation.html",
-        context={
-            "page": "sessions",
-            "stagiaire": stagiaire,
-            "caces_valides": caces_valides,
-            "consentement": consentement,
-            "historique": historique,
-            "session_id": session_id,
-            "user_role": _u.role if _u else None,
-            "today_date": _date.today(),
-        }
-    )
+        return templates.TemplateResponse(
+            request=request,
+            name="stagiaire_consultation.html",
+            context={
+                "page": "sessions",
+                "stagiaire": stagiaire,
+                "caces_valides": caces_valides,
+                "consentement": consentement,
+                "historique": historique,
+                "session_id": session_id,
+                "user_role": _u.role if _u else None,
+                "today_date": _date.today(),
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/testeurs")
 def page_testeurs(request: Request):
@@ -784,101 +798,103 @@ def page_testeurs(request: Request):
     db = SessionLocal()
     _u = getattr(request.state, "user", None)
     _user_role = _u.role if _u else None
-    if _user_role == "terrain" and _u:
-        liste = db.query(Testeur).filter(
-            Testeur.actif == True,
-            Testeur.utilisateur_id == _u.id
-        ).order_by(Testeur.nom, Testeur.prenom).all()
-    else:
-        liste = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
-    for t in liste:
-        t.habilitations = db.query(HabilitationTesteur).filter(
-            HabilitationTesteur.testeur_id == t.id,
-            HabilitationTesteur.actif == True
-        ).all()
-        t.cartes = db.query(CarteTesteur).filter(
-            CarteTesteur.testeur_id == t.id,
-            CarteTesteur.actif == True
-        ).order_by(CarteTesteur.famille).all()
-    utilisateurs_terrain = db.query(Utilisateur).filter(
-        Utilisateur.role == "terrain",
-        Utilisateur.actif == True
-    ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="testeurs.html",
-        context={
-            "page": "testeurs",
-            "testeurs": liste,
-            "today": date.today(),
-            "utilisateurs_terrain": utilisateurs_terrain,
-            "user_role": _user_role,
-            "terrain_sans_fiche": (_user_role == "terrain" and len(liste) == 0),
-        }
-    )
+    try:
+        if _user_role == "terrain" and _u:
+            liste = db.query(Testeur).filter(
+                Testeur.actif == True,
+                Testeur.utilisateur_id == _u.id
+            ).order_by(Testeur.nom, Testeur.prenom).all()
+        else:
+            liste = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
+        for t in liste:
+            t.habilitations = db.query(HabilitationTesteur).filter(
+                HabilitationTesteur.testeur_id == t.id,
+                HabilitationTesteur.actif == True
+            ).all()
+            t.cartes = db.query(CarteTesteur).filter(
+                CarteTesteur.testeur_id == t.id,
+                CarteTesteur.actif == True
+            ).order_by(CarteTesteur.famille).all()
+        utilisateurs_terrain = db.query(Utilisateur).filter(
+            Utilisateur.role == "terrain",
+            Utilisateur.actif == True
+        ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
+        return templates.TemplateResponse(
+            request=request,
+            name="testeurs.html",
+            context={
+                "page": "testeurs",
+                "testeurs": liste,
+                "today": date.today(),
+                "utilisateurs_terrain": utilisateurs_terrain,
+                "user_role": _user_role,
+                "terrain_sans_fiche": (_user_role == "terrain" and len(liste) == 0),
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/admin")
 def page_admin(request: Request):
     db = SessionLocal()
-    familles = db.query(Famille).filter(Famille.actif == True).all()
-    categories_raw = db.query(Categorie).filter(Categorie.actif == True).all()
-    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
-    lieux = db.query(Lieu).all()
-    for t in testeurs_list:
-        t.habilitations = sorted(
-            db.query(HabilitationTesteur).filter(HabilitationTesteur.testeur_id == t.id).all(),
-            key=lambda h: (h.famille, h.categorie)
+    try:
+        familles = db.query(Famille).filter(Famille.actif == True).all()
+        categories_raw = db.query(Categorie).filter(Categorie.actif == True).all()
+        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
+        lieux = db.query(Lieu).all()
+        for t in testeurs_list:
+            t.habilitations = sorted(
+                db.query(HabilitationTesteur).filter(HabilitationTesteur.testeur_id == t.id).all(),
+                key=lambda h: (h.famille, h.categorie)
+            )
+        for l in lieux:
+            habs = db.query(LieuHabilitation).filter(
+                LieuHabilitation.lieu_id == l.id,
+                LieuHabilitation.actif == True
+            ).all()
+            familles_dict = {}
+            for h in habs:
+                if h.famille not in familles_dict:
+                    familles_dict[h.famille] = []
+                familles_dict[h.famille].append(h.categorie)
+            l.habilitations = [
+                {"famille": f, "categories": ", ".join(cats)}
+                for f, cats in familles_dict.items()
+            ]
+        categories = []
+        for c in categories_raw:
+            f = db.query(Famille).filter(Famille.id == c.famille_id).first()
+            c.famille_code = f.code if f else "?"
+            categories.append(c)
+        categories.sort(key=lambda c: (c.famille_code, c.code))
+        all_hab_options = db.query(HabilitationOption).all()
+        options_habs = {}
+        for ho in all_hab_options:
+            options_habs.setdefault(ho.habilitation_id, []).append(ho.code_option)
+        options_cat_map = {}
+        options_incluses_map = {}
+        for opt in db.query(OptionCategorie).all():
+            key = f"{opt.famille}__{opt.categorie}"
+            if opt.incluse:
+                options_incluses_map.setdefault(key, []).append(opt)
+            else:
+                options_cat_map.setdefault(key, []).append(opt)
+        return templates.TemplateResponse(
+            request=request,
+            name="admin.html",
+            context={
+                "page": "admin",
+                "familles": familles,
+                "categories": categories,
+                "testeurs": testeurs_list,
+                "lieux": lieux,
+                "options_habs": options_habs,
+                "options_cat_map": options_cat_map,
+                "options_incluses_map": options_incluses_map,
+            }
         )
-    for l in lieux:
-        habs = db.query(LieuHabilitation).filter(
-            LieuHabilitation.lieu_id == l.id,
-            LieuHabilitation.actif == True
-        ).all()
-        familles_dict = {}
-        for h in habs:
-            if h.famille not in familles_dict:
-                familles_dict[h.famille] = []
-            familles_dict[h.famille].append(h.categorie)
-        l.habilitations = [
-            {"famille": f, "categories": ", ".join(cats)}
-            for f, cats in familles_dict.items()
-        ]
-    categories = []
-    for c in categories_raw:
-        f = db.query(Famille).filter(Famille.id == c.famille_id).first()
-        c.famille_code = f.code if f else "?"
-        categories.append(c)
-    categories.sort(key=lambda c: (c.famille_code, c.code))
-    # Charger les options actives par habilitation_id
-    all_hab_options = db.query(HabilitationOption).all()
-    options_habs = {}
-    for ho in all_hab_options:
-        options_habs.setdefault(ho.habilitation_id, []).append(ho.code_option)
-    # Options par (famille, categorie) pour l'onglet Cartographie
-    options_cat_map = {}       # facultatives (incluse=False) → sous-lignes
-    options_incluses_map = {}  # obligatoires (incluse=True) → annotation sur ligne catégorie
-    for opt in db.query(OptionCategorie).all():
-        key = f"{opt.famille}__{opt.categorie}"
-        if opt.incluse:
-            options_incluses_map.setdefault(key, []).append(opt)
-        else:
-            options_cat_map.setdefault(key, []).append(opt)
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="admin.html",
-        context={
-            "page": "admin",
-            "familles": familles,
-            "categories": categories,
-            "testeurs": testeurs_list,
-            "lieux": lieux,
-            "options_habs": options_habs,
-            "options_cat_map": options_cat_map,
-            "options_incluses_map": options_incluses_map,
-        }
-    )
+    finally:
+        db.close()
 
 @app.get("/admin/images")
 def page_admin_images(request: Request):
@@ -890,38 +906,42 @@ def page_admin_images(request: Request):
 
 @app.get("/sessions")
 def page_sessions(request: Request):
-    db = SessionLocal()
-    liste = db.query(Session).order_by(Session.id.desc()).all()
-    lieux = db.query(Lieu).filter(Lieu.actif == True).all()
-    familles = db.query(Famille).filter(Famille.actif == True).all()
-    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
-    db.close()
     _u = getattr(request.state, "user", None)
-    return templates.TemplateResponse(
-        request=request,
-        name="sessions.html",
-        context={
-            "page": "sessions",
-            "sessions": liste,
-            "lieux": lieux,
-            "familles": familles,
-            "testeurs": testeurs_list,
-            "user_role": _u.role if _u else None,
-        }
-    )
+    db = SessionLocal()
+    try:
+        liste = db.query(Session).order_by(Session.id.desc()).all()
+        lieux = db.query(Lieu).filter(Lieu.actif == True).all()
+        familles = db.query(Famille).filter(Famille.actif == True).all()
+        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+        return templates.TemplateResponse(
+            request=request,
+            name="sessions.html",
+            context={
+                "page": "sessions",
+                "sessions": liste,
+                "lieux": lieux,
+                "familles": familles,
+                "testeurs": testeurs_list,
+                "user_role": _u.role if _u else None,
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/sessions/{session_id}/jours/{jour_id}/modifier")
 def page_modifier_jour(request: Request, session_id: int, jour_id: int):
     db = SessionLocal()
-    session = db.query(Session).filter(Session.id == session_id).first()
-    jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
-    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="modifier_jour.html",
-        context={"session": session, "jour": jour, "testeurs": testeurs_list}
-    )
+    try:
+        session = db.query(Session).filter(Session.id == session_id).first()
+        jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
+        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+        return templates.TemplateResponse(
+            request=request,
+            name="modifier_jour.html",
+            context={"session": session, "jour": jour, "testeurs": testeurs_list}
+        )
+    finally:
+        db.close()
 
 @app.post("/sessions/{session_id}/jours/{jour_id}/modifier")
 async def post_modifier_jour(request: Request, session_id: int, jour_id: int):
@@ -929,42 +949,44 @@ async def post_modifier_jour(request: Request, session_id: int, jour_id: int):
     from datetime import date
     form = await request.form()
     db = SessionLocal()
-    j = db.query(JourTest).filter(JourTest.id == jour_id).first()
-    s = db.query(Session).filter(Session.id == session_id).first()
-    new_date = form.get("date")
-    testeur_id = form.get("testeur_id")
-    # Vérification intervalle session
-    erreur = None
-    if new_date:
-        if s.date_pratique_debut and new_date < str(s.date_pratique_debut):
-            erreur = f"⚠️ Date antérieure au début de la session ({s.date_pratique_debut.strftime('%d/%m/%Y')})"
-        elif s.date_pratique_fin and new_date > str(s.date_pratique_fin):
-            erreur = f"⚠️ Date postérieure à la fin de la session ({s.date_pratique_fin.strftime('%d/%m/%Y')})"
-    if erreur:
-        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+    try:
+        j = db.query(JourTest).filter(JourTest.id == jour_id).first()
+        s = db.query(Session).filter(Session.id == session_id).first()
+        new_date = form.get("date")
+        testeur_id = form.get("testeur_id")
+        erreur = None
+        if new_date:
+            if s.date_pratique_debut and new_date < str(s.date_pratique_debut):
+                erreur = f"⚠️ Date antérieure au début de la session ({s.date_pratique_debut.strftime('%d/%m/%Y')})"
+            elif s.date_pratique_fin and new_date > str(s.date_pratique_fin):
+                erreur = f"⚠️ Date postérieure à la fin de la session ({s.date_pratique_fin.strftime('%d/%m/%Y')})"
+        if erreur:
+            testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+            return templates.TemplateResponse(
+                request=request,
+                name="modifier_jour.html",
+                context={"session": s, "jour": j, "testeurs": testeurs_list, "erreur": erreur}
+            )
+        j.date = date.fromisoformat(new_date) if new_date else j.date
+        j.testeur_id = int(testeur_id) if testeur_id else j.testeur_id
+        db.commit()
+        return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
+    finally:
         db.close()
-        return templates.TemplateResponse(
-            request=request,
-            name="modifier_jour.html",
-            context={"session": s, "jour": j, "testeurs": testeurs_list, "erreur": erreur}
-        )
-    j.date = date.fromisoformat(new_date) if new_date else j.date
-    j.testeur_id = int(testeur_id) if testeur_id else j.testeur_id
-    db.commit()
-    db.close()
-    return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
 
 @app.get("/sessions/{session_id}/modifier")
 def page_modifier_session(request: Request, session_id: int):
     db = SessionLocal()
-    session = db.query(Session).filter(Session.id == session_id).first()
-    lieux = db.query(Lieu).filter(Lieu.actif == True).all()
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="modifier_session.html",
-        context={"session": session, "lieux": lieux}
-    )
+    try:
+        session = db.query(Session).filter(Session.id == session_id).first()
+        lieux = db.query(Lieu).filter(Lieu.actif == True).all()
+        return templates.TemplateResponse(
+            request=request,
+            name="modifier_session.html",
+            context={"session": session, "lieux": lieux}
+        )
+    finally:
+        db.close()
 
 @app.post("/sessions/{session_id}/modifier")
 async def post_modifier_session(request: Request, session_id: int):
@@ -972,615 +994,620 @@ async def post_modifier_session(request: Request, session_id: int):
     from datetime import date
     form = await request.form()
     db = SessionLocal()
-    s = db.query(Session).filter(Session.id == session_id).first()
-    debut = form.get("date_pratique_debut")
-    fin = form.get("date_pratique_fin")
-    responsable = form.get("responsable")
-    # Vérification jours existants
-    if debut or fin:
-        jours = db.query(JourTest).filter(JourTest.session_id == session_id, JourTest.actif == True).all()
-        jours_hors = []
-        for j in jours:
-            if j.date:
-                if debut and str(j.date) < debut:
-                    jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
-                elif fin and str(j.date) > fin:
-                    jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
-        if jours_hors:
-            db.close()
-            jours_str = ", ".join(jours_hors)
-            return templates.TemplateResponse(
-                request=request,
-                name="modifier_session.html",
-                context={
-                    "session": s,
-                    "lieux": [],
-                    "erreur": f"⚠️ Ces jours sont hors de l'intervalle : {jours_str}"
-                }
-            )
-    s.date_pratique_debut = date.fromisoformat(debut) if debut else None
-    s.date_pratique_fin = date.fromisoformat(fin) if fin else None
-    s.responsable = responsable or None
-    db.commit()
-    db.close()
-    return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
+    try:
+        s = db.query(Session).filter(Session.id == session_id).first()
+        debut = form.get("date_pratique_debut")
+        fin = form.get("date_pratique_fin")
+        responsable = form.get("responsable")
+        if debut or fin:
+            jours = db.query(JourTest).filter(JourTest.session_id == session_id, JourTest.actif == True).all()
+            jours_hors = []
+            for j in jours:
+                if j.date:
+                    if debut and str(j.date) < debut:
+                        jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
+                    elif fin and str(j.date) > fin:
+                        jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
+            if jours_hors:
+                jours_str = ", ".join(jours_hors)
+                return templates.TemplateResponse(
+                    request=request,
+                    name="modifier_session.html",
+                    context={
+                        "session": s,
+                        "lieux": [],
+                        "erreur": f"⚠️ Ces jours sont hors de l'intervalle : {jours_str}"
+                    }
+                )
+        s.date_pratique_debut = date.fromisoformat(debut) if debut else None
+        s.date_pratique_fin = date.fromisoformat(fin) if fin else None
+        s.responsable = responsable or None
+        db.commit()
+        return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
+    finally:
+        db.close()
 
 @app.get("/sessions/{session_id}")
 def page_session_detail(request: Request, session_id: int):
+    _u = getattr(request.state, "user", None)
     db = SessionLocal()
-    session = db.query(Session).filter(Session.id == session_id).first()
-    if not session:
-        db.close()
-        return templates.TemplateResponse(
-            request=request,
-            name="sessions.html",
-            context={"page": "sessions", "sessions": [], "lieux": [], "familles": [], "testeurs": []}
-        )
+    try:
+        session = db.query(Session).filter(Session.id == session_id).first()
+        if not session:
+            return templates.TemplateResponse(
+                request=request,
+                name="sessions.html",
+                context={"page": "sessions", "sessions": [], "lieux": [], "familles": [], "testeurs": []}
+            )
 
-    lieu = db.query(Lieu).filter(Lieu.id == session.lieu_id).first()
+        lieu = db.query(Lieu).filter(Lieu.id == session.lieu_id).first()
 
-    session_candidats = db.query(SessionCandidat).join(
-        Stagiaire, Stagiaire.id == SessionCandidat.stagiaire_id
-    ).filter(
-        SessionCandidat.session_id == session_id,
-        SessionCandidat.actif == True
-    ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
-    for sc in session_candidats:
-        sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
+        session_candidats = db.query(SessionCandidat).join(
+            Stagiaire, Stagiaire.id == SessionCandidat.stagiaire_id
+        ).filter(
+            SessionCandidat.session_id == session_id,
+            SessionCandidat.actif == True
+        ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
+        for sc in session_candidats:
+            sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
 
-    epreuves = db.query(SessionEpreuve).filter(SessionEpreuve.session_id == session_id).all()
+        epreuves = db.query(SessionEpreuve).filter(SessionEpreuve.session_id == session_id).all()
 
-    famille = db.query(Famille).filter(Famille.code == session.famille).first()
-    # Tri texte suffisant pour les codes actuels (A, B1, C1… ; 1A, 1B… ; 1, 2, 3…).
-    # Si un code à deux chiffres apparaît un jour (ex. "10"), il se classerait avant "2" — revoir alors.
-    categories_obj = db.query(Categorie).filter(
-        Categorie.famille_id == (famille.id if famille else 0),
-        Categorie.pepci_habilite == True,
-        Categorie.actif == True,
-        Categorie.est_option == False
-    ).order_by(Categorie.code).all() if famille else []
-    categories = [c.code for c in categories_obj]
-    ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
+        famille = db.query(Famille).filter(Famille.code == session.famille).first()
+        categories_obj = db.query(Categorie).filter(
+            Categorie.famille_id == (famille.id if famille else 0),
+            Categorie.pepci_habilite == True,
+            Categorie.actif == True,
+            Categorie.est_option == False
+        ).order_by(Categorie.code).all() if famille else []
+        categories = [c.code for c in categories_obj]
+        ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
 
-    options_par_cat = {}
-    opt_incluse_set = set()
-    for opt in db.query(OptionCategorie).filter(OptionCategorie.famille == session.famille).all():
-        if opt.categorie not in options_par_cat:
-            options_par_cat[opt.categorie] = []
-        options_par_cat[opt.categorie].append({
-            "code": opt.code_option,
-            "libelle": opt.libelle_option,
-            "incluse": bool(opt.incluse),
-        })
-        if opt.incluse:
-            opt_incluse_set.add((opt.categorie, opt.code_option))
+        options_par_cat = {}
+        opt_incluse_set = set()
+        for opt in db.query(OptionCategorie).filter(OptionCategorie.famille == session.famille).all():
+            if opt.categorie not in options_par_cat:
+                options_par_cat[opt.categorie] = []
+            options_par_cat[opt.categorie].append({
+                "code": opt.code_option,
+                "libelle": opt.libelle_option,
+                "incluse": bool(opt.incluse),
+            })
+            if opt.incluse:
+                opt_incluse_set.add((opt.categorie, opt.code_option))
 
-    epreuves_map = {}
-    for e in epreuves:
-        testeur = db.query(Testeur).filter(Testeur.id == e.testeur_id).first()
-        e.testeur_nom = f"{testeur.nom} {testeur.prenom}" if testeur else "?"
-        key = (e.stagiaire_id, e.categorie)
-        if key not in epreuves_map:
-            epreuves_map[key] = e
-        else:
-            # Priorité au réussi, sinon on garde le plus récent
-            if e.obtenue and not epreuves_map[key].obtenue:
-                epreuves_map[key] = e
-
-    testeur_initiales_par_stag_cat = {}
-    for (stag_id, cat), e in epreuves_map.items():
-        if e.testeur_id and e.testeur_nom and e.testeur_nom != "?":
-            testeur_initiales_par_stag_cat.setdefault(stag_id, {})[cat] = {
-                "initiales": _initiales_testeur(e.testeur_nom),
-                "nom": e.testeur_nom,
-            }
-
-    ut_candidat = {}
-    for e in epreuves:
-        ut_candidat[e.stagiaire_id] = ut_candidat.get(e.stagiaire_id, 0) + e.ut
-
-    ut_testeurs = {}
-    for e in epreuves:
-        if e.testeur_id not in ut_testeurs:
+        epreuves_map = {}
+        for e in epreuves:
             testeur = db.query(Testeur).filter(Testeur.id == e.testeur_id).first()
-            ut_testeurs[e.testeur_id] = {
-                "nom": f"{testeur.nom} {testeur.prenom}" if testeur else "?",
-                "ut_pratique": 0,
-                "categories": {},
-                "est_principal": False
-            }
-        ut_testeurs[e.testeur_id]["ut_pratique"] += e.ut
-        cat = e.categorie
-        if cat not in ut_testeurs[e.testeur_id]["categories"]:
-            ut_testeurs[e.testeur_id]["categories"][cat] = 0
-        ut_testeurs[e.testeur_id]["categories"][cat] += 1
-
-    jours_test = db.query(JourTest).filter(
-        JourTest.session_id == session_id,
-        JourTest.actif == True
-    ).order_by(JourTest.date).all()
-
-    for j in jours_test:
-        if j.testeur_id:
-            t = db.query(Testeur).filter(Testeur.id == j.testeur_id).first()
-            j.testeur_nom = f"{t.nom} {t.prenom}" if t else "?"
-        else:
-            j.testeur_nom = "—"
-        if j.grille_id:
-            g = db.query(GrilleTheorie).filter(GrilleTheorie.id == j.grille_id).first()
-            j.grille_numero = g.numero if g else "?"
-        else:
-            j.grille_numero = None
-
-        jtcs = db.query(JourTestCandidat).filter(
-            JourTestCandidat.jour_test_id == j.id,
-            JourTestCandidat.actif == True
-        ).all()
-        j.candidats_ids = [jtc.stagiaire_id for jtc in jtcs]
-        j.candidats_categories = {
-            jtc.stagiaire_id: jtc.categories.split(",") if jtc.categories else []
-            for jtc in jtcs
-        }
-        j.identites_verifiees = {
-            jtc.stagiaire_id: jtc.identite_verifiee
-            for jtc in jtcs
-        }
-
-        j.candidats_options = {}
-        for jtc in jtcs:
-            if jtc.options_planifiees:
-                try:
-                    j.candidats_options[jtc.stagiaire_id] = json.loads(jtc.options_planifiees)
-                except Exception:
-                    j.candidats_options[jtc.stagiaire_id] = {}
+            e.testeur_nom = f"{testeur.nom} {testeur.prenom}" if testeur else "?"
+            key = (e.stagiaire_id, e.categorie)
+            if key not in epreuves_map:
+                epreuves_map[key] = e
             else:
-                j.candidats_options[jtc.stagiaire_id] = {}
+                if e.obtenue and not epreuves_map[key].obtenue:
+                    epreuves_map[key] = e
 
-        if j.type == 'pratique':
-            j.ut_cand_cat = {}   # {stag_id: {cat: ut}} — inclut option-seule (base=0)
-            j.ut_total_cat = {}  # {cat: ut total jour tous candidats}
+        testeur_initiales_par_stag_cat = {}
+        for (stag_id, cat), e in epreuves_map.items():
+            if e.testeur_id and e.testeur_nom and e.testeur_nom != "?":
+                testeur_initiales_par_stag_cat.setdefault(stag_id, {})[cat] = {
+                    "initiales": _initiales_testeur(e.testeur_nom),
+                    "nom": e.testeur_nom,
+                }
+
+        ut_candidat = {}
+        for e in epreuves:
+            ut_candidat[e.stagiaire_id] = ut_candidat.get(e.stagiaire_id, 0) + e.ut
+
+        ut_testeurs = {}
+        for e in epreuves:
+            if e.testeur_id not in ut_testeurs:
+                testeur = db.query(Testeur).filter(Testeur.id == e.testeur_id).first()
+                ut_testeurs[e.testeur_id] = {
+                    "nom": f"{testeur.nom} {testeur.prenom}" if testeur else "?",
+                    "ut_pratique": 0,
+                    "categories": {},
+                    "est_principal": False
+                }
+            ut_testeurs[e.testeur_id]["ut_pratique"] += e.ut
+            cat = e.categorie
+            if cat not in ut_testeurs[e.testeur_id]["categories"]:
+                ut_testeurs[e.testeur_id]["categories"][cat] = 0
+            ut_testeurs[e.testeur_id]["categories"][cat] += 1
+
+        jours_test = db.query(JourTest).filter(
+            JourTest.session_id == session_id,
+            JourTest.actif == True
+        ).order_by(JourTest.date).all()
+
+        for j in jours_test:
+            if j.testeur_id:
+                t = db.query(Testeur).filter(Testeur.id == j.testeur_id).first()
+                j.testeur_nom = f"{t.nom} {t.prenom}" if t else "?"
+            else:
+                j.testeur_nom = "—"
+            if j.grille_id:
+                g = db.query(GrilleTheorie).filter(GrilleTheorie.id == j.grille_id).first()
+                j.grille_numero = g.numero if g else "?"
+            else:
+                j.grille_numero = None
+
+            jtcs = db.query(JourTestCandidat).filter(
+                JourTestCandidat.jour_test_id == j.id,
+                JourTestCandidat.actif == True
+            ).all()
+            j.candidats_ids = [jtc.stagiaire_id for jtc in jtcs]
+            j.candidats_categories = {
+                jtc.stagiaire_id: jtc.categories.split(",") if jtc.categories else []
+                for jtc in jtcs
+            }
+            j.identites_verifiees = {
+                jtc.stagiaire_id: jtc.identite_verifiee
+                for jtc in jtcs
+            }
+
+            j.candidats_options = {}
             for jtc in jtcs:
-                cats_base = {c.strip() for c in (jtc.categories or "").split(",") if c.strip()}
-                opts = {}
                 if jtc.options_planifiees:
                     try:
-                        opts = json.loads(jtc.options_planifiees)
+                        j.candidats_options[jtc.stagiaire_id] = json.loads(jtc.options_planifiees)
                     except Exception:
-                        pass
-                cand_d = {}
-                for cat in cats_base | set(opts.keys()):
-                    base = ut_par_cat.get(cat, 1.0) if cat in cats_base else 0.0
-                    cand_d[cat] = ut_ligne(base, cat, opts.get(cat, []), opt_incluse_set)
-                j.ut_cand_cat[jtc.stagiaire_id] = cand_d
-                for cat, ut in cand_d.items():
-                    j.ut_total_cat[cat] = round(j.ut_total_cat.get(cat, 0.0) + ut, 1)
-            j.ut_cand_total = {sid: round(sum(d.values()), 1) for sid, d in j.ut_cand_cat.items()}
-            total_ut = round(sum(j.ut_cand_total.values()), 1)
-            nb_testeurs = math.ceil(total_ut / 6) if total_ut > 0 else 1
-            j.total_ut = total_ut
-            j.nb_testeurs = nb_testeurs
-            j.ut_libres = round((nb_testeurs * 6) - total_ut, 1)
-            epreuves_jour = db.query(SessionEpreuve).filter(
-                SessionEpreuve.session_id == session_id,
-                SessionEpreuve.date == j.date
-            ).all()
-            j.candidats_epreuves = {}
-            for ep in epreuves_jour:
-                if ep.stagiaire_id not in j.candidats_epreuves:
-                    j.candidats_epreuves[ep.stagiaire_id] = []
-                j.candidats_epreuves[ep.stagiaire_id].append(ep.categorie)
-        else:
-            j.ut_cand_cat = {}
-            j.ut_total_cat = {}
-            j.ut_cand_total = {}
-            j.total_ut = 0
-            j.nb_testeurs = 0
-            j.ut_libres = 0
-            j.candidats_epreuves = {}
+                        j.candidats_options[jtc.stagiaire_id] = {}
+                else:
+                    j.candidats_options[jtc.stagiaire_id] = {}
 
-    # Groupement jours par date pour récap séquençage (fusion théorie+pratique)
-    jours_par_date: dict = {}
-    for j in jours_test:
-        d = j.date
-        if d not in jours_par_date:
-            jours_par_date[d] = {"jours": [], "candidats_ids": [], "testeurs": [], "total_ut": 0.0}
-        entry = jours_par_date[d]
-        entry["jours"].append(j)
-        for sid in j.candidats_ids:
-            if sid not in entry["candidats_ids"]:
-                entry["candidats_ids"].append(sid)
-        if j.testeur_nom and j.testeur_nom != "—" and j.testeur_nom not in entry["testeurs"]:
-            entry["testeurs"].append(j.testeur_nom)
-        entry["total_ut"] = round(entry["total_ut"] + j.total_ut, 1)
+            if j.type == 'pratique':
+                j.ut_cand_cat = {}
+                j.ut_total_cat = {}
+                for jtc in jtcs:
+                    cats_base = {c.strip() for c in (jtc.categories or "").split(",") if c.strip()}
+                    opts = {}
+                    if jtc.options_planifiees:
+                        try:
+                            opts = json.loads(jtc.options_planifiees)
+                        except Exception:
+                            pass
+                    cand_d = {}
+                    for cat in cats_base | set(opts.keys()):
+                        base = ut_par_cat.get(cat, 1.0) if cat in cats_base else 0.0
+                        cand_d[cat] = ut_ligne(base, cat, opts.get(cat, []), opt_incluse_set)
+                    j.ut_cand_cat[jtc.stagiaire_id] = cand_d
+                    for cat, ut in cand_d.items():
+                        j.ut_total_cat[cat] = round(j.ut_total_cat.get(cat, 0.0) + ut, 1)
+                j.ut_cand_total = {sid: round(sum(d.values()), 1) for sid, d in j.ut_cand_cat.items()}
+                total_ut = round(sum(j.ut_cand_total.values()), 1)
+                nb_testeurs = math.ceil(total_ut / 6) if total_ut > 0 else 1
+                j.total_ut = total_ut
+                j.nb_testeurs = nb_testeurs
+                j.ut_libres = round((nb_testeurs * 6) - total_ut, 1)
+                epreuves_jour = db.query(SessionEpreuve).filter(
+                    SessionEpreuve.session_id == session_id,
+                    SessionEpreuve.date == j.date
+                ).all()
+                j.candidats_epreuves = {}
+                for ep in epreuves_jour:
+                    if ep.stagiaire_id not in j.candidats_epreuves:
+                        j.candidats_epreuves[ep.stagiaire_id] = []
+                    j.candidats_epreuves[ep.stagiaire_id].append(ep.categorie)
+            else:
+                j.ut_cand_cat = {}
+                j.ut_total_cat = {}
+                j.ut_cand_total = {}
+                j.total_ut = 0
+                j.nb_testeurs = 0
+                j.ut_libres = 0
+                j.candidats_epreuves = {}
 
-    ut_planifie_candidat = {}
-    ut_planifie_par_stag_cat = {}
-    for j in jours_test:
-        if j.type == 'pratique':
-            for stag_id, cand_d in j.ut_cand_cat.items():
-                ut_planifie_candidat[stag_id] = round(
-                    ut_planifie_candidat.get(stag_id, 0.0) + j.ut_cand_total[stag_id], 1
-                )
-                if stag_id not in ut_planifie_par_stag_cat:
-                    ut_planifie_par_stag_cat[stag_id] = {}
-                for cat, ut in cand_d.items():
-                    ut_planifie_par_stag_cat[stag_id][cat] = round(
-                        ut_planifie_par_stag_cat[stag_id].get(cat, 0.0) + ut, 1
+        jours_par_date: dict = {}
+        for j in jours_test:
+            d = j.date
+            if d not in jours_par_date:
+                jours_par_date[d] = {"jours": [], "candidats_ids": [], "testeurs": [], "total_ut": 0.0}
+            entry = jours_par_date[d]
+            entry["jours"].append(j)
+            for sid in j.candidats_ids:
+                if sid not in entry["candidats_ids"]:
+                    entry["candidats_ids"].append(sid)
+            if j.testeur_nom and j.testeur_nom != "—" and j.testeur_nom not in entry["testeurs"]:
+                entry["testeurs"].append(j.testeur_nom)
+            entry["total_ut"] = round(entry["total_ut"] + j.total_ut, 1)
+
+        ut_planifie_candidat = {}
+        ut_planifie_par_stag_cat = {}
+        for j in jours_test:
+            if j.type == 'pratique':
+                for stag_id, cand_d in j.ut_cand_cat.items():
+                    ut_planifie_candidat[stag_id] = round(
+                        ut_planifie_candidat.get(stag_id, 0.0) + j.ut_cand_total[stag_id], 1
                     )
+                    if stag_id not in ut_planifie_par_stag_cat:
+                        ut_planifie_par_stag_cat[stag_id] = {}
+                    for cat, ut in cand_d.items():
+                        ut_planifie_par_stag_cat[stag_id][cat] = round(
+                            ut_planifie_par_stag_cat[stag_id].get(cat, 0.0) + ut, 1
+                        )
 
-    resultats_theorie_par_jour = {}
-    for j in jours_test:
-        if j.type == 'theorie':
-            resultats_jour = {}
-            for sc in session_candidats:
-                rt = db.query(ResultatTheorie).filter(
-                    ResultatTheorie.jour_test_id == j.id,
-                    ResultatTheorie.stagiaire_id == sc.stagiaire_id
-                ).order_by(ResultatTheorie.id.desc()).first()
-                resultats_jour[sc.stagiaire_id] = rt
-            resultats_theorie_par_jour[j.id] = resultats_jour
+        resultats_theorie_par_jour = {}
+        for j in jours_test:
+            if j.type == 'theorie':
+                resultats_jour = {}
+                for sc in session_candidats:
+                    rt = db.query(ResultatTheorie).filter(
+                        ResultatTheorie.jour_test_id == j.id,
+                        ResultatTheorie.stagiaire_id == sc.stagiaire_id
+                    ).order_by(ResultatTheorie.id.desc()).first()
+                    resultats_jour[sc.stagiaire_id] = rt
+                resultats_theorie_par_jour[j.id] = resultats_jour
 
-    resultats_theorie = {}
-    for sc in session_candidats:
-        rt = db.query(ResultatTheorie).filter(
-            ResultatTheorie.session_id == session_id,
-            ResultatTheorie.stagiaire_id == sc.stagiaire_id,
-            ResultatTheorie.obtenue == True
-        ).order_by(ResultatTheorie.id.asc()).first()
-        if not rt:
+        resultats_theorie = {}
+        for sc in session_candidats:
             rt = db.query(ResultatTheorie).filter(
                 ResultatTheorie.session_id == session_id,
-                ResultatTheorie.stagiaire_id == sc.stagiaire_id
-            ).order_by(ResultatTheorie.id.desc()).first()
-        resultats_theorie[sc.stagiaire_id] = rt
+                ResultatTheorie.stagiaire_id == sc.stagiaire_id,
+                ResultatTheorie.obtenue == True
+            ).order_by(ResultatTheorie.id.asc()).first()
+            if not rt:
+                rt = db.query(ResultatTheorie).filter(
+                    ResultatTheorie.session_id == session_id,
+                    ResultatTheorie.stagiaire_id == sc.stagiaire_id
+                ).order_by(ResultatTheorie.id.desc()).first()
+            resultats_theorie[sc.stagiaire_id] = rt
 
-    equipements = db.query(Equipement).filter(
-        Equipement.session_id == session_id,
-        Equipement.actif == True
-    ).order_by(Equipement.numero).all()
+        equipements = db.query(Equipement).filter(
+            Equipement.session_id == session_id,
+            Equipement.actif == True
+        ).order_by(Equipement.numero).all()
 
-    stagiaires = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
-    testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+        stagiaires = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
+        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
 
-    consentements_list = db.query(ConsentementRGPD).filter(
-        ConsentementRGPD.session_id == session_id
-    ).all()
-    consentements_map = {c.stagiaire_id: c for c in consentements_list}
+        consentements_list = db.query(ConsentementRGPD).filter(
+            ConsentementRGPD.session_id == session_id
+        ).all()
+        consentements_map = {c.stagiaire_id: c for c in consentements_list}
 
-    _verif_testeurs = [
-        {"nom_complet": f"{t.nom} {t.prenom}", "role": "testeur"}
-        for t in db.query(Testeur).filter(
-            Testeur.actif == True,
-            Testeur.etat.in_(["actif", "suspendu"])
-        ).order_by(Testeur.nom, Testeur.prenom).all()
-    ]
-    _verif_utilisateurs = [
-        {"nom_complet": f"{u.nom} {u.prenom}", "role": u.role or "utilisateur"}
-        for u in db.query(Utilisateur).filter(
-            Utilisateur.actif == True
-        ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
-    ]
-    verificateurs_liste = sorted(
-        _verif_testeurs + _verif_utilisateurs,
-        key=lambda x: x["nom_complet"]
-    )
+        _verif_testeurs = [
+            {"nom_complet": f"{t.nom} {t.prenom}", "role": "testeur"}
+            for t in db.query(Testeur).filter(
+                Testeur.actif == True,
+                Testeur.etat.in_(["actif", "suspendu"])
+            ).order_by(Testeur.nom, Testeur.prenom).all()
+        ]
+        _verif_utilisateurs = [
+            {"nom_complet": f"{u.nom} {u.prenom}", "role": u.role or "utilisateur"}
+            for u in db.query(Utilisateur).filter(
+                Utilisateur.actif == True
+            ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
+        ]
+        verificateurs_liste = sorted(
+            _verif_testeurs + _verif_utilisateurs,
+            key=lambda x: x["nom_complet"]
+        )
 
-    jours_pratiques_ids = [j.id for j in jours_test if j.type == 'pratique']
-    attestations_neutralite_list = db.query(AttestationNeutralite).filter(
-        AttestationNeutralite.jour_test_id.in_(jours_pratiques_ids)
-    ).all() if jours_pratiques_ids else []
-    attestations_neutralite_map = {
-        (a.jour_test_id, a.stagiaire_id): a for a in attestations_neutralite_list
-    }
-
-    _u = getattr(request.state, "user", None)
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="session_detail.html",
-        context={
-            "page": "sessions",
-            "session": session,
-            "lieu": lieu,
-            "session_candidats": session_candidats,
-            "categories": categories,
-            "ut_par_cat": ut_par_cat,
-            "epreuves_map": epreuves_map,
-            "ut_candidat": ut_candidat,
-            "ut_planifie_candidat": ut_planifie_candidat,
-            "ut_testeurs": ut_testeurs,
-            "jours_test": jours_test,
-            "resultats_theorie_par_jour": resultats_theorie_par_jour,
-            "resultats_theorie": resultats_theorie,
-            "equipements": equipements,
-            "stagiaires": stagiaires,
-            "testeurs": testeurs_list,
-            "options_par_cat": options_par_cat,
-            "opt_incluse_set": opt_incluse_set,
-            "ut_planifie_par_stag_cat": ut_planifie_par_stag_cat,
-            "testeur_initiales_par_stag_cat": testeur_initiales_par_stag_cat,
-            "jours_par_date": jours_par_date,
-            "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date],
-            "consentements_map": consentements_map,
-            "verificateurs_liste": verificateurs_liste,
-            "attestations_neutralite_map": attestations_neutralite_map,
-            "user_role": _u.role if _u else None,
+        jours_pratiques_ids = [j.id for j in jours_test if j.type == 'pratique']
+        attestations_neutralite_list = db.query(AttestationNeutralite).filter(
+            AttestationNeutralite.jour_test_id.in_(jours_pratiques_ids)
+        ).all() if jours_pratiques_ids else []
+        attestations_neutralite_map = {
+            (a.jour_test_id, a.stagiaire_id): a for a in attestations_neutralite_list
         }
-    )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="session_detail.html",
+            context={
+                "page": "sessions",
+                "session": session,
+                "lieu": lieu,
+                "session_candidats": session_candidats,
+                "categories": categories,
+                "ut_par_cat": ut_par_cat,
+                "epreuves_map": epreuves_map,
+                "ut_candidat": ut_candidat,
+                "ut_planifie_candidat": ut_planifie_candidat,
+                "ut_testeurs": ut_testeurs,
+                "jours_test": jours_test,
+                "resultats_theorie_par_jour": resultats_theorie_par_jour,
+                "resultats_theorie": resultats_theorie,
+                "equipements": equipements,
+                "stagiaires": stagiaires,
+                "testeurs": testeurs_list,
+                "options_par_cat": options_par_cat,
+                "opt_incluse_set": opt_incluse_set,
+                "ut_planifie_par_stag_cat": ut_planifie_par_stag_cat,
+                "testeur_initiales_par_stag_cat": testeur_initiales_par_stag_cat,
+                "jours_par_date": jours_par_date,
+                "jours_dates": [{"date": str(j.date), "type": j.type, "label": j.date.strftime('%d/%m/%Y') + ' (' + j.type + ')'} for j in jours_test if j.date],
+                "consentements_map": consentements_map,
+                "verificateurs_liste": verificateurs_liste,
+                "attestations_neutralite_map": attestations_neutralite_map,
+                "user_role": _u.role if _u else None,
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/consentement/{session_id}/{stagiaire_id}/relire")
 def page_consentement_relire(request: Request, session_id: int, stagiaire_id: int):
     from datetime import date
     db = SessionLocal()
-    session = db.query(Session).filter(Session.id == session_id).first()
-    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
-    consentement = db.query(ConsentementRGPD).filter(
-        ConsentementRGPD.session_id == session_id,
-        ConsentementRGPD.stagiaire_id == stagiaire_id
-    ).first()
-    db.close()
-    if not session or not stagiaire:
-        return {"error": "Non trouvé"}
-    return templates.TemplateResponse(
-        request=request,
-        name="consentement_relire.html",
-        context={
-            "session": session,
-            "stagiaire": stagiaire,
-            "consentement": consentement,
-        }
-    )
+    try:
+        session = db.query(Session).filter(Session.id == session_id).first()
+        stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+        consentement = db.query(ConsentementRGPD).filter(
+            ConsentementRGPD.session_id == session_id,
+            ConsentementRGPD.stagiaire_id == stagiaire_id
+        ).first()
+        if not session or not stagiaire:
+            return {"error": "Non trouvé"}
+        return templates.TemplateResponse(
+            request=request,
+            name="consentement_relire.html",
+            context={
+                "session": session,
+                "stagiaire": stagiaire,
+                "consentement": consentement,
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/consentement/{session_id}/{stagiaire_id}")
 def page_consentement(request: Request, session_id: int, stagiaire_id: int, direct: int = 0):
     from datetime import date
     db = SessionLocal()
-    session = db.query(Session).filter(Session.id == session_id).first()
-    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
-    db.close()
-    if not session or not stagiaire:
-        return {"error": "Non trouvé"}
-    today = date.today().strftime('%d/%m/%Y')
-    return templates.TemplateResponse(
-        request=request,
-        name="consentement.html",
-        context={
-            "session": session,
-            "stagiaire": stagiaire,
-            "today": today,
-            "mode_direct": bool(direct),
-        }
-    )
+    try:
+        session = db.query(Session).filter(Session.id == session_id).first()
+        stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+        if not session or not stagiaire:
+            return {"error": "Non trouvé"}
+        today = date.today().strftime('%d/%m/%Y')
+        return templates.TemplateResponse(
+            request=request,
+            name="consentement.html",
+            context={
+                "session": session,
+                "stagiaire": stagiaire,
+                "today": today,
+                "mode_direct": bool(direct),
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/neutralite/{jour_test_id}/{stagiaire_id}/relire")
 def page_neutralite_relire(request: Request, jour_test_id: int, stagiaire_id: int):
-    db = SessionLocal()
     from app.models.jour_test import JourTest
-    jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
-    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
-    attestation = db.query(AttestationNeutralite).filter(
-        AttestationNeutralite.jour_test_id == jour_test_id,
-        AttestationNeutralite.stagiaire_id == stagiaire_id
-    ).first()
-    session = db.query(Session).filter(Session.id == jour.session_id).first() if jour else None
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="neutralite_relire.html",
-        context={
-            "attestation": attestation,
-            "stagiaire": stagiaire,
-            "jour": jour,
-            "session": session,
-        }
-    )
+    db = SessionLocal()
+    try:
+        jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
+        stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+        attestation = db.query(AttestationNeutralite).filter(
+            AttestationNeutralite.jour_test_id == jour_test_id,
+            AttestationNeutralite.stagiaire_id == stagiaire_id
+        ).first()
+        session = db.query(Session).filter(Session.id == jour.session_id).first() if jour else None
+        return templates.TemplateResponse(
+            request=request,
+            name="neutralite_relire.html",
+            context={
+                "attestation": attestation,
+                "stagiaire": stagiaire,
+                "jour": jour,
+                "session": session,
+            }
+        )
+    finally:
+        db.close()
 
 
 @app.get("/neutralite/{jour_test_id}/{stagiaire_id}")
 def page_neutralite(request: Request, jour_test_id: int, stagiaire_id: int, direct: int = 0):
-    db = SessionLocal()
     from app.models.jour_test import JourTest
-    jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
-    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
     from datetime import date
-    today = date.today()
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="neutralite.html",
-        context={
-            "jour_test_id": jour_test_id,
-            "stagiaire_id": stagiaire_id,
-            "stagiaire": stagiaire,
-            "jour": jour,
-            "today": today,
-            "mode_direct": bool(direct),
-        }
-    )
+    db = SessionLocal()
+    try:
+        jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
+        stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+        today = date.today()
+        return templates.TemplateResponse(
+            request=request,
+            name="neutralite.html",
+            context={
+                "jour_test_id": jour_test_id,
+                "stagiaire_id": stagiaire_id,
+                "stagiaire": stagiaire,
+                "jour": jour,
+                "today": today,
+                "mode_direct": bool(direct),
+            }
+        )
+    finally:
+        db.close()
 
 
 @app.get("/sessions/{session_id}/theorie/{stagiaire_id}/detail")
 def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jour_id: int = None):
-    db = SessionLocal()
-
-    query = db.query(ResultatTheorie).filter(
-        ResultatTheorie.session_id == session_id,
-        ResultatTheorie.stagiaire_id == stagiaire_id
-    )
-    if jour_id:
-        query = query.filter(ResultatTheorie.jour_test_id == jour_id)
-    rt = query.order_by(ResultatTheorie.id.desc()).first()
-
-    if not rt:
-        db.close()
-        return {"error": "Resultat non trouve"}
-
-    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
-
     import json
-    reponses_candidat = json.loads(rt.reponses_json) if rt.reponses_json else {}
-
-    # Phase 2 : récupérer les questions via utilisations_themes
     from app.models.utilisations_themes import UtilisationTheme
-    session_obj = db.query(Session).filter(Session.id == session_id).first()
+    db = SessionLocal()
+    try:
+        query = db.query(ResultatTheorie).filter(
+            ResultatTheorie.session_id == session_id,
+            ResultatTheorie.stagiaire_id == stagiaire_id
+        )
+        if jour_id:
+            query = query.filter(ResultatTheorie.jour_test_id == jour_id)
+        rt = query.order_by(ResultatTheorie.id.desc()).first()
 
-    tirages = db.query(UtilisationTheme).filter(
-        UtilisationTheme.session_id == session_id,
-        UtilisationTheme.famille == session_obj.famille
-    ).all()
+        if not rt:
+            return {"error": "Resultat non trouve"}
 
-    detail_themes = {}
-    for ut in tirages:
-        questions = db.query(ReponseGrille).filter(
-            ReponseGrille.grille_id == ut.grille_id,
-            ReponseGrille.theme == ut.theme
-        ).order_by(ReponseGrille.numero_question).all()
+        stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+        reponses_candidat = json.loads(rt.reponses_json) if rt.reponses_json else {}
+        session_obj = db.query(Session).filter(Session.id == session_id).first()
 
-        t = str(ut.theme)
-        detail_themes[t] = []
-        for r in questions:
-            reponse_candidat = reponses_candidat.get(str(r.numero_question))
-            correcte = reponse_candidat is not None and reponse_candidat == r.reponse_correcte
-            detail_themes[t].append({
-                "numero": r.numero_question,
-                "texte": r.texte_question,
-                "reponse_correcte": r.reponse_correcte,
-                "reponse_candidat": reponse_candidat,
-                "correcte": correcte,
-                "points": r.points
-            })
+        tirages = db.query(UtilisationTheme).filter(
+            UtilisationTheme.session_id == session_id,
+            UtilisationTheme.famille == session_obj.famille
+        ).all()
 
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="detail_theorie.html",
-        context={
-            "stagiaire": stagiaire,
-            "session_id": session_id,
-            "rt": rt,
-            "detail_themes": detail_themes,
-            "theme_noms": {
-                "1": "Connaissances generales",
-                "2": "Technologie et stabilite",
-                "3": "Exploitation",
-                "4": "Circulation",
-                "5": "Fin de poste"
+        detail_themes = {}
+        for ut in tirages:
+            questions = db.query(ReponseGrille).filter(
+                ReponseGrille.grille_id == ut.grille_id,
+                ReponseGrille.theme == ut.theme
+            ).order_by(ReponseGrille.numero_question).all()
+            t = str(ut.theme)
+            detail_themes[t] = []
+            for r in questions:
+                reponse_candidat = reponses_candidat.get(str(r.numero_question))
+                correcte = reponse_candidat is not None and reponse_candidat == r.reponse_correcte
+                detail_themes[t].append({
+                    "numero": r.numero_question,
+                    "texte": r.texte_question,
+                    "reponse_correcte": r.reponse_correcte,
+                    "reponse_candidat": reponse_candidat,
+                    "correcte": correcte,
+                    "points": r.points
+                })
+
+        return templates.TemplateResponse(
+            request=request,
+            name="detail_theorie.html",
+            context={
+                "stagiaire": stagiaire,
+                "session_id": session_id,
+                "rt": rt,
+                "detail_themes": detail_themes,
+                "theme_noms": {
+                    "1": "Connaissances generales",
+                    "2": "Technologie et stabilite",
+                    "3": "Exploitation",
+                    "4": "Circulation",
+                    "5": "Fin de poste"
+                }
             }
-        }
-    )
+        )
+    finally:
+        db.close()
 
 @app.get("/test/theorie/{session_id}/{jour_id}")
 def page_test_theorie(request: Request, session_id: int, jour_id: int):
     db = SessionLocal()
-    session = db.query(Session).filter(Session.id == session_id).first()
-    jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
-    if not session or not jour:
-        db.close()
-        return {"error": "Non trouve"}
-    grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first()
-    candidats_ids = [
-        jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
-            JourTestCandidat.jour_test_id == jour_id,
-            JourTestCandidat.actif == True
+    try:
+        session = db.query(Session).filter(Session.id == session_id).first()
+        jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
+        if not session or not jour:
+            return {"error": "Non trouve"}
+        grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first()
+        candidats_ids = [
+            jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
+                JourTestCandidat.jour_test_id == jour_id,
+                JourTestCandidat.actif == True
+            ).all()
+        ]
+        session_candidats = db.query(SessionCandidat).filter(
+            SessionCandidat.session_id == session_id,
+            SessionCandidat.stagiaire_id.in_(candidats_ids),
+            SessionCandidat.actif == True
         ).all()
-    ]
-    session_candidats = db.query(SessionCandidat).filter(
-        SessionCandidat.session_id == session_id,
-        SessionCandidat.stagiaire_id.in_(candidats_ids),
-        SessionCandidat.actif == True
-    ).all()
-    for sc in session_candidats:
-        sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="test_theorie.html",
-        context={
-            "session_id": session_id,
-            "jour_id": jour_id,
-            "grille_id": jour.grille_id,
-            "grille_numero": grille.numero if grille else "Phase 2",
-            "session_candidats": session_candidats
-        }
-    )
+        for sc in session_candidats:
+            sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
+        return templates.TemplateResponse(
+            request=request,
+            name="test_theorie.html",
+            context={
+                "session_id": session_id,
+                "jour_id": jour_id,
+                "grille_id": jour.grille_id,
+                "grille_numero": grille.numero if grille else "Phase 2",
+                "session_candidats": session_candidats
+            }
+        )
+    finally:
+        db.close()
 
 
 @app.get("/test/theorie/{jour_test_id}/{stagiaire_id}/start")
 def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: int):
     db = SessionLocal()
-    jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
-    if not jour:
-        db.close()
-        return {"error": "Non trouve"}
-    session = db.query(Session).filter(Session.id == jour.session_id).first()
-    grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first() if jour.grille_id else None
-    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
-    candidats_ids = [
-        jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
-            JourTestCandidat.jour_test_id == jour_test_id,
-            JourTestCandidat.actif == True
+    try:
+        jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
+        if not jour:
+            return {"error": "Non trouve"}
+        session = db.query(Session).filter(Session.id == jour.session_id).first()
+        grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first() if jour.grille_id else None
+        stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+        candidats_ids = [
+            jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
+                JourTestCandidat.jour_test_id == jour_test_id,
+                JourTestCandidat.actif == True
+            ).all()
+        ]
+        session_candidats = db.query(SessionCandidat).filter(
+            SessionCandidat.session_id == jour.session_id,
+            SessionCandidat.stagiaire_id.in_(candidats_ids),
+            SessionCandidat.actif == True
         ).all()
-    ]
-    session_candidats = db.query(SessionCandidat).filter(
-        SessionCandidat.session_id == jour.session_id,
-        SessionCandidat.stagiaire_id.in_(candidats_ids),
-        SessionCandidat.actif == True
-    ).all()
-    for sc in session_candidats:
-        sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
-    db.close()
-    return templates.TemplateResponse(
-        request=request,
-        name="test_theorie.html",
-        context={
-            "session_id": jour.session_id,
-            "jour_id": jour_test_id,
-            "grille_id": jour.grille_id,
-            "grille_numero": grille.numero if grille else "Phase 2",
-            "session_candidats": session_candidats,
-            "start_direct": True,
-            "start_stagiaire_id": stagiaire_id,
-            "start_nom": stagiaire.nom if stagiaire else "",
-            "start_prenom": stagiaire.prenom if stagiaire else "",
-            "start_ddn": stagiaire.date_naissance.isoformat() if stagiaire and stagiaire.date_naissance else "",
-        }
-    )
+        for sc in session_candidats:
+            sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
+        return templates.TemplateResponse(
+            request=request,
+            name="test_theorie.html",
+            context={
+                "session_id": jour.session_id,
+                "jour_id": jour_test_id,
+                "grille_id": jour.grille_id,
+                "grille_numero": grille.numero if grille else "Phase 2",
+                "session_candidats": session_candidats,
+                "start_direct": True,
+                "start_stagiaire_id": stagiaire_id,
+                "start_nom": stagiaire.nom if stagiaire else "",
+                "start_prenom": stagiaire.prenom if stagiaire else "",
+                "start_ddn": stagiaire.date_naissance.isoformat() if stagiaire and stagiaire.date_naissance else "",
+            }
+        )
+    finally:
+        db.close()
 
 
 @app.get("/non-conformites")
 def page_non_conformites(request: Request):
     import json
     db = SessionLocal()
-    nc_list = db.query(NonConformite).order_by(NonConformite.date.desc()).all()
-    utilisateurs_list = db.query(Utilisateur).all()
-    db.close()
-    utilisateurs_map = {u.id: u for u in utilisateurs_list}
-    nc_json = json.dumps([{
-        "id": nc.id,
-        "reference": nc.reference or "",
-        "date": nc.date.isoformat() if nc.date else "",
-        "declarant_id": nc.declarant_id,
-        "origine": nc.origine,
-        "type_nc": nc.type_nc,
-        "nature": nc.nature or "",
-        "titre": nc.titre,
-        "description": nc.description or "",
-        "action_preventive": nc.action_preventive or "",
-        "action_corrective": nc.action_corrective or "",
-        "justificatif_nom": nc.justificatif_nom or "",
-        "statut": nc.statut,
-        "date_cloture": nc.date_cloture.isoformat() if nc.date_cloture else "",
-    } for nc in nc_list])
-    return templates.TemplateResponse(
-        request=request,
-        name="non_conformites.html",
-        context={
-            "page": "non_conformites",
-            "non_conformites": nc_list,
-            "utilisateurs": utilisateurs_map,
-            "nc_json": nc_json,
-        }
-    )
+    try:
+        nc_list = db.query(NonConformite).order_by(NonConformite.date.desc()).all()
+        utilisateurs_list = db.query(Utilisateur).all()
+        utilisateurs_map = {u.id: u for u in utilisateurs_list}
+        nc_json = json.dumps([{
+            "id": nc.id,
+            "reference": nc.reference or "",
+            "date": nc.date.isoformat() if nc.date else "",
+            "declarant_id": nc.declarant_id,
+            "origine": nc.origine,
+            "type_nc": nc.type_nc,
+            "nature": nc.nature or "",
+            "titre": nc.titre,
+            "description": nc.description or "",
+            "action_preventive": nc.action_preventive or "",
+            "action_corrective": nc.action_corrective or "",
+            "justificatif_nom": nc.justificatif_nom or "",
+            "statut": nc.statut,
+            "date_cloture": nc.date_cloture.isoformat() if nc.date_cloture else "",
+        } for nc in nc_list])
+        return templates.TemplateResponse(
+            request=request,
+            name="non_conformites.html",
+            context={
+                "page": "non_conformites",
+                "non_conformites": nc_list,
+                "utilisateurs": utilisateurs_map,
+                "nc_json": nc_json,
+            }
+        )
+    finally:
+        db.close()
 
 @app.get("/caces-obtenus")
 def page_caces_obtenus(request: Request):
