@@ -51,6 +51,7 @@
             <div class="form-field">
                 <label>Role *</label>
                 <select id="user-role">
+                    <option value="terrain">Formateur / Testeur (terrain)</option>
                     <option value="testeur">Testeur</option>
                     <option value="formateur">Formateur</option>
                     <option value="admin">Administrateur</option>
@@ -117,9 +118,11 @@ async function chargerUsers() {
         <tr style="opacity:${u.actif ? '1' : '0.5'}">
             <td><strong>${u.nom} ${u.prenom}</strong></td>
             <td>${u.email}</td>
-            <td>${u.role === 'admin' 
-                ? '<span class="badge blue">Admin</span>' 
-                : '<span class="badge green">Testeur</span>'}</td>
+            <td>${u.role === 'admin'
+                ? '<span class="badge blue">Admin</span>'
+                : u.role === 'terrain'
+                    ? '<span class="badge orange">Terrain</span>'
+                    : '<span class="badge green">' + u.role.charAt(0).toUpperCase() + u.role.slice(1) + '</span>'}</td>
             <td>${u.actif 
                 ? '<span class="badge green">Actif</span>' 
                 : '<span class="badge red">Inactif</span>'}</td>
