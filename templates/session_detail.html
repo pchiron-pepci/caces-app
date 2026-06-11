@@ -587,7 +587,10 @@
                             {% endif %}
                         </div>
                     </td>
-                    <td><strong>{{ nddn(sc.stagiaire) }}</strong></td>
+                    <td>
+                        <a href="/stagiaires/{{ sc.stagiaire_id }}/consultation?session_id={{ session.id }}"
+                           style="color:inherit; font-weight:700; text-decoration:none;">{{ nddn(sc.stagiaire) }}</a>
+                    </td>
 
                     <td>{{ sc.stagiaire.date_naissance or '—' }}</td>
                     <td>{{ sc.stagiaire.employeur or '—' }}</td>

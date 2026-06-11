@@ -492,6 +492,9 @@ def _verifier_role(path: str, method: str, role: str):
             return False
         if method in ("PUT", "DELETE") and _re.match(r"^/api/testeurs/\d+$", base):
             return False
+        # Tout sous /stagiaires/ est interdit sauf /stagiaires/{id}/consultation
+        if base.startswith("/stagiaires/") and not _re.match(r"^/stagiaires/\d+/consultation$", base):
+            return False
     return True
 
 class AccessMiddleware(BaseHTTPMiddleware):
@@ -691,6 +694,57 @@ def page_stagiaires(request: Request):
         context={
             "page": "stagiaires",
             "stagiaires": liste
+        }
+    )
+
+@app.get("/stagiaires/{stagiaire_id}/consultation")
+def page_stagiaire_consultation(request: Request, stagiaire_id: int, session_id: int = None):
+    from datetime import date as _date
+    _u = getattr(request.state, "user", None)
+    db = SessionLocal()
+
+    stagiaire = db.query(Stagiaire).filter(
+        Stagiaire.id == stagiaire_id,
+        Stagiaire.actif == True
+    ).first()
+    if not stagiaire:
+        db.close()
+        raise HTTPException(status_code=404)
+
+    # Terrain : le stagiaire doit appartenir à au moins une session non clôturée
+    if _u and _u.role == "terrain":
+        accessible = db.query(SessionCandidat).join(
+            Session, Session.id == SessionCandidat.session_id
+        ).filter(
+            SessionCandidat.stagiaire_id == stagiaire_id,
+            SessionCandidat.actif == True,
+            Session.statut != "terminee"
+        ).first()
+        if not accessible:
+            db.close()
+            return _HTMLResponse(_403_HTML, status_code=403)
+
+    caces_valides = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == stagiaire_id,
+        CacesObtenu.statut == "valide"
+    ).order_by(CacesObtenu.famille, CacesObtenu.categorie).all()
+
+    consentement = db.query(ConsentementRGPD).filter(
+        ConsentementRGPD.stagiaire_id == stagiaire_id
+    ).order_by(ConsentementRGPD.id.desc()).first()
+
+    db.close()
+    return templates.TemplateResponse(
+        request=request,
+        name="stagiaire_consultation.html",
+        context={
+            "page": "sessions",
+            "stagiaire": stagiaire,
+            "caces_valides": caces_valides,
+            "consentement": consentement,
+            "session_id": session_id,
+            "user_role": _u.role if _u else None,
+            "today_date": _date.today(),
         }
     )
 
