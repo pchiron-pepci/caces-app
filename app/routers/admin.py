@@ -2,6 +2,8 @@ import base64
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.config_utils import get_pin_admin
+from app.routers.auth import get_utilisateur_courant
 from app.models.categorie import Categorie, Famille
 from app.models.habilitation_testeur import HabilitationTesteur
 from app.models.lieu import Lieu
@@ -112,8 +114,7 @@ def desactiver_habilitation(id: int, db: Session = Depends(get_db)):
 
 @router.delete("/habilitation/{id}")
 def delete_habilitation(id: int, pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     h = db.query(HabilitationTesteur).filter(HabilitationTesteur.id == id).first()
     if not h:
@@ -232,8 +233,7 @@ def get_config_organisme(db: Session = Depends(get_db)):
 
 @router.put("/config-organisme")
 def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.config_organisme import ConfigOrganisme
     config = db.query(ConfigOrganisme).first()
@@ -261,8 +261,7 @@ def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session =
 
 @router.post("/config-organisme/logo")
 async def upload_logo_organisme(pin: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
     if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
@@ -280,8 +279,7 @@ async def upload_logo_organisme(pin: str, file: UploadFile = File(...), db: Sess
 
 @router.delete("/config-organisme/logo")
 def supprimer_logo_organisme(pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.config_organisme import ConfigOrganisme
     config = db.query(ConfigOrganisme).first()
@@ -293,8 +291,7 @@ def supprimer_logo_organisme(pin: str, db: Session = Depends(get_db)):
 
 @router.post("/config-organisme/logo2")
 async def upload_logo2_organisme(pin: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
     if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
@@ -312,8 +309,7 @@ async def upload_logo2_organisme(pin: str, file: UploadFile = File(...), db: Ses
 
 @router.delete("/config-organisme/logo2")
 def supprimer_logo2_organisme(pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.config_organisme import ConfigOrganisme
     config = db.query(ConfigOrganisme).first()
@@ -325,8 +321,7 @@ def supprimer_logo2_organisme(pin: str, db: Session = Depends(get_db)):
 
 @router.post("/config-organisme/signature")
 async def upload_signature_organisme(pin: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
     if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
@@ -344,8 +339,7 @@ async def upload_signature_organisme(pin: str, file: UploadFile = File(...), db:
 
 @router.delete("/config-organisme/signature")
 def supprimer_signature_organisme(pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.config_organisme import ConfigOrganisme
     config = db.query(ConfigOrganisme).first()
@@ -364,6 +358,30 @@ def verifier_pin_formateur(data: dict, db: Session = Depends(get_db)):
     if data.get("pin") != pin_attendu:
         raise HTTPException(status_code=403, detail="PIN formateur incorrect")
     return {"ok": True}
+
+
+class PinAdminUpdate(BaseModel):
+    pin_actuel: str
+    nouveau_pin: str
+
+@router.put("/config-organisme/pin-admin")
+def update_pin_admin(data: PinAdminUpdate, db: Session = Depends(get_db),
+                     current_user=Depends(get_utilisateur_courant)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Réservé à l'administrateur")
+    if data.pin_actuel != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN actuel incorrect")
+    nouveau_pin = data.nouveau_pin.strip()
+    if not nouveau_pin or len(nouveau_pin) < 4:
+        raise HTTPException(status_code=400, detail="Le nouveau PIN doit contenir au moins 4 caractères")
+    from app.models.config_organisme import ConfigOrganisme
+    config = db.query(ConfigOrganisme).first()
+    if not config:
+        config = ConfigOrganisme()
+        db.add(config)
+    config.pin_admin = nouveau_pin
+    db.commit()
+    return {"message": "PIN admin mis à jour"}
 
 # --- Options catégories ---
 
@@ -387,8 +405,7 @@ def get_options_habilitation(hab_id: int, db: Session = Depends(get_db)):
 
 @router.put("/habilitation/{hab_id}/options")
 def update_options_habilitation(hab_id: int, pin: str, data: OptionsUpdate, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.habilitation_option import HabilitationOption
     db.query(HabilitationOption).filter(HabilitationOption.habilitation_id == hab_id).delete()

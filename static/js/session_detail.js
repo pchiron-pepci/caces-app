@@ -455,7 +455,7 @@ function reouvrirsession() {
         const pin = document.getElementById('pin-input').value;
         if (pin !== '1505') { document.getElementById('pin-error').style.display = 'block'; return; }
         fermerPin();
-        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/reouvrir', { method: 'POST' });
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/reouvrir?pin=' + pin, { method: 'POST' });
         if (resp.ok) location.reload(); else alert('Erreur !');
     };
 }

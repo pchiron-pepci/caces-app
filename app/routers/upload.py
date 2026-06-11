@@ -6,8 +6,16 @@ import cloudinary.api
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import Response
 from app.database import SessionLocal
+from app.config_utils import get_pin_admin as _gpa
 
 router = APIRouter(prefix="/api/upload", tags=["Upload"])
+
+def _get_pin_admin() -> str:
+    db = SessionLocal()
+    try:
+        return _gpa(db)
+    finally:
+        db.close()
 
 UPLOAD_DIR = "uploads/questions"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -47,8 +55,7 @@ async def upload_question_images(files: list[UploadFile] = File(...)):
 
 @router.post("/associer-images")
 async def associer_images(pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     configurer_cloudinary()
     from app.models.grille_theorie import ReponseGrille, GrilleTheorie
@@ -130,8 +137,7 @@ def derniere_association():
 
 @router.delete("/supprimer-image")
 async def supprimer_image(filename: str, pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     configurer_cloudinary()
     try:
@@ -168,8 +174,7 @@ def get_documents_officiels():
 
 @router.put("/document-officiel/{type}/numero")
 def enregistrer_numero_certificat(type: str, pin: str, numero_certificat: str = None):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if type != "certificat_organisme":
         raise HTTPException(status_code=400, detail="Numéro applicable au certificat organisme uniquement")
@@ -188,8 +193,7 @@ def enregistrer_numero_certificat(type: str, pin: str, numero_certificat: str = 
 
 @router.post("/document-officiel")
 async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(...), date_validite: str = None, numero_certificat: str = None):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     TYPES_VALIDES = ["certificat_organisme", "attestation_assurance", "procedure_interne"]
     if type not in TYPES_VALIDES:
@@ -248,8 +252,7 @@ def telecharger_document_officiel(type: str):
 
 @router.delete("/document-officiel/{type}")
 def supprimer_document_officiel(type: str, pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     TYPES_VALIDES = ["certificat_organisme", "attestation_assurance", "procedure_interne"]
     if type not in TYPES_VALIDES:
@@ -272,8 +275,7 @@ def supprimer_document_officiel(type: str, pin: str):
 
 @router.post("/carte-testeur/{testeur_id}")
 async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = File(...)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
@@ -314,8 +316,7 @@ def telecharger_carte_testeur(testeur_id: int):
 
 @router.delete("/carte-testeur/{testeur_id}")
 def supprimer_carte_testeur(testeur_id: int, pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.testeur import Testeur
     db = SessionLocal()
@@ -354,8 +355,7 @@ def liste_cartes_testeur(testeur_id: int):
 
 @router.post("/cartes-testeur/{testeur_id}")
 async def upload_nouvelle_carte_testeur(testeur_id: int, pin: str, famille: str, file: UploadFile = File(...)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if famille not in FAMILLES_VALIDES:
         raise HTTPException(status_code=400, detail="Famille invalide")
@@ -403,8 +403,7 @@ def telecharger_carte(carte_id: int):
 
 @router.delete("/carte/{carte_id}")
 def supprimer_carte(carte_id: int, pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.carte_testeur import CarteTesteur
     db = SessionLocal()
@@ -422,8 +421,7 @@ def supprimer_carte(carte_id: int, pin: str):
 
 @router.post("/attestation-prevention/{testeur_id}")
 async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestation: str = None, file: UploadFile = File(...)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
@@ -470,8 +468,7 @@ def telecharger_attestation_prevention(testeur_id: int):
 
 @router.delete("/attestation-prevention/{testeur_id}")
 def supprimer_attestation_prevention(testeur_id: int, pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.testeur import Testeur
     db = SessionLocal()
@@ -491,8 +488,7 @@ def supprimer_attestation_prevention(testeur_id: int, pin: str):
 
 @router.post("/visite-medicale/{testeur_id}")
 async def upload_visite_medicale(testeur_id: int, pin: str, date_visite: str = None, file: UploadFile = File(...)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
@@ -536,8 +532,7 @@ def telecharger_visite_medicale(testeur_id: int):
 
 @router.delete("/visite-medicale/{testeur_id}")
 def supprimer_visite_medicale(testeur_id: int, pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.testeur import Testeur
     db = SessionLocal()
@@ -556,8 +551,7 @@ def supprimer_visite_medicale(testeur_id: int, pin: str):
 
 @router.post("/evaluation/{testeur_id}")
 async def upload_evaluation(testeur_id: int, pin: str, date_evaluation: str = None, file: UploadFile = File(...)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
@@ -601,8 +595,7 @@ def telecharger_evaluation(testeur_id: int):
 
 @router.delete("/evaluation/{testeur_id}")
 def supprimer_evaluation(testeur_id: int, pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.testeur import Testeur
     db = SessionLocal()
@@ -622,8 +615,7 @@ def supprimer_evaluation(testeur_id: int, pin: str):
 
 @router.post("/autorisation-conduite/{testeur_id}")
 async def upload_autorisation_conduite(testeur_id: int, pin: str, file: UploadFile = File(...)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
@@ -661,8 +653,7 @@ def telecharger_autorisation_conduite(testeur_id: int):
 
 @router.delete("/autorisation-conduite/{testeur_id}")
 def supprimer_autorisation_conduite(testeur_id: int, pin: str):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     from app.models.testeur import Testeur
     db = SessionLocal()

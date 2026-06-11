@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.config_utils import get_pin_admin
 from app.models.non_conformite import NonConformite
 from pydantic import BaseModel
 from datetime import date
@@ -90,8 +91,7 @@ def update_nc(id: int, data: NonConformiteUpdate, db: Session = Depends(get_db))
 
 @router.patch("/{id}/cloturer")
 def cloturer_nc(id: int, pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     nc = db.query(NonConformite).filter(NonConformite.id == id).first()
     if not nc:
@@ -104,8 +104,7 @@ def cloturer_nc(id: int, pin: str, db: Session = Depends(get_db)):
 
 @router.patch("/{id}/rouvrir")
 def rouvrir_nc(id: int, pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     nc = db.query(NonConformite).filter(NonConformite.id == id).first()
     if not nc:
@@ -118,8 +117,7 @@ def rouvrir_nc(id: int, pin: str, db: Session = Depends(get_db)):
 
 @router.patch("/{id}/sans-objet")
 def sans_objet_nc(id: int, pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     nc = db.query(NonConformite).filter(NonConformite.id == id).first()
     if not nc:

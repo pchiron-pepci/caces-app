@@ -11,10 +11,9 @@ from app.models.session import Session as SessionModel
 from app.models.session_epreuve import SessionEpreuve
 from app.models.jour_test import JourTest, ResultatTheorie
 from app.services.caces_obtenus import calculer_et_synchroniser
+from app.config_utils import get_pin_admin
 
 router = APIRouter(prefix="/api/caces-obtenus", tags=["CACES® Obtenus"])
-
-PIN_ADMIN = "1505"
 
 
 class AnnulerData(BaseModel):
@@ -234,7 +233,7 @@ def get_valides(db: DBSession = Depends(get_db)):
 
 @router.post("/valider/{caces_id}")
 def valider_caces(caces_id: int, pin: str = "", db: DBSession = Depends(get_db)):
-    if pin != PIN_ADMIN:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN incorrect")
     co = db.query(CacesObtenu).filter(CacesObtenu.id == caces_id).first()
     if not co:
@@ -255,7 +254,7 @@ def valider_caces(caces_id: int, pin: str = "", db: DBSession = Depends(get_db))
 
 @router.post("/annuler/{caces_id}")
 def annuler_caces(caces_id: int, pin: str = "", data: Optional[AnnulerData] = Body(default=None), db: DBSession = Depends(get_db)):
-    if pin != PIN_ADMIN:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN incorrect")
     co = db.query(CacesObtenu).filter(CacesObtenu.id == caces_id).first()
     if not co:
@@ -310,7 +309,7 @@ def annuler_caces(caces_id: int, pin: str = "", data: Optional[AnnulerData] = Bo
 
 @router.patch("/{caces_id}/motif")
 def update_motif(caces_id: int, data: MotifUpdate, pin: str = "", db: DBSession = Depends(get_db)):
-    if pin != PIN_ADMIN:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN incorrect")
     co = db.query(CacesObtenu).filter(CacesObtenu.id == caces_id).first()
     if not co:

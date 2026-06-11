@@ -11,6 +11,7 @@ class ConfigOrganisme(Base):
     audit_externe_date = Column(Date, nullable=True)
     revue_direction_date = Column(Date, nullable=True)
     pin_formateur = Column(String(20), nullable=True)
+    pin_admin = Column(String(20), nullable=True)
     prochain_numero_caces = Column(Integer, nullable=True)
     adresse = Column(Text, nullable=True)
     siret = Column(String(20), nullable=True)

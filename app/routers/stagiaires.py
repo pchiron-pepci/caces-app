@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.config_utils import get_pin_admin
 from app.models.stagiaire import Stagiaire
 from pydantic import BaseModel
 from datetime import date
@@ -123,8 +124,7 @@ def supprimer_photo(id: int, db: Session = Depends(get_db)):
 
 @router.delete("/{id}")
 def delete_stagiaire(id: int, pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Stagiaire).filter(Stagiaire.id == id).first()
     if not s:

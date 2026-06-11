@@ -18,6 +18,9 @@ from app.services.tirage_grille import (
     tirage_to_json
 )
 from app.services.caces_obtenus import calculer_et_synchroniser
+from app.models.utilisateur import Utilisateur
+from app.routers.auth import get_utilisateur_courant
+from app.config_utils import get_pin_admin
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional, List, Dict
@@ -110,6 +113,11 @@ class EpreuveCreate(BaseModel):
     note_testeur: Optional[str] = None
     options_obtenues: Optional[str] = None
 
+def _check_modifiable(session: Session):
+    if session and session.statut in ("terminee", "annulee"):
+        raise HTTPException(status_code=409, detail="Session verrouillée — réouvrez-la d'abord")
+
+
 @router.get("/", response_model=list[SessionResponse])
 def liste_sessions(db: DBSession = Depends(get_db)):
     return db.query(Session).order_by(Session.id.desc()).all()
@@ -129,7 +137,7 @@ def create_session(data: SessionCreate, db: DBSession = Depends(get_db)):
 
 @router.delete("/{id}")
 def delete_session(id: int, pin: str, db: DBSession = Depends(get_db)):
-    if pin != "1505":
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
@@ -175,6 +183,7 @@ def cloturer_session(id: int, db: DBSession = Depends(get_db)):
 # CANDIDATS
 @router.post("/{session_id}/candidats")
 def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     existing = db.query(SessionCandidat).filter(
         SessionCandidat.session_id == session_id,
         SessionCandidat.stagiaire_id == data.stagiaire_id,
@@ -190,6 +199,7 @@ def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = D
 
 @router.put("/{session_id}/candidats/{id}")
 def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     sc = db.query(SessionCandidat).filter(SessionCandidat.id == id).first()
     if not sc:
         raise HTTPException(status_code=404, detail="Candidat non trouve")
@@ -199,7 +209,8 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
 
 @router.delete("/{session_id}/candidats/{id}")
 def remove_candidat(session_id: int, id: int, pin: str = "", db: DBSession = Depends(get_db)):
-    if pin != "1505":
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN invalide")
     sc = db.query(SessionCandidat).filter(SessionCandidat.id == id).first()
     if not sc:
@@ -222,6 +233,7 @@ def remove_candidat(session_id: int, id: int, pin: str = "", db: DBSession = Dep
 # EQUIPEMENTS
 @router.post("/{session_id}/equipements")
 def add_equipement(session_id: int, data: EquipementCreate, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     e = Equipement(**data.model_dump())
     db.add(e)
     db.commit()
@@ -230,6 +242,7 @@ def add_equipement(session_id: int, data: EquipementCreate, db: DBSession = Depe
 
 @router.put("/{session_id}/equipements/{id}")
 def update_equipement(session_id: int, id: int, data: EquipementCreate, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     e = db.query(Equipement).filter(Equipement.id == id).first()
     if not e:
         raise HTTPException(status_code=404, detail="Equipement non trouve")
@@ -244,6 +257,7 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session non trouvee")
+    _check_modifiable(session)
 
     tirage_json = None
     if data.type == "theorie":
@@ -309,6 +323,7 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
 
 @router.post("/{session_id}/jours/{jour_id}/candidats")
 def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
 
     if jour and jour.type == "pratique":
@@ -356,6 +371,7 @@ def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, 
 
 @router.delete("/{session_id}/jours/{id}")
 def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     j = db.query(JourTest).filter(JourTest.id == id).first()
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouve")
@@ -431,6 +447,7 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session non trouvee")
+    _check_modifiable(session)
     jour = db.query(JourTest).filter(JourTest.id == data.jour_test_id).first()
     if not jour:
         raise HTTPException(status_code=404, detail="Jour non trouve")
@@ -485,6 +502,7 @@ def get_grille_jour(session_id: int, jour_id: int, db: DBSession = Depends(get_d
 # EPREUVES PRATIQUES
 @router.post("/{session_id}/epreuves")
 def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     famille = db.query(Famille).filter(Famille.code == data.famille).first()
     cat = db.query(Categorie).filter(
         Categorie.famille_id == (famille.id if famille else 0),
@@ -538,7 +556,8 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
 
 @router.delete("/{session_id}/epreuves/{epreuve_id}")
 def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSession = Depends(get_db)):
-    if pin != "1505":
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN invalide")
     e = db.query(SessionEpreuve).filter(
         SessionEpreuve.id == epreuve_id,
@@ -551,7 +570,12 @@ def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSessio
     return {"message": "Epreuve supprimee"}
 
 @router.post("/{id}/reouvrir")
-def reouvrir_session(id: int, db: DBSession = Depends(get_db)):
+def reouvrir_session(id: int, pin: str = "", db: DBSession = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Réservé à l'administrateur")
+    if pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
@@ -561,6 +585,7 @@ def reouvrir_session(id: int, db: DBSession = Depends(get_db)):
 
 @router.put("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/identite")
 def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     jtc = db.query(JourTestCandidat).filter(
         JourTestCandidat.jour_test_id == jour_id,
         JourTestCandidat.stagiaire_id == stagiaire_id
@@ -576,6 +601,7 @@ def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
+    _check_modifiable(s)
     s.date_theorie = data.date_theorie
     s.date_pratique_debut = data.date_pratique_debut
     s.date_pratique_fin = data.date_pratique_fin
@@ -586,6 +612,7 @@ def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)
 
 @router.put("/{session_id}/jours/{jour_id}/modifier")
 def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     from datetime import date as date_type
     j = db.query(JourTest).filter(JourTest.id == jour_id).first()
     if not j:
@@ -599,6 +626,7 @@ def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSess
 
 @router.patch("/{session_id}/jours/{jour_id}/testeurs-sup")
 def update_testeurs_sup(session_id: int, jour_id: int, data: TesteurSupData, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     j = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouvé")
@@ -616,6 +644,7 @@ def check_resultat_theorie_candidat(session_id: int, jour_id: int, stagiaire_id:
 
 @router.delete("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}")
 def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, pin: str = "", db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     jtc = db.query(JourTestCandidat).filter(
         JourTestCandidat.jour_test_id == jour_id,
         JourTestCandidat.stagiaire_id == stagiaire_id
@@ -642,7 +671,7 @@ def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, pin: 
         ResultatTheorie.stagiaire_id == stagiaire_id
     ).first()
     if resultat_theorie:
-        if pin != "1505":
+        if pin != get_pin_admin(db):
             raise HTTPException(status_code=403, detail="Code PIN incorrect")
         db.query(ResultatTheorie).filter(
             ResultatTheorie.jour_test_id == jour_id,

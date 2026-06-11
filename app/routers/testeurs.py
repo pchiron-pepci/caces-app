@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.config_utils import get_pin_admin
 from app.models.testeur import Testeur
 from app.models.habilitation_testeur import HabilitationTesteur
 from pydantic import BaseModel
@@ -92,7 +93,7 @@ def update_testeur(id: int, data: TesteurCreate, db: Session = Depends(get_db)):
 
 @router.put("/{id}/etat")
 def update_etat_testeur(id: int, pin: str, etat: str, db: Session = Depends(get_db)):
-    if pin != "1505":
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if etat not in ("actif", "suspendu", "sorti"):
         raise HTTPException(status_code=400, detail="État invalide")
@@ -105,8 +106,7 @@ def update_etat_testeur(id: int, pin: str, etat: str, db: Session = Depends(get_
 
 @router.delete("/{id}")
 def delete_testeur(id: int, pin: str, db: Session = Depends(get_db)):
-    PIN_SECRET = "1505"
-    if pin != PIN_SECRET:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     t = db.query(Testeur).filter(Testeur.id == id).first()
     if not t:

@@ -16,10 +16,9 @@ from app.models.testeur import Testeur
 from app.models.config_organisme import ConfigOrganisme
 from app.models.categorie import Categorie, Famille
 from app.models.document_officiel import DocumentOfficiel
+from app.config_utils import get_pin_admin
 
 router = APIRouter(prefix="/api/cartes-caces", tags=["Cartes CACES®"])
-
-PIN_ADMIN = "1505"
 
 
 class AnnulerData(BaseModel):
@@ -364,7 +363,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
 
 @router.post("/emettre/{stagiaire_id}/{famille}")
 def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession = Depends(get_db)):
-    if pin != PIN_ADMIN:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN incorrect")
     s = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
     if not s:
@@ -778,7 +777,7 @@ def telecharger_pdf(carte_id: int, db: DBSession = Depends(get_db)):
 
 @router.post("/annuler/{carte_id}")
 def annuler_carte(carte_id: int, pin: str = "", data: Optional[AnnulerData] = Body(default=None), db: DBSession = Depends(get_db)):
-    if pin != PIN_ADMIN:
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN incorrect")
     carte = db.query(CarteCaces).filter(CarteCaces.id == carte_id).first()
     if not carte:
