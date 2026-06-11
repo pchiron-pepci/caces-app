@@ -105,11 +105,20 @@
     // Gestion des droits par role
 const role = localStorage.getItem('role');
 if (role !== 'admin') {
-    // Masquer le lien Administration
     document.querySelectorAll('.nav-item').forEach(link => {
         if (link.href && link.href.includes('/admin')) {
             link.style.display = 'none';
         }
+    });
+}
+if (role === 'terrain') {
+    // terrain ne voit que Sessions et Testeurs
+    const cachePrefixes = ['/', '/stagiaires', '/caces-obtenus', '/cartes-caces', '/non-conformites', '/statistiques'];
+    document.querySelectorAll('.nav-item').forEach(link => {
+        try {
+            const p = new URL(link.href).pathname;
+            if (cachePrefixes.includes(p)) link.style.display = 'none';
+        } catch(e) {}
     });
 }
     if (nomUser) {
@@ -118,7 +127,8 @@ if (role !== 'admin') {
     }
 
     // Deconnexion
-    function seDeconnecter() {
+    async function seDeconnecter() {
+        await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         localStorage.removeItem('nom');

@@ -154,7 +154,7 @@ async function seConnecter() {
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('role', data.role);
         localStorage.setItem('nom', data.nom);
-        window.location.href = '/';
+        window.location.href = data.role === 'terrain' ? '/sessions' : '/';
     } else {
         document.getElementById('error-msg').style.display = 'block';
         document.getElementById('error-msg').textContent = 'Email ou mot de passe incorrect';

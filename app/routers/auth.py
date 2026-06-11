@@ -1,4 +1,6 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
@@ -8,6 +10,8 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from pydantic import BaseModel, validator
 from typing import Optional
+
+RENDER_ENV = os.getenv("RENDER") is not None
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -54,7 +58,7 @@ def get_utilisateur_courant(token: str = Depends(oauth2_scheme), db: DBSession =
         raise credentials_exception
     return user
 
-@router.post("/token", response_model=Token)
+@router.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: DBSession = Depends(get_db)):
     user = db.query(Utilisateur).filter(Utilisateur.email == form_data.username).first()
     if not user or not verifier_mot_de_passe(form_data.password, user.mot_de_passe):
@@ -66,12 +70,28 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: DBSession = Depe
         data={"sub": user.email},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    return {
+    resp = JSONResponse({
         "access_token": token,
         "token_type": "bearer",
         "role": user.role,
         "nom": f"{user.prenom} {user.nom}"
-    }
+    })
+    resp.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=RENDER_ENV,
+        samesite="lax",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/"
+    )
+    return resp
+
+@router.post("/logout")
+def logout():
+    resp = JSONResponse({"message": "Déconnecté"})
+    resp.delete_cookie(key="access_token", path="/", samesite="lax")
+    return resp
 
 @router.get("/me")
 def get_me(current_user: Utilisateur = Depends(get_utilisateur_courant)):

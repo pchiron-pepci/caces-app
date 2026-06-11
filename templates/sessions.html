@@ -8,7 +8,9 @@
         <input type="text" id="search" placeholder="🔍 Rechercher une session..." class="search-input" onkeyup="filtrer()">
     </div>
     <div class="toolbar-right">
+        {% if user_role != 'terrain' %}
         <button class="btn btn-primary" onclick="ouvrirFormulaire()">➕ Nouvelle session</button>
+        {% endif %}
     </div>
 </div>
 
@@ -21,7 +23,7 @@
                 <th data-sort-col="2" style="cursor:pointer; user-select:none;">Lieu <span id="arrow-col-2" class="sort-arrow-col"></span></th>
                 <th data-sort-col="3" style="cursor:pointer; user-select:none;">Période <span id="arrow-col-3" class="sort-arrow-col"></span></th>
                 <th data-sort-col="4" style="cursor:pointer; user-select:none;">Statut <span id="arrow-col-4" class="sort-arrow-col"></span></th>
-                <th>Suppression</th>
+                {% if user_role != 'terrain' %}<th>Suppression</th>{% endif %}
             </tr>
         </thead>
         <tbody id="tbody">
@@ -44,10 +46,12 @@
                     {% elif s.statut == 'terminee' %}<span class="badge green">Terminee</span>
                     {% else %}<span class="badge red">Annulee</span>{% endif %}
                 </td>
+                {% if user_role != 'terrain' %}
                 <td>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                         onclick="annuler({{ s.id }}, '{{ s.reference or s.famille }}')">🗑️</button>
                 </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>

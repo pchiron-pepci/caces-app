@@ -1,10 +1,15 @@
 import math
 import json
+import re as _re
+import os as _os
 from fastapi import FastAPI, Request, Depends
+from fastapi.responses import HTMLResponse as _HTMLResponse, JSONResponse as _JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
+from starlette.responses import RedirectResponse as _RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from jose import JWTError as _JWTError, jwt as _jwt
 from app.database import engine, Base, SessionLocal, get_db
 from sqlalchemy.orm import Session as DBSession
 
@@ -411,6 +416,138 @@ class CSPMiddleware(BaseHTTPMiddleware):
         response.headers["Content-Security-Policy"] = "default-src *; img-src * data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';"
         return response
 
+# ── Contrôle d'accès ─────────────────────────────────────────────────────────
+
+_SECRET_KEY = "pepci_caces_2025_secret"
+_ALGORITHM = "HS256"
+
+_PUBLIC_PREFIXES = (
+    "/static/",
+    "/uploads/",
+    "/login",
+    "/verifier/",
+    "/test/theorie/",
+    "/consentement/",
+    "/neutralite/",
+)
+_PUBLIC_EXACT = {"/api/auth/token", "/api/auth/logout", "/health"}
+_PUBLIC_PATTERNS = [
+    _re.compile(r"^/api/sessions/\d+/jours/\d+/grille$"),
+    _re.compile(r"^/api/sessions/\d+/theorie/reponses$"),
+    _re.compile(r"^/admin/config/verifier-pin-formateur$"),
+    _re.compile(r"^/api/consentements/"),
+    _re.compile(r"^/api/neutralite/"),
+]
+
+_GESTION_PATHS = frozenset({
+    "/stagiaires", "/caces-obtenus", "/cartes-caces",
+    "/non-conformites", "/statistiques",
+})
+
+_403_HTML = (
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Accès refusé</title></head>'
+    '<body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;'
+    'min-height:100vh;margin:0;background:#f5f6fa;">'
+    '<div style="text-align:center;background:white;padding:40px;border-radius:16px;'
+    'box-shadow:0 2px 12px rgba(0,0,0,.1);">'
+    '<div style="font-size:48px;margin-bottom:16px;">🚫</div>'
+    '<h2 style="color:#c62828;margin-bottom:8px;">Accès refusé</h2>'
+    '<p style="color:#666;margin-bottom:24px;">Vous n\'avez pas les droits pour accéder à cette page.</p>'
+    '<a href="javascript:history.back()" style="background:#1a237e;color:white;padding:12px 24px;'
+    'border-radius:10px;text-decoration:none;font-weight:700;">← Retour</a>'
+    '</div></body></html>'
+)
+
+def _est_public(path: str) -> bool:
+    if any(path.startswith(p) for p in _PUBLIC_PREFIXES):
+        return True
+    if path in _PUBLIC_EXACT:
+        return True
+    return any(p.match(path) for p in _PUBLIC_PATTERNS)
+
+def _est_api(path: str) -> bool:
+    return path.startswith("/api/") or (
+        path.startswith("/admin/") and not path.startswith("/admin/config/verifier-pin-formateur")
+    )
+
+def _verifier_role(path: str, method: str, role: str):
+    """Retourne True (ok), False (403), ou une URL de redirect."""
+    # /admin* → admin uniquement
+    if path.startswith("/admin"):
+        return role == "admin"
+    # Dashboard → terrain redirigé vers /sessions
+    if path == "/" and role == "terrain":
+        return "/sessions"
+    # Pages de gestion → admin + utilisateur seulement
+    if path in _GESTION_PATHS or path.startswith("/statistiques") or path.startswith("/api/statistiques"):
+        return role in ("admin", "utilisateur")
+    # Actions interdites au terrain
+    if role == "terrain":
+        base = path.rstrip("/")
+        if method == "POST" and base == "/api/sessions":
+            return False
+        if method == "DELETE" and _re.match(r"^/api/sessions/\d+$", base):
+            return False
+        if method in ("PUT", "DELETE") and _re.match(r"^/api/testeurs/\d+$", base):
+            return False
+    return True
+
+class AccessMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        path = request.url.path
+        method = request.method
+
+        if method == "OPTIONS" or _est_public(path):
+            return await call_next(request)
+
+        # Extraction token : header (fetch) puis cookie (navigation)
+        token = None
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            token = auth[7:]
+        if not token:
+            token = request.cookies.get("access_token")
+
+        if not token:
+            if _est_api(path):
+                return _JSONResponse({"detail": "Non authentifié"}, status_code=401)
+            return _RedirectResponse(url="/login", status_code=302)
+
+        try:
+            payload = _jwt.decode(token, _SECRET_KEY, algorithms=[_ALGORITHM])
+            email = payload.get("sub")
+            if not email:
+                raise _JWTError()
+        except _JWTError:
+            if _est_api(path):
+                return _JSONResponse({"detail": "Token invalide"}, status_code=401)
+            return _RedirectResponse(url="/login", status_code=302)
+
+        db = SessionLocal()
+        try:
+            user = db.query(Utilisateur).filter(
+                Utilisateur.email == email,
+                Utilisateur.actif == True
+            ).first()
+        finally:
+            db.close()
+
+        if not user:
+            if _est_api(path):
+                return _JSONResponse({"detail": "Non authentifié"}, status_code=401)
+            return _RedirectResponse(url="/login", status_code=302)
+
+        verdict = _verifier_role(path, method, user.role)
+        if isinstance(verdict, str):
+            return _RedirectResponse(url=verdict, status_code=302)
+        if verdict is False:
+            if _est_api(path):
+                return _JSONResponse({"detail": "Accès refusé"}, status_code=403)
+            return _HTMLResponse(content=_403_HTML, status_code=403)
+
+        request.state.user = user
+        return await call_next(request)
+
 app.add_middleware(CSPMiddleware)
 
 app.add_middleware(
@@ -420,6 +557,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AccessMiddleware)
 
 app.include_router(stagiaires.router)
 app.include_router(testeurs.router)
@@ -558,7 +696,15 @@ def page_stagiaires(request: Request):
 def page_testeurs(request: Request):
     from datetime import date
     db = SessionLocal()
-    liste = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
+    _u = getattr(request.state, "user", None)
+    _user_role = _u.role if _u else None
+    if _user_role == "terrain" and _u:
+        liste = db.query(Testeur).filter(
+            Testeur.actif == True,
+            Testeur.utilisateur_id == _u.id
+        ).order_by(Testeur.nom, Testeur.prenom).all()
+    else:
+        liste = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
     for t in liste:
         t.habilitations = db.query(HabilitationTesteur).filter(
             HabilitationTesteur.testeur_id == t.id,
@@ -581,6 +727,8 @@ def page_testeurs(request: Request):
             "testeurs": liste,
             "today": date.today(),
             "utilisateurs_terrain": utilisateurs_terrain,
+            "user_role": _user_role,
+            "terrain_sans_fiche": (_user_role == "terrain" and len(liste) == 0),
         }
     )
 
@@ -662,6 +810,7 @@ def page_sessions(request: Request):
     familles = db.query(Famille).filter(Famille.actif == True).all()
     testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
     db.close()
+    _u = getattr(request.state, "user", None)
     return templates.TemplateResponse(
         request=request,
         name="sessions.html",
@@ -670,7 +819,8 @@ def page_sessions(request: Request):
             "sessions": liste,
             "lieux": lieux,
             "familles": familles,
-            "testeurs": testeurs_list
+            "testeurs": testeurs_list,
+            "user_role": _u.role if _u else None,
         }
     )
 

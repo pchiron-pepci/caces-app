@@ -8,11 +8,18 @@
         <input type="text" id="search" value="" placeholder="🔍 Rechercher un testeur..." class="search-input" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore>
     </div>
     <div class="toolbar-right">
+        {% if user_role != 'terrain' %}
         <button class="btn btn-primary" id="btn-nouveau-testeur">➕ Nouveau testeur</button>
+        {% endif %}
     </div>
 </div>
 
 <div id="cards-container" style="margin-top:20px; display:flex; flex-direction:column; gap:12px;">
+    {% if terrain_sans_fiche %}
+    <div class="card" style="padding:24px; text-align:center; color:#888;">
+        Aucune fiche testeur n'est associée à votre compte.
+    </div>
+    {% endif %}
     {% for t in testeurs %}
     <div class="card testeur-card" id="testeur-{{ t.id }}" style="padding:0;">
         <!-- En-tête -->
@@ -49,10 +56,13 @@
                 {% if t.date_prochain_controle %}
                     <span style="font-size:12px;color:#555;">Prochain contrôle : {{ t.date_prochain_controle.strftime('%d/%m/%Y') }}</span>
                 {% endif %}
+                {% if user_role != 'terrain' %}
                 <button data-action="controle-editer" data-id="{{ t.id }}" data-controle="{{ t.date_prochain_controle or '' }}"
                     style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:#888;" title="Modifier prochain contrôle">✏️</button>
+                {% endif %}
             </div>
             <div style="display:flex; gap:6px; flex-shrink:0;">
+                {% if user_role != 'terrain' %}
                 <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                     data-action="editer"
                     data-id="{{ t.id }}"
@@ -85,6 +95,7 @@
                     data-action="archiver"
                     data-id="{{ t.id }}"
                     data-nom="{{ t.nom }} {{ t.prenom }}">🗑️</button>
+                {% endif %}
             </div>
         </div>
         <!-- Corps : 4 colonnes -->
