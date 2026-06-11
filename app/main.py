@@ -733,6 +733,33 @@ def page_stagiaire_consultation(request: Request, stagiaire_id: int, session_id:
         ConsentementRGPD.stagiaire_id == stagiaire_id
     ).order_by(ConsentementRGPD.id.desc()).first()
 
+    # Historique sessions : calcul serveur (terrain ne peut pas appeler l'API /historique)
+    candidatures = db.query(SessionCandidat).filter(
+        SessionCandidat.stagiaire_id == stagiaire_id,
+        SessionCandidat.actif == True
+    ).all()
+    historique = []
+    for sc in candidatures:
+        sess = db.query(Session).filter(Session.id == sc.session_id).first()
+        if not sess:
+            continue
+        rt = db.query(ResultatTheorie).filter(
+            ResultatTheorie.session_id == sc.session_id,
+            ResultatTheorie.stagiaire_id == stagiaire_id,
+            ResultatTheorie.obtenue == True
+        ).order_by(ResultatTheorie.id.asc()).first()
+        if not rt:
+            rt = db.query(ResultatTheorie).filter(
+                ResultatTheorie.session_id == sc.session_id,
+                ResultatTheorie.stagiaire_id == stagiaire_id
+            ).order_by(ResultatTheorie.id.desc()).first()
+        epreuves = db.query(SessionEpreuve).filter(
+            SessionEpreuve.session_id == sc.session_id,
+            SessionEpreuve.stagiaire_id == stagiaire_id
+        ).order_by(SessionEpreuve.categorie).all()
+        historique.append({"session": sess, "theorie": rt, "epreuves": epreuves})
+    historique.sort(key=lambda x: x["session"].id, reverse=True)
+
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -742,6 +769,7 @@ def page_stagiaire_consultation(request: Request, stagiaire_id: int, session_id:
             "stagiaire": stagiaire,
             "caces_valides": caces_valides,
             "consentement": consentement,
+            "historique": historique,
             "session_id": session_id,
             "user_role": _u.role if _u else None,
             "today_date": _date.today(),

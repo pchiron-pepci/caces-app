@@ -140,4 +140,72 @@
     <div style="padding:24px; text-align:center; color:#888;">Aucun CACES® validé.</div>
     {% endif %}
 </div>
+
+<!-- Historique des sessions -->
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
+        <h2>Historique des sessions</h2>
+    </div>
+    {% if historique %}
+    <style>
+        .hist-details summary { list-style:none; }
+        .hist-details summary::-webkit-details-marker { display:none; }
+        .hist-details[open] .hist-arrow { transform:rotate(90deg); }
+        .hist-arrow { display:inline-block; transition:transform .15s; font-size:11px; color:#999; }
+    </style>
+    <div style="padding:4px 16px 8px;">
+        {% for h in historique %}
+        <details class="hist-details" style="border-bottom:1px solid #f0f2f7;">
+            <summary style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:10px 0; user-select:none;">
+                <span class="hist-arrow">▶</span>
+                <span style="font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; color:#1a3a8f;">
+                    {{ h.session.reference or ('Session #' ~ h.session.id) }}
+                </span>
+                <span class="badge blue">{{ h.session.famille }}</span>
+                {% if h.session.statut == 'terminee' %}<span class="badge green">Terminée</span>
+                {% elif h.session.statut == 'en_cours' %}<span class="badge orange">En cours</span>
+                {% elif h.session.statut == 'planifiee' %}<span class="badge blue">Planifiée</span>
+                {% else %}<span class="badge red">Annulée</span>{% endif %}
+                {% if h.session.date_pratique_debut %}
+                <span style="font-size:12px; color:#888; margin-left:auto;">{{ h.session.date_pratique_debut.strftime('%d/%m/%Y') }}</span>
+                {% endif %}
+            </summary>
+            <div style="padding:10px 16px 14px; background:#f9fafb; border-radius:8px; margin-bottom:8px;">
+                <div style="margin-bottom:8px;">
+                    <strong style="font-size:13px; color:#555;">Théorie :</strong>
+                    {% if h.theorie %}
+                        {% if h.theorie.obtenue %}
+                            <span class="badge green" style="margin-left:8px;">RÉUSSI — {{ h.theorie.note_totale|int }}/100</span>
+                        {% else %}
+                            <span class="badge red" style="margin-left:8px;">ÉCHEC — {{ h.theorie.note_totale|int }}/100</span>
+                        {% endif %}
+                    {% else %}
+                        <span style="color:#888; font-size:13px; margin-left:8px;">—</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <strong style="font-size:13px; color:#555;">Pratique :</strong>
+                    {% if h.epreuves %}
+                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
+                        {% for e in h.epreuves %}
+                        <span style="padding:3px 10px; border-radius:8px; font-size:12px; font-weight:600;
+                            {% if e.obtenue == True %}background:#e8f5e9; color:#2e7d32;
+                            {% elif e.obtenue == False %}background:#ffebee; color:#c62828;
+                            {% else %}background:#f3f4f6; color:#888;{% endif %}">
+                            {{ e.categorie }}{% if e.obtenue == True %} ✓{% elif e.obtenue == False %} ✗{% endif %}{% if e.options_obtenues %} <small style="font-weight:400;">({{ e.options_obtenues }})</small>{% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                        <span style="color:#888; font-size:13px; margin-left:8px;">—</span>
+                    {% endif %}
+                </div>
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:24px; text-align:center; color:#888;">Aucune session.</div>
+    {% endif %}
+</div>
 {% endblock %}
