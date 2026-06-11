@@ -94,7 +94,14 @@
 let listeUsers = [];
 
 async function chargerUsers() {
-    const resp = await fetch('/api/auth/utilisateurs');
+    const token = localStorage.getItem('token');
+    const resp = await fetch('/api/auth/utilisateurs', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (resp.status === 401) {
+        window.location.href = '/login';
+        return;
+    }
     if (!resp.ok) {
         document.getElementById('tbody-users').innerHTML =
             '<tr><td colspan="5" style="text-align:center; color:#c62828;">Erreur — veuillez vous reconnecter.</td></tr>';
