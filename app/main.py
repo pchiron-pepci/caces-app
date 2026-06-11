@@ -484,9 +484,11 @@ def _verifier_role(path: str, method: str, role: str):
     # Actions interdites au terrain
     if role == "terrain":
         base = path.rstrip("/")
-        if method == "POST" and base == "/api/sessions":
+        # Toutes les routes d'écriture sur les sessions (création + toutes sous-ressources)
+        if method != "GET" and (base == "/api/sessions" or _re.match(r"^/api/sessions/\d+", base)):
             return False
-        if method == "DELETE" and _re.match(r"^/api/sessions/\d+$", base):
+        # Pages de modification session et de modification jour
+        if _re.match(r"^/sessions/\d+/(modifier|jours/\d+/modifier)$", base):
             return False
         if method in ("PUT", "DELETE") and _re.match(r"^/api/testeurs/\d+$", base):
             return False
@@ -1187,6 +1189,7 @@ def page_session_detail(request: Request, session_id: int):
         (a.jour_test_id, a.stagiaire_id): a for a in attestations_neutralite_list
     }
 
+    _u = getattr(request.state, "user", None)
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -1217,6 +1220,7 @@ def page_session_detail(request: Request, session_id: int):
             "consentements_map": consentements_map,
             "verificateurs_liste": verificateurs_liste,
             "attestations_neutralite_map": attestations_neutralite_map,
+            "user_role": _u.role if _u else None,
         }
     )
 

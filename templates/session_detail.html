@@ -28,9 +28,13 @@
     <div style="display:flex; gap:8px; align-items:center;">
         {% if session.statut == 'terminee' %}
             <span style="color:#2e7d32; font-size:13px;">🔒 Session verrouilee</span>
+            {% if user_role != 'terrain' %}
             <button class="btn btn-secondary" onclick="reouvrirsession()">🔓 Reouvrir</button>
+            {% endif %}
         {% elif session.statut != 'annulee' %}
+    {% if user_role != 'terrain' %}
     <a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary">✏️ Modifier</a>
+    {% endif %}
     <button class="btn btn-danger" onclick="cloturerSession()">🔒 Cloturer la session</button>
 {% endif %}
     </div>
@@ -256,7 +260,7 @@
     <div class="card" style="margin-bottom:16px;">
         <div class="card-header">
             <h2>Epreuve theorique</h2>
-            {% if session.statut != 'terminee' %}
+            {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-primary" onclick="ouvrirAjoutJourTheorie()">+ Planifier test theorique</button>
             {% endif %}
         </div>
@@ -271,7 +275,7 @@
                         {% if j.testeur_nom %}
                             <span style="margin-left:8px; color:#666; font-size:13px;">Testeur principal : {{ j.testeur_nom }}</span>
                         {% endif %}
-                        {% if session.statut != 'terminee' %}
+                        {% if session.statut != 'terminee' and user_role != 'terrain' %}
                             <input type="text" data-action="save-testeurs-sup" data-jour-id="{{ j.id }}"
                                 value="{{ j.testeurs_sup or '' }}" placeholder="Testeurs sup."
                                 style="margin-left:12px; border:none; border-bottom:1px dashed #ccc; font-size:12px; color:#555; width:200px; background:transparent; outline:none;">
@@ -281,16 +285,20 @@
                     </div>
                     <div style="display:flex; gap:8px;">
                         {% if session.statut != 'terminee' %}
+                        {% if user_role != 'terrain' %}
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="ouvrirAjoutCandidatJour({{ j.id }})">+ Candidat</button>
+                        {% endif %}
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
                             class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
                             Accès aux tests
                         </a>
+                        {% if user_role != 'terrain' %}
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="window.location.href='/sessions/{{ session.id }}/jours/{{ j.id }}/modifier'">✏️</button>
 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
     onclick="supprimerJour({{ j.id }})">X</button>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -313,7 +321,7 @@
                         <tr>
                             <td>
                                 <strong>{{ nddn(sc.stagiaire) }}</strong>
-                                {% if session.statut != 'terminee' %}
+                                {% if session.statut != 'terminee' and user_role != 'terrain' %}
                                 <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}" data-type="{{ j.type }}"
                                     class="btn-retirer-candidat-jour"
                                     style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
@@ -362,7 +370,7 @@
     <div class="card">
         <div class="card-header">
             <h2>Epreuves pratiques</h2>
-            {% if session.statut != 'terminee' %}
+            {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-primary" onclick="ouvrirAjoutJourPratique()">+ Planifier épreuve pratique</button>
             {% endif %}
         </div>
@@ -377,7 +385,7 @@
                     <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                     <span class="badge orange" style="margin-left:8px;">Pratique</span>
                     <span style="margin-left:8px; color:#666; font-size:13px;">Testeur principal : {{ j.testeur_nom }}</span>
-                    {% if session.statut != 'terminee' %}
+                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
                         <input type="text" data-action="save-testeurs-sup" data-jour-id="{{ j.id }}"
                             value="{{ j.testeurs_sup or '' }}" placeholder="Testeurs sup."
                             style="margin-left:12px; border:none; border-bottom:1px dashed #ccc; font-size:12px; color:#555; width:200px; background:transparent; outline:none;">
@@ -387,7 +395,7 @@
                     <span style="margin-left:8px; color:#888; font-size:12px;">{{ j.candidats_ids|length }} candidat(s)</span>
                 </div>
                 <div style="display:flex; gap:8px;">
-                    {% if session.statut != 'terminee' %}
+                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                         onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.testeur_id }}', '{{ j.date }}', {{ j.candidats_categories | tojson | forceescape }}, {{ j.candidats_options | tojson | forceescape }}, {{ j.candidats_epreuves | tojson | forceescape }})">✏️</button>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
@@ -451,7 +459,7 @@
                         </td>
                         <td>
                             <strong>{{ nddn(sc.stagiaire) }}</strong>
-                            {% if session.statut != 'terminee' %}
+                            {% if session.statut != 'terminee' and user_role != 'terrain' %}
                             <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}"
                                 class="btn-retirer-candidat-jour"
                                 style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
@@ -467,19 +475,19 @@
                                 {% if epreuve and epreuve.obtenue == True %}
 <span class="badge green" style="font-size:11px;">{{ ut_cell }} UT ✓</span>
     {% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = opts_planif if opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
-    {% if session.statut != 'terminee' %}
+    {% if session.statut != 'terminee' and user_role != 'terrain' %}
 <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
         onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | forceescape }}, {{ (epreuve.options_obtenues or '') | tojson | forceescape }}, {{ epreuve.id }})">✏️</button>
     {% endif %}
                                 {% elif epreuve and epreuve.obtenue == False %}
                                     <span class="badge red" style="font-size:11px;">{{ ut_cell }} UT ✗</span>
                                     {% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = opts_planif if opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
-                                    {% if session.statut != 'terminee' %}
+                                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
                                     <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
                                         onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | forceescape }}, {{ (epreuve.options_obtenues or '') | tojson | forceescape }}, {{ epreuve.id }})">✏️</button>
                                     {% endif %}
                                 {% else %}
-                                    {% if session.statut != 'terminee' %}
+                                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
                                     <button style="background:{% if is_option_seule %}#ffe0b2{% else %}#e8eaf6{% endif %}; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:12px; color:{% if is_option_seule %}#e65100{% else %}#1a237e{% endif %}; font-weight:600;"
                                         onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, null, '', {{ opts_planif | tojson | forceescape }}, '', null)">
                                         {{ ut_cell }} UT +
@@ -546,7 +554,7 @@
 <div id="tab-candidats" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <p style="color:#666; font-size:14px;">{{ session_candidats|length }} candidat(s) inscrit(s)</p>
-        {% if session.statut != 'terminee' %}
+        {% if session.statut != 'terminee' and user_role != 'terrain' %}
         <button class="btn btn-primary" onclick="ouvrirAjoutCandidat()">+ Ajouter un candidat</button>
         {% endif %}
     </div>
@@ -560,7 +568,7 @@
                     <th>Employeur</th>
                     <th>RGPD</th>
                     <th>Theorie</th>
-                    {% if session.statut != 'terminee' %}<th>Actions</th>{% endif %}
+                    {% if session.statut != 'terminee' and user_role != 'terrain' %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -646,7 +654,7 @@
                             {% endif %}
                         {% endif %}
                     </td>
-                    {% if session.statut != 'terminee' %}
+                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <td style="text-align:center;">
                         <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;"
                             onclick="retirerCandidat({{ sc.id }}, '{{ nddn(sc.stagiaire) }}')">🗑️</button>
