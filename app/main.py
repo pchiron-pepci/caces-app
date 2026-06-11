@@ -37,6 +37,7 @@ from app.models.caces_obtenu import CacesObtenu
 from app.models.carte_caces import CarteCaces
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.attestation_neutralite import AttestationNeutralite
+from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant, AffectationTest
 
 from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
