@@ -26,6 +26,7 @@ class TesteurCreate(BaseModel):
     formation_continue: Optional[date] = None
     date_prochain_controle: Optional[date] = None
     note: Optional[str] = None
+    utilisateur_id: Optional[int] = None
 
 class TesteurResponse(BaseModel):
     id: int
@@ -43,6 +44,7 @@ class TesteurResponse(BaseModel):
     date_prochain_controle: Optional[date] = None
     note: Optional[str] = None
     actif: bool
+    utilisateur_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -58,8 +60,18 @@ def get_testeur(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Testeur non trouve")
     return t
 
+def _verifier_unicite_utilisateur(db: Session, utilisateur_id: int, exclude_id: int = None):
+    if utilisateur_id is None:
+        return
+    q = db.query(Testeur).filter(Testeur.utilisateur_id == utilisateur_id)
+    if exclude_id is not None:
+        q = q.filter(Testeur.id != exclude_id)
+    if q.first():
+        raise HTTPException(status_code=400, detail="Ce compte utilisateur est déjà associé à une autre fiche testeur")
+
 @router.post("/", response_model=TesteurResponse)
 def create_testeur(data: TesteurCreate, db: Session = Depends(get_db)):
+    _verifier_unicite_utilisateur(db, data.utilisateur_id)
     t = Testeur(**data.model_dump())
     db.add(t)
     db.commit()
@@ -71,6 +83,7 @@ def update_testeur(id: int, data: TesteurCreate, db: Session = Depends(get_db)):
     t = db.query(Testeur).filter(Testeur.id == id).first()
     if not t:
         raise HTTPException(status_code=404, detail="Testeur non trouve")
+    _verifier_unicite_utilisateur(db, data.utilisateur_id, exclude_id=id)
     for key, value in data.model_dump(exclude={'etat'}).items():
         setattr(t, key, value)
     db.commit()

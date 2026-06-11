@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Boolean
+from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Boolean, ForeignKey
 from app.database import Base
 from datetime import datetime
 
@@ -6,6 +6,7 @@ class Testeur(Base):
     __tablename__ = "testeurs"
 
     id = Column(Integer, primary_key=True, index=True)
+    utilisateur_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=True, unique=True)
     nom = Column(String(100), nullable=False)
     prenom = Column(String(100), nullable=False)
     email = Column(String(200), nullable=True)

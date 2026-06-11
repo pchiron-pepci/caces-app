@@ -26,6 +26,7 @@ from app.models.carte_testeur import CarteTesteur
 from app.models.config_organisme import ConfigOrganisme
 from app.models.habilitation_option import HabilitationOption
 from app.models.non_conformite import NonConformite
+from app.models.utilisateur import Utilisateur
 from app.models.option_categorie import OptionCategorie
 from app.models.caces_obtenu import CacesObtenu
 from app.models.carte_caces import CarteCaces
@@ -105,6 +106,20 @@ except Exception:
 try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS etat VARCHAR(20) DEFAULT 'actif'"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS utilisateur_id INTEGER REFERENCES utilisateurs(id)"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_testeur_utilisateur_id ON testeurs (utilisateur_id) WHERE utilisateur_id IS NOT NULL"))
         _conn.commit()
 except Exception:
     pass
@@ -553,6 +568,10 @@ def page_testeurs(request: Request):
             CarteTesteur.testeur_id == t.id,
             CarteTesteur.actif == True
         ).order_by(CarteTesteur.famille).all()
+    utilisateurs_terrain = db.query(Utilisateur).filter(
+        Utilisateur.role == "terrain",
+        Utilisateur.actif == True
+    ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
     db.close()
     return templates.TemplateResponse(
         request=request,
@@ -560,7 +579,8 @@ def page_testeurs(request: Request):
         context={
             "page": "testeurs",
             "testeurs": liste,
-            "today": date.today()
+            "today": date.today(),
+            "utilisateurs_terrain": utilisateurs_terrain,
         }
     )
 

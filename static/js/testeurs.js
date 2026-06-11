@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.dataset.hasEval, btn.dataset.evalNom, btn.dataset.evalDate,
                 btn.dataset.visiteDate,
                 btn.dataset.hasAutorisation, btn.dataset.autorisationNom,
-                btn.dataset.etat);
+                btn.dataset.etat, btn.dataset.utilisateurId);
         }
         if (btn.dataset.action === 'archiver') {
             archiver(btn.dataset.id, btn.dataset.nom);
@@ -188,7 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         numero_inrs: d.inrs || null, date_habilitation: d.habilitation || null,
                         date_expiration_habilitation: d.expiration || null,
                         visite_medicale: d.visite || null, formation_continue: d.formation || null,
-                        date_prochain_controle: dateVal, note: d.note || null
+                        date_prochain_controle: dateVal, note: d.note || null,
+                        utilisateur_id: d.utilisateurId ? parseInt(d.utilisateurId) : null
                     })
                 });
                 if (resp.ok) { fermerControle(); location.reload(); }
@@ -222,12 +223,13 @@ function ouvrirFormulaire() {
         document.getElementById('f-' + f).value = '';
     });
     document.getElementById('f-statut').value = 'interne';
+    document.getElementById('f-utilisateur-id').value = '';
     document.getElementById('section-documents').style.display = 'none';
     document.getElementById('modal-prev-file').value = '';
     document.getElementById('modal').style.display = 'flex';
 }
 
-function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasVisite, visiteNom, hasEval, evalNom, evalDate, visiteDate, hasAutorisation, autorisationNom, etat) {
+function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitation, expiration, visite, formation, controle, note, hasPrev, prevNom, hasVisite, visiteNom, hasEval, evalNom, evalDate, visiteDate, hasAutorisation, autorisationNom, etat, utilisateurId) {
     document.getElementById('modal-title').textContent = 'Modifier testeur';
     document.getElementById('testeur-id').value = id;
     document.getElementById('f-nom').value = nom;
@@ -244,6 +246,7 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     document.getElementById('f-controle').value = controle;
     document.getElementById('f-note').value = note;
     document.getElementById('f-etat').value = etat || 'actif';
+    document.getElementById('f-utilisateur-id').value = utilisateurId || '';
 
     document.getElementById('section-documents').style.display = 'block';
     document.getElementById('modal-prev-file').value = '';
@@ -337,7 +340,8 @@ async function sauvegarder() {
         evaluation_date: document.getElementById('modal-eval-date').value || null,
         formation_continue: document.getElementById('f-formation').value || null,
         date_prochain_controle: document.getElementById('f-controle').value || null,
-        note: document.getElementById('f-note').value || null
+        note: document.getElementById('f-note').value || null,
+        utilisateur_id: document.getElementById('f-utilisateur-id').value ? parseInt(document.getElementById('f-utilisateur-id').value) : null
     };
     if (!data.nom || !data.prenom) { alert('Nom et prénom sont obligatoires !'); return; }
     const url = id ? `/api/testeurs/${id}` : '/api/testeurs/';
