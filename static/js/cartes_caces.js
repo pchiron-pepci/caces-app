@@ -1,3 +1,6 @@
+var _emiseData = [];
+var _emiseSort = { col: 4, asc: false }; // par défaut : date desc
+
 document.addEventListener('DOMContentLoaded', function () {
 
     chargerStagiaires();
@@ -87,6 +90,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Délégation clics ---
     document.addEventListener('click', function (e) {
+
+        // Tri tableau cartes émises
+        const thSort = e.target.closest('#liste-emises th[data-sort-col]');
+        if (thSort) {
+            const col = parseInt(thSort.dataset.sortCol, 10);
+            if (_emiseSort.col === col) { _emiseSort.asc = !_emiseSort.asc; }
+            else { _emiseSort.col = col; _emiseSort.asc = true; }
+            _renderTableEmises();
+            return;
+        }
 
         // Confirmer DDN (sélection parmi les homonymes)
         const btnDdn = e.target.closest('[data-action="confirmer-ddn"]');
@@ -379,19 +392,57 @@ async function chargerEmises() {
     try {
         const r = await fetch('/api/cartes-caces/emises');
         if (!r.ok) throw new Error();
-        const data = await r.json();
-        if (!data.length) {
+        _emiseData = await r.json();
+        if (!_emiseData.length) {
             el.innerHTML = '<p style="color:#718096; padding:16px;">Aucune carte émise.</p>';
             return;
         }
-        const rows = data.map(_renderEmise).join('');
-        el.innerHTML = '<table class="table"><thead><tr>'
-            + '<th style="width:32px;"></th>'
-            + '<th>N° Carte</th><th>Stagiaire</th><th>Famille</th><th>Date</th><th>Statut</th><th></th>'
-            + '</tr></thead><tbody>' + rows + '</tbody></table>';
+        _renderTableEmises();
     } catch (_) {
         el.innerHTML = '<p style="color:red; text-align:center; padding:24px;">Erreur de chargement</p>';
     }
+}
+
+function _emiseSortKey(carte, col) {
+    switch (col) {
+        case 1: return (carte.numero_carte || '').toLowerCase();
+        case 2: return (carte.stagiaire_nom + ' ' + carte.stagiaire_prenom).toLowerCase();
+        case 3: return (carte.famille || '').toLowerCase();
+        case 4: return carte.date_generation || '';
+        case 5: return carte.statut || '';
+        default: return '';
+    }
+}
+
+function _renderTableEmises() {
+    const el = document.getElementById('liste-emises');
+    if (!el) return;
+
+    const sorted = _emiseData.slice().sort(function (a, b) {
+        const va = _emiseSortKey(a, _emiseSort.col);
+        const vb = _emiseSortKey(b, _emiseSort.col);
+        const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+        return _emiseSort.asc ? cmp : -cmp;
+    });
+
+    const defs = [
+        { label: '',          sortable: false, style: 'width:32px;' },
+        { label: 'N° Carte',  sortable: true,  col: 1 },
+        { label: 'Stagiaire', sortable: true,  col: 2 },
+        { label: 'Famille',   sortable: true,  col: 3 },
+        { label: 'Date',      sortable: true,  col: 4 },
+        { label: 'Statut',    sortable: true,  col: 5 },
+        { label: '',          sortable: false },
+    ];
+    const ths = defs.map(function (d) {
+        if (!d.sortable) return '<th' + (d.style ? ' style="' + d.style + '"' : '') + '></th>';
+        const arrow = d.col === _emiseSort.col ? (_emiseSort.asc ? ' ↑' : ' ↓') : '';
+        return '<th data-sort-col="' + d.col + '" style="cursor:pointer;user-select:none;">'
+            + d.label + '<span class="emise-sort-arrow">' + arrow + '</span></th>';
+    }).join('');
+
+    el.innerHTML = '<table class="table"><thead><tr>' + ths + '</tr></thead>'
+        + '<tbody>' + sorted.map(_renderEmise).join('') + '</tbody></table>';
 }
 
 function _renderEmise(carte) {
