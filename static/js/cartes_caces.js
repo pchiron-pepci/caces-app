@@ -461,16 +461,16 @@ function _renderEmise(carte) {
         ? '<div style="font-size:11px;color:#888;margin-top:2px;font-style:italic;">' + carte.motif_annulation + '</div>'
         : '';
 
-    const actionsHtml = emise
-        ? '<div style="display:flex;gap:6px;">'
-            + '<button data-action="reimprimer-carte" data-id="' + carte.id + '" title="Réimprimer" '
-            + 'style="background:none;border:1px solid #1a237e;color:#1a237e;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">🖨️</button>'
-            + '<button data-action="telecharger-pdf" data-id="' + carte.id + '" title="Télécharger PDF protégé" '
-            + 'style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">📥 PDF</button>'
-            + '<button data-action="annuler-carte" data-id="' + carte.id + '" data-num="' + carte.numero_carte + '" title="Annuler" '
-            + 'style="background:none;border:1px solid #c62828;color:#c62828;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">❌</button>'
-            + '</div>'
-        : '';
+    const actionsHtml = '<div style="display:flex;gap:6px;">'
+        + '<button data-action="reimprimer-carte" data-id="' + carte.id + '" title="Réimprimer" '
+        + 'style="background:none;border:1px solid #1a237e;color:#1a237e;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">🖨️</button>'
+        + '<button data-action="telecharger-pdf" data-id="' + carte.id + '" title="Télécharger PDF protégé" '
+        + 'style="background:none;border:1px solid #2e7d32;color:#2e7d32;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">📥 PDF</button>'
+        + (emise
+            ? '<button data-action="annuler-carte" data-id="' + carte.id + '" data-num="' + carte.numero_carte + '" title="Annuler" '
+              + 'style="background:none;border:1px solid #c62828;color:#c62828;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">❌</button>'
+            : '')
+        + '</div>';
 
     const opacity = emise ? '' : 'opacity:0.5;';
     const strike = emise ? '' : 'text-decoration:line-through;';
@@ -631,8 +631,12 @@ function _buildCr80Html(data, cfg) {
         '@page { size:85.6mm 54mm; margin:0; }',
         'html,body { width:85.6mm; height:108mm; font-family:Arial,Helvetica,sans-serif; font-size:5.5pt; background:#fff;',
         '  -webkit-print-color-adjust:exact; print-color-adjust:exact; }',
-        '.page { width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; }',
+        '.page { width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; position:relative; }',
         '.page + .page { page-break-before:always; }',
+        '.wm { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:50; pointer-events:none; }',
+        '.wm-inner { transform:rotate(-30deg); text-align:center; }',
+        '.wm-txt { font-size:13pt; font-weight:900; color:rgba(204,0,0,0.35); letter-spacing:0.5mm; white-space:nowrap; font-style:italic; }',
+        '.wm-sub { font-size:5pt; color:rgba(204,0,0,0.45); white-space:nowrap; margin-top:0.7mm; }',
         '.r-hdr { background:#fff; height:15mm; display:flex; align-items:center; padding:0 2.5mm;',
         '  justify-content:space-between; flex-shrink:0; gap:1.5mm; border-bottom:0.5mm solid ' + RED + '; }',
         '.r-hdr-left { display:flex; flex-direction:column; align-items:flex-start; gap:0.5mm; }',
@@ -695,6 +699,15 @@ function _buildCr80Html(data, cfg) {
         '  text-align:center; line-height:1.3; }',
     ].join('\n');
 
+    let wmHtml = '';
+    if (data.watermark) {
+        const wm = data.watermark;
+        let inner = '<div class="wm-txt">' + (wm.label || '') + '</div>';
+        if (wm.sub) inner += '<div class="wm-sub">' + wm.sub + '</div>';
+        if (wm.sub2) inner += '<div class="wm-sub">' + wm.sub2 + '</div>';
+        wmHtml = '<div class="wm"><div class="wm-inner">' + inner + '</div></div>';
+    }
+
     const logoHtml = cfg.logo_uri
         ? '<img class="r-logo" src="' + cfg.logo_uri + '" />'
         : '<span style="font-size:5.5pt;font-weight:900;color:' + ANT + ';">' + (organisme || 'CACES®') + '</span>';
@@ -717,6 +730,7 @@ function _buildCr80Html(data, cfg) {
         + '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>'
         + '</head><body>'
         + '<div class="page">'
+        +   wmHtml
         +   '<div class="r-hdr">'
         +     '<div class="r-hdr-left">'
         +       logoHtml
@@ -751,6 +765,7 @@ function _buildCr80Html(data, cfg) {
         +   '<div class="r-ftr">La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire</div>'
         + '</div>'
         + '<div class="page">'
+        +   wmHtml
         +   '<div class="v-hdr">'
         +     '<div class="v-hdr-info">'
         +       '<div class="v-htitle">CACES® ' + data.famille + ' — ' + data.stagiaire_nom + ' ' + data.stagiaire_prenom + ddn + '</div>'
@@ -811,7 +826,11 @@ function _buildA5Html(data, cfg) {
         + '* { margin:0; padding:0; box-sizing:border-box; }'
         + '@page { size: A5 landscape; margin: 0; }'
         + 'body { width:210mm; height:148mm; font-family:Arial,sans-serif; background:white; overflow:hidden; }'
-        + '.carte { width:210mm; height:148mm; padding:8mm; display:flex; flex-direction:column; }'
+        + '.carte { width:210mm; height:148mm; padding:8mm; display:flex; flex-direction:column; position:relative; }'
+        + '.wm { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:50; pointer-events:none; }'
+        + '.wm-inner { transform:rotate(-30deg); text-align:center; }'
+        + '.wm-txt { font-size:36pt; font-weight:900; color:rgba(204,0,0,0.35); letter-spacing:2mm; white-space:nowrap; font-style:italic; }'
+        + '.wm-sub { font-size:10pt; color:rgba(204,0,0,0.45); white-space:nowrap; margin-top:3mm; }'
         + '.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4mm; }'
         + '.org { font-size:11pt; font-weight:bold; color:#1a237e; flex:1; text-align:center; padding:0 4mm; }'
         + '.num-carte { font-size:9pt; font-family:monospace; color:#1a237e; font-weight:bold; white-space:nowrap; }'
@@ -828,6 +847,7 @@ function _buildA5Html(data, cfg) {
         + '@media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }'
         + '</style></head><body>'
         + '<div class="carte">'
+        + (data.watermark ? (function(wm){ let i='<div class="wm-txt">'+(wm.label||'')+'</div>'; if(wm.sub) i+='<div class="wm-sub">'+wm.sub+'</div>'; if(wm.sub2) i+='<div class="wm-sub">'+wm.sub2+'</div>'; return '<div class="wm"><div class="wm-inner">'+i+'</div></div>'; })(data.watermark) : '')
         + '  <div class="header">'
         + '    ' + logoHtml
         + '    <span class="org">' + (cfg.nom_organisme || 'Certificat CACES®') + '</span>'

@@ -85,6 +85,31 @@ def _parse_snapshot(caces_json: str):
     return data.get("caces", []), data.get("photo_base64", "")
 
 
+def _watermark_data(carte, db):
+    """Retourne dict {label, sub, sub2} pour le filigrane, ou None pour 'emise'."""
+    if carte.statut == "emise":
+        return None
+    label = "ANNULÉE" if carte.statut == "annulee" else "REMPLACÉE"
+    sub = sub2 = ""
+    if carte.statut == "remplacee":
+        repl = (
+            db.query(CarteCaces)
+            .filter(
+                CarteCaces.stagiaire_id == carte.stagiaire_id,
+                CarteCaces.famille == carte.famille,
+                CarteCaces.date_generation > carte.date_generation,
+            )
+            .order_by(CarteCaces.date_generation.asc())
+            .first()
+        )
+        if repl:
+            sub = f"Remplacée par {repl.numero_carte}"
+            sub2 = f"le {repl.date_generation.strftime('%d/%m/%Y')}"
+    elif carte.statut == "annulee" and carte.motif_annulation:
+        sub = carte.motif_annulation
+    return {"label": label, "sub": sub, "sub2": sub2}
+
+
 def _build_verify_url(cfg, token: str) -> str:
     base = (cfg.url_verification_caces if cfg and cfg.url_verification_caces
             else "https://caces-app.onrender.com/verifier/")
@@ -303,6 +328,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
             "famille": carte.famille,
             "famille_libelle": famille_libelle,
             "caces": caces_list,
+            "watermark": _watermark_data(carte, db),
             "config": {
                 "nom_organisme": cfg.nom_organisme or "",
                 "logo_uri": _img_uri(cfg.logo_base64, cfg.logo_nom),
@@ -329,7 +355,9 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
     t_map = _testeurs_map(cos, db)
     fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
     famille_libelle = fam_obj.libelle if fam_obj else ""
-    return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
+    data = _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
+    data["watermark"] = _watermark_data(carte, db)
+    return data
 
 
 # ===== ACTIONS =====
@@ -399,7 +427,7 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
 
 
-def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='', numero_certificat='', photo_b64=None):
+def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='', numero_certificat='', photo_b64=None, watermark=None):
     """Genere le HTML CR80 recto/verso identique au template JS, pour WeasyPrint."""
     import base64 as _b64
     from io import BytesIO as _BIO
@@ -553,8 +581,12 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         f'* {{ margin:0; padding:0; box-sizing:border-box; }}\n'
         f'@page {{ size:85.6mm 54mm; margin:0; }}\n'
         f'html,body {{ width:85.6mm; height:108mm; font-family:Arial,Helvetica,sans-serif; font-size:5.5pt; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }}\n'
-        f'.page {{ width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; }}\n'
+        f'.page {{ width:85.6mm; height:54mm; overflow:hidden; display:flex; flex-direction:column; position:relative; }}\n'
         f'.page + .page {{ page-break-before:always; }}\n'
+        f'.wm {{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; z-index:50; pointer-events:none; }}\n'
+        f'.wm-inner {{ transform:rotate(-30deg); text-align:center; }}\n'
+        f'.wm-txt {{ font-size:13pt; font-weight:900; color:rgba(204,0,0,0.35); letter-spacing:0.5mm; white-space:nowrap; font-style:italic; }}\n'
+        f'.wm-sub {{ font-size:5pt; color:rgba(204,0,0,0.45); white-space:nowrap; margin-top:0.7mm; }}\n'
         f'.r-hdr {{ background:#fff; height:15mm; display:flex; align-items:center; padding:0 2.5mm; justify-content:space-between; flex-shrink:0; gap:1.5mm; border-bottom:0.5mm solid {RED}; }}\n'
         f'.r-hdr-left {{ display:flex; flex-direction:column; align-items:flex-start; gap:0.5mm; }}\n'
         f'.r-logo {{ height:11mm; width:auto; max-width:26mm; object-fit:contain; }}\n'
@@ -617,9 +649,19 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     edition_html = f' <span class="v-hdate">· Édition du {_esc(date_gen_str)}</span>' if date_gen_str else ''
     verif_html = (f'Vérification : <a href="{verify_url}" target="_blank" style="color:inherit;">{_esc(verify_url)}</a> — ' if verify_url else '')
 
+    wm_html = ''
+    if watermark:
+        parts = [f'<div class="wm-txt">{_esc(watermark.get("label", ""))}</div>']
+        if watermark.get("sub"):
+            parts.append(f'<div class="wm-sub">{_esc(watermark["sub"])}</div>')
+        if watermark.get("sub2"):
+            parts.append(f'<div class="wm-sub">{_esc(watermark["sub2"])}</div>')
+        wm_html = '<div class="wm"><div class="wm-inner">' + ''.join(parts) + '</div></div>\n'
+
     return (
         '<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><style>' + css + '</style></head><body>\n'
         '<div class="page">\n'
+        f'  {wm_html}'
         '  <div class="r-hdr">\n'
         f'    <div class="r-hdr-left">{logo_html}{dekra_html}</div>\n'
         f'    {am_html}\n'
@@ -646,6 +688,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         '  <div class="r-ftr">La marque CACES® est protégée (INPI n° 03.3237295) · Document recto/verso obligatoire</div>\n'
         '</div>\n'
         '<div class="page">\n'
+        f'  {wm_html}'
         '  <div class="v-hdr">\n'
         '    <div class="v-hdr-info">\n'
         f'      <div class="v-htitle">CACES® {_esc(carte.famille)} — {_esc(s.nom)} {_esc(s.prenom)}{ddn_verso}</div>\n'
@@ -715,7 +758,8 @@ def telecharger_pdf(carte_id: int, db: DBSession = Depends(get_db)):
     famille_libelle = fam_obj.libelle if fam_obj else ""
     doc_cert = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == "certificat_organisme").first()
     numero_certificat = doc_cert.numero_certificat or "" if doc_cert else ""
-    html = _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle, numero_certificat, photo_b64=frozen_photo)
+    wm_data = _watermark_data(carte, db)
+    html = _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle, numero_certificat, photo_b64=frozen_photo, watermark=wm_data)
     pdf_bytes = _html_to_pdf(html)
     protected = _protect_pdf(pdf_bytes)
     def _safe(txt):
