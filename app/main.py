@@ -705,7 +705,7 @@ def page_stagiaire_consultation(request: Request, stagiaire_id: int, session_id:
 
     stagiaire = db.query(Stagiaire).filter(
         Stagiaire.id == stagiaire_id,
-        Stagiaire.actif == True
+        Stagiaire.actif == 1
     ).first()
     if not stagiaire:
         db.close()
