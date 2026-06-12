@@ -6,6 +6,23 @@
 
 {% block content %}
 
+<style>
+.btn-trash {
+    background: none;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    filter: sepia(1) saturate(4) hue-rotate(315deg);
+    transition: background 0.15s, filter 0.15s;
+}
+.btn-trash:hover {
+    background: #ffebee;
+    filter: sepia(1) saturate(6) hue-rotate(310deg);
+}
+</style>
+
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -292,7 +309,7 @@
                         {% if user_role != 'terrain' %}
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="window.location.href='/sessions/{{ session.id }}/jours/{{ j.id }}/modifier'">✏️</button>
-<button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+<button class="btn-trash"
     onclick="supprimerJour({{ j.id }})" title="Supprimer ce jour">🗑️</button>
                         {% endif %}
                         {% endif %}
@@ -393,7 +410,7 @@
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                         onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.date }}', {{ j.candidats_categories | tojson | forceescape }}, {{ j.candidats_options | tojson | forceescape }}, {{ j.candidats_epreuves | tojson | forceescape }})">✏️</button>
-                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                    <button class="btn-trash"
                         onclick="supprimerJour({{ j.id }})" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
                 </div>
@@ -572,7 +589,7 @@
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" data-action="supprimer-jour-formation" data-id="{{ jf.id }}" title="Supprimer ce jour">🗑️</button>
+                    <button class="btn-trash" data-action="supprimer-jour-formation" data-id="{{ jf.id }}" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
                 </div>
             </div>
