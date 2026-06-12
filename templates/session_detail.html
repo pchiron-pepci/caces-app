@@ -572,8 +572,8 @@
                     {% if jf.affectations %}
                     <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
                         {% for af in jf.affectations %}
-                        <span style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px;">
-                            {{ af.nom_complet }}
+                        <span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px; cursor:default;">
+                            {{ af.abreviation }}
                             <span style="color:#666;">
                                 {% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}
                             </span>

@@ -1074,11 +1074,19 @@ def page_session_detail(request: Request, session_id: int):
         _af_users_map = {u.id: u for u in db.query(Utilisateur).filter(
             Utilisateur.id.in_(_af_user_ids)
         ).all()} if _af_user_ids else {}
+        def _abr(u):
+            if not u:
+                return "?"
+            p = (u.prenom or "")[:1].upper()
+            n = (u.nom or "")[:3].upper()
+            return f"{p}.{n}" if p and n else (u.nom or u.prenom or "?")
+
         for jf in jours_formation:
             jf.affectations = sorted(
                 [{"user_id": af.user_id,
                   "nom_complet": f"{_af_users_map[af.user_id].nom} {_af_users_map[af.user_id].prenom}"
                                  if af.user_id in _af_users_map else "?",
+                  "abreviation": _abr(_af_users_map.get(af.user_id)),
                   "theorie": af.theorie, "pratique": af.pratique, "principal": af.principal}
                  for af in _af_list if af.jour_formation_id == jf.id],
                 key=lambda x: (not x["principal"], x["nom_complet"])
