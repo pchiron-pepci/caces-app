@@ -9,7 +9,8 @@ from app.models.stagiaire import Stagiaire
 from app.models.testeur import Testeur
 from app.models.categorie import Categorie, Famille
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
-from app.models.jour_formation import JourFormation
+from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant
+from app.models.caces_obtenu import CacesObtenu
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.services.tirage_grille import (
@@ -376,13 +377,85 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
     j = db.query(JourTest).filter(JourTest.id == id).first()
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouve")
+
+    if j.type == "theorie":
+        # Niveau 1 — blocage si CACES délivré sur une théorie réussie de ce jour
+        rt_positifs = db.query(ResultatTheorie).filter(
+            ResultatTheorie.jour_test_id == j.id,
+            ResultatTheorie.obtenue == True,
+        ).all()
+        if rt_positifs:
+            stagiaire_ids = [rt.stagiaire_id for rt in rt_positifs]
+            co = db.query(CacesObtenu).filter(
+                CacesObtenu.session_id == session_id,
+                CacesObtenu.stagiaire_id.in_(stagiaire_ids),
+                CacesObtenu.statut.in_(["a_valider", "valide"]),
+            ).first()
+            if co:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "Impossible de supprimer : un ou plusieurs CACES ont été délivrés "
+                        "sur ce jour. Annulez-les d'abord via le workflow d'annulation CACES."
+                    ),
+                )
+        # Niveau 2 — refus si des résultats théoriques existent
+        if db.query(ResultatTheorie).filter(ResultatTheorie.jour_test_id == j.id).first():
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Ce jour contient des enregistrements. Supprimez d'abord les résultats "
+                    "de chaque candidat avant de pouvoir supprimer ce jour."
+                ),
+            )
+
+    if j.type == "pratique":
+        candidats_jour = db.query(JourTestCandidat).filter(
+            JourTestCandidat.jour_test_id == j.id
+        ).all()
+        # Niveau 1 — blocage si CACES délivré sur une épreuve de ce jour
+        for jtc in candidats_jour:
+            cats = [c for c in (jtc.categories or "").split(",") if c]
+            for cat in cats:
+                co = db.query(CacesObtenu).filter(
+                    CacesObtenu.session_id == session_id,
+                    CacesObtenu.stagiaire_id == jtc.stagiaire_id,
+                    CacesObtenu.categorie == cat,
+                    CacesObtenu.statut.in_(["a_valider", "valide"]),
+                ).first()
+                if co:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            "Impossible de supprimer : un ou plusieurs CACES ont été délivrés "
+                            "sur ce jour. Annulez-les d'abord via le workflow d'annulation CACES."
+                        ),
+                    )
+        # Niveau 2 — refus si des épreuves pratiques existent
+        for jtc in candidats_jour:
+            cats = [c for c in (jtc.categories or "").split(",") if c]
+            for cat in cats:
+                if db.query(SessionEpreuve).filter(
+                    SessionEpreuve.session_id == session_id,
+                    SessionEpreuve.stagiaire_id == jtc.stagiaire_id,
+                    SessionEpreuve.categorie == cat,
+                ).first():
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            "Ce jour contient des enregistrements. Supprimez d'abord les résultats "
+                            "de chaque candidat avant de pouvoir supprimer ce jour."
+                        ),
+                    )
+
+    # Niveau 3 — jour vide : soft delete + nettoyage metadata grille (théorie uniquement)
     j.actif = False
 
     if j.type == "theorie" and j.grille_id:
         from app.models.grille_theorie import UtilisationGrille
         uti = db.query(UtilisationGrille).filter(
             UtilisationGrille.grille_id == j.grille_id,
-            UtilisationGrille.session_id == j.session_id
+            UtilisationGrille.session_id == j.session_id,
         ).first()
         if uti:
             db.delete(uti)
@@ -395,7 +468,7 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
                 JourTest.session_id == j.session_id,
                 JourTest.type == "theorie",
                 JourTest.actif == True,
-                JourTest.id != j.id
+                JourTest.id != j.id,
             )
             .count()
         )
@@ -403,24 +476,6 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
             db.query(UtilisationTheme).filter(
                 UtilisationTheme.session_id == j.session_id
             ).delete()
-        # Supprimer résultats théorie
-        db.query(ResultatTheorie).filter(
-            ResultatTheorie.jour_test_id == j.id
-        ).delete()
-
-    if j.type == "pratique":
-        # Supprimer épreuves pratiques pour tous les candidats du jour
-        candidats_jour = db.query(JourTestCandidat).filter(
-            JourTestCandidat.jour_test_id == j.id
-        ).all()
-        for jtc in candidats_jour:
-            cats = jtc.categories.split(',') if jtc.categories else []
-            for cat in cats:
-                db.query(SessionEpreuve).filter(
-                    SessionEpreuve.session_id == session_id,
-                    SessionEpreuve.stagiaire_id == jtc.stagiaire_id,
-                    SessionEpreuve.categorie == cat
-                ).delete()
 
     db.commit()
     return {"message": "Jour supprime"}
@@ -745,6 +800,8 @@ def delete_jour_formation(
     ).first()
     if not jf:
         raise HTTPException(status_code=404, detail="Jour de formation non trouvé")
-    jf.actif = False
+    db.query(AffectationFormation).filter(AffectationFormation.jour_formation_id == jf.id).delete()
+    db.query(PlanningApprenant).filter(PlanningApprenant.jour_formation_id == jf.id).delete()
+    db.delete(jf)
     db.commit()
     return {"message": "Jour de formation supprimé"}
