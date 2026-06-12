@@ -33,7 +33,7 @@
             {% endif %}
         {% elif session.statut != 'annulee' %}
     {% if user_role != 'terrain' %}
-    <a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary">✏️ Modifier</a>
+    <a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary">✏️</a>
     {% endif %}
     <button class="btn btn-danger" onclick="cloturerSession()">🔒 Cloturer la session</button>
 {% endif %}
