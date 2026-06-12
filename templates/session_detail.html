@@ -272,9 +272,9 @@
                     <div>
                         <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                         <span class="badge blue" style="margin-left:8px;">Theorie</span>
-                        {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">{{ ta.nom_abr }}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}{% if ta.principal %} ★{% endif %}</span>{% endfor %}
+                        {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}</span>{% endfor %}
                         {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                            <button data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" style="margin-left:8px; background:#f0f2f7; border:none; border-radius:6px; padding:2px 10px; font-size:13px; cursor:pointer;" title="Gérer les testeurs">👥</button>
+                            <button class="btn btn-secondary" style="padding:5px 12px; font-size:12px;" data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}">+ Testeurs</button>
                         {% endif %}
                     </div>
                     <div style="display:flex; gap:8px;">
@@ -378,9 +378,9 @@
                 <div>
                     <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                     <span class="badge orange" style="margin-left:8px;">Pratique</span>
-                    {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">{{ ta.nom_abr }}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}{% if ta.principal %} ★{% endif %}</span>{% endfor %}
+                    {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}</span>{% endfor %}
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                        <button data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" style="margin-left:8px; background:#f0f2f7; border:none; border-radius:6px; padding:2px 10px; font-size:13px; cursor:pointer;" title="Gérer les testeurs">👥</button>
+                        <button class="btn btn-secondary" style="padding:5px 12px; font-size:12px;" data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}">+ Testeurs</button>
                     {% endif %}
                     <span style="margin-left:8px; color:#888; font-size:12px;">{{ j.candidats_ids|length }} candidat(s)</span>
                 </div>
@@ -563,11 +563,10 @@
                     <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
                         {% for af in jf.affectations %}
                         <span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px; cursor:default;">
-                            {{ af.abreviation }}
+                            🎓 {{ af.abreviation }}{% if af.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}
                             <span style="color:#666;">
                                 {% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}
                             </span>
-                            {% if af.principal %}<span class="badge" style="background:#1976d2; color:white; font-size:10px; margin-left:3px; padding:1px 5px;">Principal</span>{% endif %}
                         </span>
                         {% endfor %}
                     </div>
@@ -578,7 +577,7 @@
                     <button class="btn btn-secondary" style="padding:5px 12px; font-size:12px;"
                             data-action="ouvrir-modal-affectation-formation"
                             data-jour-id="{{ jf.id }}"
-                            data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}">Formateurs</button>
+                            data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}">+ Formateurs</button>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                             data-action="supprimer-jour-formation" data-id="{{ jf.id }}">X</button>
                     {% endif %}
