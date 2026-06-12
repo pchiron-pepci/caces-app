@@ -907,3 +907,61 @@ def save_affectations_formation(
         ))
     db.commit()
     return {"message": "Affectations enregistrées"}
+
+
+class PlanningApprenantItem(BaseModel):
+    stagiaire_id: int
+    heures_theorie: float = 0.0
+    heures_par_cat: Dict[str, float] = {}
+    heures_libre: float = 0.0
+
+class PlanningJourBody(BaseModel):
+    libelle_colonne_libre: Optional[str] = None
+    apprenants: List[PlanningApprenantItem] = []
+
+
+@router.put("/{session_id}/jours-formation/{jour_id}/planning")
+def save_planning_jour_formation(
+    session_id: int,
+    jour_id: int,
+    data: PlanningJourBody,
+    db: DBSession = Depends(get_db),
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+):
+    if current_user.role == "terrain":
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(session)
+    jf = db.query(JourFormation).filter(
+        JourFormation.id == jour_id,
+        JourFormation.session_id == session_id,
+    ).first()
+    if not jf:
+        raise HTTPException(status_code=404, detail="Jour de formation non trouvé")
+
+    for item in data.apprenants:
+        total = item.heures_theorie + sum(item.heures_par_cat.values()) + item.heures_libre
+        if total > 7.0:
+            stag = db.query(Stagiaire).filter(Stagiaire.id == item.stagiaire_id).first()
+            nom = f"{stag.nom} {stag.prenom}" if stag else f"#{item.stagiaire_id}"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Apprenant {nom} : total dépasse 7h ({total:.1f}h saisis)"
+            )
+
+    if data.libelle_colonne_libre is not None:
+        jf.libelle_colonne_libre = data.libelle_colonne_libre
+
+    db.query(PlanningApprenant).filter(PlanningApprenant.jour_formation_id == jour_id).delete()
+    for item in data.apprenants:
+        total = item.heures_theorie + sum(item.heures_par_cat.values()) + item.heures_libre
+        if total > 0:
+            db.add(PlanningApprenant(
+                jour_formation_id=jour_id,
+                stagiaire_id=item.stagiaire_id,
+                heures_theorie=item.heures_theorie,
+                heures_par_cat=json.dumps(item.heures_par_cat) if item.heures_par_cat else None,
+                heures_libre=item.heures_libre,
+            ))
+    db.commit()
+    return {"message": "Planning enregistré"}

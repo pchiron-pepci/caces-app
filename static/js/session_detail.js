@@ -475,6 +475,19 @@ function afficherErreur(msg) {
 }
 function fermerAlerte() { document.getElementById('modal-alerte').style.display = 'none'; }
 
+function recalculerTotalLigne(tr) {
+    var total = 0;
+    tr.querySelectorAll('.planning-input').forEach(function(inp) {
+        total += parseFloat(inp.value) || 0;
+    });
+    var cell = tr.querySelector('.planning-total-cell');
+    if (!cell) return;
+    var display = Number.isInteger(total) ? total + 'h' : total.toFixed(2).replace(/\.?0+$/, '') + 'h';
+    cell.textContent = display;
+    cell.style.color = total > 7 ? '#c62828' : '#333';
+    cell.style.fontWeight = total > 7 ? 'bold' : '600';
+}
+
 function ouvrirModifierJourTheorie(jourId, date, testeurId) {
     document.getElementById('mjt-jour-id').value = jourId;
     document.getElementById('mjt-date').value = date;
@@ -864,6 +877,106 @@ document.addEventListener('DOMContentLoaded', function() {
                 opts.style.display = e.target.checked ? 'flex' : 'none';
                 if (!e.target.checked) opts.querySelectorAll('input').forEach(function(i) { i.checked = false; });
             }
+        }
+    });
+
+    // ── LOT 2b : Planning apprenants ───────────────────────────────────────
+
+    // Calcul total par ligne en temps réel
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('planning-input')) {
+            var tr = e.target.closest('tr[data-stagiaire]');
+            if (tr) recalculerTotalLigne(tr);
+        }
+    });
+
+    // Initialiser les totaux au chargement
+    document.querySelectorAll('tr[data-stagiaire]').forEach(function(tr) {
+        recalculerTotalLigne(tr);
+    });
+
+    // Ouvrir modal ajout catégorie
+    document.addEventListener('click', function(e) {
+        var btnAcp = e.target.closest('[data-action="ouvrir-ajouter-cat-planning"]');
+        if (btnAcp) {
+            var jourId = btnAcp.dataset.jourId;
+            document.getElementById('acp-jour-id').value = jourId;
+            var table = document.getElementById('planning-' + jourId);
+            var activeCats = new Set();
+            if (table) {
+                table.querySelectorAll('thead th[data-cat]').forEach(function(th) {
+                    activeCats.add(th.dataset.cat);
+                });
+            }
+            document.querySelectorAll('.acp-cat-cb').forEach(function(cb) {
+                var active = activeCats.has(cb.value);
+                cb.checked = active;
+                cb.disabled = active;
+                var lbl = document.getElementById('acp-label-' + cb.value);
+                if (lbl) lbl.style.opacity = active ? '0.5' : '1';
+            });
+            document.getElementById('modal-ajouter-cat-planning').style.display = 'flex';
+        }
+
+        if (e.target.closest('[data-action="fermer-modal-ajouter-cat"]')) {
+            document.getElementById('modal-ajouter-cat-planning').style.display = 'none';
+        }
+
+        // Confirmer ajout catégorie → injecter colonne dans le DOM
+        if (e.target.closest('[data-action="confirmer-ajouter-cat-planning"]')) {
+            var jourId = document.getElementById('acp-jour-id').value;
+            var table = document.getElementById('planning-' + jourId);
+            if (!table) { document.getElementById('modal-ajouter-cat-planning').style.display = 'none'; return; }
+            document.querySelectorAll('.acp-cat-cb:checked:not(:disabled)').forEach(function(cb) {
+                var cat = cb.value;
+                // Entête
+                var th = document.createElement('th');
+                th.dataset.cat = cat;
+                th.textContent = cat;
+                th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
+                var libreTh = table.querySelector('thead tr th.col-libre');
+                if (libreTh) libreTh.parentNode.insertBefore(th, libreTh);
+                // Cellule par ligne
+                table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
+                    var td = document.createElement('td');
+                    td.style.cssText = 'padding:4px 6px; text-align:center;';
+                    td.innerHTML = '<input type="number" class="h-cat planning-input" data-cat="' + cat + '" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
+                    var libreTd = tr.querySelector('td.td-libre');
+                    if (libreTd) tr.insertBefore(td, libreTd);
+                });
+            });
+            document.getElementById('modal-ajouter-cat-planning').style.display = 'none';
+            document.querySelectorAll('tr[data-stagiaire]').forEach(function(tr) { recalculerTotalLigne(tr); });
+        }
+
+        // Sauvegarder planning
+        var btnSave = e.target.closest('[data-action="sauvegarder-planning"]');
+        if (btnSave) {
+            var jourId = btnSave.dataset.jourId;
+            var table = document.getElementById('planning-' + jourId);
+            if (!table) return;
+            var libelleInput = table.querySelector('.libelle-libre');
+            var libelleLibre = libelleInput ? libelleInput.value : '';
+            var apprenants = [];
+            table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
+                var stagId = parseInt(tr.dataset.stagiaire);
+                var theorie = parseFloat(tr.querySelector('.h-theorie').value) || 0;
+                var libre = parseFloat(tr.querySelector('.h-libre').value) || 0;
+                var hpc = {};
+                tr.querySelectorAll('.h-cat').forEach(function(inp) {
+                    var v = parseFloat(inp.value) || 0;
+                    if (v > 0) hpc[inp.dataset.cat] = v;
+                });
+                apprenants.push({ stagiaire_id: stagId, heures_theorie: theorie, heures_par_cat: hpc, heures_libre: libre });
+            });
+            fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + jourId + '/planning', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ libelle_colonne_libre: libelleLibre, apprenants: apprenants }),
+            }).then(function(r) {
+                if (r.ok) location.reload();
+                else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur lors de l\'enregistrement.'); });
+            });
         }
     });
 });

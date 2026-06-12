@@ -1091,6 +1091,35 @@ def page_session_detail(request: Request, session_id: int):
                  for af in _af_list if af.jour_formation_id == jf.id],
                 key=lambda x: (not x["principal"], x["nom_complet"])
             )
+
+        # Planning apprenants — annoter chaque jf
+        _pl_list = db.query(PlanningApprenant).filter(
+            PlanningApprenant.jour_formation_id.in_(_af_ids)
+        ).all() if _af_ids else []
+        for jf in jours_formation:
+            _pl_this = [pa for pa in _pl_list if pa.jour_formation_id == jf.id]
+            jf.planning = {}
+            for pa in _pl_this:
+                hpc = {}
+                if pa.heures_par_cat:
+                    try:
+                        hpc = json.loads(pa.heures_par_cat)
+                    except Exception:
+                        pass
+                jf.planning[pa.stagiaire_id] = {
+                    "heures_theorie": pa.heures_theorie or 0.0,
+                    "heures_par_cat": hpc,
+                    "heures_libre": pa.heures_libre or 0.0,
+                }
+            _cats_set = set()
+            for pa in _pl_this:
+                if pa.heures_par_cat:
+                    try:
+                        _cats_set.update(json.loads(pa.heures_par_cat).keys())
+                    except Exception:
+                        pass
+            jf.cats_colonnes = [c for c in categories if c in _cats_set]
+
         utilisateurs_terrain = db.query(Utilisateur).filter(
             Utilisateur.role == "terrain",
             Utilisateur.actif == True
