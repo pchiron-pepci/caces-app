@@ -944,7 +944,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + id, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ date: date, intitule: intitule || null })
+                body: JSON.stringify({ date_str: date, intitule: intitule || null })
             }).then(function(r) {
                 if (r.ok) {
                     document.getElementById('modal-modifier-jour-formation').style.display = 'none';

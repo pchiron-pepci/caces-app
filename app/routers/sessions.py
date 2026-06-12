@@ -767,7 +767,7 @@ def add_jour_formation(
 
 
 class JourFormationUpdate(BaseModel):
-    date: Optional[date] = None
+    date_str: Optional[str] = None
     intitule: Optional[str] = None
 
 
@@ -791,13 +791,18 @@ def update_jour_formation(
     if not jf:
         raise HTTPException(status_code=404, detail="Jour de formation non trouvé")
 
-    if data.date is not None:
+    if data.date_str:
+        from datetime import datetime as _dt
+        try:
+            nouvelle_date = _dt.strptime(data.date_str, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Format de date invalide (attendu YYYY-MM-DD)")
         bornes = [d for d in [session.date_theorie, session.date_pratique_debut,
                                session.date_pratique_fin] if d]
         if bornes:
             date_debut = min(bornes)
             date_fin = max(bornes)
-            if data.date < date_debut or data.date > date_fin:
+            if nouvelle_date < date_debut or nouvelle_date > date_fin:
                 raise HTTPException(
                     status_code=400,
                     detail=(
@@ -805,7 +810,7 @@ def update_jour_formation(
                         f"(du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')})"
                     ),
                 )
-        jf.date = data.date
+        jf.date = nouvelle_date
 
     if data.intitule is not None:
         jf.intitule = data.intitule or None
