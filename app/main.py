@@ -60,9 +60,6 @@ Base.metadata.create_all(bind=engine)
 #   après vérification que la colonne est vide en prod.
 # ─────────────────────────────────────────────────────────────────────────────
 def _run_startup_migrations():
-    import re as _mre
-    _is_sqlite = str(engine.url).startswith("sqlite")
-
     _MIGRATIONS = [
         # document_officiel
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS date_validite TIMESTAMP",
@@ -134,21 +131,9 @@ def _run_startup_migrations():
         "ALTER TABLE consentements_rgpd ADD COLUMN IF NOT EXISTS verificateur_identite VARCHAR(200)",
         "ALTER TABLE consentements_rgpd ADD COLUMN IF NOT EXISTS horodatage_verification TIMESTAMP",
     ]
-    # SQLite 3.50 ne supporte pas ADD COLUMN IF NOT EXISTS — on utilise PRAGMA pour tester
-    _SQLITE_PAT = _mre.compile(
-        r"ALTER TABLE (\w+) ADD COLUMN IF NOT EXISTS (\w+)(.*)", _mre.IGNORECASE
-    )
     for sql in _MIGRATIONS:
         try:
             with engine.connect() as _c:
-                if _is_sqlite:
-                    m = _SQLITE_PAT.match(sql.strip())
-                    if m:
-                        tbl, col, rest = m.group(1), m.group(2), m.group(3)
-                        cols = _c.execute(text(f"PRAGMA table_info({tbl})")).fetchall()
-                        if any(r[1] == col for r in cols):
-                            continue
-                        sql = f"ALTER TABLE {tbl} ADD COLUMN {col}{rest}"
                 _c.execute(text(sql))
                 _c.commit()
         except Exception as e:
