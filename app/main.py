@@ -1134,12 +1134,82 @@ def page_session_detail(request: Request, session_id: int):
             Utilisateur.actif == True
         ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
 
+        # ── AffectationTest : charger pour annotation des jours ────────────────
+        _jt_ids = [j.id for j in jours_test]
+        _at_list = []
+        _at_users = {}
+        if _jt_ids:
+            try:
+                _at_list = db.query(AffectationTest).filter(
+                    AffectationTest.jour_test_id.in_(_jt_ids)
+                ).all()
+                _au_ids = list({at.user_id for at in _at_list})
+                if _au_ids:
+                    _at_users = {u.id: u for u in db.query(Utilisateur).filter(
+                        Utilisateur.id.in_(_au_ids)
+                    ).all()}
+            except Exception as _e:
+                print(f"[AffectationTest load error]: {_e}", flush=True)
+
+        # ── utilisateurs_testeurs : comptes liés à une fiche testeur ───────────
+        _testeur_by_user = {}
+        _habs_by_tid = {}
+        utilisateurs_testeurs = []
+        try:
+            _tf_rows = db.query(Testeur).filter(
+                Testeur.utilisateur_id != None,
+                Testeur.actif == True
+            ).all()
+            if _tf_rows:
+                _testeur_by_user = {t.utilisateur_id: t for t in _tf_rows}
+                _tf_ids = [t.id for t in _tf_rows]
+                for _h in db.query(HabilitationTesteur).filter(
+                    HabilitationTesteur.testeur_id.in_(_tf_ids),
+                    HabilitationTesteur.famille == session.famille,
+                    HabilitationTesteur.actif == True
+                ).all():
+                    _habs_by_tid.setdefault(_h.testeur_id, []).append(_h.categorie)
+                _tu_list = db.query(Utilisateur).filter(
+                    Utilisateur.id.in_(list(_testeur_by_user.keys())),
+                    Utilisateur.actif == True
+                ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
+                for _u2 in _tu_list:
+                    _tf = _testeur_by_user.get(_u2.id)
+                    utilisateurs_testeurs.append({
+                        "user_id": _u2.id,
+                        "nom": _u2.nom,
+                        "prenom": _u2.prenom or "",
+                        "habs": sorted(_habs_by_tid.get(_tf.id, [])) if _tf else [],
+                    })
+        except Exception as _e:
+            print(f"[utilisateurs_testeurs error]: {_e}", flush=True)
+
         for j in jours_test:
-            if j.testeur_id:
+            # testeur_nom depuis AffectationTest.principal (si disponible), sinon j.testeur_id legacy
+            _ats_j = [at for at in _at_list if at.jour_test_id == j.id]
+            _at_principal = next((at for at in _ats_j if at.principal), None)
+            _pu = _at_users.get(_at_principal.user_id) if _at_principal else None
+            if _pu:
+                j.testeur_nom = f"{_pu.prenom[0]}.{_pu.nom}" if _pu.prenom else _pu.nom
+            elif j.testeur_id:
                 t = db.query(Testeur).filter(Testeur.id == j.testeur_id).first()
                 j.testeur_nom = f"{t.nom} {t.prenom}" if t else "?"
             else:
                 j.testeur_nom = "—"
+            j.testeurs_affectes = []
+            for _at in _ats_j:
+                _u2 = _at_users.get(_at.user_id)
+                if not _u2:
+                    continue
+                _tf2 = _testeur_by_user.get(_u2.id)
+                _habs_u = sorted(_habs_by_tid.get(_tf2.id, [])) if _tf2 else []
+                _abr_nom = f"{_u2.prenom[0]}.{_u2.nom}" if _u2.prenom else _u2.nom
+                j.testeurs_affectes.append({
+                    "user_id": _at.user_id,
+                    "nom_abr": _abr_nom,
+                    "habs": _habs_u,
+                    "principal": _at.principal,
+                })
             if j.grille_id:
                 g = db.query(GrilleTheorie).filter(GrilleTheorie.id == j.grille_id).first()
                 j.grille_numero = g.numero if g else "?"
@@ -1338,6 +1408,7 @@ def page_session_detail(request: Request, session_id: int):
                 "attestations_neutralite_map": attestations_neutralite_map,
                 "jours_formation": jours_formation,
                 "utilisateurs_terrain": utilisateurs_terrain,
+                "utilisateurs_testeurs": utilisateurs_testeurs,
                 "user_role": _u.role if _u else None,
             }
         )

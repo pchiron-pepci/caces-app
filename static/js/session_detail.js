@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.NB_EQUIPEMENTS = parseInt(_d.dataset.nbEquipements);
         try { window.UT_PAR_CAT = JSON.parse(_d.dataset.utParCat); } catch(e) { console.error('UT_PAR_CAT parse error:', e, _d.dataset.utParCat); window.UT_PAR_CAT = {}; }
         try { window.OPTIONS_PAR_CAT = JSON.parse(_d.dataset.optionsParCat || '{}'); } catch(e) { console.error('OPTIONS_PAR_CAT parse error:', e, _d.dataset.optionsParCat); window.OPTIONS_PAR_CAT = {}; }
+        try { window.UTILISATEURS_TESTEURS = JSON.parse(_d.dataset.testeurs || '[]'); } catch(e) { window.UTILISATEURS_TESTEURS = []; }
     }
 
     window._CANDIDATS_EPREUVES = {};
@@ -16,9 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const btn = e.target.closest('.btn-retirer-candidat-jour');
         if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom, btn.dataset.type);
     });
-    document.addEventListener('focusout', function(e) {
-        const inp = e.target.closest('[data-action="save-testeurs-sup"]');
-        if (inp) saveTesteursSup(inp.dataset.jourId, inp.value);
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-action="gerer-testeurs"]');
+        if (btn) gererTesteurs(btn.dataset.jourId, btn.dataset.jourType);
     });
     document.addEventListener('change', function(e) {
         const cb = e.target;
@@ -114,14 +115,6 @@ function calculerRecapUT() {
         '<span>UT libres : <strong style="color:' + couleurLibres + '">' + utLibres.toFixed(1) + '</strong></span></div>';
 }
 
-async function saveTesteursSup(jourId, value) {
-    await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/testeurs-sup', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testeurs_sup: value || null })
-    });
-}
-
 async function toggleIdentite(jourId, stagiaireId, btn) {
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId + '/identite', { method: 'PUT' });
     if (resp.ok) { const data = await resp.json(); btn.textContent = data.identite_verifiee ? '✅' : '⬜'; }
@@ -129,7 +122,6 @@ async function toggleIdentite(jourId, stagiaireId, btn) {
 
 function ouvrirAjoutJourTheorie() {
     document.getElementById('jt-date').value = '';
-    document.getElementById('jt-testeur').value = '';
     document.querySelectorAll('[name="jt-candidat"]').forEach(cb => cb.checked = true);
     document.getElementById('modal-jour-theorie').style.display = 'flex';
 }
@@ -138,9 +130,7 @@ function fermerModalJourTheorie() { document.getElementById('modal-jour-theorie'
 
 async function sauvegarderJourTheorie() {
     const date = document.getElementById('jt-date').value;
-    const testeur_id = document.getElementById('jt-testeur').value;
     if (!date) { alert('La date est obligatoire !'); return; }
-    if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
     if (window.DATE_DEBUT_SESSION && date < window.DATE_DEBUT_SESSION) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (window.DATE_FIN_SESSION && date > window.DATE_FIN_SESSION) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const candidats = [];
@@ -148,7 +138,7 @@ async function sauvegarderJourTheorie() {
     if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'theorie', testeur_id: parseInt(testeur_id), candidats })
+        body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'theorie', candidats })
     });
     if (resp.ok) { fermerModalJourTheorie(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
@@ -157,7 +147,6 @@ function ouvrirAjoutJourPratique() {
     document.getElementById('jp-titre').textContent = 'Planifier jour de test pratique';
     document.getElementById('jp-jour-id').value = '';
     document.getElementById('jp-date').value = '';
-    document.getElementById('jp-testeur').value = '';
     document.querySelectorAll('[name="jp-candidat"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('[name^="jp-cat-"], [name^="jp-opt-"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
     document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '0.3');
@@ -165,12 +154,11 @@ function ouvrirAjoutJourPratique() {
     calculerRecapUT();
 }
 
-function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories, candidatsOptions, candidatsEpreuves) {
+function ouvrirModifierJourPratique(jourId, date, candidatsCategories, candidatsOptions, candidatsEpreuves) {
     window._CANDIDATS_EPREUVES = candidatsEpreuves || {};
     document.getElementById('jp-titre').textContent = 'Modifier jour de test pratique';
     document.getElementById('jp-jour-id').value = jourId;
     document.getElementById('jp-date').value = date;
-    document.getElementById('jp-testeur').value = testeurId;
     document.querySelectorAll('[name="jp-candidat"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('[name^="jp-cat-"], [name^="jp-opt-"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
     document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '0.3');
@@ -208,10 +196,8 @@ function fermerModalJourPratique() { document.getElementById('modal-jour-pratiqu
 
 async function sauvegarderJourPratique() {
     const date = document.getElementById('jp-date').value;
-    const testeur_id = document.getElementById('jp-testeur').value;
     const jourId = document.getElementById('jp-jour-id').value;
     if (!date) { alert('La date est obligatoire !'); return; }
-    if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
     if (window.DATE_DEBUT_SESSION && date < window.DATE_DEBUT_SESSION) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (window.DATE_FIN_SESSION && date > window.DATE_FIN_SESSION) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const candidats_pratique = [];
@@ -240,7 +226,7 @@ async function sauvegarderJourPratique() {
     if (jourId) {
         await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/modifier', {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date, testeur_id: parseInt(testeur_id) })
+            body: JSON.stringify({ date })
         });
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -250,7 +236,7 @@ async function sauvegarderJourPratique() {
     } else {
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'pratique', testeur_id: parseInt(testeur_id), candidats_pratique })
+            body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'pratique', candidats_pratique })
         });
         if (resp.ok) { fermerModalJourPratique(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     }
@@ -542,23 +528,21 @@ function recalculerTotauxColonnes(table) {
     if (tg) tg.textContent = formatH(grandTotal);
 }
 
-function ouvrirModifierJourTheorie(jourId, date, testeurId) {
+function ouvrirModifierJourTheorie(jourId, date) {
     document.getElementById('mjt-jour-id').value = jourId;
     document.getElementById('mjt-date').value = date;
-    document.getElementById('mjt-testeur').value = testeurId || '';
     document.getElementById('modal-modifier-jour-theorie').style.display = 'flex';
 }
 
 async function sauvegarderModifierJourTheorie() {
     const jourId = document.getElementById('mjt-jour-id').value;
     const date = document.getElementById('mjt-date').value;
-    const testeurId = document.getElementById('mjt-testeur').value;
     if (!date) { alert('La date est obligatoire !'); return; }
     if (window.DATE_DEBUT_SESSION && date < window.DATE_DEBUT_SESSION) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (window.DATE_FIN_SESSION && date > window.DATE_FIN_SESSION) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/modifier', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, testeur_id: parseInt(testeurId) })
+        body: JSON.stringify({ date })
     });
     if (resp.ok) { document.getElementById('modal-modifier-jour-theorie').style.display = 'none'; location.reload(); }
     else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
@@ -624,6 +608,75 @@ async function _envoyerVerification() {
         if (resp.ok) { _rgpdVerifEnvoye = true; return true; }
     } catch (e) { /* continue */ }
     return false;
+}
+
+// ── AFFECTATION TESTEURS ──────────────────────────────────────────────────────
+
+function gererTesteurs(jourId, jourType) {
+    document.getElementById('at-jour-id').value = jourId;
+    document.getElementById('at-jour-type').value = jourType;
+    var liste = document.getElementById('at-liste');
+    liste.innerHTML = '<p style="color:#888; font-size:13px;">Chargement…</p>';
+    document.getElementById('modal-testeurs').style.display = 'flex';
+    fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/affectations-test')
+        .then(function(r) { return r.json(); })
+        .then(function(ats) {
+            var byUser = {};
+            ats.forEach(function(at) { byUser[at.user_id] = at; });
+            var utList = window.UTILISATEURS_TESTEURS || [];
+            if (utList.length === 0) {
+                liste.innerHTML = '<p style="color:#888; font-size:13px;">Aucun testeur disponible. Liez un compte utilisateur à une fiche testeur.</p>';
+                return;
+            }
+            var html = '';
+            utList.forEach(function(ut) {
+                var at = byUser[ut.user_id] || {};
+                var checked = at.user_id !== undefined ? 'checked' : '';
+                var principal = at.principal ? 'checked' : '';
+                var habsLabel = (ut.habs && ut.habs.length > 0) ? ' <span style="color:#666; font-size:12px;">(' + ut.habs.join(', ') + ')</span>' : '';
+                html +=
+                    '<label style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:#f5f5f5; border-radius:8px; cursor:pointer;">' +
+                    '<input type="checkbox" name="at-user" value="' + ut.user_id + '" ' + checked + ' onchange="_atToggle(this)">' +
+                    '<span style="flex:1;">' + (ut.prenom ? ut.prenom + ' ' : '') + ut.nom + habsLabel + '</span>' +
+                    '<span style="display:flex; align-items:center; gap:4px; font-size:12px; color:#555;">' +
+                    '<input type="radio" name="at-principal" value="' + ut.user_id + '" ' + principal + '> ★ Principal' +
+                    '</span>' +
+                    '</label>';
+            });
+            liste.innerHTML = html;
+        })
+        .catch(function() {
+            liste.innerHTML = '<p style="color:#c62828; font-size:13px;">Erreur lors du chargement.</p>';
+        });
+}
+
+function _atToggle(checkbox) {
+    if (!checkbox.checked) {
+        document.querySelectorAll('[name="at-principal"]').forEach(function(r) {
+            if (r.value === checkbox.value) r.checked = false;
+        });
+    }
+}
+
+async function sauvegarderAffectationsTest() {
+    var jourId = document.getElementById('at-jour-id').value;
+    var data = [];
+    document.querySelectorAll('[name="at-user"]:checked').forEach(function(cb) {
+        var userId = parseInt(cb.value);
+        var principalEl = document.querySelector('[name="at-principal"][value="' + userId + '"]');
+        data.push({ user_id: userId, principal: principalEl ? principalEl.checked : false });
+    });
+    var resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/affectations-test', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (resp.ok) {
+        document.getElementById('modal-testeurs').style.display = 'none';
+        location.reload();
+    } else {
+        var d = await resp.json();
+        afficherErreur(d.detail || 'Erreur lors de l\'enregistrement.');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

@@ -148,7 +148,7 @@
                     <span class="badge" style="background:#cc0000; color:white; font-size:12px;">{{ entry.testeurs[0] }}</span>
                 {% endif %}
                 {% set ns_ts = namespace(parts=[]) %}
-                {% for j in entry.jours %}{% if j.testeurs_sup %}{% set ns_ts.parts = ns_ts.parts + [j.testeurs_sup] %}{% endif %}{% endfor %}
+                {% for j in entry.jours %}{% for ta in (j.testeurs_affectes or []) %}{% if not ta.principal %}{% set ns_ts.parts = ns_ts.parts + [ta.nom_abr] %}{% endif %}{% endfor %}{% endfor %}
                 {% if ns_ts.parts %}
                     <span style="color:#555;">{{ ns_ts.parts | join(', ') }}</span>
                 {% endif %}
@@ -272,15 +272,9 @@
                     <div>
                         <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                         <span class="badge blue" style="margin-left:8px;">Theorie</span>
-                        {% if j.testeur_nom %}
-                            <span style="margin-left:8px; color:#666; font-size:13px;">Testeur principal : {{ j.testeur_nom }}</span>
-                        {% endif %}
+                        {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">{{ ta.nom_abr }}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}{% if ta.principal %} ★{% endif %}</span>{% endfor %}
                         {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                            <input type="text" data-action="save-testeurs-sup" data-jour-id="{{ j.id }}"
-                                value="{{ j.testeurs_sup or '' }}" placeholder="Testeurs sup."
-                                style="margin-left:12px; border:none; border-bottom:1px dashed #ccc; font-size:12px; color:#555; width:200px; background:transparent; outline:none;">
-                        {% elif j.testeurs_sup %}
-                            <span style="margin-left:12px; color:#666; font-size:12px;">{{ j.testeurs_sup }}</span>
+                            <button data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" style="margin-left:8px; background:#f0f2f7; border:none; border-radius:6px; padding:2px 10px; font-size:13px; cursor:pointer;" title="Gérer les testeurs">👥</button>
                         {% endif %}
                     </div>
                     <div style="display:flex; gap:8px;">
@@ -384,20 +378,16 @@
                 <div>
                     <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                     <span class="badge orange" style="margin-left:8px;">Pratique</span>
-                    <span style="margin-left:8px; color:#666; font-size:13px;">Testeur principal : {{ j.testeur_nom }}</span>
+                    {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">{{ ta.nom_abr }}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}{% if ta.principal %} ★{% endif %}</span>{% endfor %}
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                        <input type="text" data-action="save-testeurs-sup" data-jour-id="{{ j.id }}"
-                            value="{{ j.testeurs_sup or '' }}" placeholder="Testeurs sup."
-                            style="margin-left:12px; border:none; border-bottom:1px dashed #ccc; font-size:12px; color:#555; width:200px; background:transparent; outline:none;">
-                    {% elif j.testeurs_sup %}
-                        <span style="margin-left:12px; color:#666; font-size:12px;">{{ j.testeurs_sup }}</span>
+                        <button data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" style="margin-left:8px; background:#f0f2f7; border:none; border-radius:6px; padding:2px 10px; font-size:13px; cursor:pointer;" title="Gérer les testeurs">👥</button>
                     {% endif %}
                     <span style="margin-left:8px; color:#888; font-size:12px;">{{ j.candidats_ids|length }} candidat(s)</span>
                 </div>
                 <div style="display:flex; gap:8px;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                        onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.testeur_id }}', '{{ j.date }}', {{ j.candidats_categories | tojson | forceescape }}, {{ j.candidats_options | tojson | forceescape }}, {{ j.candidats_epreuves | tojson | forceescape }})">✏️</button>
+                        onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.date }}', {{ j.candidats_categories | tojson | forceescape }}, {{ j.candidats_options | tojson | forceescape }}, {{ j.candidats_epreuves | tojson | forceescape }})">✏️</button>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
                         onclick="supprimerJour({{ j.id }})">X</button>
                     {% endif %}
@@ -1013,15 +1003,6 @@
     <label>Date de l'epreuve</label>
     <input type="date" id="jt-date">
 </div>
-            <div class="form-field">
-                <label>Testeur principal *</label>
-                <select id="jt-testeur">
-                    <option value="">-- Choisir --</option>
-                    {% for t in testeurs %}
-                    <option value="{{ t.id }}">{{ t.nom }} {{ t.prenom }}</option>
-                    {% endfor %}
-                </select>
-            </div>
         </div>
         <div style="margin-top:16px;">
             <label style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; display:block; margin-bottom:12px;">
@@ -1055,15 +1036,6 @@
             <div class="form-field">
                 <label>Date du test *</label>
                 <input type="date" id="jp-date">
-            </div>
-            <div class="form-field">
-                <label>Testeur principal *</label>
-                <select id="jp-testeur">
-                    <option value="">-- Choisir --</option>
-                    {% for t in testeurs %}
-                    <option value="{{ t.id }}">{{ t.nom }} {{ t.prenom }}</option>
-                    {% endfor %}
-                </select>
             </div>
         </div>
         <div style="margin-top:16px;">
@@ -1248,19 +1220,24 @@
                 <label>Date *</label>
                 <input type="date" id="mjt-date">
             </div>
-            <div class="form-field">
-                <label>Testeur *</label>
-                <select id="mjt-testeur">
-                    <option value="">-- Choisir --</option>
-                    {% for t in testeurs %}
-                    <option value="{{ t.id }}">{{ t.nom }} {{ t.prenom }}</option>
-                    {% endfor %}
-                </select>
-            </div>
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" onclick="sauvegarderModifierJourTheorie()">Sauvegarder</button>
             <button class="btn btn-secondary" onclick="document.getElementById('modal-modifier-jour-theorie').style.display='none'">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL TESTEURS AFFECTÉS -->
+<div id="modal-testeurs" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1500; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:520px; max-width:95vw; max-height:80vh; overflow-y:auto;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:16px;">Testeurs affectés à ce jour</h2>
+        <input type="hidden" id="at-jour-id">
+        <input type="hidden" id="at-jour-type">
+        <div id="at-liste" style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;"></div>
+        <div class="form-actions">
+            <button class="btn btn-primary" onclick="sauvegarderAffectationsTest()">Enregistrer</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('modal-testeurs').style.display='none'">Annuler</button>
         </div>
     </div>
 </div>
@@ -1307,7 +1284,8 @@
     data-options-par-cat='{{ options_par_cat | tojson }}'
     data-debut="{{ session.date_pratique_debut or '' }}"
     data-fin="{{ session.date_pratique_fin or '' }}"
-    data-nb-equipements="{{ equipements|length }}">
+    data-nb-equipements="{{ equipements|length }}"
+    data-testeurs='{{ utilisateurs_testeurs | tojson }}'>
 </div>
 <!-- OVERLAY NEUTRALITÉ -->
 <div id="overlay-neutralite" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:3000; align-items:center; justify-content:center;">
