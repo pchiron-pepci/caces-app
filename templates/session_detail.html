@@ -548,6 +548,67 @@
         </div>
         {% endif %}
     </div>
+
+    <!-- JOURS DE FORMATION -->
+    <div class="card" style="margin-top:16px; border-left:4px solid #2e7d32;">
+        <div class="card-header" style="background:#1b5e20;">
+            <h2 style="color:white;">Jours de Formation</h2>
+            {% if session.statut != 'terminee' and user_role != 'terrain' %}
+            <button class="btn btn-primary"
+                    data-action="ouvrir-modal-jour-formation">+ Ajouter un jour de formation</button>
+            {% endif %}
+        </div>
+        {% for jf in jours_formation %}
+        <div style="padding:14px 16px; border-bottom:1px solid #f0f2f7;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong>{{ jf.date.strftime('%d/%m/%Y') }}</strong>
+                    <span class="badge" style="background:#2e7d32; color:white; margin-left:8px;">Formation</span>
+                    {% if jf.intitule %}
+                    <span style="margin-left:8px; color:#333; font-size:13px;">{{ jf.intitule }}</span>
+                    {% endif %}
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span style="color:#aaa; font-size:12px; font-style:italic;">Affectations &amp; planning — à venir</span>
+                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                            data-action="supprimer-jour-formation" data-id="{{ jf.id }}">X</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div style="padding:24px; text-align:center; color:#888; font-size:13px;">
+            Aucun jour de formation planifié.
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Modal ajout jour de formation -->
+    <div id="modal-jour-formation" style="display:none; position:fixed; top:0; left:0;
+         width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;
+         align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:8px; padding:32px; min-width:380px; max-width:480px;">
+            <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;">
+                Ajouter un jour de formation</h2>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px; font-weight:600;">Date *</label>
+                <input type="date" id="jf-date" class="form-control">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px; font-weight:600;">Intitulé</label>
+                <input type="text" id="jf-intitule" class="form-control"
+                       placeholder="Ex : Formation pratique R489 cat.1B">
+            </div>
+            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:24px;">
+                <button class="btn btn-secondary"
+                        data-action="fermer-modal-jour-formation">Annuler</button>
+                <button class="btn btn-primary"
+                        data-action="sauvegarder-jour-formation">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- TAB CANDIDATS -->

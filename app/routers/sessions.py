@@ -9,6 +9,7 @@ from app.models.stagiaire import Stagiaire
 from app.models.testeur import Testeur
 from app.models.categorie import Categorie, Famille
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
+from app.models.jour_formation import JourFormation
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.services.tirage_grille import (
@@ -681,3 +682,69 @@ def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, pin: 
     db.delete(jtc)
     db.commit()
     return {"message": "Candidat retire du jour"}
+
+
+# ── JOURS DE FORMATION ────────────────────────────────────────────────────────
+
+class JourFormationCreate(BaseModel):
+    date: date
+    intitule: Optional[str] = None
+    note: Optional[str] = None
+
+
+@router.post("/{session_id}/jours-formation")
+def add_jour_formation(
+    session_id: int,
+    data: JourFormationCreate,
+    db: DBSession = Depends(get_db),
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+):
+    if current_user.role == "terrain":
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    _check_modifiable(session)
+
+    # Validation : la date doit être dans la période de la session
+    bornes = [d for d in [session.date_theorie, session.date_pratique_debut,
+                           session.date_pratique_fin] if d]
+    if bornes:
+        date_debut = min(bornes)
+        date_fin = max(bornes)
+        if data.date < date_debut or data.date > date_fin:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"La date doit être comprise dans la période de la session "
+                    f"(du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')})"
+                ),
+            )
+
+    jf = JourFormation(session_id=session_id, date=data.date,
+                       intitule=data.intitule, note=data.note)
+    db.add(jf)
+    db.commit()
+    db.refresh(jf)
+    return {"message": "Jour de formation ajouté", "id": jf.id}
+
+
+@router.delete("/{session_id}/jours-formation/{id}")
+def delete_jour_formation(
+    session_id: int,
+    id: int,
+    db: DBSession = Depends(get_db),
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+):
+    if current_user.role == "terrain":
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(session)
+    jf = db.query(JourFormation).filter(
+        JourFormation.id == id, JourFormation.session_id == session_id
+    ).first()
+    if not jf:
+        raise HTTPException(status_code=404, detail="Jour de formation non trouvé")
+    jf.actif = False
+    db.commit()
+    return {"message": "Jour de formation supprimé"}

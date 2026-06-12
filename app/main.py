@@ -1060,6 +1060,11 @@ def page_session_detail(request: Request, session_id: int):
             JourTest.actif == True
         ).order_by(JourTest.date).all()
 
+        jours_formation = db.query(JourFormation).filter(
+            JourFormation.session_id == session_id,
+            JourFormation.actif == True
+        ).order_by(JourFormation.date).all()
+
         for j in jours_test:
             if j.testeur_id:
                 t = db.query(Testeur).filter(Testeur.id == j.testeur_id).first()
@@ -1261,6 +1266,7 @@ def page_session_detail(request: Request, session_id: int):
                 "consentements_map": consentements_map,
                 "verificateurs_liste": verificateurs_liste,
                 "attestations_neutralite_map": attestations_neutralite_map,
+                "jours_formation": jours_formation,
                 "user_role": _u.role if _u else None,
             }
         )

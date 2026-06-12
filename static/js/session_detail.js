@@ -746,3 +746,45 @@ function ouvrirNeutraliteOverlay(jourId, stagiaireId, nom, prenom, ddn, testeur)
     document.getElementById('overlay-neutralite').style.display = 'flex';
     _neutraliteMajChoix();
 }
+
+// ── Jours de formation ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="ouvrir-modal-jour-formation"]')) {
+            document.getElementById('jf-date').value = '';
+            document.getElementById('jf-intitule').value = '';
+            document.getElementById('modal-jour-formation').style.display = 'flex';
+            return;
+        }
+        if (e.target.closest('[data-action="fermer-modal-jour-formation"]')) {
+            document.getElementById('modal-jour-formation').style.display = 'none';
+            return;
+        }
+        if (e.target.closest('[data-action="sauvegarder-jour-formation"]')) {
+            var date = document.getElementById('jf-date').value;
+            var intitule = document.getElementById('jf-intitule').value.trim();
+            if (!date) { alert('La date est obligatoire.'); return; }
+            fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: date, intitule: intitule || null })
+            }).then(function(r) {
+                if (r.ok) {
+                    document.getElementById('modal-jour-formation').style.display = 'none';
+                    location.reload();
+                } else {
+                    r.json().then(function(d) { alert(d.detail || 'Erreur lors de l\'ajout.'); });
+                }
+            });
+            return;
+        }
+        var btnSupp = e.target.closest('[data-action="supprimer-jour-formation"]');
+        if (btnSupp) {
+            demanderConfirmation('Supprimer ce jour de formation ?', function() {
+                fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + btnSupp.dataset.id,
+                      { method: 'DELETE' })
+                    .then(function(r) { if (r.ok) location.reload(); else alert('Erreur lors de la suppression.'); });
+            });
+        }
+    });
+});
