@@ -479,6 +479,17 @@ function afficherErreur(msg) {
 }
 function fermerAlerte() { document.getElementById('modal-alerte').style.display = 'none'; }
 
+function afficherSuccesToast(msg) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;top:20px;right:24px;background:#2e7d32;color:white;padding:12px 20px;border-radius:8px;font-size:14px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:opacity .4s;';
+    document.body.appendChild(t);
+    setTimeout(function() {
+        t.style.opacity = '0';
+        setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 400);
+    }, 1600);
+}
+
 function formatH(v) {
     if (!v) return '—';
     var r = Math.round(v * 100) / 100;
@@ -1145,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ libelle_colonne_libre: libelleLibre, apprenants: apprenants }),
             }).then(function(r) {
-                if (r.ok) location.reload();
+                if (r.ok) afficherSuccesToast('Données enregistrées ✓');
                 else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur lors de l\'enregistrement.'); });
             });
         }
