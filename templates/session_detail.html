@@ -1101,6 +1101,13 @@
     </div>
 </div>
 
+<div id="modal-alerte" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:520px; max-width:95vw; text-align:center;">
+        <p style="font-size:15px; color:#333; margin-bottom:24px;" id="alerte-message"></p>
+        <button class="btn btn-primary" onclick="fermerAlerte()">OK</button>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <div id="session-data" style="display:none;"
     data-session-id="{{ session.id }}"

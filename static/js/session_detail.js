@@ -133,7 +133,7 @@ async function sauvegarderJourTheorie() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'theorie', testeur_id: parseInt(testeur_id), candidats })
     });
-    if (resp.ok) { fermerModalJourTheorie(); location.reload(); } else alert('Erreur !');
+    if (resp.ok) { fermerModalJourTheorie(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
 
 function ouvrirAjoutJourPratique() {
@@ -228,20 +228,20 @@ async function sauvegarderJourPratique() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ candidats_pratique })
         });
-        if (resp.ok) { fermerModalJourPratique(); location.reload(); } else { const d = await resp.json(); alert(d.detail || 'Erreur !'); }
+        if (resp.ok) { fermerModalJourPratique(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     } else {
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'pratique', testeur_id: parseInt(testeur_id), candidats_pratique })
         });
-        if (resp.ok) { fermerModalJourPratique(); location.reload(); } else alert('Erreur !');
+        if (resp.ok) { fermerModalJourPratique(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     }
 }
 
 function supprimerJour(id) {
     demanderConfirmation('Supprimer ce jour de test ?', async () => {
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + id, { method: 'DELETE' });
-        if (resp.ok) location.reload(); else alert('Erreur !');
+        if (resp.ok) location.reload(); else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     });
 }
 
@@ -262,7 +262,7 @@ async function sauvegarderCandidatJour() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ candidats })
     });
-    if (resp.ok) { fermerModalCandidatJour(); location.reload(); } else alert('Erreur !');
+    if (resp.ok) { fermerModalCandidatJour(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
 
 function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identiteVerifiee, obtenue, noteTesteur, optionsPlanifiees, optionsObtenues, epreuveId) {
@@ -341,7 +341,7 @@ async function sauvegarderPratique() {
             options_obtenues: optionsObtenues
         })
     });
-    if (resp.ok) { fermerModalPratique(); location.reload(); } else alert('Erreur !');
+    if (resp.ok) { fermerModalPratique(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
 
 function ouvrirAjoutCandidat() {
@@ -374,7 +374,7 @@ async function sauvegarderCandidat() {
     if (!id && !data.stagiaire_id) { alert('Choisir un stagiaire !'); return; }
     const url = id ? '/api/sessions/' + window.SESSION_ID + '/candidats/' + id : '/api/sessions/' + window.SESSION_ID + '/candidats';
     const resp = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    if (resp.ok) { fermerModalCandidat(); location.reload(); } else alert('Erreur !');
+    if (resp.ok) { fermerModalCandidat(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
 
 function retirerCandidat(id, nom) {
@@ -389,7 +389,7 @@ function retirerCandidat(id, nom) {
         else if (resp.status === 400) {
             const data = await resp.json();
             fermerPin();
-            alert(data.detail);
+            afficherErreur(data.detail || 'Erreur !');
         } else {
             document.getElementById('pin-error').style.display = 'block';
         }
@@ -436,13 +436,13 @@ async function sauvegarderEquipement() {
     };
     const url = id ? '/api/sessions/' + window.SESSION_ID + '/equipements/' + id : '/api/sessions/' + window.SESSION_ID + '/equipements';
     const resp = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    if (resp.ok) { fermerModalEquipement(); location.reload(); } else alert('Erreur !');
+    if (resp.ok) { fermerModalEquipement(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
 
 function cloturerSession() {
     demanderConfirmation('Clôturer la session ? Les résultats seront verrouillés.', async () => {
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/cloturer', { method: 'POST' });
-        if (resp.ok) location.reload(); else alert('Erreur !');
+        if (resp.ok) location.reload(); else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     });
 }
 
@@ -456,7 +456,7 @@ function reouvrirsession() {
         if (pin !== '1505') { document.getElementById('pin-error').style.display = 'block'; return; }
         fermerPin();
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/reouvrir?pin=' + pin, { method: 'POST' });
-        if (resp.ok) location.reload(); else alert('Erreur !');
+        if (resp.ok) location.reload(); else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     };
 }
 
@@ -468,6 +468,12 @@ function demanderConfirmation(message, callback) {
     document.getElementById('confirm-ok-btn').onclick = () => { fermerConfirm(); callback(); };
 }
 function fermerConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
+
+function afficherErreur(msg) {
+    document.getElementById('alerte-message').textContent = msg;
+    document.getElementById('modal-alerte').style.display = 'flex';
+}
+function fermerAlerte() { document.getElementById('modal-alerte').style.display = 'none'; }
 
 function ouvrirModifierJourTheorie(jourId, date, testeurId) {
     document.getElementById('mjt-jour-id').value = jourId;
@@ -488,7 +494,7 @@ async function sauvegarderModifierJourTheorie() {
         body: JSON.stringify({ date, testeur_id: parseInt(testeurId) })
     });
     if (resp.ok) { document.getElementById('modal-modifier-jour-theorie').style.display = 'none'; location.reload(); }
-    else alert('Erreur !');
+    else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
 
 async function retirerCandidatJour(jourId, stagiaireId, nom, typeJour) {
@@ -773,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('modal-jour-formation').style.display = 'none';
                     location.reload();
                 } else {
-                    r.json().then(function(d) { alert(d.detail || 'Erreur lors de l\'ajout.'); });
+                    r.json().then(function(d) { afficherErreur(d.detail || 'Erreur lors de l\'ajout.'); });
                 }
             });
             return;
@@ -783,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function() {
             demanderConfirmation('Êtes-vous sûr de vouloir supprimer ce jour de formation ?', function() {
                 fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + btnSupp.dataset.id,
                       { method: 'DELETE' })
-                    .then(function(r) { if (r.ok) location.reload(); else alert('Erreur lors de la suppression.'); });
+                    .then(function(r) { if (r.ok) location.reload(); else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur lors de la suppression.'); }); });
             });
         }
     });
