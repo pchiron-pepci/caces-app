@@ -278,7 +278,7 @@
         <div class="card-header">
             <h2>Epreuve theorique</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
-            <button class="btn btn-primary" onclick="ouvrirAjoutJourTheorie()">+ Planifier test theorique</button>
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="ouvrirAjoutJourTheorie()" title="Planifier une théorie">📅</button>
             {% endif %}
         </div>
         {% if jours_test %}
@@ -384,7 +384,7 @@
         <div class="card-header">
             <h2>Epreuves pratiques</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
-            <button class="btn btn-primary" onclick="ouvrirAjoutJourPratique()">+ Planifier épreuve pratique</button>
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="ouvrirAjoutJourPratique()" title="Planifier une pratique">📅</button>
             {% endif %}
         </div>
 
@@ -566,8 +566,8 @@
         <div class="card-header" style="background:#e3f2fd;">
             <h2 style="color:#1565c0;">Jours de Formation</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
-            <button class="btn btn-primary"
-                    data-action="ouvrir-modal-jour-formation">+ Ajouter un jour de formation</button>
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                    data-action="ouvrir-modal-jour-formation" title="Planifier un jour de formation">📅</button>
             {% endif %}
         </div>
         {% for jf in jours_formation %}
