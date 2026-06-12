@@ -550,9 +550,9 @@
     </div>
 
     <!-- JOURS DE FORMATION -->
-    <div class="card" style="margin-top:16px; border-left:4px solid #2e7d32;">
-        <div class="card-header" style="background:#1b5e20;">
-            <h2 style="color:white;">Jours de Formation</h2>
+    <div class="card" style="margin-top:16px; border-left:4px solid #42a5f5;">
+        <div class="card-header" style="background:#e3f2fd;">
+            <h2 style="color:#1565c0;">Jours de Formation</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-primary"
                     data-action="ouvrir-modal-jour-formation">+ Ajouter un jour de formation</button>
@@ -563,7 +563,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
                     <strong>{{ jf.date.strftime('%d/%m/%Y') }}</strong>
-                    <span class="badge" style="background:#2e7d32; color:white; margin-left:8px;">Formation</span>
+                    <span class="badge" style="background:#1976d2; color:white; margin-left:8px;">Formation</span>
                     {% if jf.intitule %}
                     <span style="margin-left:8px; color:#333; font-size:13px;">{{ jf.intitule }}</span>
                     {% endif %}
@@ -588,23 +588,23 @@
     <div id="modal-jour-formation" style="display:none; position:fixed; top:0; left:0;
          width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;
          align-items:center; justify-content:center;">
-        <div style="background:white; border-radius:8px; padding:32px; min-width:380px; max-width:480px;">
+        <div style="background:white; border-radius:16px; padding:32px; width:500px; max-width:95vw; max-height:90vh; overflow-y:auto;">
             <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;">
                 Ajouter un jour de formation</h2>
-            <div style="margin-bottom:16px;">
-                <label style="font-size:13px; font-weight:600;">Date *</label>
-                <input type="date" id="jf-date" class="form-control">
+            <div class="form-field">
+                <label>Date *</label>
+                <input type="date" id="jf-date">
             </div>
-            <div style="margin-bottom:16px;">
-                <label style="font-size:13px; font-weight:600;">Intitulé</label>
-                <input type="text" id="jf-intitule" class="form-control"
+            <div class="form-field">
+                <label>Intitulé</label>
+                <input type="text" id="jf-intitule"
                        placeholder="Ex : Formation pratique R489 cat.1B">
             </div>
-            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:24px;">
-                <button class="btn btn-secondary"
-                        data-action="fermer-modal-jour-formation">Annuler</button>
+            <div class="form-actions">
                 <button class="btn btn-primary"
                         data-action="sauvegarder-jour-formation">Ajouter</button>
+                <button class="btn btn-secondary"
+                        data-action="fermer-modal-jour-formation">Annuler</button>
             </div>
         </div>
     </div>

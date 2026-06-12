@@ -780,7 +780,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var btnSupp = e.target.closest('[data-action="supprimer-jour-formation"]');
         if (btnSupp) {
-            demanderConfirmation('Supprimer ce jour de formation ?', function() {
+            demanderConfirmation('Êtes-vous sûr de vouloir supprimer ce jour de formation ?', function() {
                 fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + btnSupp.dataset.id,
                       { method: 'DELETE' })
                     .then(function(r) { if (r.ok) location.reload(); else alert('Erreur lors de la suppression.'); });
