@@ -903,16 +903,22 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('acp-jour-id').value = jourId;
             var table = document.getElementById('planning-' + jourId);
             var activeCats = new Set();
+            var hasTheorieCol = false;
+            var hasLibreCol = false;
             if (table) {
-                table.querySelectorAll('thead th[data-cat]').forEach(function(th) {
-                    activeCats.add(th.dataset.cat);
-                });
+                table.querySelectorAll('thead th[data-cat]').forEach(function(th) { activeCats.add(th.dataset.cat); });
+                hasTheorieCol = !!table.querySelector('thead th.col-theorie');
+                hasLibreCol = !!table.querySelector('thead th.col-libre');
             }
             document.querySelectorAll('.acp-cat-cb').forEach(function(cb) {
-                var active = activeCats.has(cb.value);
+                var val = cb.value;
+                var active;
+                if (val === '__theorie__') active = hasTheorieCol;
+                else if (val === '__libre__') active = hasLibreCol;
+                else active = activeCats.has(val);
                 cb.checked = active;
                 cb.disabled = active;
-                var lbl = document.getElementById('acp-label-' + cb.value);
+                var lbl = document.getElementById('acp-label-' + val);
                 if (lbl) lbl.style.opacity = active ? '0.5' : '1';
             });
             document.getElementById('modal-ajouter-cat-planning').style.display = 'flex';
@@ -922,28 +928,57 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modal-ajouter-cat-planning').style.display = 'none';
         }
 
-        // Confirmer ajout catégorie → injecter colonne dans le DOM
+        // Confirmer ajout colonne → injecter dans le DOM
         if (e.target.closest('[data-action="confirmer-ajouter-cat-planning"]')) {
             var jourId = document.getElementById('acp-jour-id').value;
             var table = document.getElementById('planning-' + jourId);
             if (!table) { document.getElementById('modal-ajouter-cat-planning').style.display = 'none'; return; }
             document.querySelectorAll('.acp-cat-cb:checked:not(:disabled)').forEach(function(cb) {
-                var cat = cb.value;
-                // Entête
-                var th = document.createElement('th');
-                th.dataset.cat = cat;
-                th.textContent = cat;
-                th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
-                var libreTh = table.querySelector('thead tr th.col-libre');
-                if (libreTh) libreTh.parentNode.insertBefore(th, libreTh);
-                // Cellule par ligne
-                table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
-                    var td = document.createElement('td');
-                    td.style.cssText = 'padding:4px 6px; text-align:center;';
-                    td.innerHTML = '<input type="number" class="h-cat planning-input" data-cat="' + cat + '" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
-                    var libreTd = tr.querySelector('td.td-libre');
-                    if (libreTd) tr.insertBefore(td, libreTd);
-                });
+                var val = cb.value;
+                if (val === '__theorie__') {
+                    var th = document.createElement('th');
+                    th.className = 'col-theorie';
+                    th.textContent = 'Théorie';
+                    th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
+                    var appTh = table.querySelector('thead tr th.col-apprenant');
+                    if (appTh) appTh.parentNode.insertBefore(th, appTh.nextSibling);
+                    table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
+                        var td = document.createElement('td');
+                        td.style.cssText = 'padding:4px 6px; text-align:center;';
+                        td.innerHTML = '<input type="number" class="h-theorie planning-input" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
+                        var appTd = tr.querySelector('td:first-child');
+                        if (appTd) tr.insertBefore(td, appTd.nextSibling);
+                    });
+                } else if (val === '__libre__') {
+                    var th = document.createElement('th');
+                    th.className = 'col-libre';
+                    th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600; background:#f0f2f7;';
+                    th.innerHTML = '<input type="text" class="libelle-libre" placeholder="Libre" style="width:64px; border:none; background:transparent; font-weight:600; color:#1565c0; text-align:center; font-size:13px; font-family:inherit;">';
+                    var totalTh = table.querySelector('thead tr th.col-total');
+                    if (totalTh) totalTh.parentNode.insertBefore(th, totalTh);
+                    table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
+                        var td = document.createElement('td');
+                        td.className = 'td-libre';
+                        td.style.cssText = 'padding:4px 6px; text-align:center; background:#fafafa;';
+                        td.innerHTML = '<input type="number" class="h-libre planning-input" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
+                        var totalTd = tr.querySelector('td.planning-total-cell');
+                        if (totalTd) tr.insertBefore(td, totalTd);
+                    });
+                } else {
+                    var th = document.createElement('th');
+                    th.dataset.cat = val;
+                    th.textContent = val;
+                    th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
+                    var anchorTh = table.querySelector('thead tr th.col-libre') || table.querySelector('thead tr th.col-total');
+                    if (anchorTh) anchorTh.parentNode.insertBefore(th, anchorTh);
+                    table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
+                        var td = document.createElement('td');
+                        td.style.cssText = 'padding:4px 6px; text-align:center;';
+                        td.innerHTML = '<input type="number" class="h-cat planning-input" data-cat="' + val + '" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
+                        var anchorTd = tr.querySelector('td.td-libre') || tr.querySelector('td.planning-total-cell');
+                        if (anchorTd) tr.insertBefore(td, anchorTd);
+                    });
+                }
             });
             document.getElementById('modal-ajouter-cat-planning').style.display = 'none';
             document.querySelectorAll('tr[data-stagiaire]').forEach(function(tr) { recalculerTotalLigne(tr); });
@@ -960,8 +995,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var apprenants = [];
             table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
                 var stagId = parseInt(tr.dataset.stagiaire);
-                var theorie = parseFloat(tr.querySelector('.h-theorie').value) || 0;
-                var libre = parseFloat(tr.querySelector('.h-libre').value) || 0;
+                var tInp = tr.querySelector('.h-theorie');
+                var lInp = tr.querySelector('.h-libre');
+                var theorie = tInp ? (parseFloat(tInp.value) || 0) : 0;
+                var libre = lInp ? (parseFloat(lInp.value) || 0) : 0;
                 var hpc = {};
                 tr.querySelectorAll('.h-cat').forEach(function(inp) {
                     var v = parseFloat(inp.value) || 0;

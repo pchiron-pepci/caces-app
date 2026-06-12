@@ -609,11 +609,14 @@
                 <table id="planning-{{ jf.id }}" style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:#e3f2fd; color:#1565c0;">
-                            <th style="padding:6px 10px; text-align:left; font-weight:600; white-space:nowrap;">Apprenant</th>
-                            <th style="padding:6px 8px; text-align:center; font-weight:600;">Théorie</th>
+                            <th class="col-apprenant" style="padding:6px 10px; text-align:left; font-weight:600; white-space:nowrap;">Apprenant</th>
+                            {% if jf.has_theorie %}
+                            <th class="col-theorie" style="padding:6px 8px; text-align:center; font-weight:600;">Théorie</th>
+                            {% endif %}
                             {% for cat in jf.cats_colonnes %}
                             <th style="padding:6px 8px; text-align:center; font-weight:600;" data-cat="{{ cat }}">{{ cat }}</th>
                             {% endfor %}
+                            {% if jf.has_libre %}
                             <th class="col-libre" style="padding:6px 8px; text-align:center; font-weight:600; background:#f0f2f7;">
                                 {% if user_role != 'terrain' and session.statut != 'terminee' %}
                                 <input type="text" class="libelle-libre" value="{{ jf.libelle_colonne_libre or '' }}"
@@ -623,7 +626,8 @@
                                 {{ jf.libelle_colonne_libre or 'Libre' }}
                                 {% endif %}
                             </th>
-                            <th style="padding:6px 8px; text-align:center; font-weight:600;">Total</th>
+                            {% endif %}
+                            <th class="col-total" style="padding:6px 8px; text-align:center; font-weight:600;">Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -632,12 +636,14 @@
                         {% set hpc = pa.heures_par_cat if pa else {} %}
                         <tr data-stagiaire="{{ sc.stagiaire_id }}" style="border-bottom:1px solid #f0f2f7;">
                             <td style="padding:6px 10px; white-space:nowrap;">{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</td>
+                            {% if jf.has_theorie %}
                             <td style="padding:4px 6px; text-align:center;">
                                 <input type="number" class="h-theorie planning-input" min="0" max="7" step="0.25"
                                        value="{{ pa.heures_theorie if pa else 0 }}"
                                        {% if user_role == 'terrain' or session.statut == 'terminee' %}disabled{% endif %}
                                        style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">
                             </td>
+                            {% endif %}
                             {% for cat in jf.cats_colonnes %}
                             <td style="padding:4px 6px; text-align:center;">
                                 <input type="number" class="h-cat planning-input" data-cat="{{ cat }}" min="0" max="7" step="0.25"
@@ -646,12 +652,14 @@
                                        style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">
                             </td>
                             {% endfor %}
+                            {% if jf.has_libre %}
                             <td class="td-libre" style="padding:4px 6px; text-align:center; background:#fafafa;">
                                 <input type="number" class="h-libre planning-input" min="0" max="7" step="0.25"
                                        value="{{ pa.heures_libre if pa else 0 }}"
                                        {% if user_role == 'terrain' or session.statut == 'terminee' %}disabled{% endif %}
                                        style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">
                             </td>
+                            {% endif %}
                             <td class="planning-total-cell" style="padding:6px 10px; text-align:center; font-weight:600; min-width:48px;"></td>
                         </tr>
                         {% endfor %}
@@ -684,9 +692,17 @@
             <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:20px; margin-bottom:4px;">
                 Ajouter une catégorie</h2>
             <p style="font-size:13px; color:#666; margin-bottom:16px;">
-                Colonnes catégories à afficher dans le tableau.
+                Colonnes à afficher dans le tableau.
             </p>
             <input type="hidden" id="acp-jour-id">
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e8ecf4;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;" id="acp-label-__theorie__">
+                    <input type="checkbox" class="acp-cat-cb" value="__theorie__"> Théorie
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;" id="acp-label-__libre__">
+                    <input type="checkbox" class="acp-cat-cb" value="__libre__"> Colonne libre
+                </label>
+            </div>
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:24px;" id="acp-cat-liste">
                 {% for cat in categories_formation %}
                 <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;" id="acp-label-{{ cat }}">

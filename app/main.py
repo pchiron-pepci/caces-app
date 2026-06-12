@@ -1126,6 +1126,8 @@ def page_session_detail(request: Request, session_id: int):
                     except Exception:
                         pass
             jf.cats_colonnes = [c for c in categories_formation if c in _cats_set]
+            jf.has_theorie = any(v.get("heures_theorie", 0) > 0 for v in jf.planning.values())
+            jf.has_libre = bool(jf.libelle_colonne_libre) or any(v.get("heures_libre", 0) > 0 for v in jf.planning.values())
 
         utilisateurs_terrain = db.query(Utilisateur).filter(
             Utilisateur.role == "terrain",
