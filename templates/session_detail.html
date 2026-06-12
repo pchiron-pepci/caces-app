@@ -688,7 +688,7 @@
             </p>
             <input type="hidden" id="acp-jour-id">
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:24px;" id="acp-cat-liste">
-                {% for cat in categories %}
+                {% for cat in categories_formation %}
                 <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;" id="acp-label-{{ cat }}">
                     <input type="checkbox" class="acp-cat-cb" value="{{ cat }}"> {{ cat }}
                 </label>

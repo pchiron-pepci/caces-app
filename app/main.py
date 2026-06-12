@@ -1002,6 +1002,13 @@ def page_session_detail(request: Request, session_id: int):
         ).order_by(Categorie.code).all() if famille else []
         categories = [c.code for c in categories_obj]
         ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
+        # Formation : toutes les catégories de la famille, sans filtre habilitation
+        categories_formation_obj = db.query(Categorie).filter(
+            Categorie.famille_id == (famille.id if famille else 0),
+            Categorie.actif == True,
+            Categorie.est_option == False
+        ).order_by(Categorie.code).all() if famille else []
+        categories_formation = [c.code for c in categories_formation_obj]
 
         options_par_cat = {}
         opt_incluse_set = set()
@@ -1118,7 +1125,7 @@ def page_session_detail(request: Request, session_id: int):
                         _cats_set.update(json.loads(pa.heures_par_cat).keys())
                     except Exception:
                         pass
-            jf.cats_colonnes = [c for c in categories if c in _cats_set]
+            jf.cats_colonnes = [c for c in categories_formation if c in _cats_set]
 
         utilisateurs_terrain = db.query(Utilisateur).filter(
             Utilisateur.role == "terrain",
@@ -1306,6 +1313,7 @@ def page_session_detail(request: Request, session_id: int):
                 "lieu": lieu,
                 "session_candidats": session_candidats,
                 "categories": categories,
+                "categories_formation": categories_formation,
                 "ut_par_cat": ut_par_cat,
                 "epreuves_map": epreuves_map,
                 "ut_candidat": ut_candidat,
