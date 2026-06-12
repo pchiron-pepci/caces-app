@@ -1065,6 +1065,29 @@ def page_session_detail(request: Request, session_id: int):
             JourFormation.actif == True
         ).order_by(JourFormation.date).all()
 
+        # Affectations formateurs — annoter chaque jf pour l'affichage inline
+        _af_ids = [jf.id for jf in jours_formation]
+        _af_list = db.query(AffectationFormation).filter(
+            AffectationFormation.jour_formation_id.in_(_af_ids)
+        ).all() if _af_ids else []
+        _af_user_ids = list({af.user_id for af in _af_list})
+        _af_users_map = {u.id: u for u in db.query(Utilisateur).filter(
+            Utilisateur.id.in_(_af_user_ids)
+        ).all()} if _af_user_ids else {}
+        for jf in jours_formation:
+            jf.affectations = sorted(
+                [{"user_id": af.user_id,
+                  "nom_complet": f"{_af_users_map[af.user_id].nom} {_af_users_map[af.user_id].prenom}"
+                                 if af.user_id in _af_users_map else "?",
+                  "theorie": af.theorie, "pratique": af.pratique, "principal": af.principal}
+                 for af in _af_list if af.jour_formation_id == jf.id],
+                key=lambda x: (not x["principal"], x["nom_complet"])
+            )
+        utilisateurs_terrain = db.query(Utilisateur).filter(
+            Utilisateur.role == "terrain",
+            Utilisateur.actif == True
+        ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
+
         for j in jours_test:
             if j.testeur_id:
                 t = db.query(Testeur).filter(Testeur.id == j.testeur_id).first()
@@ -1267,6 +1290,7 @@ def page_session_detail(request: Request, session_id: int):
                 "verificateurs_liste": verificateurs_liste,
                 "attestations_neutralite_map": attestations_neutralite_map,
                 "jours_formation": jours_formation,
+                "utilisateurs_terrain": utilisateurs_terrain,
                 "user_role": _u.role if _u else None,
             }
         )

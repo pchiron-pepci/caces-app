@@ -792,5 +792,78 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(function(r) { if (r.ok) location.reload(); else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur lors de la suppression.'); }); });
             });
         }
+
+        // ── LOT 2a : Affectation formateurs ───────────────────────────────────
+        var btnAff = e.target.closest('[data-action="ouvrir-modal-affectation-formation"]');
+        if (btnAff) {
+            var jourId = btnAff.dataset.jourId;
+            document.getElementById('af-jour-id').value = jourId;
+            document.getElementById('af-jour-label').textContent = btnAff.dataset.jourLabel || '';
+            // Reset complet
+            document.querySelectorAll('.af-formateur-cb').forEach(function(cb) {
+                cb.checked = false;
+                var opts = document.getElementById('af-opts-' + cb.value);
+                if (opts) { opts.style.display = 'none'; opts.querySelectorAll('input').forEach(function(i) { i.checked = false; }); }
+            });
+            // Pré-remplissage via GET
+            fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + jourId + '/affectations')
+                .then(function(r) { return r.json(); })
+                .then(function(afs) {
+                    afs.forEach(function(af) {
+                        var cb = document.getElementById('af-cb-' + af.user_id);
+                        if (!cb) return;
+                        cb.checked = true;
+                        var opts = document.getElementById('af-opts-' + af.user_id);
+                        if (opts) {
+                            opts.style.display = 'flex';
+                            var theorieCb = opts.querySelector('.af-theorie');
+                            var pratiqueCb = opts.querySelector('.af-pratique');
+                            var principalR = opts.querySelector('.af-principal');
+                            if (theorieCb) theorieCb.checked = af.theorie;
+                            if (pratiqueCb) pratiqueCb.checked = af.pratique;
+                            if (principalR && af.principal) principalR.checked = true;
+                        }
+                    });
+                });
+            document.getElementById('modal-affectation-formation').style.display = 'flex';
+        }
+
+        if (e.target.closest('[data-action="fermer-modal-affectation-formation"]')) {
+            document.getElementById('modal-affectation-formation').style.display = 'none';
+        }
+
+        if (e.target.closest('[data-action="sauvegarder-affectation-formation"]')) {
+            var jourIdSave = document.getElementById('af-jour-id').value;
+            var affectations = [];
+            document.querySelectorAll('.af-formateur-cb:checked').forEach(function(cb) {
+                var userId = parseInt(cb.value);
+                var opts = document.getElementById('af-opts-' + userId);
+                affectations.push({
+                    user_id: userId,
+                    theorie: opts ? opts.querySelector('.af-theorie').checked : false,
+                    pratique: opts ? opts.querySelector('.af-pratique').checked : false,
+                    principal: opts ? opts.querySelector('.af-principal').checked : false,
+                });
+            });
+            fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + jourIdSave + '/affectations', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(affectations),
+            }).then(function(r) {
+                if (r.ok) { document.getElementById('modal-affectation-formation').style.display = 'none'; location.reload(); }
+                else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur lors de l\'enregistrement.'); });
+            });
+        }
+    });
+
+    // Toggle options formateur quand la case principale est cochée/décochée
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('af-formateur-cb')) {
+            var opts = document.getElementById('af-opts-' + e.target.value);
+            if (opts) {
+                opts.style.display = e.target.checked ? 'flex' : 'none';
+                if (!e.target.checked) opts.querySelectorAll('input').forEach(function(i) { i.checked = false; });
+            }
+        }
     });
 });

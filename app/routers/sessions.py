@@ -9,7 +9,7 @@ from app.models.stagiaire import Stagiaire
 from app.models.testeur import Testeur
 from app.models.categorie import Categorie, Famille
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
-from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant
+from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant, AffectationTest
 from app.models.caces_obtenu import CacesObtenu
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille
 from app.models.consentement_rgpd import ConsentementRGPD
@@ -805,3 +805,105 @@ def delete_jour_formation(
     db.delete(jf)
     db.commit()
     return {"message": "Jour de formation supprimé"}
+
+
+# ── AFFECTATIONS FORMATEURS ────────────────────────────────────────────────────
+
+def _verifier_impartialite(db, session_id: int, user_id: int) -> bool:
+    """True si user_id est testeur pratique sur un JourTest actif de cette session.
+
+    Implémente la règle d'impartialité CACES® : un formateur pratique ne peut pas
+    être testeur pratique dans la même session, et vice-versa.
+    La table AffectationTest est vide tant que le LOT 3 n'est pas déployé,
+    donc ce check ne bloquera jamais avant cette étape — mais le code est correct.
+    """
+    return (
+        db.query(AffectationTest)
+        .join(JourTest, AffectationTest.jour_test_id == JourTest.id)
+        .filter(
+            JourTest.session_id == session_id,
+            JourTest.actif == True,
+            AffectationTest.user_id == user_id,
+            AffectationTest.role == "testeur",
+        )
+        .first() is not None
+    )
+
+
+class AffectationFormationItem(BaseModel):
+    user_id: int
+    theorie: bool = False
+    pratique: bool = False
+    principal: bool = False
+
+
+@router.get("/{session_id}/jours-formation/{jour_id}/affectations")
+def get_affectations_formation(
+    session_id: int,
+    jour_id: int,
+    db: DBSession = Depends(get_db),
+):
+    jf = db.query(JourFormation).filter(
+        JourFormation.id == jour_id,
+        JourFormation.session_id == session_id,
+    ).first()
+    if not jf:
+        raise HTTPException(status_code=404, detail="Jour de formation non trouvé")
+    afs = db.query(AffectationFormation).filter(
+        AffectationFormation.jour_formation_id == jour_id
+    ).all()
+    return [
+        {"user_id": af.user_id, "theorie": af.theorie,
+         "pratique": af.pratique, "principal": af.principal}
+        for af in afs
+    ]
+
+
+@router.put("/{session_id}/jours-formation/{jour_id}/affectations")
+def save_affectations_formation(
+    session_id: int,
+    jour_id: int,
+    data: List[AffectationFormationItem],
+    db: DBSession = Depends(get_db),
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+):
+    if current_user.role == "terrain":
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(session)
+    jf = db.query(JourFormation).filter(
+        JourFormation.id == jour_id,
+        JourFormation.session_id == session_id,
+    ).first()
+    if not jf:
+        raise HTTPException(status_code=404, detail="Jour de formation non trouvé")
+
+    # Impartialité : formateur pratique ≠ testeur pratique dans la même session
+    for item in data:
+        if item.pratique and _verifier_impartialite(db, session_id, item.user_id):
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Ce formateur est déjà désigné comme testeur pratique dans cette session "
+                    "(règle d'impartialité CACES®)."
+                ),
+            )
+
+    # Principal unique : au plus 1 principal dans la liste soumise
+    if sum(1 for item in data if item.principal) > 1:
+        raise HTTPException(status_code=400, detail="Un seul formateur principal par jour.")
+
+    # Remplacement atomique — le DELETE global garantit qu'un ancien principal est remplacé
+    db.query(AffectationFormation).filter(
+        AffectationFormation.jour_formation_id == jour_id
+    ).delete()
+    for item in data:
+        db.add(AffectationFormation(
+            jour_formation_id=jour_id,
+            user_id=item.user_id,
+            theorie=item.theorie,
+            pratique=item.pratique,
+            principal=item.principal,
+        ))
+    db.commit()
+    return {"message": "Affectations enregistrées"}
