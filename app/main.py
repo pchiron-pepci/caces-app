@@ -51,77 +51,95 @@ from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
 
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS date_validite TIMESTAMP"))
-        _conn.execute(text("ALTER TABLE document_officiel DROP COLUMN IF EXISTS date_upload"))
-        _conn.execute(text("ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS numero_certificat VARCHAR(100)"))
-        _conn.commit()
-except Exception:
-    pass
+# ─────────────────────────────────────────────────────────────────────────────
+# RÈGLE ABSOLUE : toute colonne ajoutée à une table EXISTANTE doit être listée
+# ici avec ALTER TABLE ... ADD COLUMN IF NOT EXISTS. create_all() ne modifie
+# jamais les tables existantes — il crée uniquement les tables absentes.
+# ➜ UNIQUEMENT des ADD COLUMN (additif, sans risque). Aucun DROP dans cette
+#   fonction. Les suppressions de colonnes se font manuellement, en conscience,
+#   après vérification que la colonne est vide en prod.
+# ─────────────────────────────────────────────────────────────────────────────
+def _run_startup_migrations():
+    _MIGRATIONS = [
+        # document_officiel
+        "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS date_validite TIMESTAMP",
+        "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS numero_certificat VARCHAR(100)",
+        "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS contenu_pdf TEXT",
+        # testeurs
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_pdf TEXT",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_pdf TEXT",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_nom VARCHAR",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_date DATE",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_pdf TEXT",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_nom VARCHAR",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_date DATE",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_pdf TEXT",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_nom VARCHAR",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_date DATE",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_pdf TEXT",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_nom VARCHAR",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS etat VARCHAR(20) DEFAULT 'actif'",
+        "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS utilisateur_id INTEGER REFERENCES utilisateurs(id)",
+        # utilisateurs
+        "ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS role_referent VARCHAR",
+        "ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS telephone VARCHAR",
+        # config_organisme
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS audit_interne_date DATE",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS audit_externe_date DATE",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS revue_direction_date DATE",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS pin_formateur VARCHAR(20) DEFAULT '1234'",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS pin_admin VARCHAR(20) DEFAULT '1505'",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS prochain_numero_caces INTEGER DEFAULT 1",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS adresse TEXT",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS siret VARCHAR(20)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS email VARCHAR(200)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS telephone VARCHAR(50)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_nom VARCHAR(100)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_prenom VARCHAR(100)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_qualite VARCHAR(100)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signature_base64 TEXT",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signature_nom VARCHAR(200)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS url_verification_caces VARCHAR(500)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS logo2_base64 TEXT",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS logo2_nom VARCHAR(200)",
+        # sessions
+        "ALTER TABLE sessions ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT 'caces'",
+        # jours_test
+        "ALTER TABLE jours_test ADD COLUMN IF NOT EXISTS testeurs_sup TEXT",
+        "ALTER TABLE jours_test ADD COLUMN IF NOT EXISTS tirage_themes_json TEXT",
+        # jour_test_candidats
+        "ALTER TABLE jour_test_candidats ADD COLUMN IF NOT EXISTS options_planifiees TEXT",
+        # session_epreuves
+        "ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS options_obtenues VARCHAR(200)",
+        "ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE",
+        # resultats_theorie
+        "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE",
+        # caces_obtenus
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT",
+        # carte_caces
+        "ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS caces_json TEXT",
+        "ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS token_verification VARCHAR(36)",
+        # stagiaires
+        "ALTER TABLE stagiaires ADD COLUMN IF NOT EXISTS photo_base64 TEXT",
+        # option_categorie
+        "ALTER TABLE option_categorie ADD COLUMN IF NOT EXISTS incluse BOOLEAN DEFAULT FALSE",
+        # non_conformites
+        "ALTER TABLE non_conformites ADD COLUMN IF NOT EXISTS reference VARCHAR(20) UNIQUE",
+        "ALTER TABLE non_conformites ADD COLUMN IF NOT EXISTS nature VARCHAR(30)",
+        # consentements_rgpd
+        "ALTER TABLE consentements_rgpd ADD COLUMN IF NOT EXISTS verificateur_identite VARCHAR(200)",
+        "ALTER TABLE consentements_rgpd ADD COLUMN IF NOT EXISTS horodatage_verification TIMESTAMP",
+    ]
+    for sql in _MIGRATIONS:
+        try:
+            with engine.connect() as _c:
+                _c.execute(text(sql))
+                _c.commit()
+        except Exception as e:
+            print(f"[migration] WARN {sql[:80]!r} → {e}", flush=True)
 
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS contenu_pdf TEXT"))
-        _conn.execute(text("ALTER TABLE document_officiel DROP COLUMN IF EXISTS url"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_pdf TEXT"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR"))
-        _conn.execute(text("ALTER TABLE testeurs DROP COLUMN IF EXISTS carte_url"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_pdf TEXT"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_nom VARCHAR"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS attestation_prevention_date DATE"))
-        _conn.execute(text("ALTER TABLE testeurs DROP COLUMN IF EXISTS attestation_prevention_url"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS role_referent VARCHAR"))
-        _conn.execute(text("ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS telephone VARCHAR"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_pdf TEXT"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_nom VARCHAR"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS visite_medicale_date DATE"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_pdf TEXT"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_nom VARCHAR"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS evaluation_date DATE"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_pdf TEXT"))
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_nom VARCHAR"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS etat VARCHAR(20) DEFAULT 'actif'"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS utilisateur_id INTEGER REFERENCES utilisateurs(id)"))
-        _conn.commit()
-except Exception:
-    pass
+_run_startup_migrations()
 
 try:
     with engine.connect() as _conn:
@@ -140,15 +158,6 @@ try:
                 logo_nom VARCHAR(200)
             )
         """))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS audit_interne_date DATE"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS audit_externe_date DATE"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS revue_direction_date DATE"))
         _conn.commit()
 except Exception:
     pass
@@ -209,14 +218,6 @@ except Exception:
 
 try:
     with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE non_conformites ADD COLUMN IF NOT EXISTS reference VARCHAR(20) UNIQUE"))
-        _conn.execute(text("ALTER TABLE non_conformites ADD COLUMN IF NOT EXISTS nature VARCHAR(30)"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
         _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS carte_testeur (
                 id SERIAL PRIMARY KEY,
@@ -228,53 +229,6 @@ try:
                 actif BOOLEAN DEFAULT TRUE
             )
         """))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE jour_test_candidats ADD COLUMN IF NOT EXISTS options_planifiees TEXT"))
-        _conn.execute(text("ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS options_obtenues VARCHAR(200)"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS pin_formateur VARCHAR(20) DEFAULT '1234'"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS prochain_numero_caces INTEGER DEFAULT 1"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS adresse TEXT"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS siret VARCHAR(20)"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS email VARCHAR(200)"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS telephone VARCHAR(50)"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_nom VARCHAR(100)"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_prenom VARCHAR(100)"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signataire_qualite VARCHAR(100)"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signature_base64 TEXT"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS signature_nom VARCHAR(200)"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS url_verification_caces VARCHAR(500)"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE"))
-        _conn.execute(text("ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE"))
         _conn.commit()
 except Exception:
     pass
@@ -314,50 +268,6 @@ try:
                 CONSTRAINT uq_caces_obtenu UNIQUE(stagiaire_id, session_id, categorie)
             )
         """))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS caces_json TEXT"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS logo2_base64 TEXT"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS logo2_nom VARCHAR(200)"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS pin_admin VARCHAR(20) DEFAULT '1505'"))
-        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS pin_formateur VARCHAR(20) DEFAULT '1234'"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS token_verification VARCHAR(36)"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE stagiaires ADD COLUMN IF NOT EXISTS photo_base64 TEXT"))
-        _conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as _conn:
-        _conn.execute(text("ALTER TABLE option_categorie ADD COLUMN IF NOT EXISTS incluse BOOLEAN DEFAULT FALSE"))
         _conn.commit()
 except Exception:
     pass
