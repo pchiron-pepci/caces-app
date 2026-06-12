@@ -29,13 +29,13 @@
         {% if session.statut == 'terminee' %}
             <span style="color:#2e7d32; font-size:13px;">🔒 Session verrouilee</span>
             {% if user_role != 'terrain' %}
-            <button class="btn btn-secondary" onclick="reouvrirsession()">🔓 Reouvrir</button>
+            <button class="btn btn-secondary" onclick="reouvrirsession()" title="Réouvrir la session">🔒</button>
             {% endif %}
         {% elif session.statut != 'annulee' %}
     {% if user_role != 'terrain' %}
     <a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary">✏️</a>
     {% endif %}
-    <button class="btn btn-danger" onclick="cloturerSession()">🔒 Cloturer la session</button>
+    <button class="btn btn-danger" onclick="cloturerSession()" title="Clôturer la session">🔓</button>
 {% endif %}
     </div>
 </div>
