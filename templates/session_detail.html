@@ -301,7 +301,7 @@
                         {% if session.statut != 'terminee' %}
                         {% if user_role != 'terrain' %}
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                            onclick="ouvrirAjoutCandidatJour({{ j.id }})">+ Candidat</button>
+                            onclick="ouvrirAjoutCandidatJour({{ j.id }})" title="Ajouter un candidat">👥</button>
                         {% endif %}
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
                             class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
