@@ -33,6 +33,10 @@ router = APIRouter(prefix="/api/sessions", tags=["Sessions"])
 
 class JourModifData(BaseModel):
     date: Optional[str] = None
+    testeur_id: Optional[int] = None
+
+class TesteurSupData(BaseModel):
+    testeurs_sup: Optional[str] = None
 
 class SessionCreate(BaseModel):
     famille: str
@@ -86,6 +90,7 @@ class JourTestCreate(BaseModel):
     session_id: int
     date: date
     type: str
+    testeur_id: Optional[int] = None
     note: Optional[str] = None
     candidats: List[int] = []
     candidats_pratique: List[CandidatJourPratique] = []
@@ -285,6 +290,7 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
         session_id=session_id,
         date=data.date,
         type=data.type,
+        testeur_id=data.testeur_id,
         grille_id=None,
         tirage_themes_json=tirage_json,
         note=data.note
@@ -669,8 +675,20 @@ def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSess
         raise HTTPException(status_code=404, detail="Jour non trouve")
     if data.date:
         j.date = date_type.fromisoformat(data.date)
+    if data.testeur_id:
+        j.testeur_id = data.testeur_id
     db.commit()
     return {"message": "Jour modifie"}
+
+@router.patch("/{session_id}/jours/{jour_id}/testeurs-sup")
+def update_testeurs_sup(session_id: int, jour_id: int, data: TesteurSupData, db: DBSession = Depends(get_db)):
+    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+    j = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
+    if not j:
+        raise HTTPException(status_code=404, detail="Jour non trouvé")
+    j.testeurs_sup = data.testeurs_sup or None
+    db.commit()
+    return {"message": "OK"}
 
 @router.get("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/check-theorie")
 def check_resultat_theorie_candidat(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
@@ -792,30 +810,21 @@ def delete_jour_formation(
 # ── AFFECTATIONS FORMATEURS ────────────────────────────────────────────────────
 
 def _verifier_impartialite(db, session_id: int, user_id: int) -> bool:
-    """True si user_id est testeur pratique sur un JourTest pratique actif de cette session."""
+    """True si user_id est testeur pratique sur un JourTest actif de cette session.
+
+    Implémente la règle d'impartialité CACES® : un formateur pratique ne peut pas
+    être testeur pratique dans la même session, et vice-versa.
+    La table AffectationTest est vide tant que le LOT 3 n'est pas déployé,
+    donc ce check ne bloquera jamais avant cette étape — mais le code est correct.
+    """
     return (
         db.query(AffectationTest)
         .join(JourTest, AffectationTest.jour_test_id == JourTest.id)
         .filter(
             JourTest.session_id == session_id,
             JourTest.actif == True,
-            JourTest.type == "pratique",
             AffectationTest.user_id == user_id,
-        )
-        .first() is not None
-    )
-
-
-def _est_formateur_pratique(db, session_id: int, user_id: int) -> bool:
-    """True si user_id est formateur pratique sur un JourFormation actif de cette session."""
-    return (
-        db.query(AffectationFormation)
-        .join(JourFormation, AffectationFormation.jour_formation_id == JourFormation.id)
-        .filter(
-            JourFormation.session_id == session_id,
-            JourFormation.actif == True,
-            AffectationFormation.user_id == user_id,
-            AffectationFormation.pratique == True,
+            AffectationTest.role == "testeur",
         )
         .first() is not None
     )
@@ -894,67 +903,6 @@ def save_affectations_formation(
             user_id=item.user_id,
             theorie=item.theorie,
             pratique=item.pratique,
-            principal=item.principal,
-        ))
-    db.commit()
-    return {"message": "Affectations enregistrées"}
-
-
-# ── AFFECTATIONS TESTEURS ─────────────────────────────────────────────────────
-
-class AffectationTestItem(BaseModel):
-    user_id: int
-    principal: bool = False
-
-
-@router.get("/{session_id}/jours/{jour_id}/affectations-test")
-def get_affectations_test(
-    session_id: int,
-    jour_id: int,
-    db: DBSession = Depends(get_db),
-):
-    jt = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
-    if not jt:
-        raise HTTPException(status_code=404, detail="Jour non trouvé")
-    ats = db.query(AffectationTest).filter(AffectationTest.jour_test_id == jour_id).all()
-    return [{"user_id": at.user_id, "principal": at.principal} for at in ats]
-
-
-@router.put("/{session_id}/jours/{jour_id}/affectations-test")
-def save_affectations_test(
-    session_id: int,
-    jour_id: int,
-    data: List[AffectationTestItem],
-    db: DBSession = Depends(get_db),
-    current_user: Utilisateur = Depends(get_utilisateur_courant),
-):
-    if current_user.role == "terrain":
-        raise HTTPException(status_code=403, detail="Accès non autorisé")
-    session = db.query(Session).filter(Session.id == session_id).first()
-    _check_modifiable(session)
-    jt = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
-    if not jt:
-        raise HTTPException(status_code=404, detail="Jour non trouvé")
-
-    if jt.type == "pratique":
-        for item in data:
-            if _est_formateur_pratique(db, session_id, item.user_id):
-                raise HTTPException(
-                    status_code=409,
-                    detail=(
-                        "Ce testeur est déjà désigné comme formateur pratique dans cette session "
-                        "(règle d'impartialité CACES®)."
-                    ),
-                )
-
-    if sum(1 for item in data if item.principal) > 1:
-        raise HTTPException(status_code=400, detail="Un seul testeur principal par jour.")
-
-    db.query(AffectationTest).filter(AffectationTest.jour_test_id == jour_id).delete()
-    for item in data:
-        db.add(AffectationTest(
-            jour_test_id=jour_id,
-            user_id=item.user_id,
             principal=item.principal,
         ))
     db.commit()

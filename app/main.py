@@ -874,10 +874,11 @@ def page_modifier_jour(request: Request, session_id: int, jour_id: int):
     try:
         session = db.query(Session).filter(Session.id == session_id).first()
         jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
+        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
         return templates.TemplateResponse(
             request=request,
             name="modifier_jour.html",
-            context={"session": session, "jour": jour}
+            context={"session": session, "jour": jour, "testeurs": testeurs_list}
         )
     finally:
         db.close()
@@ -892,6 +893,7 @@ async def post_modifier_jour(request: Request, session_id: int, jour_id: int):
         j = db.query(JourTest).filter(JourTest.id == jour_id).first()
         s = db.query(Session).filter(Session.id == session_id).first()
         new_date = form.get("date")
+        testeur_id = form.get("testeur_id")
         erreur = None
         if new_date:
             if s.date_pratique_debut and new_date < str(s.date_pratique_debut):
@@ -899,12 +901,14 @@ async def post_modifier_jour(request: Request, session_id: int, jour_id: int):
             elif s.date_pratique_fin and new_date > str(s.date_pratique_fin):
                 erreur = f"⚠️ Date postérieure à la fin de la session ({s.date_pratique_fin.strftime('%d/%m/%Y')})"
         if erreur:
+            testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
             return templates.TemplateResponse(
                 request=request,
                 name="modifier_jour.html",
-                context={"session": s, "jour": j, "erreur": erreur}
+                context={"session": s, "jour": j, "testeurs": testeurs_list, "erreur": erreur}
             )
         j.date = date.fromisoformat(new_date) if new_date else j.date
+        j.testeur_id = int(testeur_id) if testeur_id else j.testeur_id
         db.commit()
         return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
     finally:
@@ -1130,63 +1134,12 @@ def page_session_detail(request: Request, session_id: int):
             Utilisateur.actif == True
         ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
 
-        # Testeurs disponibles pour la session (utilisateurs avec fiche Testeur active)
-        _testeurs_fiches = db.query(Testeur).filter(
-            Testeur.utilisateur_id != None,
-            Testeur.actif == True
-        ).all()
-        _testeur_by_user = {t.utilisateur_id: t for t in _testeurs_fiches}
-        _testeur_fiche_ids = [t.id for t in _testeurs_fiches]
-        _habs_by_tid = {}
-        if _testeur_fiche_ids:
-            for _h in db.query(HabilitationTesteur).filter(
-                HabilitationTesteur.testeur_id.in_(_testeur_fiche_ids),
-                HabilitationTesteur.famille == session.famille,
-                HabilitationTesteur.actif == True
-            ).all():
-                _habs_by_tid.setdefault(_h.testeur_id, []).append(_h.categorie)
-        _testeur_users_list = db.query(Utilisateur).filter(
-            Utilisateur.id.in_(list(_testeur_by_user.keys()))
-        ).order_by(Utilisateur.nom, Utilisateur.prenom).all() if _testeur_by_user else []
-        utilisateurs_testeurs = []
-        for _u in _testeur_users_list:
-            _tf = _testeur_by_user.get(_u.id)
-            _habs = sorted(_habs_by_tid.get(_tf.id, [])) if _tf else []
-            utilisateurs_testeurs.append({
-                "user_id": _u.id,
-                "nom": _u.nom,
-                "prenom": _u.prenom or "",
-                "habs": _habs,
-            })
-
-        # AffectationTest — annoter chaque jour_test pour l'affichage inline
-        _jt_ids = [j.id for j in jours_test]
-        _at_list = db.query(AffectationTest).filter(
-            AffectationTest.jour_test_id.in_(_jt_ids)
-        ).all() if _jt_ids else []
-        _at_uid_set = list({at.user_id for at in _at_list})
-        _at_users = {u.id: u for u in db.query(Utilisateur).filter(
-            Utilisateur.id.in_(_at_uid_set)
-        ).all()} if _at_uid_set else {}
-
         for j in jours_test:
-            _ats = [at for at in _at_list if at.jour_test_id == j.id]
-            _principal_at = next((at for at in _ats if at.principal), None)
-            _pu = _at_users.get(_principal_at.user_id) if _principal_at else None
-            j.testeur_nom = _abr(_pu) if _pu else "—"
-            j.testeurs_affectes = []
-            for _at in _ats:
-                _u = _at_users.get(_at.user_id)
-                if not _u:
-                    continue
-                _tf = _testeur_by_user.get(_u.id)
-                _habs = sorted(_habs_by_tid.get(_tf.id, [])) if _tf else []
-                j.testeurs_affectes.append({
-                    "user_id": _at.user_id,
-                    "nom_abr": _abr(_u),
-                    "habs": _habs,
-                    "principal": _at.principal,
-                })
+            if j.testeur_id:
+                t = db.query(Testeur).filter(Testeur.id == j.testeur_id).first()
+                j.testeur_nom = f"{t.nom} {t.prenom}" if t else "?"
+            else:
+                j.testeur_nom = "—"
             if j.grille_id:
                 g = db.query(GrilleTheorie).filter(GrilleTheorie.id == j.grille_id).first()
                 j.grille_numero = g.numero if g else "?"
@@ -1385,7 +1338,6 @@ def page_session_detail(request: Request, session_id: int):
                 "attestations_neutralite_map": attestations_neutralite_map,
                 "jours_formation": jours_formation,
                 "utilisateurs_terrain": utilisateurs_terrain,
-                "utilisateurs_testeurs": utilisateurs_testeurs,
                 "user_role": _u.role if _u else None,
             }
         )
