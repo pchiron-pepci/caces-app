@@ -333,6 +333,35 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS pin_admin VARCHAR(20) DEFAULT '1505'"))
+        _conn.execute(text("ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS pin_formateur VARCHAR(20) DEFAULT '1234'"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS token_verification VARCHAR(36)"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE stagiaires ADD COLUMN IF NOT EXISTS photo_base64 TEXT"))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE option_categorie ADD COLUMN IF NOT EXISTS incluse BOOLEAN DEFAULT FALSE"))
+        _conn.commit()
+except Exception:
+    pass
+
 def ut_ligne(base_ut: float, cat_code: str, options: list, opt_incluse_set: set) -> float:
     """UT pour une catégorie + ses options cochées.
     base_ut = 0.0 pour option-seule (catégorie non planifiée en base)."""
