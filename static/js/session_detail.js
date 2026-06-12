@@ -22,14 +22,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('change', function(e) {
         const cb = e.target;
-        if (!cb.matches('[name^="jp-cat-"]') || cb.checked) return;
+        if (!cb.matches('[name^="jp-cat-"]')) return;
         const stagiaireId = parseInt(cb.name.replace('jp-cat-', ''));
         const cat = cb.value;
-        const catsAvecResultat = (window._CANDIDATS_EPREUVES[stagiaireId] || window._CANDIDATS_EPREUVES[String(stagiaireId)] || []);
-        if (catsAvecResultat.includes(cat)) {
-            cb.checked = true;
-            alert('Supprimez d\'abord le résultat de la catégorie ' + cat + ' avant de la retirer');
+        if (!cb.checked) {
+            const catsAvecResultat = (window._CANDIDATS_EPREUVES[stagiaireId] || window._CANDIDATS_EPREUVES[String(stagiaireId)] || []);
+            if (catsAvecResultat.includes(cat)) {
+                cb.checked = true;
+                alert('Supprimez d\'abord le résultat de la catégorie ' + cat + ' avant de la retirer');
+            }
         }
+        // Sync included options to follow their category
+        document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cat + '"][data-incluse="1"]').forEach(function(ob) {
+            ob.checked = cb.checked;
+            ob.disabled = true;
+        });
     });
 });
 
@@ -42,11 +49,21 @@ function showTab(name, btn) {
     btn.classList.add('active-tab');
 }
 
+function _syncIncludesForStag(stagiaireId) {
+    document.querySelectorAll('[name="jp-cat-' + stagiaireId + '"]').forEach(function(catCb) {
+        document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + catCb.value + '"][data-incluse="1"]').forEach(function(ob) {
+            ob.checked = catCb.checked;
+            ob.disabled = true;
+        });
+    });
+}
+
 function toggleCandidatPratique(stagiaireId) {
     const checked = document.getElementById('jp-cand-' + stagiaireId).checked;
     const cats = document.getElementById('cats-' + stagiaireId);
     cats.style.opacity = checked ? '1' : '0.3';
     cats.querySelectorAll('input').forEach(cb => cb.disabled = !checked);
+    _syncIncludesForStag(stagiaireId);
 }
 
 function calculerRecapUT() {
@@ -180,6 +197,7 @@ function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories
                     });
                 });
             }
+            _syncIncludesForStag(stagiaireId);
         });
     }
     document.getElementById('modal-jour-pratique').style.display = 'flex';
