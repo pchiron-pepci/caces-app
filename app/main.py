@@ -1131,53 +1131,43 @@ def page_session_detail(request: Request, session_id: int):
         ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
 
         # Testeurs disponibles pour la session (utilisateurs avec fiche Testeur active)
-        # Try/except : résistant si utilisateur_id absent de la table ou table affectations_test manquante
-        try:
-            _testeurs_fiches = db.query(Testeur).filter(
-                Testeur.utilisateur_id != None,
-                Testeur.actif == True
-            ).all()
-            _testeur_by_user = {t.utilisateur_id: t for t in _testeurs_fiches}
-            _testeur_fiche_ids = [t.id for t in _testeurs_fiches]
-            _habs_by_tid = {}
-            if _testeur_fiche_ids:
-                for _h in db.query(HabilitationTesteur).filter(
-                    HabilitationTesteur.testeur_id.in_(_testeur_fiche_ids),
-                    HabilitationTesteur.famille == session.famille,
-                    HabilitationTesteur.actif == True
-                ).all():
-                    _habs_by_tid.setdefault(_h.testeur_id, []).append(_h.categorie)
-            _testeur_users_list = db.query(Utilisateur).filter(
-                Utilisateur.id.in_(list(_testeur_by_user.keys()))
-            ).order_by(Utilisateur.nom, Utilisateur.prenom).all() if _testeur_by_user else []
-            utilisateurs_testeurs = []
-            for _u in _testeur_users_list:
-                _tf = _testeur_by_user.get(_u.id)
-                _habs = sorted(_habs_by_tid.get(_tf.id, [])) if _tf else []
-                utilisateurs_testeurs.append({
-                    "user_id": _u.id,
-                    "nom": _u.nom,
-                    "prenom": _u.prenom or "",
-                    "habs": _habs,
-                })
-        except Exception:
-            utilisateurs_testeurs = []
-            _testeur_by_user = {}
-            _habs_by_tid = {}
+        _testeurs_fiches = db.query(Testeur).filter(
+            Testeur.utilisateur_id != None,
+            Testeur.actif == True
+        ).all()
+        _testeur_by_user = {t.utilisateur_id: t for t in _testeurs_fiches}
+        _testeur_fiche_ids = [t.id for t in _testeurs_fiches]
+        _habs_by_tid = {}
+        if _testeur_fiche_ids:
+            for _h in db.query(HabilitationTesteur).filter(
+                HabilitationTesteur.testeur_id.in_(_testeur_fiche_ids),
+                HabilitationTesteur.famille == session.famille,
+                HabilitationTesteur.actif == True
+            ).all():
+                _habs_by_tid.setdefault(_h.testeur_id, []).append(_h.categorie)
+        _testeur_users_list = db.query(Utilisateur).filter(
+            Utilisateur.id.in_(list(_testeur_by_user.keys()))
+        ).order_by(Utilisateur.nom, Utilisateur.prenom).all() if _testeur_by_user else []
+        utilisateurs_testeurs = []
+        for _u in _testeur_users_list:
+            _tf = _testeur_by_user.get(_u.id)
+            _habs = sorted(_habs_by_tid.get(_tf.id, [])) if _tf else []
+            utilisateurs_testeurs.append({
+                "user_id": _u.id,
+                "nom": _u.nom,
+                "prenom": _u.prenom or "",
+                "habs": _habs,
+            })
 
         # AffectationTest — annoter chaque jour_test pour l'affichage inline
-        try:
-            _jt_ids = [j.id for j in jours_test]
-            _at_list = db.query(AffectationTest).filter(
-                AffectationTest.jour_test_id.in_(_jt_ids)
-            ).all() if _jt_ids else []
-            _at_uid_set = list({at.user_id for at in _at_list})
-            _at_users = {u.id: u for u in db.query(Utilisateur).filter(
-                Utilisateur.id.in_(_at_uid_set)
-            ).all()} if _at_uid_set else {}
-        except Exception:
-            _at_list = []
-            _at_users = {}
+        _jt_ids = [j.id for j in jours_test]
+        _at_list = db.query(AffectationTest).filter(
+            AffectationTest.jour_test_id.in_(_jt_ids)
+        ).all() if _jt_ids else []
+        _at_uid_set = list({at.user_id for at in _at_list})
+        _at_users = {u.id: u for u in db.query(Utilisateur).filter(
+            Utilisateur.id.in_(_at_uid_set)
+        ).all()} if _at_uid_set else {}
 
         for j in jours_test:
             _ats = [at for at in _at_list if at.jour_test_id == j.id]
