@@ -475,6 +475,12 @@ function afficherErreur(msg) {
 }
 function fermerAlerte() { document.getElementById('modal-alerte').style.display = 'none'; }
 
+function formatH(v) {
+    if (!v) return '—';
+    var r = Math.round(v * 100) / 100;
+    return Number.isInteger(r) ? r + 'h' : r.toFixed(2).replace(/\.?0+$/, '') + 'h';
+}
+
 function recalculerTotalLigne(tr) {
     var total = 0;
     tr.querySelectorAll('.planning-input').forEach(function(inp) {
@@ -482,10 +488,40 @@ function recalculerTotalLigne(tr) {
     });
     var cell = tr.querySelector('.planning-total-cell');
     if (!cell) return;
-    var display = Number.isInteger(total) ? total + 'h' : total.toFixed(2).replace(/\.?0+$/, '') + 'h';
-    cell.textContent = display;
+    cell.textContent = formatH(total) === '—' ? '0h' : formatH(total);
     cell.style.color = total > 7 ? '#c62828' : '#333';
     cell.style.fontWeight = total > 7 ? 'bold' : '600';
+}
+
+function recalculerTotauxColonnes(table) {
+    if (!table) return;
+    var tfoot = table.querySelector('tfoot');
+    if (!tfoot) return;
+
+    var totalTheorie = 0;
+    table.querySelectorAll('tbody .h-theorie').forEach(function(i) { totalTheorie += parseFloat(i.value) || 0; });
+    var tc = tfoot.querySelector('.tcol-theorie');
+    if (tc) tc.textContent = formatH(totalTheorie);
+
+    var catTotals = {};
+    table.querySelectorAll('tbody .h-cat').forEach(function(i) {
+        var c = i.dataset.cat;
+        catTotals[c] = (catTotals[c] || 0) + (parseFloat(i.value) || 0);
+    });
+    tfoot.querySelectorAll('.tcol-cat').forEach(function(td) {
+        td.textContent = formatH(catTotals[td.dataset.cat] || 0);
+    });
+
+    var totalLibre = 0;
+    table.querySelectorAll('tbody .h-libre').forEach(function(i) { totalLibre += parseFloat(i.value) || 0; });
+    var tl = tfoot.querySelector('.tcol-libre');
+    if (tl) tl.textContent = formatH(totalLibre);
+
+    var catSum = 0;
+    Object.keys(catTotals).forEach(function(k) { catSum += catTotals[k]; });
+    var grandTotal = totalTheorie + catSum + totalLibre;
+    var tg = tfoot.querySelector('.tcol-grand');
+    if (tg) tg.textContent = formatH(grandTotal);
 }
 
 function ouvrirModifierJourTheorie(jourId, date, testeurId) {
@@ -882,17 +918,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── LOT 2b : Planning apprenants ───────────────────────────────────────
 
-    // Calcul total par ligne en temps réel
+    // Calcul total par ligne + totaux colonnes en temps réel
     document.addEventListener('input', function(e) {
         if (e.target.classList.contains('planning-input')) {
             var tr = e.target.closest('tr[data-stagiaire]');
-            if (tr) recalculerTotalLigne(tr);
+            if (tr) {
+                recalculerTotalLigne(tr);
+                recalculerTotauxColonnes(tr.closest('table'));
+            }
         }
     });
 
     // Initialiser les totaux au chargement
     document.querySelectorAll('tr[data-stagiaire]').forEach(function(tr) {
         recalculerTotalLigne(tr);
+    });
+    document.querySelectorAll('table[id^="planning-"]').forEach(function(table) {
+        recalculerTotauxColonnes(table);
     });
 
     // Ouvrir modal ajout catégorie
@@ -935,6 +977,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!table) { document.getElementById('modal-ajouter-cat-planning').style.display = 'none'; return; }
             document.querySelectorAll('.acp-cat-cb:checked:not(:disabled)').forEach(function(cb) {
                 var val = cb.value;
+                var tfootRow = table.querySelector('tfoot tr');
                 if (val === '__theorie__') {
                     var th = document.createElement('th');
                     th.className = 'col-theorie';
@@ -949,6 +992,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         var appTd = tr.querySelector('td:first-child');
                         if (appTd) tr.insertBefore(td, appTd.nextSibling);
                     });
+                    if (tfootRow) {
+                        var ftd = document.createElement('td');
+                        ftd.className = 'tcol-theorie';
+                        ftd.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
+                        ftd.textContent = '—';
+                        var fApp = tfootRow.querySelector('td:first-child');
+                        if (fApp) tfootRow.insertBefore(ftd, fApp.nextSibling);
+                    }
                 } else if (val === '__libre__') {
                     var th = document.createElement('th');
                     th.className = 'col-libre';
@@ -964,6 +1015,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         var totalTd = tr.querySelector('td.planning-total-cell');
                         if (totalTd) tr.insertBefore(td, totalTd);
                     });
+                    if (tfootRow) {
+                        var ftd = document.createElement('td');
+                        ftd.className = 'tcol-libre';
+                        ftd.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600; background:#e8eaf0;';
+                        ftd.textContent = '—';
+                        var fGrand = tfootRow.querySelector('.tcol-grand');
+                        if (fGrand) tfootRow.insertBefore(ftd, fGrand);
+                    }
                 } else {
                     var th = document.createElement('th');
                     th.dataset.cat = val;
@@ -978,10 +1037,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         var anchorTd = tr.querySelector('td.td-libre') || tr.querySelector('td.planning-total-cell');
                         if (anchorTd) tr.insertBefore(td, anchorTd);
                     });
+                    if (tfootRow) {
+                        var ftd = document.createElement('td');
+                        ftd.className = 'tcol-cat';
+                        ftd.dataset.cat = val;
+                        ftd.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
+                        ftd.textContent = '—';
+                        var fAnchor = tfootRow.querySelector('.tcol-libre') || tfootRow.querySelector('.tcol-grand');
+                        if (fAnchor) tfootRow.insertBefore(ftd, fAnchor);
+                    }
                 }
             });
             document.getElementById('modal-ajouter-cat-planning').style.display = 'none';
             document.querySelectorAll('tr[data-stagiaire]').forEach(function(tr) { recalculerTotalLigne(tr); });
+            recalculerTotauxColonnes(table);
         }
 
         // Sauvegarder planning

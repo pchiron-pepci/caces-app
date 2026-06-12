@@ -664,6 +664,21 @@
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr style="background:#f0f2f7; font-size:12px; color:#555; border-top:2px solid #ddd;">
+                            <td style="padding:6px 10px; font-style:italic; color:#888;">Totaux</td>
+                            {% if jf.has_theorie %}
+                            <td class="tcol-theorie" style="padding:6px 8px; text-align:center; font-weight:600;">—</td>
+                            {% endif %}
+                            {% for cat in jf.cats_colonnes %}
+                            <td class="tcol-cat" data-cat="{{ cat }}" style="padding:6px 8px; text-align:center; font-weight:600;">—</td>
+                            {% endfor %}
+                            {% if jf.has_libre %}
+                            <td class="tcol-libre" style="padding:6px 8px; text-align:center; font-weight:600; background:#e8eaf0;">—</td>
+                            {% endif %}
+                            <td class="tcol-grand" style="padding:6px 8px; text-align:center; font-weight:700; color:#1565c0;">—</td>
+                        </tr>
+                    </tfoot>
                 </table>
                 </div>
                 {% if session.statut != 'terminee' and user_role != 'terrain' %}
