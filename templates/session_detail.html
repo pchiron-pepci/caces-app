@@ -293,7 +293,7 @@
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="window.location.href='/sessions/{{ session.id }}/jours/{{ j.id }}/modifier'">✏️</button>
 <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-    onclick="supprimerJour({{ j.id }})">X</button>
+    onclick="supprimerJour({{ j.id }})" title="Supprimer ce jour">🗑️</button>
                         {% endif %}
                         {% endif %}
                     </div>
@@ -394,7 +394,7 @@
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                         onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.date }}', {{ j.candidats_categories | tojson | forceescape }}, {{ j.candidats_options | tojson | forceescape }}, {{ j.candidats_epreuves | tojson | forceescape }})">✏️</button>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                        onclick="supprimerJour({{ j.id }})">X</button>
+                        onclick="supprimerJour({{ j.id }})" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
                 </div>
             </div>
@@ -572,7 +572,7 @@
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" data-action="supprimer-jour-formation" data-id="{{ jf.id }}">X</button>
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" data-action="supprimer-jour-formation" data-id="{{ jf.id }}" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
                 </div>
             </div>
