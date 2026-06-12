@@ -563,27 +563,17 @@
                     {% if jf.intitule %}
                     <span style="margin-left:8px; color:#333; font-size:13px;">{{ jf.intitule }}</span>
                     {% endif %}
-                </div>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                        {% if jf.affectations %}
-                        <div data-action="ouvrir-modal-affectation-formation" data-jour-id="{{ jf.id }}" data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}" title="Gérer les formateurs" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; cursor:pointer; border-radius:8px; padding:2px 6px;">
-                            {% for af in jf.affectations %}
-                            <span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px;">👨‍🏫 {{ af.abreviation }}{% if af.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %} <span style="color:#666;">{% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}</span></span>
-                            {% endfor %}
-                        </div>
-                        {% else %}
-                        <span data-action="ouvrir-modal-affectation-formation" data-jour-id="{{ jf.id }}" data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}" title="Gérer les formateurs" style="font-size:12px; color:#1976d2; background:#e3f2fd; border-radius:6px; padding:3px 10px; cursor:pointer;">👨‍🏫 Ajouter</span>
+                        {% if jf.affectations %}<span data-action="ouvrir-modal-affectation-formation" data-jour-id="{{ jf.id }}" data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}" title="Gérer les formateurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for af in jf.affectations %}<span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px;">👨‍🏫 {{ af.abreviation }}{% if af.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %} <span style="color:#666;">{% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}</span></span>{% endfor %}</span>
+                        {% else %}<span data-action="ouvrir-modal-affectation-formation" data-jour-id="{{ jf.id }}" data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}" title="Gérer les formateurs" style="font-size:12px; color:#1976d2; background:#e3f2fd; border-radius:6px; padding:3px 10px; cursor:pointer; margin-left:4px;">👨‍🏫 Ajouter</span>
                         {% endif %}
-                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" data-action="supprimer-jour-formation" data-id="{{ jf.id }}">X</button>
                     {% else %}
-                        {% if jf.affectations %}
-                        <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
-                            {% for af in jf.affectations %}
-                            <span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px;">👨‍🏫 {{ af.abreviation }}{% if af.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %} <span style="color:#666;">{% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}</span></span>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
+                        {% for af in jf.affectations %}<span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px; margin-left:4px;">👨‍🏫 {{ af.abreviation }}{% if af.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %} <span style="color:#666;">{% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}</span></span>{% endfor %}
+                    {% endif %}
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
+                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" data-action="supprimer-jour-formation" data-id="{{ jf.id }}">X</button>
                     {% endif %}
                 </div>
             </div>
