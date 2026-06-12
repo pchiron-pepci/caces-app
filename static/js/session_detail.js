@@ -924,6 +924,39 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        var btnEdit = e.target.closest('[data-action="modifier-jour-formation"]');
+        if (btnEdit) {
+            document.getElementById('jf-edit-id').value = btnEdit.dataset.id;
+            document.getElementById('jf-edit-date').value = btnEdit.dataset.date;
+            document.getElementById('jf-edit-intitule').value = btnEdit.dataset.intitule || '';
+            document.getElementById('modal-modifier-jour-formation').style.display = 'flex';
+            return;
+        }
+        if (e.target.closest('[data-action="fermer-modal-modifier-jour-formation"]')) {
+            document.getElementById('modal-modifier-jour-formation').style.display = 'none';
+            return;
+        }
+        if (e.target.closest('[data-action="sauvegarder-modifier-jour-formation"]')) {
+            var id = document.getElementById('jf-edit-id').value;
+            var date = document.getElementById('jf-edit-date').value;
+            var intitule = document.getElementById('jf-edit-intitule').value.trim();
+            if (!date) { alert('La date est obligatoire.'); return; }
+            fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: date, intitule: intitule || null })
+            }).then(function(r) {
+                if (r.ok) {
+                    document.getElementById('modal-modifier-jour-formation').style.display = 'none';
+                    afficherSuccesToast('Jour modifié ✓');
+                    setTimeout(function() { location.reload(); }, 800);
+                } else {
+                    r.json().then(function(d) { afficherErreur(d.detail || 'Erreur lors de la modification.'); });
+                }
+            });
+            return;
+        }
+
         // ── LOT 2a : Affectation formateurs ───────────────────────────────────
         var btnAff = e.target.closest('[data-action="ouvrir-modal-affectation-formation"]');
         if (btnAff) {

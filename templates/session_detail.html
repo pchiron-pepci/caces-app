@@ -586,6 +586,12 @@
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                        data-action="modifier-jour-formation"
+                        data-id="{{ jf.id }}"
+                        data-date="{{ jf.date }}"
+                        data-intitule="{{ jf.intitule or '' }}"
+                        title="Modifier ce jour">✏️</button>
                     <button class="btn-trash" data-action="supprimer-jour-formation" data-id="{{ jf.id }}" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
                 </div>
@@ -793,6 +799,32 @@
                         data-action="sauvegarder-jour-formation">Ajouter</button>
                 <button class="btn btn-secondary"
                         data-action="fermer-modal-jour-formation">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal édition jour de formation -->
+    <div id="modal-modifier-jour-formation" style="display:none; position:fixed; top:0; left:0;
+         width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;
+         align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:16px; padding:32px; width:500px; max-width:95vw; max-height:90vh; overflow-y:auto;">
+            <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;">
+                Modifier le jour de formation</h2>
+            <input type="hidden" id="jf-edit-id">
+            <div class="form-field">
+                <label>Date *</label>
+                <input type="date" id="jf-edit-date">
+            </div>
+            <div class="form-field">
+                <label>Intitulé</label>
+                <input type="text" id="jf-edit-intitule"
+                       placeholder="Ex : Formation pratique R489 cat.1B">
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary"
+                        data-action="sauvegarder-modifier-jour-formation">Enregistrer</button>
+                <button class="btn btn-secondary"
+                        data-action="fermer-modal-modifier-jour-formation">Annuler</button>
             </div>
         </div>
     </div>

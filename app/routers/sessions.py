@@ -766,6 +766,54 @@ def add_jour_formation(
     return {"message": "Jour de formation ajouté", "id": jf.id}
 
 
+class JourFormationUpdate(BaseModel):
+    date: Optional[date] = None
+    intitule: Optional[str] = None
+
+
+@router.patch("/{session_id}/jours-formation/{id}")
+def update_jour_formation(
+    session_id: int,
+    id: int,
+    data: JourFormationUpdate,
+    db: DBSession = Depends(get_db),
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+):
+    if current_user.role == "terrain":
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    _check_modifiable(session)
+    jf = db.query(JourFormation).filter(
+        JourFormation.id == id, JourFormation.session_id == session_id
+    ).first()
+    if not jf:
+        raise HTTPException(status_code=404, detail="Jour de formation non trouvé")
+
+    if data.date is not None:
+        bornes = [d for d in [session.date_theorie, session.date_pratique_debut,
+                               session.date_pratique_fin] if d]
+        if bornes:
+            date_debut = min(bornes)
+            date_fin = max(bornes)
+            if data.date < date_debut or data.date > date_fin:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"La date doit être comprise dans la période de la session "
+                        f"(du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')})"
+                    ),
+                )
+        jf.date = data.date
+
+    if data.intitule is not None:
+        jf.intitule = data.intitule or None
+
+    db.commit()
+    return {"id": jf.id, "date": str(jf.date), "intitule": jf.intitule}
+
+
 @router.delete("/{session_id}/jours-formation/{id}")
 def delete_jour_formation(
     session_id: int,
