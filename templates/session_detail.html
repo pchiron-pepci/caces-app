@@ -287,9 +287,8 @@
                             onclick="ouvrirAjoutCandidatJour({{ j.id }})">+ Candidat</button>
                         {% endif %}
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
-                            class="btn btn-primary" style="padding:6px 12px; font-size:12px;">
-                            Accès aux tests
-                        </a>
+                            class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                            title="Accéder aux tests">🚀</a>
                         {% if user_role != 'terrain' %}
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             onclick="window.location.href='/sessions/{{ session.id }}/jours/{{ j.id }}/modifier'">✏️</button>
