@@ -151,6 +151,22 @@ except Exception:
 try:
     with engine.connect() as _conn:
         _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS affectations_test (
+                id SERIAL PRIMARY KEY,
+                jour_test_id INTEGER NOT NULL REFERENCES jours_test(id),
+                user_id INTEGER NOT NULL REFERENCES utilisateurs(id),
+                role VARCHAR(20) DEFAULT 'testeur',
+                principal BOOLEAN DEFAULT FALSE,
+                UNIQUE (jour_test_id, user_id)
+            )
+        """))
+        _conn.commit()
+except Exception as _e:
+    print(f"[migration] affectations_test: {_e}", flush=True)
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS config_organisme (
                 id SERIAL PRIMARY KEY,
                 nom_organisme VARCHAR(200),
@@ -1150,6 +1166,7 @@ def page_session_detail(request: Request, session_id: int):
                     ).all()}
             except Exception as _e:
                 print(f"[AffectationTest load error]: {_e}", flush=True)
+                db.rollback()
 
         # ── utilisateurs_testeurs : comptes liés à une fiche testeur ───────────
         _testeur_by_user = {}
@@ -1183,6 +1200,7 @@ def page_session_detail(request: Request, session_id: int):
                     })
         except Exception as _e:
             print(f"[utilisateurs_testeurs error]: {_e}", flush=True)
+            db.rollback()
 
         for j in jours_test:
             # testeur_nom depuis AffectationTest.principal (si disponible), sinon j.testeur_id legacy
