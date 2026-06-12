@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.NB_EQUIPEMENTS = parseInt(_d.dataset.nbEquipements);
         try { window.UT_PAR_CAT = JSON.parse(_d.dataset.utParCat); } catch(e) { console.error('UT_PAR_CAT parse error:', e, _d.dataset.utParCat); window.UT_PAR_CAT = {}; }
         try { window.OPTIONS_PAR_CAT = JSON.parse(_d.dataset.optionsParCat || '{}'); } catch(e) { console.error('OPTIONS_PAR_CAT parse error:', e, _d.dataset.optionsParCat); window.OPTIONS_PAR_CAT = {}; }
+        try { window.UTILISATEURS_TESTEURS = JSON.parse(_d.dataset.testeurs || '[]'); } catch(e) { window.UTILISATEURS_TESTEURS = []; }
     }
 
     window._CANDIDATS_EPREUVES = {};
@@ -15,10 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.btn-retirer-candidat-jour');
         if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom, btn.dataset.type);
-    });
-    document.addEventListener('focusout', function(e) {
-        const inp = e.target.closest('[data-action="save-testeurs-sup"]');
-        if (inp) saveTesteursSup(inp.dataset.jourId, inp.value);
+        const gt = e.target.closest('[data-action="gerer-testeurs"]');
+        if (gt) gererTesteurs(gt.dataset.jourId, gt.dataset.type);
     });
     document.addEventListener('change', function(e) {
         const cb = e.target;
@@ -114,13 +113,6 @@ function calculerRecapUT() {
         '<span>UT libres : <strong style="color:' + couleurLibres + '">' + utLibres.toFixed(1) + '</strong></span></div>';
 }
 
-async function saveTesteursSup(jourId, value) {
-    await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/testeurs-sup', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testeurs_sup: value || null })
-    });
-}
 
 async function toggleIdentite(jourId, stagiaireId, btn) {
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats/' + stagiaireId + '/identite', { method: 'PUT' });
@@ -129,7 +121,6 @@ async function toggleIdentite(jourId, stagiaireId, btn) {
 
 function ouvrirAjoutJourTheorie() {
     document.getElementById('jt-date').value = '';
-    document.getElementById('jt-testeur').value = '';
     document.querySelectorAll('[name="jt-candidat"]').forEach(cb => cb.checked = true);
     document.getElementById('modal-jour-theorie').style.display = 'flex';
 }
@@ -138,9 +129,7 @@ function fermerModalJourTheorie() { document.getElementById('modal-jour-theorie'
 
 async function sauvegarderJourTheorie() {
     const date = document.getElementById('jt-date').value;
-    const testeur_id = document.getElementById('jt-testeur').value;
     if (!date) { alert('La date est obligatoire !'); return; }
-    if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
     if (window.DATE_DEBUT_SESSION && date < window.DATE_DEBUT_SESSION) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (window.DATE_FIN_SESSION && date > window.DATE_FIN_SESSION) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const candidats = [];
@@ -148,7 +137,7 @@ async function sauvegarderJourTheorie() {
     if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'theorie', testeur_id: parseInt(testeur_id), candidats })
+        body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'theorie', candidats })
     });
     if (resp.ok) { fermerModalJourTheorie(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
@@ -157,7 +146,6 @@ function ouvrirAjoutJourPratique() {
     document.getElementById('jp-titre').textContent = 'Planifier jour de test pratique';
     document.getElementById('jp-jour-id').value = '';
     document.getElementById('jp-date').value = '';
-    document.getElementById('jp-testeur').value = '';
     document.querySelectorAll('[name="jp-candidat"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('[name^="jp-cat-"], [name^="jp-opt-"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
     document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '0.3');
@@ -165,12 +153,11 @@ function ouvrirAjoutJourPratique() {
     calculerRecapUT();
 }
 
-function ouvrirModifierJourPratique(jourId, testeurId, date, candidatsCategories, candidatsOptions, candidatsEpreuves) {
+function ouvrirModifierJourPratique(jourId, date, candidatsCategories, candidatsOptions, candidatsEpreuves) {
     window._CANDIDATS_EPREUVES = candidatsEpreuves || {};
     document.getElementById('jp-titre').textContent = 'Modifier jour de test pratique';
     document.getElementById('jp-jour-id').value = jourId;
     document.getElementById('jp-date').value = date;
-    document.getElementById('jp-testeur').value = testeurId;
     document.querySelectorAll('[name="jp-candidat"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('[name^="jp-cat-"], [name^="jp-opt-"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
     document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '0.3');
@@ -208,10 +195,8 @@ function fermerModalJourPratique() { document.getElementById('modal-jour-pratiqu
 
 async function sauvegarderJourPratique() {
     const date = document.getElementById('jp-date').value;
-    const testeur_id = document.getElementById('jp-testeur').value;
     const jourId = document.getElementById('jp-jour-id').value;
     if (!date) { alert('La date est obligatoire !'); return; }
-    if (!testeur_id) { alert('Le testeur est obligatoire !'); return; }
     if (window.DATE_DEBUT_SESSION && date < window.DATE_DEBUT_SESSION) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (window.DATE_FIN_SESSION && date > window.DATE_FIN_SESSION) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const candidats_pratique = [];
@@ -240,7 +225,7 @@ async function sauvegarderJourPratique() {
     if (jourId) {
         await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/modifier', {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date, testeur_id: parseInt(testeur_id) })
+            body: JSON.stringify({ date })
         });
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -250,7 +235,7 @@ async function sauvegarderJourPratique() {
     } else {
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'pratique', testeur_id: parseInt(testeur_id), candidats_pratique })
+            body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'pratique', candidats_pratique })
         });
         if (resp.ok) { fermerModalJourPratique(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     }
@@ -542,23 +527,90 @@ function recalculerTotauxColonnes(table) {
     if (tg) tg.textContent = formatH(grandTotal);
 }
 
-function ouvrirModifierJourTheorie(jourId, date, testeurId) {
+function ouvrirModifierJourTheorie(jourId, date) {
     document.getElementById('mjt-jour-id').value = jourId;
     document.getElementById('mjt-date').value = date;
-    document.getElementById('mjt-testeur').value = testeurId || '';
     document.getElementById('modal-modifier-jour-theorie').style.display = 'flex';
+}
+
+async function gererTesteurs(jourId, jourType) {
+    document.getElementById('at-jour-id').value = jourId;
+    document.getElementById('at-jour-type').value = jourType;
+    const testeurs = window.UTILISATEURS_TESTEURS || [];
+    const liste = document.getElementById('at-liste');
+    const aucun = document.getElementById('at-aucun');
+    liste.innerHTML = '';
+    if (testeurs.length === 0) {
+        aucun.style.display = 'block';
+    } else {
+        aucun.style.display = 'none';
+        // Récupère les affectations actuelles
+        let current = [];
+        try {
+            const r = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/affectations-test');
+            if (r.ok) current = await r.json();
+        } catch(e) {}
+        const currentMap = {};
+        current.forEach(a => { currentMap[a.user_id] = a; });
+        testeurs.forEach(t => {
+            const aff = currentMap[t.user_id] || {};
+            const checked = aff.user_id !== undefined ? 'checked' : '';
+            const principal = aff.principal ? 'checked' : '';
+            const habStr = t.habs && t.habs.length ? ' (' + t.habs.join(', ') + ')' : '';
+            const nomAff = (t.prenom ? t.prenom[0] + '. ' : '') + t.nom + habStr;
+            liste.insertAdjacentHTML('beforeend',
+                '<div style="background:#f0f2f7; border-radius:10px; padding:12px; display:flex; align-items:center; gap:12px;">' +
+                '<input type="checkbox" id="at-cb-' + t.user_id + '" name="at-cb" value="' + t.user_id + '" ' + checked + ' onchange="_atToggle(' + t.user_id + ')">' +
+                '<label for="at-cb-' + t.user_id + '" style="flex:1; font-size:14px; cursor:pointer;">' + nomAff + '</label>' +
+                '<label style="font-size:13px; color:#888; display:flex; align-items:center; gap:6px;">' +
+                '<input type="radio" name="at-principal" value="' + t.user_id + '" id="at-pr-' + t.user_id + '" ' + principal + '> Principal' +
+                '</label>' +
+                '</div>'
+            );
+        });
+    }
+    document.getElementById('modal-testeurs').style.display = 'flex';
+}
+
+function _atToggle(userId) {
+    const cb = document.getElementById('at-cb-' + userId);
+    const pr = document.getElementById('at-pr-' + userId);
+    if (!cb.checked && pr && pr.checked) pr.checked = false;
+}
+
+async function sauvegarderAffectationsTest() {
+    const jourId = document.getElementById('at-jour-id').value;
+    const jourType = document.getElementById('at-jour-type').value;
+    const data = [];
+    document.querySelectorAll('[name="at-cb"]:checked').forEach(cb => {
+        const userId = parseInt(cb.value);
+        const pr = document.getElementById('at-pr-' + userId);
+        data.push({ user_id: userId, principal: pr ? pr.checked : false });
+    });
+    const principalCount = data.filter(d => d.principal).length;
+    if (principalCount > 1) { alert('Un seul testeur principal par jour.'); return; }
+    const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/affectations-test', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (resp.ok) {
+        document.getElementById('modal-testeurs').style.display = 'none';
+        location.reload();
+    } else {
+        const d = await resp.json();
+        afficherErreur(d.detail || 'Erreur lors de l\'enregistrement.');
+    }
 }
 
 async function sauvegarderModifierJourTheorie() {
     const jourId = document.getElementById('mjt-jour-id').value;
     const date = document.getElementById('mjt-date').value;
-    const testeurId = document.getElementById('mjt-testeur').value;
     if (!date) { alert('La date est obligatoire !'); return; }
     if (window.DATE_DEBUT_SESSION && date < window.DATE_DEBUT_SESSION) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (window.DATE_FIN_SESSION && date > window.DATE_FIN_SESSION) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/modifier', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, testeur_id: parseInt(testeurId) })
+        body: JSON.stringify({ date })
     });
     if (resp.ok) { document.getElementById('modal-modifier-jour-theorie').style.display = 'none'; location.reload(); }
     else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
