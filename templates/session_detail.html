@@ -485,7 +485,7 @@
     </div>
 </div>
 
-<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+<div style="display:flex; flex-wrap:nowrap; gap:3px; margin-bottom:0; border-bottom:2px solid #cc0000; align-items:flex-end;">
     <button class="tab-btn active-tab" onclick="showTab('sequencage', this)">📅 <span class="tab-long">Séquence</span><span class="tab-short">Séq.</span></button>
     <button class="tab-btn" onclick="showTab('candidats', this)">👥 <span class="tab-long">Candidats ({{ session_candidats|length }})</span><span class="tab-short">Cand. ({{ session_candidats|length }})</span></button>
     <button class="tab-btn" onclick="showTab('testeurs', this)">⚖️ <span class="tab-long">UT Réelles/Testeurs</span><span class="tab-short">UT</span></button>
@@ -493,10 +493,20 @@
 </div>
 
 <style>
-.tab-btn { padding:8px 18px; border:2px solid #ccc; background:white; font-size:14px; font-weight:600; color:#666; cursor:pointer; border-radius:20px; transition:all 0.15s; }
-.tab-btn:hover { border-color:#cc0000; color:#cc0000; }
-.active-tab { background:#cc0000 !important; color:white !important; border-color:#cc0000 !important; }
+.tab-btn {
+    flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding: 9px 12px; font-size: 14px; font-weight: 600; color: #888; cursor: pointer;
+    background: #f0f2f7; border: 2px solid #ddd; border-bottom: none;
+    border-radius: 8px 8px 0 0; transition: all 0.15s;
+}
+.tab-btn:hover { background: #e4e8f0; color: #2d2d2d; }
+.active-tab {
+    background: white !important; color: #cc0000 !important;
+    border-color: #cc0000 !important; border-bottom: 2px solid white !important;
+    margin-bottom: -2px; position: relative; z-index: 1;
+}
 @media (min-width: 1024px) { .tab-short { display: none; } }
+@media (max-width: 1023px) { .tab-btn { padding: 8px 6px; font-size: 12px; } }
 .card-accent { border-left: 4px solid #cc0000; }
 .note-textarea { width:100%; box-sizing:border-box; border:1px solid #ddd; border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; resize:vertical; }
 .shield-btn  { border:none; border-radius:50%; width:28px; height:28px; padding:0; font-size:16px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; line-height:1; }
