@@ -333,6 +333,7 @@
         order: 1; flex: 1 1 auto; min-width: 0; padding: 8px 10px !important;
         font-weight: 600; font-size: 13px; background: #e3f2fd; color: #0d47a1; overflow: hidden;
     }
+    .table-pratique td:nth-child(2) span { color: #5588c0 !important; }
     .table-pratique td.pratique-total {
         order: 1; flex: 0 0 auto; padding: 8px 10px !important;
         background: #e3f2fd; border-left: 1px solid #c8d8f4;
@@ -342,13 +343,15 @@
     .table-pratique tbody td[data-label] {
         order: 4; flex: 1 1 60px;
         display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start;
-        padding: 6px 4px 8px !important; gap: 2px; text-align: center;
+        padding: 6px 4px 8px !important; gap: 0; text-align: center;
         border-right: 1px solid #eef2fb; border-top: 1px solid #c8d8f4;
     }
     .table-pratique tbody td[data-label]::before {
         content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
         text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
     }
+    .table-pratique tbody td[data-label] small { line-height: 1.1; margin: 0; }
+    .table-pratique tbody td[data-label] button { margin-top: 0 !important; }
     /* tfoot : affiche uniquement label + total UT */
     .table-pratique tfoot { display: block !important; }
     .table-pratique tfoot tr {
