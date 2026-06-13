@@ -403,7 +403,6 @@
                     {% else %}
                         {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}</span>{% endfor %}
                     {% endif %}
-                    <span style="margin-left:8px; color:#888; font-size:12px;">{{ j.candidats_ids|length }} candidat(s)</span>
                 </div>
                 <div style="display:flex; gap:8px;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
