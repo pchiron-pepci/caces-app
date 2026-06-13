@@ -164,9 +164,10 @@
             <div style="border-left:3px solid #cc0000; background:#fff5f5; padding:7px 12px; border-radius:4px; margin-bottom:6px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:13px;">
                 <strong>{{ date.strftime('%d/%m/%Y') }}</strong>
                 {% for j in entry.jours %}{% if j.type == 'pratique' and j.total_ut > 0 %}
+                <span style="color:#555;">UT/Pratique :</span>
                 <span style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %}; font-weight:700;">{{ j.total_ut }}</span>
-                <span style="color:#555;">— {{ j.nb_testeurs }} testeur(s)</span>
-                {% if j.ut_libres > 0 %}<span style="color:#2e7d32; font-weight:600;">— {{ j.ut_libres }} libres</span>{% endif %}
+                <span style="color:#555;">/ {{ j.nb_testeurs }} testeurs</span>
+                {% if j.ut_libres > 0 %}<span style="color:#2e7d32; font-weight:600;">/ {{ j.ut_libres }} Libres</span>{% endif %}
                 {% endif %}{% endfor %}
             </div>
             <!-- Tableau fusionné théorie + pratique -->
