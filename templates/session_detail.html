@@ -163,14 +163,6 @@
             <!-- Bandeau en-tête jour fusionné -->
             <div style="border-left:3px solid #cc0000; background:#fff5f5; padding:7px 12px; border-radius:4px; margin-bottom:6px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:13px;">
                 <strong>{{ date.strftime('%d/%m/%Y') }}</strong>
-                {% if entry.testeurs %}
-                    <span class="badge" style="background:#cc0000; color:white; font-size:12px;">{{ entry.testeurs[0] }}</span>
-                {% endif %}
-                {% set ns_ts = namespace(parts=[]) %}
-                {% for j in entry.jours %}{% for ta in (j.testeurs_affectes or []) %}{% if not ta.principal %}{% set ns_ts.parts = ns_ts.parts + [ta.nom_abr] %}{% endif %}{% endfor %}{% endfor %}
-                {% if ns_ts.parts %}
-                    <span style="color:#555;">{{ ns_ts.parts | join(', ') }}</span>
-                {% endif %}
                 {% for j in entry.jours %}{% if j.type == 'pratique' and j.total_ut > 0 %}
                 <span style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %}; font-weight:700;">{{ j.total_ut }}</span>
                 <span style="color:#555;">— {{ j.nb_testeurs }} testeur(s)</span>
