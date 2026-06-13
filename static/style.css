@@ -29,10 +29,11 @@ body {
     display: flex;
     flex-direction: column;
     position: fixed;
+    left: 0;
     height: 100vh;
     z-index: 100;
     overflow: hidden;
-    transition: width 0.2s ease;
+    transition: width 0.2s ease, left 0.25s ease;
 }
 
 .sidebar-logo {
@@ -470,33 +471,54 @@ html.sidebar-expanded .sidebar-footer { display: block; }
 html.sidebar-expanded .nav-item { justify-content: flex-start; padding: 12px 20px; }
 html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px solid #cc0000; }
 
-/* RESPONSIVE — sur mobile : sidebar TOUJOURS 60px, sidebar-expanded ignoré */
-@media (max-width: 768px) {
-    html:not(.sidebar-expanded) .sidebar { width: 60px; }
-    html:not(.sidebar-expanded) .main { margin-left: 60px; }
-    html:not(.sidebar-expanded) .nav-item-text,
-    html:not(.sidebar-expanded) .logo-sub,
-    html:not(.sidebar-expanded) .cert-date,
-    html:not(.sidebar-expanded) .sidebar-footer { display: none; }
-    html:not(.sidebar-expanded) .nav-item,
-    html:not(.sidebar-expanded) .nav-item.active {
-        justify-content: center;
-        padding: 12px 8px;
-        border-left: none;
+/* BACKDROP sidebar mobile */
+#sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 199;
+    cursor: pointer;
+}
+
+/* HAMBURGER / OVERLAY — < 1024px (mobile + tablette portrait) */
+@media (max-width: 1023px) {
+    /* Sidebar masquée hors écran par défaut */
+    .sidebar {
+        left: calc(-1 * var(--sidebar-width)) !important;
+        width: var(--sidebar-width) !important;
+        z-index: 200;
+        transition: left 0.25s ease !important;
     }
-    /* sidebar-expanded ignoré sur mobile — force 60px quel que soit le localStorage */
-    html.sidebar-expanded .sidebar { width: 60px; }
-    html.sidebar-expanded .main { margin-left: 60px; }
-    html.sidebar-expanded .nav-item-text,
-    html.sidebar-expanded .logo-sub,
-    html.sidebar-expanded .cert-date,
-    html.sidebar-expanded .sidebar-footer { display: none; }
-    html.sidebar-expanded .nav-item,
-    html.sidebar-expanded .nav-item.active {
-        justify-content: center;
-        padding: 12px 8px;
-        border-left: none;
+    /* Sidebar ouverte : slide in + backdrop */
+    html.sidebar-mobile-open .sidebar { left: 0 !important; }
+    html.sidebar-mobile-open #sidebar-backdrop { display: block; }
+
+    /* Main : pleine largeur, aucune marge sidebar (garantit zéro zoom-out) */
+    .main { margin-left: 0 !important; }
+    html.sidebar-collapsed .main,
+    html.sidebar-expanded .main { margin-left: 0 !important; }
+
+    /* Sidebar overlay : toujours mode déplié avec texte visible */
+    .sidebar .nav-item-text { display: inline !important; }
+    .sidebar .logo-sub,
+    .sidebar .cert-date { display: block !important; }
+    .sidebar .sidebar-footer { display: block !important; }
+    .sidebar .nav-item {
+        justify-content: flex-start !important;
+        padding: 12px 20px !important;
     }
+    .sidebar .nav-item.active {
+        padding-left: 17px !important;
+        border-left: 3px solid #cc0000 !important;
+    }
+
+    /* Grilles responsive */
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .dashboard-grid { grid-template-columns: 1fr; }
+}
+
+/* DESKTOP >= 1024px : bouton ☰ masqué */
+@media (min-width: 1024px) {
+    .btn-hamburger { display: none !important; }
 }
