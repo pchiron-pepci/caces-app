@@ -1208,7 +1208,7 @@ def page_session_detail(request: Request, session_id: int):
             _at_principal = next((at for at in _ats_j if at.principal), None)
             _pu = _at_users.get(_at_principal.user_id) if _at_principal else None
             if _pu:
-                j.testeur_nom = f"{_pu.prenom[0]}.{_pu.nom}" if _pu.prenom else _pu.nom
+                j.testeur_nom = f"{_pu.prenom[0]}.{_pu.nom[:3].upper()}" if _pu.prenom else _pu.nom[:3].upper()
             elif j.testeur_id:
                 t = db.query(Testeur).filter(Testeur.id == j.testeur_id).first()
                 j.testeur_nom = f"{t.nom} {t.prenom}" if t else "?"
@@ -1221,7 +1221,7 @@ def page_session_detail(request: Request, session_id: int):
                     continue
                 _tf2 = _testeur_by_user.get(_u2.id)
                 _habs_u = sorted(_habs_by_tid.get(_tf2.id, [])) if _tf2 else []
-                _abr_nom = f"{_u2.prenom[0]}.{_u2.nom}" if _u2.prenom else _u2.nom
+                _abr_nom = f"{_u2.prenom[0]}.{_u2.nom[:3].upper()}" if _u2.prenom else _u2.nom[:3].upper()
                 j.testeurs_affectes.append({
                     "user_id": _at.user_id,
                     "nom_abr": _abr_nom,

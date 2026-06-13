@@ -291,11 +291,11 @@
                     <div>
                         <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                         {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                            {% if j.testeurs_affectes %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}</span>{% endfor %}</span>
+                            {% if j.testeurs_affectes %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}</span>
                             {% else %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 10px; font-size:12px; margin-left:4px; cursor:pointer;">📋 Ajouter</span>
                             {% endif %}
                         {% else %}
-                            {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}</span>{% endfor %}
+                            {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}
                         {% endif %}
                     </div>
                     <div style="display:flex; gap:8px;">
@@ -394,11 +394,11 @@
                 <div>
                     <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                        {% if j.testeurs_affectes %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}</span>{% endfor %}</span>
+                        {% if j.testeurs_affectes %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}</span>
                         {% else %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 10px; font-size:12px; margin-left:4px; cursor:pointer;">📋 Ajouter</span>
                         {% endif %}
                     {% else %}
-                        {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}{% if ta.habs %} ({{ ta.habs|join(', ') }}){% endif %}</span>{% endfor %}
+                        {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}
                     {% endif %}
                 </div>
                 <div style="display:flex; gap:8px;">
