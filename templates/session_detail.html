@@ -587,6 +587,10 @@
                 <div style="display:flex; gap:8px; align-items:center;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                        data-action="ouvrir-ajouter-cat-planning"
+                        data-jour-id="{{ jf.id }}"
+                        title="Ajouter une catégorie">🏗️</button>
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                         data-action="modifier-jour-formation"
                         data-id="{{ jf.id }}"
                         data-date="{{ jf.date }}"
@@ -598,15 +602,6 @@
             </div>
             <!-- Planning heures apprenants -->
             <div style="margin-top:12px;">
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                    <span style="font-size:13px; font-weight:600; color:#1565c0;">Heures apprenants</span>
-                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                    <button class="btn btn-secondary" style="padding:3px 10px; font-size:12px;"
-                            data-action="ouvrir-ajouter-cat-planning"
-                            data-jour-id="{{ jf.id }}"
-                            title="Ajouter une catégorie">🏗️</button>
-                    {% endif %}
-                </div>
                 {% if session_candidats %}
                 <div style="overflow-x:auto;">
                 <table id="planning-{{ jf.id }}" style="width:100%; border-collapse:collapse; font-size:13px;">
