@@ -863,6 +863,7 @@
                     <th>Date naissance</th>
                     <th>Employeur</th>
                     <th>RGPD</th>
+                    <th style="text-align:center;" title="Théorie">TH</th>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
@@ -936,6 +937,9 @@
                                     title="Consentement RGPD à faire">🛡️</button>
                             {% endif %}
                         {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if sc.theorie_dispensee %}<span class="badge orange" style="font-size:10px;">Disp.</span>{% else %}—{% endif %}
                     </td>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <td style="text-align:center;">
