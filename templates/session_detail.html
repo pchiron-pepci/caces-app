@@ -562,7 +562,7 @@
     <!-- JOURS DE FORMATION -->
     <div class="card" style="margin-top:16px; border-left:4px solid #42a5f5;">
         <div class="card-header" style="background:#e3f2fd;">
-            <h2 style="color:#1565c0;">Jours de Formation</h2>
+            <h2 style="color:#1565c0;">Formation</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                     data-action="ouvrir-modal-jour-formation" title="Planifier un jour de formation">📅</button>
@@ -603,7 +603,8 @@
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <button class="btn btn-secondary" style="padding:3px 10px; font-size:12px;"
                             data-action="ouvrir-ajouter-cat-planning"
-                            data-jour-id="{{ jf.id }}">+ Catégorie</button>
+                            data-jour-id="{{ jf.id }}"
+                            title="Ajouter une catégorie">🏗️</button>
                     {% endif %}
                 </div>
                 {% if session_candidats %}
