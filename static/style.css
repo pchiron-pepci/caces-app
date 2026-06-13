@@ -516,6 +516,9 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
     /* Grilles responsive */
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .dashboard-grid { grid-template-columns: 1fr; }
+
+    /* Contenu : padding réduit sur mobile (32px→16px) pour maximiser l'espace utile */
+    .content { padding: 16px; }
 }
 
 /* DESKTOP >= 1024px : bouton ☰ masqué */
