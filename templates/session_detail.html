@@ -66,7 +66,7 @@
 <!-- RECAPITULATIF SESSION - lecture seule -->
 <div class="card" style="margin-bottom:16px;">
     <div class="card-header card-accent" style="background:#2d2d2d;">
-        <h2 style="color:white;">Récapitulatif session</h2>
+        <h2 style="color:white;">CACES® Récapitulatif session</h2>
     </div>
     <div style="overflow-x:auto; padding:8px; background:#f7f8fa;">
         <table class="table" id="tableau-sequencage">
@@ -156,7 +156,7 @@
 <!-- RECAPITULATIF SEQUENCAGE -->
 <div class="card" style="margin-bottom:16px;">
     <div class="card-header card-accent" style="background:#2d2d2d;">
-        <h2 style="color:white;">Récapitulatif séquençage</h2>
+        <h2 style="color:white;">CACES® Récapitulatif séquençage</h2>
     </div>
     <div style="padding:8px; background:#f7f8fa;">
         {% for date, entry in jours_par_date.items() %}
@@ -282,7 +282,7 @@
     <!-- EPREUVE THEORIQUE -->
     <div class="card" style="margin-bottom:16px;">
         <div class="card-header card-accent">
-            <h2>Epreuve theorique</h2>
+            <h2>CACES® Épreuve théorique</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="ouvrirAjoutJourTheorie()" title="Planifier une théorie">📅</button>
             {% endif %}
@@ -386,7 +386,7 @@
     <!-- EPREUVES PRATIQUES -->
     <div class="card">
         <div class="card-header card-accent">
-            <h2>Epreuves pratiques</h2>
+            <h2>CACES® Épreuves pratiques</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="ouvrirAjoutJourPratique()" title="Planifier une pratique">📅</button>
             {% endif %}
