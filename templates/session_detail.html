@@ -314,6 +314,53 @@
     }
     /* Td "—" masquée (cas En attente) */
     .table-theorie tbody td.td-th-hidden { display: none !important; }
+
+    /* ── Épreuve pratique (.table-pratique) — vue cartes mobile ── */
+    .table-pratique { display: block !important; min-width: 0 !important; width: 100% !important; }
+    .table-pratique thead { display: none !important; }
+    .table-pratique tbody { display: flex !important; flex-direction: column; gap: 10px; width: 100%; }
+    .table-pratique tbody tr {
+        display: flex !important; flex-wrap: wrap; align-items: stretch; width: 100%;
+        border: 1px solid #c8d8f4 !important; border-radius: 10px;
+        overflow: hidden; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .table-pratique td.pratique-neutr {
+        order: 1; flex: 0 0 auto; padding: 8px 8px !important;
+        background: #e3f2fd; display: flex !important; align-items: center; justify-content: center;
+        border-right: 1px solid #c8d8f4;
+    }
+    .table-pratique td:nth-child(2) {
+        order: 1; flex: 1 1 auto; min-width: 0; padding: 8px 10px !important;
+        font-weight: 600; font-size: 13px; background: #e3f2fd; color: #0d47a1; overflow: hidden;
+    }
+    .table-pratique td.pratique-total {
+        order: 1; flex: 0 0 auto; padding: 8px 10px !important;
+        background: #e3f2fd; border-left: 1px solid #c8d8f4;
+        display: flex !important; align-items: center; white-space: nowrap; font-size: 13px;
+    }
+    .table-pratique tbody tr::before { content: ''; order: 3; flex: 0 0 100%; height: 0; }
+    .table-pratique tbody td[data-label] {
+        order: 4; flex: 1 1 60px;
+        display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start;
+        padding: 6px 4px 8px !important; gap: 2px; text-align: center;
+        border-right: 1px solid #eef2fb; border-top: 1px solid #c8d8f4;
+    }
+    .table-pratique tbody td[data-label]::before {
+        content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
+        text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
+    }
+    /* tfoot : affiche uniquement label + total UT */
+    .table-pratique tfoot { display: block !important; }
+    .table-pratique tfoot tr {
+        display: flex !important; align-items: center; padding: 8px 12px;
+        background: #f0f2f7; border-top: 2px solid #c8d8f4;
+    }
+    .table-pratique tfoot td { display: none !important; }
+    .table-pratique tfoot td:first-child {
+        display: block !important; flex: 0 0 auto; font-weight: 700; color: #555;
+        font-size: 12px; margin-right: 10px;
+    }
+    .table-pratique tfoot td.pratique-tfoot-total { display: block !important; flex: 1 1 auto; }
 }
 </style>
 
@@ -721,7 +768,7 @@
                     {% set cats_jour = j.candidats_categories.get(sc.stagiaire_id, []) %}
                     {% set att = attestations_neutralite_map.get((j.id, sc.stagiaire_id)) %}
                     <tr>
-                        <td style="text-align:center; vertical-align:middle;">
+                        <td class="pratique-neutr" style="text-align:center; vertical-align:middle;">
                             {% set _svg_balance %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="7" y1="22" x2="17" y2="22"/><line x1="2" y1="7" x2="22" y2="7"/><line x1="6" y1="7" x2="6" y2="13"/><line x1="18" y1="7" x2="18" y2="13"/><path d="M3 13 A3 3 0 0 1 9 13"/><path d="M15 13 A3 3 0 0 1 21 13"/></svg>{% endset %}
                             {% if session.statut == 'terminee' %}
                                 {% if att and att.horodatage %}
@@ -757,7 +804,7 @@
                             <div style="display:flex; align-items:center; gap:4px; margin-top:1px;">{% if sc.stagiaire.date_naissance %}<span style="font-size:11px; color:#aaa; font-weight:400;">{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}</span>{% endif %}{% if session.statut != 'terminee' and user_role != 'terrain' %}<button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}" class="btn-retirer-candidat-jour" style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px;">🗑️</button>{% endif %}</div></div>
                         </td>
                         {% for cat in categories %}
-                        <td style="text-align:center;">
+                        <td data-label="{{ cat }}" style="text-align:center;">
                             {% if cat in j.ut_cand_cat.get(sc.stagiaire_id, {}) %}
                                 {% set ut_cell = j.ut_cand_cat.get(sc.stagiaire_id, {}).get(cat, 0) %}
                                 {% set is_option_seule = cat not in j.candidats_categories.get(sc.stagiaire_id, []) %}
@@ -794,7 +841,7 @@
                             {% endif %}
                         </td>
                         {% endfor %}
-                        <td style="text-align:center;">
+                        <td class="pratique-total" style="text-align:center;">
                             <strong style="color:#1a237e;">{{ j.ut_cand_total.get(sc.stagiaire_id, 0) }}</strong>
                         </td>
                     </tr>
@@ -817,7 +864,7 @@
             {% endif %}
         </td>
         {% endfor %}
-        <td style="text-align:center;">
+        <td class="pratique-tfoot-total" style="text-align:center;">
             <strong style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %};">
                 {{ j.total_ut }}
             </strong>
