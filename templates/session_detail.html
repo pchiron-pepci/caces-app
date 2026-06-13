@@ -61,6 +61,10 @@
 
 /* ── Planning de formation — vue cartes mobile/tablette ── */
 @media (max-width: 1023px) {
+    /* Onglets : libellé court, icône toujours visible */
+    .tab-long { display: none; }
+    .tab-short { display: inline; }
+
     /* Override scroll desktop → vue cartes prend le relais */
     .table-responsive-planning { overflow-x: visible !important; }
     .table-responsive-planning table {
@@ -482,16 +486,17 @@
 </div>
 
 <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
-    <button class="tab-btn active-tab" onclick="showTab('sequencage', this)">Sequencage</button>
-    <button class="tab-btn" onclick="showTab('candidats', this)">Candidats ({{ session_candidats|length }})</button>
-    <button class="tab-btn" onclick="showTab('testeurs', this)">UT réels/Testeur</button>
-    <button class="tab-btn" onclick="showTab('equipements', this)">Equipements</button>
+    <button class="tab-btn active-tab" onclick="showTab('sequencage', this)">📅 <span class="tab-long">Séquence</span><span class="tab-short">Séq.</span></button>
+    <button class="tab-btn" onclick="showTab('candidats', this)">👥 <span class="tab-long">Candidats ({{ session_candidats|length }})</span><span class="tab-short">Cand. ({{ session_candidats|length }})</span></button>
+    <button class="tab-btn" onclick="showTab('testeurs', this)">⚖️ <span class="tab-long">UT Réelles/Testeurs</span><span class="tab-short">UT</span></button>
+    <button class="tab-btn" onclick="showTab('equipements', this)">🏗️ <span class="tab-long">Matériel</span><span class="tab-short">Mat.</span></button>
 </div>
 
 <style>
 .tab-btn { padding:10px 20px; border:none; background:none; font-size:14px; font-weight:600; color:#888; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; border-radius:0; transition:all 0.15s; }
 .tab-btn:hover { color:#1a237e; }
 .active-tab { color:#1a237e !important; border-bottom:3px solid #1a237e !important; background:none; }
+.tab-short { display: none; }
 .card-accent { border-left: 4px solid #cc0000; }
 .note-textarea { width:100%; box-sizing:border-box; border:1px solid #ddd; border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; resize:vertical; }
 .shield-btn  { border:none; border-radius:50%; width:28px; height:28px; padding:0; font-size:16px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; line-height:1; }
