@@ -1374,7 +1374,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.dataset.noteTesteur,
             JSON.parse(btn.dataset.optsPlanif || '[]'),
             btn.dataset.optsObtenues,
-            parseInt(btn.dataset.epruveId)
+            parseInt(btn.dataset.epreuveId)
         );
     });
 });
