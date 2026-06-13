@@ -73,10 +73,10 @@
                     {% for cat in categories %}
                     <th style="min-width:100px; text-align:center;">
                         {{ cat }}<br>
-                        <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }} UT</span>
+                        <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }}</span>
                     </th>
                     {% endfor %}
-                    <th style="min-width:80px; text-align:center;">UT total</th>
+                    <th style="min-width:80px; text-align:center;">Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -102,13 +102,13 @@
                         {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
                         {% if epreuve %}
                             {% if epreuve.obtenue == True %}
-                                <span class="badge green" style="font-size:11px;">{{ epreuve.ut }} UT ✓</span>
+                                <span class="badge green" style="font-size:11px;">{{ epreuve.ut }} ✓</span>
                                 {% set ns_ro = namespace(opts_planif=[]) %}{% for j in jours_test %}{% if j.type == 'pratique' and j.date == epreuve.date %}{% set ns_ro.opts_planif = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}{% endif %}{% endfor %}{% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = ns_ro.opts_planif if ns_ro.opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
                             {% elif epreuve.obtenue == False %}
-                                <span class="badge red" style="font-size:11px;">{{ epreuve.ut }} UT ✗</span>
+                                <span class="badge red" style="font-size:11px;">{{ epreuve.ut }} ✗</span>
                                 {% set ns_ro = namespace(opts_planif=[]) %}{% for j in jours_test %}{% if j.type == 'pratique' and j.date == epreuve.date %}{% set ns_ro.opts_planif = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}{% endif %}{% endfor %}{% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = ns_ro.opts_planif if ns_ro.opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
                             {% else %}
-                                <span class="badge blue" style="font-size:11px;">{{ epreuve.ut }} UT</span>
+                                <span class="badge blue" style="font-size:11px;">{{ epreuve.ut }}</span>
                             {% endif %}
                         {% else %}
                             {% set ut_cell_plan = ut_planifie_par_stag_cat.get(sc.stagiaire_id, {}).get(cat, 0) %}
@@ -116,9 +116,9 @@
                                 {% set ns2 = namespace(in_cats=false) %}
                                 {% for j in jours_test %}{% if j.type == 'pratique' and sc.stagiaire_id in j.candidats_ids %}{% if cat in j.candidats_categories.get(sc.stagiaire_id, []) %}{% set ns2.in_cats = true %}{% endif %}{% endif %}{% endfor %}
                                 {% if ns2.in_cats %}
-                                    <span style="font-size:11px; color:#1a237e; font-weight:600;">{{ ut_cell_plan }} UT</span>
+                                    <span style="font-size:11px; color:#1a237e; font-weight:600;">{{ ut_cell_plan }}</span>
                                 {% else %}
-                                    <span style="font-size:11px; color:#e65100; font-weight:600; background:#ffe0b2; border-radius:6px; padding:2px 8px;">{{ ut_cell_plan }} UT</span>
+                                    <span style="font-size:11px; color:#e65100; font-weight:600; background:#ffe0b2; border-radius:6px; padding:2px 8px;">{{ ut_cell_plan }}</span>
                                 {% endif %}
                             {% else %}
                                 <span style="color:#ddd; font-size:11px;">—</span>
@@ -172,9 +172,9 @@
                     <span style="color:#555;">{{ ns_ts.parts | join(', ') }}</span>
                 {% endif %}
                 {% for j in entry.jours %}{% if j.type == 'pratique' and j.total_ut > 0 %}
-                <span style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %}; font-weight:700;">{{ j.total_ut }} UT</span>
+                <span style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %}; font-weight:700;">{{ j.total_ut }}</span>
                 <span style="color:#555;">— {{ j.nb_testeurs }} testeur(s)</span>
-                {% if j.ut_libres > 0 %}<span style="color:#2e7d32; font-weight:600;">— {{ j.ut_libres }} UT libres</span>{% endif %}
+                {% if j.ut_libres > 0 %}<span style="color:#2e7d32; font-weight:600;">— {{ j.ut_libres }} libres</span>{% endif %}
                 {% endif %}{% endfor %}
             </div>
             <!-- Tableau fusionné théorie + pratique -->
@@ -187,7 +187,7 @@
                         {% for cat in categories %}
                         <th style="text-align:center; min-width:90px;">
                             {{ cat }}<br>
-                            <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }} UT</span>
+                            <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }}</span>
                         </th>
                         {% endfor %}
                     </tr>
@@ -243,7 +243,7 @@
                             {% for j in entry.jours %}{% if j.type == 'pratique' %}{% set ns_u.ut = ns_u.ut + j.ut_total_cat.get(cat, 0) %}{% for sc in session_candidats %}{% if sc.stagiaire_id in j.candidats_ids and cat in j.ut_cand_cat.get(sc.stagiaire_id, {}) %}{% set ns_u.nb = ns_u.nb + 1 %}{% endif %}{% endfor %}{% endif %}{% endfor %}
                             {% if ns_u.ut > 0 %}
                                 <span style="color:#555;">{{ ns_u.nb }} cand.</span><br>
-                                <span style="color:#1a237e; font-weight:700;">{{ ns_u.ut | round(1) }} UT</span>
+                                <span style="color:#1a237e; font-weight:700;">{{ ns_u.ut | round(1) }}</span>
                             {% endif %}
                         </td>
                         {% endfor %}
@@ -421,10 +421,10 @@
                         {% for cat in categories %}
                         <th style="text-align:center; font-size:12px;">
                             {{ cat }}<br>
-                            <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }} UT</span>
+                            <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }}</span>
                         </th>
                         {% endfor %}
-                        <th style="text-align:center;">UT ce jour</th>
+                        <th style="text-align:center;">Ce jour</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -476,14 +476,14 @@
                                 {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
                                 {% set opts_planif = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}
                                 {% if epreuve and epreuve.obtenue == True %}
-<span class="badge green" style="font-size:11px;">{{ ut_cell }} UT ✓</span>
+<span class="badge green" style="font-size:11px;">{{ ut_cell }} ✓</span>
     {% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = opts_planif if opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
     {% if session.statut != 'terminee' and user_role != 'terrain' %}
 <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
         onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | forceescape }}, {{ (epreuve.options_obtenues or '') | tojson | forceescape }}, {{ epreuve.id }})">✏️</button>
     {% endif %}
                                 {% elif epreuve and epreuve.obtenue == False %}
-                                    <span class="badge red" style="font-size:11px;">{{ ut_cell }} UT ✗</span>
+                                    <span class="badge red" style="font-size:11px;">{{ ut_cell }} ✗</span>
                                     {% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = opts_planif if opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
                                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                                     <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
@@ -493,11 +493,11 @@
                                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                                     <button style="background:{% if is_option_seule %}#ffe0b2{% else %}#e8eaf6{% endif %}; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:12px; color:{% if is_option_seule %}#e65100{% else %}#1a237e{% endif %}; font-weight:600;"
                                         onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, null, '', {{ opts_planif | tojson | forceescape }}, '', null)">
-                                        {{ ut_cell }} UT +
+                                        {{ ut_cell }} +
                                     </button>
                                     {% if opts_planif %}<br><small style="font-size:10px; color:{% if is_option_seule %}#e65100{% else %}#888{% endif %};">{{ opts_planif | join(' · ') }}</small>{% endif %}
                                     {% else %}
-                                    <span style="font-size:12px; color:{% if is_option_seule %}#e65100{% else %}#1a237e{% endif %}; font-weight:600;">{{ ut_cell }} UT</span>
+                                    <span style="font-size:12px; color:{% if is_option_seule %}#e65100{% else %}#1a237e{% endif %}; font-weight:600;">{{ ut_cell }}</span>
                                     {% if opts_planif %}<br><small style="font-size:10px; color:{% if is_option_seule %}#e65100{% else %}#888{% endif %};">{{ opts_planif | join(' · ') }}</small>{% endif %}
                                     {% endif %}
                                 {% endif %}
@@ -507,7 +507,7 @@
                         </td>
                         {% endfor %}
                         <td style="text-align:center;">
-                            <strong style="color:#1a237e;">{{ j.ut_cand_total.get(sc.stagiaire_id, 0) }} UT</strong>
+                            <strong style="color:#1a237e;">{{ j.ut_cand_total.get(sc.stagiaire_id, 0) }}</strong>
                         </td>
                     </tr>
                     {% endif %}
@@ -522,20 +522,20 @@
             {% if ut_cat_val > 0 %}
                 {% if ut_cat_val > 7 %}
     {% set nb_machines = ((ut_cat_val / 7) | round(0, 'ceil')) | int %}
-    <span style="color:#e65100; font-weight:700;" title="{{ nb_machines }} machines recommandées">⚠️ {{ ut_cat_val }} UT — {{ nb_machines }} machines</span>
+    <span style="color:#e65100; font-weight:700;" title="{{ nb_machines }} machines recommandées">⚠️ {{ ut_cat_val }} — {{ nb_machines }} machines</span>
                 {% else %}
-                    <span style="color:#555;">{{ ut_cat_val }} UT</span>
+                    <span style="color:#555;">{{ ut_cat_val }}</span>
                 {% endif %}
             {% endif %}
         </td>
         {% endfor %}
         <td style="text-align:center;">
             <strong style="color:{% if j.total_ut > 6 %}#c62828{% else %}#1a237e{% endif %};">
-                {{ j.total_ut }} UT
+                {{ j.total_ut }}
             </strong>
             — {{ j.nb_testeurs }} testeur(s)
             {% if j.ut_libres > 0 %}
-                — <span style="color:#2e7d32;">{{ j.ut_libres }} UT libres</span>
+                — <span style="color:#2e7d32;">{{ j.ut_libres }} libres</span>
             {% endif %}
         </td>
     </tr>
