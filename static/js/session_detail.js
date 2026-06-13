@@ -470,7 +470,7 @@ function cloturerSession() {
 }
 
 function reouvrirsession() {
-    document.getElementById('pin-message').textContent = 'Réouvrir la session ?';
+    document.getElementById('pin-message').textContent = 'Rouvrir la session ?';
     document.getElementById('pin-input').value = '';
     document.getElementById('pin-error').style.display = 'none';
     document.getElementById('modal-pin').style.display = 'flex';

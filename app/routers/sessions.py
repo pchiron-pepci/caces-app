@@ -145,7 +145,10 @@ def delete_session(id: int, pin: str, db: DBSession = Depends(get_db)):
     return {"message": "Session annulee"}
 
 @router.post("/{id}/cloturer")
-def cloturer_session(id: int, db: DBSession = Depends(get_db)):
+def cloturer_session(id: int, db: DBSession = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    if current_user.role not in ("admin", "utilisateur"):
+        raise HTTPException(status_code=403, detail="Réservé aux administrateurs")
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
@@ -637,8 +640,8 @@ class ReouvrirBody(BaseModel):
 @router.post("/{id}/reouvrir")
 def reouvrir_session(id: int, body: ReouvrirBody, db: DBSession = Depends(get_db),
                      current_user: Utilisateur = Depends(get_utilisateur_courant)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Réservé à l'administrateur")
+    if current_user.role not in ("admin", "utilisateur"):
+        raise HTTPException(status_code=403, detail="Réservé aux administrateurs")
     if body.pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Session).filter(Session.id == id).first()
