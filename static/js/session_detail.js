@@ -513,10 +513,10 @@ function recalculerTotauxColonnes(table) {
     var tfoot = table.querySelector('tfoot');
     if (!tfoot) return;
 
-    var totalTheorie = 0;
-    table.querySelectorAll('tbody .h-theorie').forEach(function(i) { totalTheorie += parseFloat(i.value) || 0; });
+    var maxTheorie = 0;
+    table.querySelectorAll('tbody .h-theorie').forEach(function(i) { maxTheorie = Math.max(maxTheorie, parseFloat(i.value) || 0); });
     var tc = tfoot.querySelector('.tcol-theorie');
-    if (tc) tc.textContent = formatH(totalTheorie);
+    if (tc) tc.textContent = formatH(maxTheorie);
 
     var catTotals = {};
     table.querySelectorAll('tbody .h-cat').forEach(function(i) {
@@ -534,7 +534,7 @@ function recalculerTotauxColonnes(table) {
 
     var catSum = 0;
     Object.keys(catTotals).forEach(function(k) { catSum += catTotals[k]; });
-    var grandTotal = totalTheorie + catSum + totalLibre;
+    var grandTotal = maxTheorie + catSum + totalLibre;
     var tg = tfoot.querySelector('.tcol-grand');
     if (tg) tg.textContent = formatH(grandTotal);
 }
