@@ -261,6 +261,11 @@
 .tab-btn:hover { color:#1a237e; }
 .active-tab { color:#1a237e !important; border-bottom:3px solid #1a237e !important; background:none; }
 .card-accent { border-left: 4px solid #cc0000; }
+.shield-btn  { border:none; border-radius:50%; width:28px; height:28px; padding:0; font-size:16px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; line-height:1; }
+.shield-ok   { background:#c8e6c9; box-shadow:0 0 0 2px #2e7d32; }
+.shield-warn { background:#ffe0b2; box-shadow:0 0 0 2px #e65100; }
+.shield-todo { background:#ffcdd2; box-shadow:0 0 0 2px #e53935; }
+.shield-none { background:#f5f5f5; box-shadow:0 0 0 2px #bdbdbd; opacity:0.6; cursor:default; }
 </style>
 
 <!-- TAB SEQUENCAGE -->
@@ -855,53 +860,51 @@
 
                     <td>{{ sc.stagiaire.date_naissance or '—' }}</td>
                     <td>{{ sc.stagiaire.employeur or '—' }}</td>
-                    <td>
+                    <td style="text-align:center;">
                         {% set cs = consentements_map.get(sc.stagiaire_id) %}
                         {% if session.statut == 'terminee' %}
-                            {# Clôturée : figé — relire ou badge selon signature #}
                             {% if cs and cs.horodatage %}
                                 {% if cs.rgpd_accepte and cs.photo_accepte and cs.plaintes_atteste %}
-                                    <button data-action="ouvrir-rgpd-relire"
+                                    <button class="shield-btn shield-ok" data-action="ouvrir-rgpd-relire"
                                         data-session-id="{{ session.id }}"
                                         data-stagiaire-id="{{ sc.stagiaire_id }}"
-                                        style="background:#2e7d32; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">✅ RGPD</button>
+                                        title="Consentement RGPD effectué">🛡️</button>
                                 {% else %}
-                                    <button data-action="ouvrir-rgpd-relire"
+                                    <button class="shield-btn shield-warn" data-action="ouvrir-rgpd-relire"
                                         data-session-id="{{ session.id }}"
                                         data-stagiaire-id="{{ sc.stagiaire_id }}"
-                                        style="background:#e65100; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">⚠️ RGPD</button>
+                                        title="Consentement partiel — à compléter">🛡️</button>
                                 {% endif %}
                             {% else %}
-                                <span class="badge red">Non signé</span>
+                                <span class="shield-btn shield-none" title="Non signé (session clôturée)">🛡️</span>
                             {% endif %}
                         {% else %}
-                            {# Session active : toujours overlay (relance possible) #}
                             {% if cs and cs.horodatage %}
                                 {% if cs.rgpd_accepte and cs.photo_accepte and cs.plaintes_atteste %}
-                                    <button data-action="ouvrir-rgpd-overlay"
+                                    <button class="shield-btn shield-ok" data-action="ouvrir-rgpd-overlay"
                                         data-session-id="{{ session.id }}"
                                         data-stagiaire-id="{{ sc.stagiaire_id }}"
                                         data-nom="{{ sc.stagiaire.nom }}"
                                         data-prenom="{{ sc.stagiaire.prenom }}"
                                         data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
-                                        style="background:#2e7d32; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">✅ RGPD</button>
+                                        title="Consentement RGPD effectué">🛡️</button>
                                 {% else %}
-                                    <button data-action="ouvrir-rgpd-overlay"
+                                    <button class="shield-btn shield-warn" data-action="ouvrir-rgpd-overlay"
                                         data-session-id="{{ session.id }}"
                                         data-stagiaire-id="{{ sc.stagiaire_id }}"
                                         data-nom="{{ sc.stagiaire.nom }}"
                                         data-prenom="{{ sc.stagiaire.prenom }}"
                                         data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
-                                        style="background:#e65100; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">⚠️ RGPD</button>
+                                        title="Consentement partiel — à compléter">🛡️</button>
                                 {% endif %}
                             {% else %}
-                                <button data-action="ouvrir-rgpd-overlay"
+                                <button class="shield-btn shield-todo" data-action="ouvrir-rgpd-overlay"
                                     data-session-id="{{ session.id }}"
                                     data-stagiaire-id="{{ sc.stagiaire_id }}"
                                     data-nom="{{ sc.stagiaire.nom }}"
                                     data-prenom="{{ sc.stagiaire.prenom }}"
                                     data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
-                                    style="background:#cc0000; color:white; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">⏳ RGPD</button>
+                                    title="Consentement RGPD à faire">🛡️</button>
                             {% endif %}
                         {% endif %}
                     </td>
