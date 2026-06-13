@@ -11,6 +11,8 @@ class JourFormation(Base):
     intitule              = Column(String(200), nullable=True)
     libelle_colonne_libre = Column(String(100), nullable=True)
     note                  = Column(Text, nullable=True)
+    note_privee           = Column(Text, nullable=True)
+    note_privee_auteur_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=True)
     actif                 = Column(Boolean, default=True)
 
 

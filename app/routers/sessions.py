@@ -859,6 +859,144 @@ def delete_jour_formation(
     return {"message": "Jour de formation supprimé"}
 
 
+# ── NOTES PRIVÉES ─────────────────────────────────────────────────────────────
+
+class NotePivreeBody(BaseModel):
+    note: str
+    pin: Optional[str] = None  # requis pour admin non-principal
+
+class NotePivreeDeleteBody(BaseModel):
+    pin: Optional[str] = None
+
+
+@router.put("/{session_id}/jours/{jour_id}/note-privee")
+def put_note_privee_test(
+    session_id: int, jour_id: int, body: NotePivreeBody,
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+    db: DBSession = Depends(get_db)
+):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    if not s:
+        raise HTTPException(404, "Session introuvable")
+    if s.statut == "terminee":
+        raise HTTPException(403, "Session clôturée — lecture seule")
+    j = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
+    if not j:
+        raise HTTPException(404, "Jour introuvable")
+    is_admin = current_user.role in ("admin", "utilisateur")
+    af = db.query(AffectationTest).filter(
+        AffectationTest.jour_test_id == jour_id,
+        AffectationTest.user_id == current_user.id,
+        AffectationTest.principal == True
+    ).first()
+    est_principal = af is not None
+    if est_principal:
+        pass  # auteur : create ou modify libre
+    elif is_admin and j.note_privee and body.pin == get_pin_admin(db):
+        pass  # admin + PIN : modify seulement (pas create ex nihilo)
+    else:
+        raise HTTPException(403, "Réservé au testeur principal (ou admin+PIN pour modifier)")
+    j.note_privee = body.note.strip() or None
+    if est_principal:
+        j.note_privee_auteur_id = current_user.id
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{session_id}/jours/{jour_id}/note-privee")
+def delete_note_privee_test(
+    session_id: int, jour_id: int, body: NotePivreeDeleteBody,
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+    db: DBSession = Depends(get_db)
+):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    if not s:
+        raise HTTPException(404, "Session introuvable")
+    if s.statut == "terminee":
+        raise HTTPException(403, "Session clôturée — lecture seule")
+    j = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
+    if not j or not j.note_privee:
+        raise HTTPException(404, "Aucune note privée sur ce jour")
+    is_admin = current_user.role in ("admin", "utilisateur")
+    af = db.query(AffectationTest).filter(
+        AffectationTest.jour_test_id == jour_id,
+        AffectationTest.user_id == current_user.id,
+        AffectationTest.principal == True
+    ).first()
+    est_auteur = j.note_privee_auteur_id == current_user.id and af is not None
+    if not est_auteur:
+        if not is_admin or body.pin != get_pin_admin(db):
+            raise HTTPException(403, "Auteur ou admin+PIN requis")
+    j.note_privee = None
+    j.note_privee_auteur_id = None
+    db.commit()
+    return {"ok": True}
+
+
+@router.put("/{session_id}/jours-formation/{jour_id}/note-privee")
+def put_note_privee_formation(
+    session_id: int, jour_id: int, body: NotePivreeBody,
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+    db: DBSession = Depends(get_db)
+):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    if not s:
+        raise HTTPException(404, "Session introuvable")
+    if s.statut == "terminee":
+        raise HTTPException(403, "Session clôturée — lecture seule")
+    jf = db.query(JourFormation).filter(JourFormation.id == jour_id, JourFormation.session_id == session_id).first()
+    if not jf:
+        raise HTTPException(404, "Jour introuvable")
+    is_admin = current_user.role in ("admin", "utilisateur")
+    af = db.query(AffectationFormation).filter(
+        AffectationFormation.jour_formation_id == jour_id,
+        AffectationFormation.user_id == current_user.id,
+        AffectationFormation.principal == True
+    ).first()
+    est_principal = af is not None
+    if est_principal:
+        pass
+    elif is_admin and jf.note_privee and body.pin == get_pin_admin(db):
+        pass
+    else:
+        raise HTTPException(403, "Réservé au formateur principal (ou admin+PIN pour modifier)")
+    jf.note_privee = body.note.strip() or None
+    if est_principal:
+        jf.note_privee_auteur_id = current_user.id
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{session_id}/jours-formation/{jour_id}/note-privee")
+def delete_note_privee_formation(
+    session_id: int, jour_id: int, body: NotePivreeDeleteBody,
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+    db: DBSession = Depends(get_db)
+):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    if not s:
+        raise HTTPException(404, "Session introuvable")
+    if s.statut == "terminee":
+        raise HTTPException(403, "Session clôturée — lecture seule")
+    jf = db.query(JourFormation).filter(JourFormation.id == jour_id, JourFormation.session_id == session_id).first()
+    if not jf or not jf.note_privee:
+        raise HTTPException(404, "Aucune note privée sur ce jour")
+    is_admin = current_user.role in ("admin", "utilisateur")
+    af = db.query(AffectationFormation).filter(
+        AffectationFormation.jour_formation_id == jour_id,
+        AffectationFormation.user_id == current_user.id,
+        AffectationFormation.principal == True
+    ).first()
+    est_auteur = jf.note_privee_auteur_id == current_user.id and af is not None
+    if not est_auteur:
+        if not is_admin or body.pin != get_pin_admin(db):
+            raise HTTPException(403, "Auteur ou admin+PIN requis")
+    jf.note_privee = None
+    jf.note_privee_auteur_id = None
+    db.commit()
+    return {"ok": True}
+
+
 # ── AFFECTATIONS FORMATEURS ────────────────────────────────────────────────────
 
 def _verifier_impartialite(db, session_id: int, user_id: int) -> bool:

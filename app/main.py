@@ -108,6 +108,11 @@ def _run_startup_migrations():
         # jours_test
         "ALTER TABLE jours_test ADD COLUMN IF NOT EXISTS testeurs_sup TEXT",
         "ALTER TABLE jours_test ADD COLUMN IF NOT EXISTS tirage_themes_json TEXT",
+        "ALTER TABLE jours_test ADD COLUMN IF NOT EXISTS note_privee TEXT",
+        "ALTER TABLE jours_test ADD COLUMN IF NOT EXISTS note_privee_auteur_id INTEGER REFERENCES utilisateurs(id)",
+        # jours_formation
+        "ALTER TABLE jours_formation ADD COLUMN IF NOT EXISTS note_privee TEXT",
+        "ALTER TABLE jours_formation ADD COLUMN IF NOT EXISTS note_privee_auteur_id INTEGER REFERENCES utilisateurs(id)",
         # jour_test_candidats
         "ALTER TABLE jour_test_candidats ADD COLUMN IF NOT EXISTS options_planifiees TEXT",
         # session_epreuves
@@ -1388,6 +1393,48 @@ def page_session_detail(request: Request, session_id: int):
             key=lambda x: x["nom_complet"]
         )
 
+        # ── Notes privées : accès filtré par utilisateur connecté ────────────
+        _cu_id = _u.id if _u else None
+        _cu_admin = bool(_u and _u.role in ('admin', 'utilisateur'))
+
+        _principal_test_ids = {
+            at.jour_test_id for at in _at_list
+            if _cu_id and at.user_id == _cu_id and at.principal
+        }
+        _principal_formation_ids = {
+            af.jour_formation_id for af in _af_list
+            if _cu_id and af.user_id == _cu_id and af.principal
+        }
+
+        acces_notes_test = {}
+        for _j in jours_test:
+            _est_principal = _j.id in _principal_test_ids
+            _a_note = bool(_j.note_privee)
+            _est_auteur = _a_note and _j.note_privee_auteur_id == _cu_id
+            _peut_lire = _est_auteur or (_cu_admin and _a_note)
+            if _est_principal or _peut_lire:
+                acces_notes_test[_j.id] = {
+                    'note': _j.note_privee if _peut_lire else None,
+                    'est_principal': _est_principal,
+                    'est_admin_only': _cu_admin and not _est_principal,
+                    'session_modifiable': session.statut != 'terminee',
+                }
+
+        acces_notes_formation = {}
+        for _jf in jours_formation:
+            _est_principal = _jf.id in _principal_formation_ids
+            _a_note = bool(_jf.note_privee)
+            _est_auteur = _a_note and _jf.note_privee_auteur_id == _cu_id
+            _peut_lire = _est_auteur or (_cu_admin and _a_note)
+            if _est_principal or _peut_lire:
+                acces_notes_formation[_jf.id] = {
+                    'note': _jf.note_privee if _peut_lire else None,
+                    'est_principal': _est_principal,
+                    'est_admin_only': _cu_admin and not _est_principal,
+                    'session_modifiable': session.statut != 'terminee',
+                }
+        # ─────────────────────────────────────────────────────────────────────
+
         jours_pratiques_ids = [j.id for j in jours_test if j.type == 'pratique']
         attestations_neutralite_list = db.query(AttestationNeutralite).filter(
             AttestationNeutralite.jour_test_id.in_(jours_pratiques_ids)
@@ -1430,6 +1477,8 @@ def page_session_detail(request: Request, session_id: int):
                 "utilisateurs_terrain": utilisateurs_terrain,
                 "utilisateurs_testeurs": utilisateurs_testeurs,
                 "user_role": _u.role if _u else None,
+                "acces_notes_test": acces_notes_test,
+                "acces_notes_formation": acces_notes_formation,
             }
         )
     finally:

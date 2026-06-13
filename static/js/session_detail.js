@@ -1026,6 +1026,81 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modal-note-jour').style.display = 'none';
         }
 
+        // ── Note privée ──────────────────────────────────────────────────────
+        var btnNotePrivee = e.target.closest('[data-action="ouvrir-note-privee"]');
+        if (btnNotePrivee) {
+            window._MNP_JOUR_ID   = btnNotePrivee.dataset.jourId;
+            window._MNP_JOUR_TYPE = btnNotePrivee.dataset.jourType;
+            var peutModifier     = btnNotePrivee.dataset.peutModifier === '1';
+            var sessModifiable   = btnNotePrivee.dataset.sessionModifiable === '1';
+            var note             = btnNotePrivee.dataset.note || '';
+            var zLecture  = document.getElementById('mnp-zone-lecture');
+            var zEdition  = document.getElementById('mnp-zone-edition');
+            var zPin      = document.getElementById('mnp-zone-pin');
+            var btnSave   = document.getElementById('mnp-btn-save');
+            var btnDel    = document.getElementById('mnp-btn-delete');
+            var ta        = document.getElementById('mnp-textarea');
+            document.getElementById('mnp-pin').value = '';
+            ta.readOnly = false;
+            if (peutModifier) {
+                // Principal : mode édition
+                zEdition.style.display = 'block'; zLecture.style.display = 'none'; zPin.style.display = 'none';
+                ta.value = note;
+                if (sessModifiable) {
+                    btnSave.style.display = ''; btnDel.style.display = note ? '' : 'none';
+                } else {
+                    ta.readOnly = true; btnSave.style.display = 'none'; btnDel.style.display = 'none';
+                }
+            } else {
+                // Admin non-principal : lecture seule + supprimer avec PIN
+                zLecture.style.display = 'block'; zEdition.style.display = 'none';
+                document.getElementById('mnp-texte').textContent = note;
+                btnSave.style.display = 'none';
+                if (sessModifiable) {
+                    btnDel.style.display = ''; zPin.style.display = 'block';
+                } else {
+                    btnDel.style.display = 'none'; zPin.style.display = 'none';
+                }
+            }
+            document.getElementById('modal-note-privee').style.display = 'flex';
+        }
+
+        if (e.target.closest('[data-action="fermer-note-privee"]')) {
+            document.getElementById('modal-note-privee').style.display = 'none';
+        }
+
+        if (e.target.closest('[data-action="sauvegarder-note-privee"]')) {
+            var noteVal = document.getElementById('mnp-textarea').value;
+            var jType   = window._MNP_JOUR_TYPE;
+            var jId     = window._MNP_JOUR_ID;
+            var url     = jType === 'formation'
+                ? '/api/sessions/' + window.SESSION_ID + '/jours-formation/' + jId + '/note-privee'
+                : '/api/sessions/' + window.SESSION_ID + '/jours/' + jId + '/note-privee';
+            fetch(url, { method: 'PUT', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ note: noteVal }) })
+            .then(function(r) {
+                if (r.ok) { document.getElementById('modal-note-privee').style.display = 'none'; location.reload(); }
+                else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur'); });
+            });
+        }
+
+        if (e.target.closest('[data-action="supprimer-note-privee"]')) {
+            var pin2  = document.getElementById('mnp-pin').value.trim();
+            var jType2 = window._MNP_JOUR_TYPE;
+            var jId2   = window._MNP_JOUR_ID;
+            var url2   = jType2 === 'formation'
+                ? '/api/sessions/' + window.SESSION_ID + '/jours-formation/' + jId2 + '/note-privee'
+                : '/api/sessions/' + window.SESSION_ID + '/jours/' + jId2 + '/note-privee';
+            demanderConfirmation('Supprimer définitivement cette note confidentielle ?', function() {
+                fetch(url2, { method: 'DELETE', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ pin: pin2 || null }) })
+                .then(function(r) {
+                    if (r.ok) { document.getElementById('modal-note-privee').style.display = 'none'; location.reload(); }
+                    else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur'); });
+                });
+            });
+        }
+
         if (e.target.closest('[data-action="sauvegarder-affectation-formation"]')) {
             var jourIdSave = document.getElementById('af-jour-id').value;
             var affectations = [];
