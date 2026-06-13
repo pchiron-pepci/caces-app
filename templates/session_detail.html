@@ -850,7 +850,6 @@
                     <th>Date naissance</th>
                     <th>Employeur</th>
                     <th>RGPD</th>
-                    <th>TH</th>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
@@ -922,19 +921,6 @@
                                     data-prenom="{{ sc.stagiaire.prenom }}"
                                     data-ddn="{% if sc.stagiaire.date_naissance %}{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}{% endif %}"
                                     title="Consentement RGPD à faire">🛡️</button>
-                            {% endif %}
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if sc.theorie_dispensee %}
-                            <span class="badge orange">Dispense</span>
-                        {% else %}
-                            {% set rt = resultats_theorie.get(sc.stagiaire_id) %}
-                            {% if rt %}
-                                {% if rt.obtenue %}<span class="badge green">{{ rt.note_totale|int }}/100</span>
-                                {% else %}<span class="badge red">{{ rt.note_totale|int }}/100</span>{% endif %}
-                            {% else %}
-                                <span style="color:#888;">En attente</span>
                             {% endif %}
                         {% endif %}
                     </td>
