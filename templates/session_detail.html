@@ -274,6 +274,46 @@
     .table-recap-seq tbody td:not(:first-child) br { display: none; }
     #tableau-sequencage tbody td:first-child strong span,
     .table-recap-seq tbody td:first-child strong span { margin-left: 5px; color: #5588c0 !important; font-weight: 400 !important; }
+
+    /* ── Épreuve théorique (.table-theorie) — vue cartes mobile ── */
+    .table-theorie { display: block !important; min-width: 0 !important; width: 100% !important; }
+    .table-theorie thead { display: none !important; }
+    .table-theorie tbody { display: flex !important; flex-direction: column; gap: 10px; width: 100%; }
+    .table-theorie tbody tr {
+        display: flex !important; flex-wrap: wrap; align-items: stretch; width: 100%;
+        border: 1px solid #c8d8f4 !important; border-radius: 10px;
+        overflow: hidden; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    /* Ligne 1 gauche : Candidat */
+    .table-theorie tbody td:first-child {
+        order: 1; flex: 1 1 auto; min-width: 0; padding: 9px 10px !important;
+        font-weight: 600; font-size: 13px; background: #e3f2fd; color: #0d47a1; overflow: hidden;
+    }
+    /* DDN en bleu (override inline color:#aaa) */
+    .table-theorie tbody td:first-child div span { color: #5588c0 !important; }
+    /* Ligne 1 droite : Total + Résultat (ou Dispensé / En attente) */
+    .table-theorie tbody td.td-th-total,
+    .table-theorie tbody td.td-th-result {
+        order: 2; flex: 0 0 auto; padding: 9px 10px !important;
+        background: #e3f2fd; border-left: 1px solid #c8d8f4;
+        display: flex !important; flex-direction: column; align-items: flex-end;
+        justify-content: center; gap: 2px; white-space: nowrap; font-size: 12px;
+    }
+    /* Séparateur ligne 1 → ligne 2 */
+    .table-theorie tbody tr::before { content: ''; order: 3; flex: 0 0 100%; height: 0; }
+    /* Ligne 2 : thèmes T1-T5 en auto-fill */
+    .table-theorie tbody td:not(:first-child):not(.td-th-total):not(.td-th-result):not(.td-th-hidden) {
+        order: 4; flex: 1 1 45px;
+        display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start;
+        padding: 6px 4px 8px !important; gap: 3px; text-align: center;
+        border-right: 1px solid #eef2fb; border-top: 1px solid #c8d8f4;
+    }
+    .table-theorie tbody td[data-label]::before {
+        content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
+        text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
+    }
+    /* Td "—" masquée (cas En attente) */
+    .table-theorie tbody td.td-th-hidden { display: none !important; }
 }
 </style>
 
@@ -564,7 +604,7 @@
                         {% endif %}
                     </div>
                 </div>
-                <table class="table" style="margin-top:12px;">
+                <table class="table table-theorie" style="margin-top:12px;">
                     <thead>
                         <tr>
                             <th>Candidat</th>
@@ -586,17 +626,17 @@
                                 <div style="display:flex; align-items:center; gap:4px; margin-top:1px;">{% if sc.stagiaire.date_naissance %}<span style="font-size:11px; color:#aaa; font-weight:400;">{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}</span>{% endif %}{% if session.statut != 'terminee' and user_role != 'terrain' %}<button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}" data-type="{{ j.type }}" class="btn-retirer-candidat-jour" style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px;">🗑️</button>{% endif %}</div></div>
                             </td>
                             {% if sc.theorie_dispensee %}
-                                <td colspan="7" style="text-align:center;"><span class="badge orange">Dispense</span></td>
+                                <td colspan="7" class="td-th-result" style="text-align:center;"><span class="badge orange">Dispense</span></td>
                             {% else %}
                                 {% set rt = resultats_theorie_par_jour.get(j.id, {}).get(sc.stagiaire_id) %}
                                 {% if rt %}
-                                    <td style="text-align:center;"><span class="{{ 'badge green' if rt.theme1_ok else 'badge red' }}">{{ rt.note_theme1|int }}</span></td>
-                                    <td style="text-align:center;"><span class="{{ 'badge green' if rt.theme2_ok else 'badge red' }}">{{ rt.note_theme2|int }}</span></td>
-                                    <td style="text-align:center;"><span class="{{ 'badge green' if rt.theme3_ok else 'badge red' }}">{{ rt.note_theme3|int }}</span></td>
-                                    <td style="text-align:center;"><span class="{{ 'badge green' if rt.theme4_ok else 'badge red' }}">{{ rt.note_theme4|int }}</span></td>
-                                    <td style="text-align:center;"><span class="{{ 'badge green' if rt.theme5_ok else 'badge red' }}">{{ rt.note_theme5|int }}</span></td>
-                                    <td style="text-align:center;"><strong>{{ rt.note_totale|int }}/100</strong></td>
-                                    <td style="text-align:center;">
+                                    <td style="text-align:center;" data-label="T1/12"><span class="{{ 'badge green' if rt.theme1_ok else 'badge red' }}">{{ rt.note_theme1|int }}</span></td>
+                                    <td style="text-align:center;" data-label="T2/28"><span class="{{ 'badge green' if rt.theme2_ok else 'badge red' }}">{{ rt.note_theme2|int }}</span></td>
+                                    <td style="text-align:center;" data-label="T3/44"><span class="{{ 'badge green' if rt.theme3_ok else 'badge red' }}">{{ rt.note_theme3|int }}</span></td>
+                                    <td style="text-align:center;" data-label="T4/12"><span class="{{ 'badge green' if rt.theme4_ok else 'badge red' }}">{{ rt.note_theme4|int }}</span></td>
+                                    <td style="text-align:center;" data-label="T5/4"><span class="{{ 'badge green' if rt.theme5_ok else 'badge red' }}">{{ rt.note_theme5|int }}</span></td>
+                                    <td style="text-align:center;" class="td-th-total"><strong>{{ rt.note_totale|int }}/100</strong></td>
+                                    <td style="text-align:center;" class="td-th-result">
                                         {% if rt.obtenue %}<span class="badge green">REUSSI</span>
                                         {% else %}<span class="badge red">ECHEC</span>{% endif %}
                                         <a href="/sessions/{{ session.id }}/theorie/{{ sc.stagiaire_id }}/detail?jour_id={{ j.id }}"
@@ -604,8 +644,8 @@
                                             style="font-size:11px; color:#1a237e; margin-left:6px;">Detail</a>
                                     </td>
                                 {% else %}
-                                    <td colspan="6" style="text-align:center; color:#888;">En attente</td>
-                                    <td style="text-align:center;"><span style="color:#888;">—</span></td>
+                                    <td colspan="6" class="td-th-result" style="text-align:center; color:#888;">En attente</td>
+                                    <td class="td-th-hidden" style="text-align:center;"><span style="color:#888;">—</span></td>
                                 {% endif %}
                             {% endif %}
                         </tr>
