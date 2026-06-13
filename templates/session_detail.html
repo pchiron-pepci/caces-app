@@ -41,7 +41,7 @@
 
 <span class="badge" style="background:#f0f2f7; color:#555;">
     Responsable : {{ session.responsable or 'Non défini' }}
-</span>
+</span>{% if session.statut != 'terminee' and session.statut != 'annulee' and user_role != 'terrain' %}<a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary" title="Modifier les infos de la session" style="padding:2px 7px; font-size:13px;">✏️</a>{% endif %}
         </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
@@ -51,9 +51,6 @@
             <button class="btn btn-secondary" onclick="reouvrirsession()" title="Réouvrir la session">🔒</button>
             {% endif %}
         {% elif session.statut != 'annulee' %}
-    {% if user_role != 'terrain' %}
-    <a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary">✏️</a>
-    {% endif %}
     <button class="btn btn-secondary" onclick="cloturerSession()" title="Clôturer la session">🔓</button>
 {% endif %}
     </div>
