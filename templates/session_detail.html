@@ -68,10 +68,7 @@
                     <th style="min-width:150px;">Candidat</th>
                     <th style="min-width:80px; text-align:center;">TH</th>
                     {% for cat in categories %}
-                    <th style="min-width:100px; text-align:center;">
-                        {{ cat }}<br>
-                        <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }}</span>
-                    </th>
+                    <th style="min-width:100px; text-align:center;">{{ cat }}</th>
                     {% endfor %}
                     <th style="min-width:80px; text-align:center;">Total</th>
                 </tr>
@@ -175,10 +172,7 @@
                         <th style="min-width:150px;">Candidat</th>
                         <th style="text-align:center; min-width:60px;">TH</th>
                         {% for cat in categories %}
-                        <th style="text-align:center; min-width:90px;">
-                            {{ cat }}<br>
-                            <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }}</span>
-                        </th>
+                        <th style="text-align:center; min-width:90px;">{{ cat }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -415,10 +409,7 @@
                         <th style="width:52px; text-align:center;">Neutr.</th>
                         <th>Candidat</th>
                         {% for cat in categories %}
-                        <th style="text-align:center; font-size:12px;">
-                            {{ cat }}<br>
-                            <span style="font-size:10px; color:#888;">{{ ut_par_cat.get(cat, 1) }}</span>
-                        </th>
+                        <th style="text-align:center; font-size:12px;">{{ cat }}</th>
                         {% endfor %}
                         <th style="text-align:center;">Total</th>
                     </tr>
