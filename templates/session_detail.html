@@ -888,7 +888,7 @@
                            style="color:inherit; font-weight:700; text-decoration:none;">{{ nddn(sc.stagiaire) }}</a>
                     </td>
 
-                    <td>{{ sc.stagiaire.date_naissance or '—' }}</td>
+                    <td>{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') if sc.stagiaire.date_naissance else '—' }}</td>
                     <td>{{ sc.stagiaire.employeur or '—' }}</td>
                     <td style="text-align:center;">
                         {% set cs = consentements_map.get(sc.stagiaire_id) %}
