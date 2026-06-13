@@ -1359,4 +1359,22 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Badge résultat pratique cliquable → modifier un résultat existant
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="modifier-epreuve-pratique"]');
+        if (!btn) return;
+        saisirResultatPratique(
+            parseInt(btn.dataset.stagiaireId),
+            btn.dataset.cat,
+            btn.dataset.date,
+            btn.dataset.testeurId,
+            btn.dataset.identite === 'true',
+            btn.dataset.obtenue === 'true',
+            btn.dataset.noteTesteur,
+            JSON.parse(btn.dataset.optsPlanif || '[]'),
+            btn.dataset.optsObtenues,
+            parseInt(btn.dataset.epruveId)
+        );
+    });
 });

@@ -53,6 +53,13 @@
 .btn-note-principal-vide { background: #f5f5f5; box-shadow: 0 0 0 2px #9e9e9e; opacity: .7; }
 .btn-note-admin { background: #fff3e0; box-shadow: 0 0 0 2px #e65100; }
 
+/* Badge résultat pratique cliquable (modifier résultat existant) */
+.badge-result-btn {
+    border: none; font-family: inherit; font-weight: 600;
+    cursor: pointer; transition: filter 0.15s;
+}
+.badge-result-btn:hover { filter: brightness(0.88); }
+
 /* Planning : DDN masquée sur desktop */
 .planning-ddn { display: none; }
 
@@ -819,19 +826,11 @@
                                 {% set epreuve = epreuves_map.get((sc.stagiaire_id, cat)) %}
                                 {% set opts_planif = j.candidats_options.get(sc.stagiaire_id, {}).get(cat, []) %}
                                 {% if epreuve and epreuve.obtenue == True %}
-<span class="badge green" style="font-size:11px;">{{ ut_cell }} ✓</span>
+{% if session.statut != 'terminee' %}<button class="badge green badge-result-btn" style="font-size:11px;" data-action="modifier-epreuve-pratique" data-stagiaire-id="{{ sc.stagiaire_id }}" data-cat="{{ cat }}" data-date="{{ j.date }}" data-testeur-id="{{ epreuve.testeur_id or '' }}" data-identite="{{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}" data-obtenue="true" data-note-testeur="{{ (epreuve.note_testeur or '') | e }}" data-opts-planif="{{ opts_planif | tojson | e }}" data-opts-obtenues="{{ (epreuve.options_obtenues or '') | e }}" data-epreuve-id="{{ epreuve.id }}">{{ ut_cell }} ✓</button>{% else %}<span class="badge green" style="font-size:11px;">{{ ut_cell }} ✓</span>{% endif %}
     {% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = opts_planif if opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
-    {% if session.statut != 'terminee' %}
-<br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
-        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | forceescape }}, {{ (epreuve.options_obtenues or '') | tojson | forceescape }}, {{ epreuve.id }})">✏️</button>
-    {% endif %}
                                 {% elif epreuve and epreuve.obtenue == False %}
-                                    <span class="badge red" style="font-size:11px;">{{ ut_cell }} ✗</span>
+                                    {% if session.statut != 'terminee' %}<button class="badge red badge-result-btn" style="font-size:11px;" data-action="modifier-epreuve-pratique" data-stagiaire-id="{{ sc.stagiaire_id }}" data-cat="{{ cat }}" data-date="{{ j.date }}" data-testeur-id="{{ epreuve.testeur_id or '' }}" data-identite="{{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}" data-obtenue="false" data-note-testeur="{{ (epreuve.note_testeur or '') | e }}" data-opts-planif="{{ opts_planif | tojson | e }}" data-opts-obtenues="{{ (epreuve.options_obtenues or '') | e }}" data-epreuve-id="{{ epreuve.id }}">{{ ut_cell }} ✗</button>{% else %}<span class="badge red" style="font-size:11px;">{{ ut_cell }} ✗</span>{% endif %}
                                     {% set obtained_list = (epreuve.options_obtenues or '').split(',') | select | list %}{% set display_opts = opts_planif if opts_planif else obtained_list %}{% if display_opts %}<br><small style="font-size:10px;">{% for opt in display_opts %}{% if opt in obtained_list %}<span style="color:#2e7d32; font-weight:700;">{{ opt }}</span>{% else %}<span style="color:#c62828; font-weight:700;">{{ opt }}</span>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
-                                    {% if session.statut != 'terminee' %}
-                                    <br><button style="background:none; border:1px dashed #ccc; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:10px; color:#888; margin-top:2px;"
-                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '{{ epreuve.testeur_id or "" }}', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, {{ 'true' if epreuve.obtenue else 'false' }}, '{{ epreuve.note_testeur or "" }}', {{ opts_planif | tojson | forceescape }}, {{ (epreuve.options_obtenues or '') | tojson | forceescape }}, {{ epreuve.id }})">✏️</button>
-                                    {% endif %}
                                 {% else %}
                                     {% if session.statut != 'terminee' %}
                                     <button style="background:{% if is_option_seule %}#ffe0b2{% else %}#e8eaf6{% endif %}; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:12px; color:{% if is_option_seule %}#e65100{% else %}#1a237e{% endif %}; font-weight:600;"
