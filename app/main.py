@@ -456,6 +456,9 @@ def _verifier_role(path: str, method: str, role: str):
     # Actions interdites au terrain
     if role == "terrain":
         base = path.rstrip("/")
+        # Exception ciblée : note privée du principal — l'endpoint revérifie user_id == principal
+        if _re.match(r"^/api/sessions/\d+/jours(-formation)?/\d+/note-privee$", base):
+            return True
         # Toutes les routes d'écriture sur les sessions (création + toutes sous-ressources)
         if method != "GET" and (base == "/api/sessions" or _re.match(r"^/api/sessions/\d+", base)):
             return False
