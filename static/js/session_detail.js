@@ -1044,9 +1044,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var btnDel    = document.getElementById('mnp-btn-delete');
             var ta        = document.getElementById('mnp-textarea');
             document.getElementById('mnp-pin').value = '';
+            document.getElementById('mnp-pin-error').style.display = 'none';
             ta.readOnly = false;
             if (peutModifier) {
-                // Principal : mode édition
+                // Principal : mode édition, pas de PIN
                 zEdition.style.display = 'block'; zLecture.style.display = 'none'; zPin.style.display = 'none';
                 ta.value = note;
                 if (sessModifiable) {
@@ -1055,14 +1056,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     ta.readOnly = true; btnSave.style.display = 'none'; btnDel.style.display = 'none';
                 }
             } else {
-                // Admin non-principal : lecture seule + supprimer avec PIN
-                zLecture.style.display = 'block'; zEdition.style.display = 'none';
-                document.getElementById('mnp-texte').textContent = note;
-                btnSave.style.display = 'none';
+                // Admin : édition + PIN requis pour enregistrer ou supprimer
+                zEdition.style.display = 'block'; zLecture.style.display = 'none';
+                ta.value = note;
                 if (sessModifiable) {
-                    btnDel.style.display = ''; zPin.style.display = 'block';
+                    btnSave.style.display = ''; btnDel.style.display = note ? '' : 'none';
+                    zPin.style.display = 'block';
                 } else {
-                    btnDel.style.display = 'none'; zPin.style.display = 'none';
+                    btnSave.style.display = 'none'; btnDel.style.display = 'none';
+                    zPin.style.display = 'none';
                 }
             }
             document.getElementById('modal-note-privee').style.display = 'flex';
@@ -1074,21 +1076,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (e.target.closest('[data-action="sauvegarder-note-privee"]')) {
             var noteVal = document.getElementById('mnp-textarea').value;
+            var pinVal  = document.getElementById('mnp-pin').value.trim();
+            var errEl   = document.getElementById('mnp-pin-error');
+            errEl.style.display = 'none';
             var jType   = window._MNP_JOUR_TYPE;
             var jId     = window._MNP_JOUR_ID;
             var url     = jType === 'formation'
                 ? '/api/sessions/' + window.SESSION_ID + '/jours-formation/' + jId + '/note-privee'
                 : '/api/sessions/' + window.SESSION_ID + '/jours/' + jId + '/note-privee';
             fetch(url, { method: 'PUT', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ note: noteVal }) })
+                body: JSON.stringify({ note: noteVal, pin: pinVal || null }) })
             .then(function(r) {
                 if (r.ok) { document.getElementById('modal-note-privee').style.display = 'none'; location.reload(); }
-                else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur'); });
+                else r.json().then(function(d) {
+                    if (d.detail && d.detail.toLowerCase().includes('pin')) { errEl.style.display = 'block'; }
+                    else { afficherErreur(d.detail || 'Erreur'); }
+                });
             });
         }
 
         if (e.target.closest('[data-action="supprimer-note-privee"]')) {
-            var pin2  = document.getElementById('mnp-pin').value.trim();
+            var pin2   = document.getElementById('mnp-pin').value.trim();
+            var errEl2 = document.getElementById('mnp-pin-error');
+            errEl2.style.display = 'none';
             var jType2 = window._MNP_JOUR_TYPE;
             var jId2   = window._MNP_JOUR_ID;
             var url2   = jType2 === 'formation'
@@ -1099,7 +1109,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ pin: pin2 || null }) })
                 .then(function(r) {
                     if (r.ok) { document.getElementById('modal-note-privee').style.display = 'none'; location.reload(); }
-                    else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur'); });
+                    else r.json().then(function(d) {
+                        if (d.detail && d.detail.toLowerCase().includes('pin')) { errEl2.style.display = 'block'; }
+                        else { afficherErreur(d.detail || 'Erreur'); }
+                    });
                 });
             });
         }

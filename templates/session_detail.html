@@ -1164,10 +1164,11 @@
         <div id="mnp-zone-edition" style="display:none;">
             <textarea id="mnp-textarea" class="note-textarea" rows="6" placeholder="Votre note confidentielle…"></textarea>
         </div>
-        <!-- PIN admin pour suppression -->
+        <!-- PIN admin pour modification et suppression -->
         <div id="mnp-zone-pin" style="display:none; margin-top:12px;">
-            <label style="font-size:12px; font-weight:700; color:#555;">PIN admin requis pour supprimer</label>
-            <input type="password" id="mnp-pin" placeholder="1505" style="width:100%; box-sizing:border-box; margin-top:4px; border:1px solid #ddd; border-radius:8px; padding:8px 10px; font-size:14px;">
+            <label style="font-size:12px; font-weight:700; color:#555;">PIN admin requis</label>
+            <input type="password" id="mnp-pin" placeholder="Code PIN" style="width:100%; box-sizing:border-box; margin-top:4px; border:1px solid #ddd; border-radius:8px; padding:8px 10px; font-size:14px;">
+            <p id="mnp-pin-error" style="color:#c62828; font-size:12px; margin-top:4px; display:none;">Code PIN incorrect.</p>
         </div>
         <div class="form-actions" style="margin-top:16px;">
             <button id="mnp-btn-save" class="btn btn-primary" data-action="sauvegarder-note-privee" style="display:none;">Enregistrer</button>
