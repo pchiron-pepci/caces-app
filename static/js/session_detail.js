@@ -1064,7 +1064,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (val === '__theorie__') {
             var th = document.createElement('th');
             th.className = 'col-theorie';
-            th.textContent = 'Théorie';
+            th.textContent = 'TH';
             th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
             var appTh = table.querySelector('thead tr th.col-apprenant');
             if (appTh) appTh.parentNode.insertBefore(th, appTh.nextSibling);
