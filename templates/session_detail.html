@@ -56,8 +56,8 @@
 /* Planning : DDN masquée sur desktop */
 .planning-ddn { display: none; }
 
-/* ── Planning de formation — vue cartes mobile ── */
-@media (max-width: 768px) {
+/* ── Planning de formation — vue cartes mobile/tablette ── */
+@media (max-width: 1023px) {
     /* Override scroll desktop → vue cartes prend le relais */
     .table-responsive-planning { overflow-x: visible !important; }
     .table-responsive-planning table {
@@ -70,11 +70,12 @@
     .table-responsive-planning tfoot { display: none !important; }
     .table-responsive-planning tbody { display: flex !important; flex-direction: column; gap: 10px; }
 
-    /* Carte par candidat */
+    /* Carte par candidat — pleine largeur */
     .table-responsive-planning tbody tr {
         display: flex !important;
         flex-wrap: wrap;
         align-items: stretch;
+        width: 100%;
         border: 1px solid #c8d8f4 !important;
         border-radius: 10px;
         overflow: hidden;
@@ -134,17 +135,16 @@
     /* Spacer : masqué */
     .td-spacer { order: 99 !important; display: none !important; }
 
-    /* Ligne 2 : colonnes input (wrap naturel) */
+    /* Ligne 2 : auto-fill — autant de catégories que la largeur permet, wrap pour le reste */
     .table-responsive-planning tbody td:not(:first-child):not(.planning-total-cell):not(.td-spacer) {
         order: 4;
-        flex: 0 0 auto;
+        flex: 1 1 55px;
         display: flex !important;
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
         padding: 7px 5px 9px !important;
         gap: 4px;
-        min-width: 58px;
         border-right: 1px solid #eef2fb;
         border-top: 1px solid #e8f0fb;
         background: white !important;
