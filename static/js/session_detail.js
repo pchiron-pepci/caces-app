@@ -1077,22 +1077,22 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (val === '__libre__') {
             var th = document.createElement('th'); th.className = 'col-libre'; th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600; background:#f0f2f7;';
             th.innerHTML = '<input type="text" class="libelle-libre" placeholder="Libre" style="width:64px; border:none; background:transparent; font-weight:600; color:#1565c0; text-align:center; font-size:13px; font-family:inherit;">';
-            var totalTh = table.querySelector('thead tr th.col-total'); if (totalTh) totalTh.parentNode.insertBefore(th, totalTh);
+            var spacerTh = table.querySelector('thead tr th.col-spacer'); if (spacerTh) spacerTh.parentNode.insertBefore(th, spacerTh);
             table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
                 var td = document.createElement('td'); td.className = 'td-libre'; td.style.cssText = 'padding:4px 6px; text-align:center; background:#fafafa;';
                 td.innerHTML = '<input type="number" class="h-libre planning-input" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
-                var totalTd = tr.querySelector('td.planning-total-cell'); if (totalTd) tr.insertBefore(td, totalTd);
+                var spacerTd = tr.querySelector('td.td-spacer'); if (spacerTd) tr.insertBefore(td, spacerTd);
             });
-            if (tfootRow) { var ftd = document.createElement('td'); ftd.className = 'tcol-libre'; ftd.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600; background:#e8eaf0;'; ftd.textContent = '—'; var fGrand = tfootRow.querySelector('.tcol-grand'); if (fGrand) tfootRow.insertBefore(ftd, fGrand); }
+            if (tfootRow) { var ftd = document.createElement('td'); ftd.className = 'tcol-libre'; ftd.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600; background:#e8eaf0;'; ftd.textContent = '—'; var fSpacer = tfootRow.querySelector('.tcol-spacer'); if (fSpacer) tfootRow.insertBefore(ftd, fSpacer); }
         } else {
             var th = document.createElement('th'); th.dataset.cat = val; th.textContent = val; th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
-            var anchorTh = table.querySelector('thead tr th.col-libre') || table.querySelector('thead tr th.col-total'); if (anchorTh) anchorTh.parentNode.insertBefore(th, anchorTh);
+            var anchorTh = table.querySelector('thead tr th.col-libre') || table.querySelector('thead tr th.col-spacer'); if (anchorTh) anchorTh.parentNode.insertBefore(th, anchorTh);
             table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
                 var td = document.createElement('td'); td.style.cssText = 'padding:4px 6px; text-align:center;';
                 td.innerHTML = '<input type="number" class="h-cat planning-input" data-cat="' + val + '" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
-                var anchorTd = tr.querySelector('td.td-libre') || tr.querySelector('td.planning-total-cell'); if (anchorTd) tr.insertBefore(td, anchorTd);
+                var anchorTd = tr.querySelector('td.td-libre') || tr.querySelector('td.td-spacer'); if (anchorTd) tr.insertBefore(td, anchorTd);
             });
-            if (tfootRow) { var ftd = document.createElement('td'); ftd.className = 'tcol-cat'; ftd.dataset.cat = val; ftd.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;'; ftd.textContent = '—'; var fAnchor = tfootRow.querySelector('.tcol-libre') || tfootRow.querySelector('.tcol-grand'); if (fAnchor) tfootRow.insertBefore(ftd, fAnchor); }
+            if (tfootRow) { var ftd = document.createElement('td'); ftd.className = 'tcol-cat'; ftd.dataset.cat = val; ftd.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;'; ftd.textContent = '—'; var fAnchor = tfootRow.querySelector('.tcol-libre') || tfootRow.querySelector('.tcol-spacer'); if (fAnchor) tfootRow.insertBefore(ftd, fAnchor); }
         }
     }
     function _removePlanningCol(table, val) {
@@ -1108,6 +1108,30 @@ document.addEventListener('DOMContentLoaded', function() {
             var el = table.querySelector('thead th[data-cat="' + val + '"]'); if (el) el.remove();
             table.querySelectorAll('tbody .h-cat[data-cat="' + val + '"]').forEach(function(i) { i.closest('td').remove(); });
             var el2 = table.querySelector('tfoot .tcol-cat[data-cat="' + val + '"]'); if (el2) el2.remove();
+        }
+    }
+
+    function _sortPlanningCols(table) {
+        var theadRow = table.querySelector('thead tr');
+        var tfoot = table.querySelector('tfoot tr');
+        var catThs = Array.from(theadRow.querySelectorAll('th[data-cat]'));
+        if (catThs.length <= 1) return;
+        catThs.sort(function(a, b) { return a.dataset.cat.localeCompare(b.dataset.cat, undefined, {numeric: true}); });
+        var anchorTh = theadRow.querySelector('th.col-libre') || theadRow.querySelector('th.col-spacer');
+        catThs.forEach(function(th) { theadRow.insertBefore(th, anchorTh); });
+        table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
+            var anchorTd = tr.querySelector('td.td-libre') || tr.querySelector('td.td-spacer');
+            catThs.forEach(function(th) {
+                var inp = tr.querySelector('.h-cat[data-cat="' + th.dataset.cat + '"]');
+                if (inp) tr.insertBefore(inp.closest('td'), anchorTd);
+            });
+        });
+        if (tfoot) {
+            var fAnchor = tfoot.querySelector('.tcol-libre') || tfoot.querySelector('.tcol-spacer');
+            catThs.forEach(function(th) {
+                var ftd = tfoot.querySelector('.tcol-cat[data-cat="' + th.dataset.cat + '"]');
+                if (ftd) tfoot.insertBefore(ftd, fAnchor);
+            });
         }
     }
 
@@ -1157,6 +1181,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (cb.checked && !wasActive) _addPlanningCol(table, val);
                 else if (!cb.checked && wasActive) _removePlanningCol(table, val);
             });
+            _sortPlanningCols(table);
             document.getElementById('modal-ajouter-cat-planning').style.display = 'none';
             document.querySelectorAll('tr[data-stagiaire]').forEach(function(tr) { recalculerTotalLigne(tr); });
             recalculerTotauxColonnes(table);
