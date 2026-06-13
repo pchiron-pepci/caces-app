@@ -4,6 +4,7 @@
 
 {% macro nddn(s) %}{{ s.nom }} {{ s.prenom }}{% if s.date_naissance %} ({{ s.date_naissance.strftime('%d/%m/%Y') }}){% endif %}{% endmacro %}
 {% macro nddn2(s) %}{{ s.nom }} {{ s.prenom }}{% if s.date_naissance %}<br><span style="font-size:11px; color:#aaa; font-weight:400; line-height:1.1;">{{ s.date_naissance.strftime('%d/%m/%Y') }}</span>{% endif %}{% endmacro %}
+{% macro nddn_ab(s) %}{{ s.nom }} {{ s.prenom[0] }}.{% if s.date_naissance %}<br><span style="font-size:11px; color:#aaa; font-weight:400; line-height:1.1;">{{ s.date_naissance.strftime('%d/%m/%Y') }}</span>{% endif %}{% endmacro %}
 
 {% block content %}
 
@@ -195,7 +196,7 @@
                     {% for sc in session_candidats %}
                     {% if sc.stagiaire_id in entry.candidats_ids %}
                     <tr>
-                        <td><strong style="line-height:1.2; display:block;">{{ nddn2(sc.stagiaire) }}</strong></td>
+                        <td><strong style="line-height:1.2; display:block;">{{ nddn_ab(sc.stagiaire) }}</strong></td>
                         <!-- Théo : cherche dans tous les jours théorie de cette date -->
                         <td style="text-align:center;">
                             {% set ns_t = namespace(in_theorie=false, rt=none) %}
@@ -333,12 +334,8 @@
                         {% if sc.stagiaire_id in j.candidats_ids %}
                         <tr>
                             <td>
-                                <strong style="line-height:1.2; display:block;">{{ nddn2(sc.stagiaire) }}</strong>
-                                {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                                <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}" data-type="{{ j.type }}"
-                                    class="btn-retirer-candidat-jour"
-                                    style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
-                                {% endif %}
+                                <div style="line-height:1.3;"><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom[0] }}.</strong>
+                                <div style="display:flex; align-items:center; gap:4px; margin-top:1px;">{% if sc.stagiaire.date_naissance %}<span style="font-size:11px; color:#aaa; font-weight:400;">{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}</span>{% endif %}{% if session.statut != 'terminee' and user_role != 'terrain' %}<button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}" data-type="{{ j.type }}" class="btn-retirer-candidat-jour" style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px;">🗑️</button>{% endif %}</div></div>
                             </td>
                             {% if sc.theorie_dispensee %}
                                 <td colspan="7" style="text-align:center;"><span class="badge orange">Dispense</span></td>
@@ -468,12 +465,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            <strong style="line-height:1.2; display:block;">{{ nddn2(sc.stagiaire) }}</strong>
-                            {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                            <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}"
-                                class="btn-retirer-candidat-jour"
-                                style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px; margin-left:8px;">🗑️</button>
-                            {% endif %}
+                            <div style="line-height:1.3;"><strong>{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom[0] }}.</strong>
+                            <div style="display:flex; align-items:center; gap:4px; margin-top:1px;">{% if sc.stagiaire.date_naissance %}<span style="font-size:11px; color:#aaa; font-weight:400;">{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') }}</span>{% endif %}{% if session.statut != 'terminee' and user_role != 'terrain' %}<button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}" class="btn-retirer-candidat-jour" style="background:none; border:none; cursor:pointer; color:#c62828; font-size:12px;">🗑️</button>{% endif %}</div></div>
                         </td>
                         {% for cat in categories %}
                         <td style="text-align:center;">
@@ -634,7 +627,7 @@
                         {% set pa = jf.planning.get(sc.stagiaire_id) %}
                         {% set hpc = pa.heures_par_cat if pa else {} %}
                         <tr data-stagiaire="{{ sc.stagiaire_id }}" style="border-bottom:1px solid #f0f2f7;">
-                            <td style="padding:6px 10px; white-space:nowrap;">{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}</td>
+                            <td style="padding:6px 10px; white-space:nowrap;">{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom[0] }}.</td>
                             {% if jf.has_theorie %}
                             <td style="padding:4px 6px; text-align:center;">
                                 <input type="number" class="h-theorie planning-input" min="0" max="7" step="0.25"
