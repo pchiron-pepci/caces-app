@@ -54,9 +54,9 @@
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
         {% if session.statut == 'terminee' %}
-            <span style="color:#2e7d32; font-size:13px;">🔒 Session verrouilee</span>
-            {% if user_role != 'terrain' %}
-            <button class="btn btn-secondary" onclick="reouvrirsession()" title="Réouvrir la session">🔒</button>
+            <span style="color:#2e7d32; font-size:13px;">🔒 Session verrouillée</span>
+            {% if user_role == 'admin' %}
+            <button class="btn btn-secondary" onclick="reouvrirsession()" title="Réouvrir la session" style="font-size:13px;">🔓 Réouvrir</button>
             {% endif %}
         {% elif session.statut != 'annulee' %}
     <button class="btn btn-secondary" onclick="cloturerSession()" title="Clôturer la session">🔓</button>

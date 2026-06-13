@@ -631,12 +631,15 @@ def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSessio
     db.commit()
     return {"message": "Epreuve supprimee"}
 
+class ReouvrirBody(BaseModel):
+    pin: str = ""
+
 @router.post("/{id}/reouvrir")
-def reouvrir_session(id: int, pin: str = "", db: DBSession = Depends(get_db),
+def reouvrir_session(id: int, body: ReouvrirBody, db: DBSession = Depends(get_db),
                      current_user: Utilisateur = Depends(get_utilisateur_courant)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Réservé à l'administrateur")
-    if pin != get_pin_admin(db):
+    if body.pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Session).filter(Session.id == id).first()
     if not s:

@@ -476,10 +476,13 @@ function reouvrirsession() {
     document.getElementById('modal-pin').style.display = 'flex';
     document.getElementById('pin-confirm-btn').onclick = async () => {
         const pin = document.getElementById('pin-input').value;
-        if (pin !== '1505') { document.getElementById('pin-error').style.display = 'block'; return; }
-        fermerPin();
-        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/reouvrir?pin=' + pin, { method: 'POST' });
-        if (resp.ok) location.reload(); else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/reouvrir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin })
+        });
+        if (resp.ok) { fermerPin(); location.reload(); }
+        else { document.getElementById('pin-error').style.display = 'block'; }
     };
 }
 
