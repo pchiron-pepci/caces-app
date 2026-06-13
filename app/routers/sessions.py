@@ -248,6 +248,17 @@ def update_equipement(session_id: int, id: int, data: EquipementCreate, db: DBSe
     db.commit()
     return {"message": "Equipement mis a jour"}
 
+@router.delete("/{session_id}/equipements/{id}")
+def delete_equipement(session_id: int, id: int, db: DBSession = Depends(get_db)):
+    session = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(session)
+    e = db.query(Equipement).filter(Equipement.id == id, Equipement.session_id == session_id).first()
+    if not e:
+        raise HTTPException(status_code=404, detail="Equipement non trouve")
+    db.delete(e)
+    db.commit()
+    return {"message": "Equipement supprime"}
+
 # JOURS DE TEST
 @router.post("/{session_id}/jours")
 def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends(get_db)):

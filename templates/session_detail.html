@@ -1221,7 +1221,10 @@
             <div class="form-field"><label>Organisme verification</label><input type="text" id="equip-organisme"></div>
             <div class="form-field"><label>Proprietaire</label><input type="text" id="equip-proprietaire"></div>
         </div>
-        <div class="form-actions">
+        <div class="form-actions" style="display:flex; gap:8px; align-items:center;">
+            {% if user_role != 'terrain' %}
+            <button id="btn-supprimer-equipement" class="btn-trash" onclick="supprimerEquipement()" title="Supprimer définitivement cet équipement" style="display:none; margin-right:auto;">🗑️</button>
+            {% endif %}
             <button class="btn btn-primary" onclick="sauvegarderEquipement()">Sauvegarder</button>
             <button class="btn btn-secondary" onclick="fermerModalEquipement()">Annuler</button>
         </div>

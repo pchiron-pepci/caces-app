@@ -406,6 +406,8 @@ function ouvrirAjoutEquipement() {
     document.getElementById('equip-numero').value = window.NB_EQUIPEMENTS + 1;
     ['designation','marque','type','serie','organisme','proprietaire'].forEach(f => document.getElementById('equip-' + f).value = '');
     document.getElementById('equip-date-verif').value = '';
+    var btnSupp = document.getElementById('btn-supprimer-equipement');
+    if (btnSupp) btnSupp.style.display = 'none';
     document.getElementById('modal-equipement').style.display = 'flex';
 }
 
@@ -420,7 +422,19 @@ function editerEquipement(id, numero, designation, marque, type, serie, dateVeri
     document.getElementById('equip-date-verif').value = dateVerif;
     document.getElementById('equip-organisme').value = organisme;
     document.getElementById('equip-proprietaire').value = proprietaire;
+    var btnSupp = document.getElementById('btn-supprimer-equipement');
+    if (btnSupp) btnSupp.style.display = 'inline-block';
     document.getElementById('modal-equipement').style.display = 'flex';
+}
+
+async function supprimerEquipement() {
+    const id = document.getElementById('equip-id').value;
+    if (!id) return;
+    demanderConfirmation('Supprimer définitivement cet équipement ? Cette action est irréversible.', async () => {
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/equipements/' + id, { method: 'DELETE' });
+        if (resp.ok) { fermerModalEquipement(); location.reload(); }
+        else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
+    });
 }
 
 function fermerModalEquipement() { document.getElementById('modal-equipement').style.display = 'none'; }
