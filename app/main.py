@@ -923,8 +923,10 @@ async def post_modifier_jour(request: Request, session_id: int, jour_id: int):
                 name="modifier_jour.html",
                 context={"session": s, "jour": j, "testeurs": testeurs_list, "erreur": erreur}
             )
+        note = form.get("note", "").strip() or None
         j.date = date.fromisoformat(new_date) if new_date else j.date
         j.testeur_id = int(testeur_id) if testeur_id else j.testeur_id
+        j.note = note
         db.commit()
         return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
     finally:

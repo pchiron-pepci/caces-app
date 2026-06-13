@@ -33,6 +33,7 @@ router = APIRouter(prefix="/api/sessions", tags=["Sessions"])
 
 class JourModifData(BaseModel):
     date: Optional[str] = None
+    note: Optional[str] = None
 
 class SessionCreate(BaseModel):
     famille: str
@@ -680,6 +681,8 @@ def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSess
         raise HTTPException(status_code=404, detail="Jour non trouve")
     if data.date:
         j.date = date_type.fromisoformat(data.date)
+    if data.note is not None:
+        j.note = data.note or None
     db.commit()
     return {"message": "Jour modifie"}
 
@@ -780,6 +783,7 @@ def add_jour_formation(
 class JourFormationUpdate(BaseModel):
     date_str: Optional[str] = None
     intitule: Optional[str] = None
+    note: Optional[str] = None
 
 
 @router.patch("/{session_id}/jours-formation/{id}")
@@ -825,6 +829,8 @@ def update_jour_formation(
 
     if data.intitule is not None:
         jf.intitule = data.intitule or None
+    if data.note is not None:
+        jf.note = data.note or None
 
     db.commit()
     return {"id": jf.id, "date": str(jf.date), "intitule": jf.intitule}

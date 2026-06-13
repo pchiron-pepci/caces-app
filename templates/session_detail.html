@@ -261,6 +261,7 @@
 .tab-btn:hover { color:#1a237e; }
 .active-tab { color:#1a237e !important; border-bottom:3px solid #1a237e !important; background:none; }
 .card-accent { border-left: 4px solid #cc0000; }
+.note-textarea { width:100%; box-sizing:border-box; border:1px solid #ddd; border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; resize:vertical; }
 .shield-btn  { border:none; border-radius:50%; width:28px; height:28px; padding:0; font-size:16px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; line-height:1; }
 .shield-ok   { background:#c8e6c9; box-shadow:0 0 0 2px #2e7d32; }
 .shield-warn { background:#ffe0b2; box-shadow:0 0 0 2px #e65100; }
@@ -286,6 +287,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
+                        {% if j.note %}<button class="btn-icon" data-action="voir-note-jour" data-note="{{ j.note | e }}" title="Voir la note" style="background:none; border:none; cursor:pointer; font-size:15px; padding:0 2px; margin-left:4px; vertical-align:middle;">ℹ️</button>{% endif %}
                         {% if session.statut != 'terminee' and user_role != 'terrain' %}
                             {% if j.testeurs_affectes %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}</span>
                             {% else %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 10px; font-size:12px; margin-left:4px; cursor:pointer;">📋 Ajouter</span>
@@ -389,6 +391,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <div>
                     <strong>{{ j.date.strftime('%d/%m/%Y') if j.date else '—' }}</strong>
+                    {% if j.note %}<button class="btn-icon" data-action="voir-note-jour" data-note="{{ j.note | e }}" title="Voir la note" style="background:none; border:none; cursor:pointer; font-size:15px; padding:0 2px; margin-left:4px; vertical-align:middle;">ℹ️</button>{% endif %}
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                         {% if j.testeurs_affectes %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}</span>
                         {% else %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 10px; font-size:12px; margin-left:4px; cursor:pointer;">📋 Ajouter</span>
@@ -400,7 +403,7 @@
                 <div style="display:flex; gap:8px;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                        onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.date }}', {{ j.candidats_categories | tojson | forceescape }}, {{ j.candidats_options | tojson | forceescape }}, {{ j.candidats_epreuves | tojson | forceescape }})">✏️</button>
+                        onclick="ouvrirModifierJourPratique({{ j.id }}, '{{ j.date }}', {{ j.candidats_categories | tojson | forceescape }}, {{ j.candidats_options | tojson | forceescape }}, {{ j.candidats_epreuves | tojson | forceescape }}, {{ j.note | tojson | forceescape }})">✏️</button>
                     <button class="btn-trash"
                         onclick="supprimerJour({{ j.id }})" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
@@ -562,6 +565,7 @@
                     {% if jf.intitule %}
                     <span style="margin-left:8px; color:#333; font-size:13px;">{{ jf.intitule }}</span>
                     {% endif %}
+                    {% if jf.note %}<button class="btn-icon" data-action="voir-note-jour" data-note="{{ jf.note | e }}" title="Voir la note" style="background:none; border:none; cursor:pointer; font-size:15px; padding:0 2px; margin-left:4px; vertical-align:middle;">ℹ️</button>{% endif %}
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                         {% if jf.affectations %}<span data-action="ouvrir-modal-affectation-formation" data-jour-id="{{ jf.id }}" data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}" title="Gérer les formateurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for af in jf.affectations %}<span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px;">👨‍🏫 {{ af.abreviation }}{% if af.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %} <span style="color:#666;">{% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}</span></span>{% endfor %}</span>
                         {% else %}<span data-action="ouvrir-modal-affectation-formation" data-jour-id="{{ jf.id }}" data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}" title="Gérer les formateurs" style="font-size:12px; color:#1976d2; background:#e3f2fd; border-radius:6px; padding:3px 10px; cursor:pointer; margin-left:4px;">👨‍🏫 Ajouter</span>
@@ -581,6 +585,7 @@
                         data-id="{{ jf.id }}"
                         data-date="{{ jf.date }}"
                         data-intitule="{{ jf.intitule or '' }}"
+                        data-note="{{ jf.note | e if jf.note else '' }}"
                         title="Modifier ce jour">✏️</button>
                     <button class="btn-trash" data-action="supprimer-jour-formation" data-id="{{ jf.id }}" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
@@ -779,6 +784,12 @@
                 <input type="text" id="jf-intitule"
                        placeholder="Ex : Formation pratique R489 cat.1B">
             </div>
+            {% if user_role != 'terrain' %}
+            <div class="form-field">
+                <label>Note (optionnelle)</label>
+                <textarea id="jf-note" class="note-textarea" rows="2" placeholder="Consignes, remarques…"></textarea>
+            </div>
+            {% endif %}
             <div class="form-actions">
                 <button class="btn btn-primary"
                         data-action="sauvegarder-jour-formation">Ajouter</button>
@@ -805,6 +816,12 @@
                 <input type="text" id="jf-edit-intitule"
                        placeholder="Ex : Formation pratique R489 cat.1B">
             </div>
+            {% if user_role != 'terrain' %}
+            <div class="form-field">
+                <label>Note (optionnelle)</label>
+                <textarea id="jf-edit-note" class="note-textarea" rows="2" placeholder="Consignes, remarques…"></textarea>
+            </div>
+            {% endif %}
             <div class="form-actions">
                 <button class="btn btn-primary"
                         data-action="sauvegarder-modifier-jour-formation">Enregistrer</button>
@@ -1039,6 +1056,12 @@
                 {% endif %}{% endfor %}
             </div>
         </div>
+        {% if user_role != 'terrain' %}
+        <div class="form-field" style="margin-top:16px;">
+            <label>Note (optionnelle)</label>
+            <textarea id="jt-note" class="note-textarea" rows="2" placeholder="Consignes, remarques…"></textarea>
+        </div>
+        {% endif %}
         <div style="background:#e8f5e9; border-radius:8px; padding:12px; margin-top:16px; color:#2e7d32; font-size:13px;">
             La grille theorique sera tiree automatiquement.
         </div>
@@ -1104,9 +1127,26 @@
             <div id="recap-ut-detail" style="font-size:13px; color:#333;"></div>
             <div id="recap-ut-total" style="font-size:15px; font-weight:800; color:#1a237e; margin-top:8px; border-top:1px solid #ddd; padding-top:8px;"></div>
         </div>
+        {% if user_role != 'terrain' %}
+        <div class="form-field" style="margin-top:16px;">
+            <label>Note (optionnelle)</label>
+            <textarea id="jp-note" class="note-textarea" rows="2" placeholder="Consignes, remarques…"></textarea>
+        </div>
+        {% endif %}
         <div class="form-actions">
             <button class="btn btn-primary" onclick="sauvegarderJourPratique()">Valider</button>
             <button class="btn btn-secondary" onclick="fermerModalJourPratique()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOTE JOUR -->
+<div id="modal-note-jour" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1100; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:28px; width:480px; max-width:95vw;">
+        <h3 style="font-family:'Barlow Condensed',sans-serif; font-size:18px; margin-bottom:16px;">ℹ️ Note du jour</h3>
+        <div id="modal-note-jour-texte" style="background:#f5f5f5; border-radius:8px; padding:14px; font-size:14px; white-space:pre-wrap; line-height:1.6; color:#333;"></div>
+        <div class="form-actions" style="margin-top:16px;">
+            <button class="btn btn-secondary" data-action="fermer-modal-note-jour">Fermer</button>
         </div>
     </div>
 </div>

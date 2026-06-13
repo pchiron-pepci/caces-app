@@ -123,6 +123,7 @@ async function toggleIdentite(jourId, stagiaireId, btn) {
 function ouvrirAjoutJourTheorie() {
     document.getElementById('jt-date').value = '';
     document.querySelectorAll('[name="jt-candidat"]').forEach(cb => cb.checked = true);
+    var jtNote = document.getElementById('jt-note'); if (jtNote) jtNote.value = '';
     document.getElementById('modal-jour-theorie').style.display = 'flex';
 }
 
@@ -138,7 +139,7 @@ async function sauvegarderJourTheorie() {
     if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'theorie', candidats })
+        body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'theorie', candidats, note: (document.getElementById('jt-note') || {value: ''}).value.trim() || null })
     });
     if (resp.ok) { fermerModalJourTheorie(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
@@ -150,15 +151,17 @@ function ouvrirAjoutJourPratique() {
     document.querySelectorAll('[name="jp-candidat"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('[name^="jp-cat-"], [name^="jp-opt-"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
     document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '0.3');
+    var jpNote = document.getElementById('jp-note'); if (jpNote) jpNote.value = '';
     document.getElementById('modal-jour-pratique').style.display = 'flex';
     calculerRecapUT();
 }
 
-function ouvrirModifierJourPratique(jourId, date, candidatsCategories, candidatsOptions, candidatsEpreuves) {
+function ouvrirModifierJourPratique(jourId, date, candidatsCategories, candidatsOptions, candidatsEpreuves, note) {
     window._CANDIDATS_EPREUVES = candidatsEpreuves || {};
     document.getElementById('jp-titre').textContent = 'Modifier jour de test pratique';
     document.getElementById('jp-jour-id').value = jourId;
     document.getElementById('jp-date').value = date;
+    var jpNote = document.getElementById('jp-note'); if (jpNote) jpNote.value = note || '';
     document.querySelectorAll('[name="jp-candidat"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('[name^="jp-cat-"], [name^="jp-opt-"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
     document.querySelectorAll('[id^="cats-"]').forEach(div => div.style.opacity = '0.3');
@@ -197,6 +200,8 @@ function fermerModalJourPratique() { document.getElementById('modal-jour-pratiqu
 async function sauvegarderJourPratique() {
     const date = document.getElementById('jp-date').value;
     const jourId = document.getElementById('jp-jour-id').value;
+    const noteEl = document.getElementById('jp-note');
+    const noteVal = noteEl ? noteEl.value.trim() || null : null;
     if (!date) { alert('La date est obligatoire !'); return; }
     if (window.DATE_DEBUT_SESSION && date < window.DATE_DEBUT_SESSION) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (window.DATE_FIN_SESSION && date > window.DATE_FIN_SESSION) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
@@ -226,7 +231,7 @@ async function sauvegarderJourPratique() {
     if (jourId) {
         await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/modifier', {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date })
+            body: JSON.stringify({ date, note: noteVal })
         });
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -236,7 +241,7 @@ async function sauvegarderJourPratique() {
     } else {
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'pratique', candidats_pratique })
+            body: JSON.stringify({ session_id: window.SESSION_ID, date, type: 'pratique', candidats_pratique, note: noteVal })
         });
         if (resp.ok) { fermerModalJourPratique(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     }
@@ -904,6 +909,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('[data-action="ouvrir-modal-jour-formation"]')) {
             document.getElementById('jf-date').value = '';
             document.getElementById('jf-intitule').value = '';
+            var jfNote = document.getElementById('jf-note'); if (jfNote) jfNote.value = '';
             document.getElementById('modal-jour-formation').style.display = 'flex';
             return;
         }
@@ -918,7 +924,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ date: date, intitule: intitule || null })
+                body: JSON.stringify({ date: date, intitule: intitule || null, note: (document.getElementById('jf-note') || {value: ''}).value.trim() || null })
             }).then(function(r) {
                 if (r.ok) {
                     document.getElementById('modal-jour-formation').style.display = 'none';
@@ -943,6 +949,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('jf-edit-id').value = btnEdit.dataset.id;
             document.getElementById('jf-edit-date').value = btnEdit.dataset.date;
             document.getElementById('jf-edit-intitule').value = btnEdit.dataset.intitule || '';
+            var jfEditNote = document.getElementById('jf-edit-note'); if (jfEditNote) jfEditNote.value = btnEdit.dataset.note || '';
             document.getElementById('modal-modifier-jour-formation').style.display = 'flex';
             return;
         }
@@ -958,7 +965,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + id, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ date_str: date, intitule: intitule || null })
+                body: JSON.stringify({ date_str: date, intitule: intitule || null, note: (document.getElementById('jf-edit-note') || {value: ''}).value.trim() || null })
             }).then(function(r) {
                 if (r.ok) {
                     document.getElementById('modal-modifier-jour-formation').style.display = 'none';
@@ -1008,6 +1015,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (e.target.closest('[data-action="fermer-modal-affectation-formation"]')) {
             document.getElementById('modal-affectation-formation').style.display = 'none';
+        }
+
+        var btnVoirNote = e.target.closest('[data-action="voir-note-jour"]');
+        if (btnVoirNote) {
+            document.getElementById('modal-note-jour-texte').textContent = btnVoirNote.dataset.note || '';
+            document.getElementById('modal-note-jour').style.display = 'flex';
+        }
+        if (e.target.closest('[data-action="fermer-modal-note-jour"]')) {
+            document.getElementById('modal-note-jour').style.display = 'none';
         }
 
         if (e.target.closest('[data-action="sauvegarder-affectation-formation"]')) {
