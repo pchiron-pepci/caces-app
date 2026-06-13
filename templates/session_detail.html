@@ -9,6 +9,17 @@
 {% block content %}
 
 <style>
+/* ── Planning de formation — tableau responsive ── */
+.table-responsive-planning { overflow-x: auto; }
+.table-responsive-planning table { table-layout: fixed; }
+.table-responsive-planning th,
+.table-responsive-planning td  { min-width: 60px; word-break: break-word; }
+.col-apprenant                 { width: 22%; min-width: 110px; }
+.col-total                     { width: 52px; min-width: 52px; }
+.col-spacer, .td-spacer, .tcol-spacer { display: none; min-width: 0; }
+.table-responsive-planning td:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.planning-input                { width: 100%; box-sizing: border-box; }
+
 .btn-trash {
     background: none;
     border: 1px solid #e0e0e0;
@@ -617,7 +628,7 @@
             <!-- Planning heures apprenants -->
             <div style="margin-top:12px;">
                 {% if session_candidats %}
-                <div style="overflow-x:auto;">
+                <div class="table-responsive-planning">
                 <table id="planning-{{ jf.id }}" style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead>
                         <tr style="background:#e3f2fd; color:#1565c0;">
