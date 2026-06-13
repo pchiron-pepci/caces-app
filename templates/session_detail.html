@@ -919,7 +919,7 @@
                     </td>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <td style="text-align:center;">
-                        <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;"
+                        <button class="btn-trash"
                             onclick="retirerCandidat({{ sc.id }}, '{{ nddn(sc.stagiaire) }}')">🗑️</button>
                     </td>
                     {% endif %}
