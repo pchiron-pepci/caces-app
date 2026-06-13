@@ -13,7 +13,7 @@
 .table-responsive-planning { overflow-x: auto; }
 .table-responsive-planning table { table-layout: fixed; }
 .table-responsive-planning th,
-.table-responsive-planning td  { min-width: 60px; word-break: break-word; }
+.table-responsive-planning td  { word-break: break-word; }
 .col-apprenant                 { width: 22%; min-width: 110px; }
 .col-total                     { width: 52px; min-width: 52px; }
 .col-spacer, .td-spacer, .tcol-spacer { display: none; min-width: 0; }
@@ -629,7 +629,8 @@
             <div style="margin-top:12px;">
                 {% if session_candidats %}
                 <div class="table-responsive-planning">
-                <table id="planning-{{ jf.id }}" style="width:100%; border-collapse:collapse; font-size:13px;">
+                {% set _n_input = (jf.cats_colonnes | length) + (1 if jf.has_theorie else 0) + (1 if jf.has_libre else 0) %}
+                <table id="planning-{{ jf.id }}" style="width:100%; border-collapse:collapse; font-size:13px; min-width:{{ 162 + _n_input * 70 }}px;">
                     <thead>
                         <tr style="background:#e3f2fd; color:#1565c0;">
                             <th class="col-apprenant" style="padding:6px 10px; text-align:left; font-weight:600; white-space:nowrap;">Apprenant</th>
