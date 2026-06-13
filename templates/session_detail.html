@@ -69,7 +69,7 @@
             <thead>
                 <tr>
                     <th style="min-width:150px;">Candidat</th>
-                    <th style="min-width:80px; text-align:center;">Théorie</th>
+                    <th style="min-width:80px; text-align:center;">TH</th>
                     {% for cat in categories %}
                     <th style="min-width:100px; text-align:center;">
                         {{ cat }}<br>
@@ -183,7 +183,7 @@
                 <thead>
                     <tr>
                         <th style="min-width:150px;">Candidat</th>
-                        <th style="text-align:center; min-width:60px;">Théo</th>
+                        <th style="text-align:center; min-width:60px;">TH</th>
                         {% for cat in categories %}
                         <th style="text-align:center; min-width:90px;">
                             {{ cat }}<br>
@@ -602,7 +602,7 @@
                         <tr style="background:#e3f2fd; color:#1565c0;">
                             <th class="col-apprenant" style="padding:6px 10px; text-align:left; font-weight:600; white-space:nowrap;">Apprenant</th>
                             {% if jf.has_theorie %}
-                            <th class="col-theorie" style="padding:6px 8px; text-align:center; font-weight:600;">Théorie</th>
+                            <th class="col-theorie" style="padding:6px 8px; text-align:center; font-weight:600;">TH</th>
                             {% endif %}
                             {% for cat in jf.cats_colonnes %}
                             <th style="padding:6px 8px; text-align:center; font-weight:600;" data-cat="{{ cat }}">{{ cat }}</th>
@@ -840,7 +840,7 @@
                     <th>Date naissance</th>
                     <th>Employeur</th>
                     <th>RGPD</th>
-                    <th>Theorie</th>
+                    <th>TH</th>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
