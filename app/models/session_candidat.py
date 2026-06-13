@@ -15,6 +15,7 @@ class SessionCandidat(Base):
 
     # Théorie
     theorie_dispensee = Column(Boolean, default=False)
+    dispense_note = Column(Text, nullable=True)
     theorie_date = Column(Date, nullable=True)
     theorie_note_totale = Column(Integer, nullable=True)
     theorie_obtenue = Column(Boolean, nullable=True)

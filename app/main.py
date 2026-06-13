@@ -135,6 +135,8 @@ def _run_startup_migrations():
         # consentements_rgpd
         "ALTER TABLE consentements_rgpd ADD COLUMN IF NOT EXISTS verificateur_identite VARCHAR(200)",
         "ALTER TABLE consentements_rgpd ADD COLUMN IF NOT EXISTS horodatage_verification TIMESTAMP",
+        # session_candidats
+        "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_note TEXT",
     ]
     for sql in _MIGRATIONS:
         try:

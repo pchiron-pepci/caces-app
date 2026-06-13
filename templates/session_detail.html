@@ -939,7 +939,18 @@
                         {% endif %}
                     </td>
                     <td style="text-align:center;">
-                        {% if sc.theorie_dispensee %}<span class="badge orange" style="font-size:10px;">Disp.</span>{% else %}—{% endif %}
+                        {% if sc.theorie_dispensee %}
+                            {% if user_role != 'terrain' %}
+                                <button class="badge orange" style="font-size:10px; border:none; cursor:pointer;"
+                                    data-action="editer-candidat-dispense"
+                                    data-sc-id="{{ sc.id }}"
+                                    data-stag-id="{{ sc.stagiaire_id }}"
+                                    data-note="{{ sc.dispense_note or '' }}"
+                                    title="{{ sc.dispense_note or 'Dispensé de théorie — cliquer pour corriger' }}">Disp.</button>
+                            {% else %}
+                                <span class="badge orange" style="font-size:10px;" title="{{ sc.dispense_note or 'Dispensé de théorie' }}">Disp.</span>
+                            {% endif %}
+                        {% else %}—{% endif %}
                     </td>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <td style="text-align:center;">
@@ -1271,6 +1282,10 @@
                     <option value="normal">A tester</option>
                     <option value="dispense">Dispense (theorie deja valide)</option>
                 </select>
+            </div>
+            <div class="form-field" id="field-dispense-note" style="grid-column: span 2; display:none;">
+                <label>Note de dispense (optionnelle)</label>
+                <textarea id="sc-dispense-note" rows="2" placeholder="Ex : CACES® R489 cat.1B obtenu le 12/05/2021…" style="resize:vertical;"></textarea>
             </div>
         </div>
         <div class="form-actions">

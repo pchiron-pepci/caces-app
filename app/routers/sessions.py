@@ -66,6 +66,7 @@ class SessionCandidatCreate(BaseModel):
     rgpd_accepte: bool = True
     photo_accepte: bool = True
     theorie_dispensee: bool = False
+    dispense_note: Optional[str] = None
 
 class EquipementCreate(BaseModel):
     session_id: int
@@ -205,6 +206,7 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
     if not sc:
         raise HTTPException(status_code=404, detail="Candidat non trouve")
     sc.theorie_dispensee = data.theorie_dispensee
+    sc.dispense_note = data.dispense_note if data.theorie_dispensee else None
     db.commit()
     return {"message": "Candidat mis a jour"}
 
