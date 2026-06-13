@@ -250,18 +250,30 @@
         content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
         text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
     }
-    /* Bloc tfoot : TOTAL + Nb. Candidats */
-    .table-recap-seq tfoot { display: block !important; background: #f0f2f7; border-top: 2px solid #1a3a8f; border-radius: 0 0 8px 8px; overflow: hidden; }
-    .table-recap-seq tfoot tr { display: flex !important; flex-wrap: wrap; align-items: center; padding: 5px 10px; gap: 4px 10px; }
-    .table-recap-seq tfoot tr + tr { border-top: 1px solid #d0d8e8; }
-    .table-recap-seq tfoot td:first-child { flex: 0 0 auto; font-weight: 700; font-size: 11px; color: #333; min-width: 90px; padding: 0 !important; }
+    /* Cartes synthèse tfoot — même patron que les cartes candidats */
+    .table-recap-seq tfoot { display: flex !important; flex-direction: column; gap: 10px; width: 100%; margin-top: 10px; }
+    .table-recap-seq tfoot tr {
+        display: flex !important; flex-wrap: wrap; align-items: stretch; width: 100%;
+        border: 1px solid #b0c8e8 !important; border-radius: 10px;
+        overflow: hidden; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    /* Ligne 1 : label pleine largeur */
+    .table-recap-seq tfoot td:first-child {
+        order: 1; flex: 0 0 100%; padding: 8px 10px !important;
+        font-weight: 700; font-size: 12px; color: #0d47a1; background: #dce8f8;
+        border-bottom: 1px solid #b0c8e8;
+    }
+    /* Ligne 2 : catégories auto-réparties (même flex que tbody) */
     .table-recap-seq tfoot td:not(:first-child) {
-        display: flex; flex-direction: column; align-items: center;
-        font-size: 11px; font-weight: 700; color: #1a237e; min-width: 32px; padding: 1px 4px !important;
+        order: 2; flex: 1 1 50px;
+        display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start;
+        padding: 6px 4px 8px !important; gap: 3px; text-align: center;
+        border-right: 1px solid #eef2fb;
+        font-size: 12px; font-weight: 700; color: #1a237e;
     }
     .table-recap-seq tfoot td[data-label]::before {
-        content: attr(data-label); display: block; font-size: 9px; font-weight: 600;
-        color: #888; text-transform: uppercase; letter-spacing: 0.3px;
+        content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
+        text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
     }
 
     /* DDN inline sur même ligne que le nom dans les cartes récap */
