@@ -52,6 +52,125 @@
 .btn-note-principal { background: #e8f5e9; box-shadow: 0 0 0 2px #2e7d32; }
 .btn-note-principal-vide { background: #f5f5f5; box-shadow: 0 0 0 2px #9e9e9e; opacity: .7; }
 .btn-note-admin { background: #fff3e0; box-shadow: 0 0 0 2px #e65100; }
+
+/* Planning : DDN masquée sur desktop */
+.planning-ddn { display: none; }
+
+/* ── Planning de formation — vue cartes mobile ── */
+@media (max-width: 768px) {
+    /* Override scroll desktop → vue cartes prend le relais */
+    .table-responsive-planning { overflow-x: visible !important; }
+    .table-responsive-planning table {
+        display: block !important;
+        min-width: 0 !important;
+        table-layout: auto !important;
+        width: 100% !important;
+    }
+    .table-responsive-planning thead { display: none !important; }
+    .table-responsive-planning tfoot { display: none !important; }
+    .table-responsive-planning tbody { display: flex !important; flex-direction: column; gap: 10px; }
+
+    /* Carte par candidat */
+    .table-responsive-planning tbody tr {
+        display: flex !important;
+        flex-wrap: wrap;
+        align-items: stretch;
+        border: 1px solid #c8d8f4 !important;
+        border-radius: 10px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+        border-bottom: 1px solid #c8d8f4 !important;
+    }
+
+    /* Ligne 1 gauche : nom + DDN */
+    .table-responsive-planning tbody td:first-child {
+        order: 1;
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 9px 10px !important;
+        font-weight: 600;
+        font-size: 13px;
+        background: #e3f2fd;
+        color: #0d47a1;
+        white-space: nowrap;
+        overflow: visible !important;
+        border-bottom: 1px solid #c8d8f4;
+    }
+
+    /* DDN visible sur mobile */
+    .planning-ddn {
+        display: inline !important;
+        font-size: 11px;
+        color: #5588c0;
+        font-weight: 400;
+        margin-left: 7px;
+    }
+
+    /* Ligne 1 droite : total */
+    .planning-total-cell {
+        order: 2;
+        flex: 0 0 auto;
+        padding: 9px 12px !important;
+        font-weight: 700;
+        font-size: 14px;
+        color: #1565c0;
+        background: #e3f2fd;
+        display: block !important;
+        min-width: 48px;
+        text-align: center;
+        border-left: 1px solid #c8d8f4;
+        border-bottom: 1px solid #c8d8f4;
+    }
+
+    /* Séparateur invisible → force saut de ligne avant les inputs */
+    .table-responsive-planning tbody tr::before {
+        content: '';
+        order: 3;
+        flex: 0 0 100%;
+        height: 0;
+    }
+
+    /* Spacer : masqué */
+    .td-spacer { order: 99 !important; display: none !important; }
+
+    /* Ligne 2 : colonnes input (wrap naturel) */
+    .table-responsive-planning tbody td:not(:first-child):not(.planning-total-cell):not(.td-spacer) {
+        order: 4;
+        flex: 0 0 auto;
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 7px 5px 9px !important;
+        gap: 4px;
+        min-width: 58px;
+        border-right: 1px solid #eef2fb;
+        border-top: 1px solid #e8f0fb;
+        background: white !important;
+        text-align: center;
+    }
+
+    /* Label catégorie au-dessus de chaque input */
+    .table-responsive-planning tbody td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #1565c0;
+        letter-spacing: 0.4px;
+        white-space: nowrap;
+    }
+
+    /* Inputs adaptés au tactile */
+    .table-responsive-planning input.planning-input {
+        width: 46px !important;
+        font-size: 13px !important;
+        padding: 5px 4px !important;
+        text-align: center;
+    }
+}
 </style>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
@@ -277,7 +396,7 @@
     </div>
 </div>
 
-<div style="display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
+<div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
     <button class="tab-btn active-tab" onclick="showTab('sequencage', this)">Sequencage</button>
     <button class="tab-btn" onclick="showTab('candidats', this)">Candidats ({{ session_candidats|length }})</button>
     <button class="tab-btn" onclick="showTab('testeurs', this)">UT réels/Testeur</button>
@@ -660,9 +779,9 @@
                         {% set pa = jf.planning.get(sc.stagiaire_id) %}
                         {% set hpc = pa.heures_par_cat if pa else {} %}
                         <tr data-stagiaire="{{ sc.stagiaire_id }}" style="border-bottom:1px solid #f0f2f7;">
-                            <td style="padding:6px 10px; white-space:nowrap;">{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom[0] }}.</td>
+                            <td style="padding:6px 10px; white-space:nowrap;">{{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom[0] }}.<span class="planning-ddn">{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') if sc.stagiaire.date_naissance else '' }}</span></td>
                             {% if jf.has_theorie %}
-                            <td style="padding:4px 6px; text-align:center;">
+                            <td style="padding:4px 6px; text-align:center;" data-label="TH">
                                 <input type="number" class="h-theorie planning-input" min="0" max="7" step="0.25"
                                        value="{{ pa.heures_theorie if pa else 0 }}"
                                        {% if user_role == 'terrain' or session.statut == 'terminee' %}disabled{% endif %}
@@ -670,7 +789,7 @@
                             </td>
                             {% endif %}
                             {% for cat in jf.cats_colonnes %}
-                            <td style="padding:4px 6px; text-align:center;">
+                            <td style="padding:4px 6px; text-align:center;" data-label="{{ cat }}">
                                 <input type="number" class="h-cat planning-input" data-cat="{{ cat }}" min="0" max="7" step="0.25"
                                        value="{{ hpc.get(cat, 0) }}"
                                        {% if user_role == 'terrain' or session.statut == 'terminee' %}disabled{% endif %}
@@ -678,7 +797,7 @@
                             </td>
                             {% endfor %}
                             {% if jf.has_libre %}
-                            <td class="td-libre" style="padding:4px 6px; text-align:center; background:#fafafa;">
+                            <td class="td-libre" style="padding:4px 6px; text-align:center; background:#fafafa;" data-label="{{ jf.libelle_colonne_libre or 'Libre' }}">
                                 <input type="number" class="h-libre planning-input" min="0" max="7" step="0.25"
                                        value="{{ pa.heures_libre if pa else 0 }}"
                                        {% if user_role == 'terrain' or session.statut == 'terminee' %}disabled{% endif %}
