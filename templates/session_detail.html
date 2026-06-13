@@ -220,7 +220,7 @@
         padding: 4px 10px; margin-bottom: 12px;
     }
     #tableau-sequencage tbody tr.tr-testeur::before {
-        content: "📋 " attr(data-testeur);
+        content: attr(data-testeur);
         font-size: 10px; font-weight: 600; color: #555; letter-spacing: 0.5px;
     }
     #tableau-sequencage tbody tr.tr-testeur td { display: none !important; }
@@ -387,7 +387,7 @@
                 </tr>
                 {% set t_stag = testeur_initiales_par_stag_cat.get(sc.stagiaire_id, {}) %}
                 {% if t_stag %}
-                {% set ns_ti = namespace(uniq=[]) %}{% for ti_info in t_stag.values() %}{% if ti_info.initiales not in ns_ti.uniq %}{% set ns_ti.uniq = ns_ti.uniq + [ti_info.initiales] %}{% endif %}{% endfor %}
+                {% set ns_ti = namespace(uniq=[]) %}{% for ti_info in t_stag.values() %}{% set _p = ti_info.nom.split() %}{% set _abrev = (_p[1][0] ~ '.' ~ _p[0][:2]).upper() if _p|length >= 2 else ti_info.nom[:3].upper() %}{% if _abrev not in ns_ti.uniq %}{% set ns_ti.uniq = ns_ti.uniq + [_abrev] %}{% endif %}{% endfor %}
                 <tr class="tr-testeur" data-testeur="{{ ns_ti.uniq | join(' · ') }}">
                     <td style="padding:1px 8px; height:20px;"></td>
                     <td></td>
