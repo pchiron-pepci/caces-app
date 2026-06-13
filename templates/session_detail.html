@@ -939,21 +939,17 @@
                         {% endif %}
                     </td>
                     <td style="text-align:center;">
-                        {% if sc.theorie_dispensee %}
-                            {% if user_role != 'terrain' %}
-                                <button class="badge orange" style="font-size:10px; border:none; cursor:pointer;"
-                                    data-action="editer-candidat-dispense"
-                                    data-sc-id="{{ sc.id }}"
-                                    data-stag-id="{{ sc.stagiaire_id }}"
-                                    data-note="{{ sc.dispense_note or '' }}"
-                                    title="{{ sc.dispense_note or 'Dispensé de théorie — cliquer pour corriger' }}">Disp.</button>
-                            {% else %}
-                                <span class="badge orange" style="font-size:10px;" title="{{ sc.dispense_note or 'Dispensé de théorie' }}">Disp.</span>
-                            {% endif %}
-                        {% else %}—{% endif %}
+                        {% if sc.theorie_dispensee %}<span class="badge orange" style="font-size:10px;" title="{{ sc.dispense_note or 'Dispensé de théorie' }}">Disp.</span>{% else %}—{% endif %}
                     </td>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                    <td style="text-align:center;">
+                    <td style="text-align:center; white-space:nowrap;">
+                        <button class="btn-edit"
+                            data-action="editer-candidat"
+                            data-sc-id="{{ sc.id }}"
+                            data-stag-id="{{ sc.stagiaire_id }}"
+                            data-dispense="{{ 'true' if sc.theorie_dispensee else 'false' }}"
+                            data-note="{{ sc.dispense_note or '' }}"
+                            title="Modifier ce candidat">✏️</button>
                         <button class="btn-trash"
                             onclick="retirerCandidat({{ sc.id }}, '{{ nddn(sc.stagiaire) }}')">🗑️</button>
                     </td>

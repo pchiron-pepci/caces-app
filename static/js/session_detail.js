@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) gererTesteurs(btn.dataset.jourId, btn.dataset.jourType);
     });
     document.addEventListener('click', function(e) {
-        const btn = e.target.closest('[data-action="editer-candidat-dispense"]');
-        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), true, btn.dataset.note);
+        const btn = e.target.closest('[data-action="editer-candidat"]');
+        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note);
     });
     const scTheorie = document.getElementById('sc-theorie');
     if (scTheorie) scTheorie.addEventListener('change', _syncDispenseNote);
