@@ -361,6 +361,10 @@
         font-size: 12px; margin-right: 10px;
     }
     .table-pratique tfoot td.pratique-tfoot-total { display: block !important; flex: 1 1 auto; }
+
+    /* ── En-tête jour formation : date+icônes ligne 1, formateurs ligne 2 ── */
+    .formation-hdr-left { min-width: 0; flex: 1 1 auto; }
+    .formation-hdr-formateurs { display: block !important; margin-top: 4px; }
 }
 </style>
 
@@ -899,7 +903,8 @@
         {% for jf in jours_formation %}
         <div style="padding:14px 16px; border-bottom:1px solid #f0f2f7;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
+                <div class="formation-hdr-left">
+                    <span class="formation-hdr-titre">
                     <strong>{{ jf.date.strftime('%d/%m/%Y') }}</strong>
                     {% if jf.intitule %}
                     <span style="margin-left:8px; color:#333; font-size:13px;">{{ jf.intitule }}</span>
@@ -907,6 +912,7 @@
                     {% if jf.note %}<button class="btn-icon" data-action="voir-note-jour" data-note="{{ jf.note | e }}" title="Voir la note" style="background:none; border:none; cursor:pointer; font-size:15px; padding:0 2px; margin-left:4px; vertical-align:middle;">ℹ️</button>{% endif %}
                     {% set _npf = acces_notes_formation.get(jf.id) %}
                     {% if _npf %}{% if _npf.est_admin_only and _npf.note %}<button class="btn-note-privee btn-note-admin" data-action="ouvrir-note-privee" data-jour-id="{{ jf.id }}" data-jour-type="formation" data-note="{{ _npf.note | e }}" data-peut-modifier="0" data-session-modifiable="{{ '1' if _npf.session_modifiable else '0' }}" title="Note confidentielle du formateur">⚠️</button>{% elif _npf.est_principal %}<button class="btn-note-privee {% if _npf.note %}btn-note-principal{% else %}btn-note-principal-vide{% endif %}" data-action="ouvrir-note-privee" data-jour-id="{{ jf.id }}" data-jour-type="formation" data-note="{{ _npf.note | e if _npf.note else '' }}" data-peut-modifier="1" data-session-modifiable="{{ '1' if _npf.session_modifiable else '0' }}" title="Ma note confidentielle">📝</button>{% endif %}{% endif %}
+                    </span><span class="formation-hdr-formateurs">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                         {% if jf.affectations %}<span data-action="ouvrir-modal-affectation-formation" data-jour-id="{{ jf.id }}" data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}" title="Gérer les formateurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for af in jf.affectations %}<span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px;">👨‍🏫 {{ af.abreviation }}{% if af.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %} <span style="color:#666;">{% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}</span></span>{% endfor %}</span>
                         {% else %}<span data-action="ouvrir-modal-affectation-formation" data-jour-id="{{ jf.id }}" data-jour-label="{{ jf.date.strftime('%d/%m/%Y') }}" title="Gérer les formateurs" style="font-size:12px; color:#1976d2; background:#e3f2fd; border-radius:6px; padding:3px 10px; cursor:pointer; margin-left:4px;">👨‍🏫 Ajouter</span>
@@ -914,6 +920,7 @@
                     {% else %}
                         {% for af in jf.affectations %}<span title="{{ af.nom_complet }}" style="font-size:12px; color:#333; background:#f0f2f7; border-radius:6px; padding:3px 8px; margin-left:4px;">👨‍🏫 {{ af.abreviation }}{% if af.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %} <span style="color:#666;">{% if af.theorie and af.pratique %}Théo/Prat{% elif af.theorie %}Théo{% elif af.pratique %}Prat{% endif %}</span></span>{% endfor %}
                     {% endif %}
+                    </span>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
