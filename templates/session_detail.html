@@ -58,7 +58,7 @@
 
 <!-- RECAPITULATIF SESSION - lecture seule -->
 <div class="card" style="margin-bottom:16px;">
-    <div class="card-header" style="border-left:4px solid #cc0000; background:#2d2d2d;">
+    <div class="card-header card-accent" style="background:#2d2d2d;">
         <h2 style="color:white;">Récapitulatif session</h2>
     </div>
     <div style="overflow-x:auto; padding:8px; background:#f7f8fa;">
@@ -148,7 +148,7 @@
 
 <!-- RECAPITULATIF SEQUENCAGE -->
 <div class="card" style="margin-bottom:16px;">
-    <div class="card-header" style="border-left:4px solid #cc0000; background:#2d2d2d;">
+    <div class="card-header card-accent" style="background:#2d2d2d;">
         <h2 style="color:white;">Récapitulatif séquençage</h2>
     </div>
     <div style="padding:8px; background:#f7f8fa;">
@@ -260,6 +260,7 @@
 .tab-btn { padding:10px 20px; border:none; background:none; font-size:14px; font-weight:600; color:#888; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; border-radius:0; transition:all 0.15s; }
 .tab-btn:hover { color:#1a237e; }
 .active-tab { color:#1a237e !important; border-bottom:3px solid #1a237e !important; background:none; }
+.card-accent { border-left: 4px solid #cc0000; }
 </style>
 
 <!-- TAB SEQUENCAGE -->
@@ -267,7 +268,7 @@
 
     <!-- EPREUVE THEORIQUE -->
     <div class="card" style="margin-bottom:16px;">
-        <div class="card-header">
+        <div class="card-header card-accent">
             <h2>Epreuve theorique</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="ouvrirAjoutJourTheorie()" title="Planifier une théorie">📅</button>
@@ -368,7 +369,7 @@
     <style>.table-pratique td { padding: 5px 8px; } .table-pratique th { padding: 6px 8px; }</style>
     <!-- EPREUVES PRATIQUES -->
     <div class="card">
-        <div class="card-header">
+        <div class="card-header card-accent">
             <h2>Epreuves pratiques</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="ouvrirAjoutJourPratique()" title="Planifier une pratique">📅</button>
