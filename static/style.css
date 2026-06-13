@@ -519,6 +519,11 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
 
     /* Contenu : padding réduit sur mobile (32px→16px) pour maximiser l'espace utile */
     .content { padding: 16px; }
+
+    /* Header mobile : nom utilisateur masqué, bouton logout → icône seule */
+    .user-badge { display: none; }
+    .btn-logout-text { display: none; }
+    .btn-logout { padding: 6px 8px !important; }
 }
 
 /* DESKTOP >= 1024px : bouton ☰ masqué */
