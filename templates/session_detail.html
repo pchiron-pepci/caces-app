@@ -3,6 +3,7 @@
 {% block title %}<a href="/sessions" style="color:inherit; text-decoration:none;">Sessions</a><span style="font-size:16px; font-weight:400; color:#aaa; margin:0 8px;">/</span><span style="font-size:18px; font-weight:500; color:#555;">{{ session.famille }} — {{ session.reference or 'Session sans référence' }}</span>{% endblock %}
 
 {% macro nddn(s) %}{{ s.nom }} {{ s.prenom }}{% if s.date_naissance %} ({{ s.date_naissance.strftime('%d/%m/%Y') }}){% endif %}{% endmacro %}
+{% macro nddn2(s) %}{{ s.nom }} {{ s.prenom }}{% if s.date_naissance %}<br><span style="font-size:11px; color:#aaa; font-weight:400; line-height:1.1;">{{ s.date_naissance.strftime('%d/%m/%Y') }}</span>{% endif %}{% endmacro %}
 
 {% block content %}
 
@@ -80,7 +81,7 @@
             <tbody>
                 {% for sc in session_candidats %}
                 <tr>
-                    <td><strong>{{ nddn(sc.stagiaire) }}</strong></td>
+                    <td><strong style="line-height:1.2; display:block;">{{ nddn2(sc.stagiaire) }}</strong></td>
                     <td style="text-align:center;">
                         {% set rt = resultats_theorie.get(sc.stagiaire_id) %}
                         {% if sc.theorie_dispensee %}
@@ -194,7 +195,7 @@
                     {% for sc in session_candidats %}
                     {% if sc.stagiaire_id in entry.candidats_ids %}
                     <tr>
-                        <td><strong>{{ nddn(sc.stagiaire) }}</strong></td>
+                        <td><strong style="line-height:1.2; display:block;">{{ nddn2(sc.stagiaire) }}</strong></td>
                         <!-- Théo : cherche dans tous les jours théorie de cette date -->
                         <td style="text-align:center;">
                             {% set ns_t = namespace(in_theorie=false, rt=none) %}
@@ -332,7 +333,7 @@
                         {% if sc.stagiaire_id in j.candidats_ids %}
                         <tr>
                             <td>
-                                <strong>{{ nddn(sc.stagiaire) }}</strong>
+                                <strong style="line-height:1.2; display:block;">{{ nddn2(sc.stagiaire) }}</strong>
                                 {% if session.statut != 'terminee' and user_role != 'terrain' %}
                                 <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}" data-type="{{ j.type }}"
                                     class="btn-retirer-candidat-jour"
@@ -468,7 +469,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            <strong>{{ nddn(sc.stagiaire) }}</strong>
+                            <strong style="line-height:1.2; display:block;">{{ nddn2(sc.stagiaire) }}</strong>
                             {% if session.statut != 'terminee' and user_role != 'terrain' %}
                             <button data-jour-id="{{ j.id }}" data-stagiaire-id="{{ sc.stagiaire_id }}" data-nom="{{ nddn(sc.stagiaire) }}"
                                 class="btn-retirer-candidat-jour"
