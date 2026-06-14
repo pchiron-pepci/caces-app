@@ -401,9 +401,9 @@
     <div style="display:flex; gap:8px; align-items:center;">
         {% if session.statut != 'annulee' and user_role in ('admin', 'utilisateur') %}
             {% if session.statut == 'terminee' %}
-            <button class="btn btn-secondary" onclick="reouvrirsession()" title="Rouvrir la session" style="font-size:13px;">🔒</button>
+            <button class="btn btn-secondary" data-action="reouvrir-session" title="Rouvrir la session" style="font-size:13px;">🔒</button>
             {% else %}
-            <button class="btn btn-secondary" onclick="cloturerSession()" title="Verrouiller la session" style="font-size:13px;">🔓</button>
+            <button class="btn btn-secondary" data-action="cloturer-session" title="Verrouiller la session" style="font-size:13px;">🔓</button>
             {% endif %}
         {% endif %}
     </div>

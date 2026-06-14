@@ -22,6 +22,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) showTab(btn.dataset.tab, btn);
     });
     document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="cloturer-session"]')) cloturerSession();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="reouvrir-session"]')) reouvrirsession();
+    });
+    document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="modifier-jour-pratique"]');
         if (!btn) return;
         var cats, opts, epreuves, note;
