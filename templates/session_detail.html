@@ -1421,10 +1421,13 @@
                 Candidats qui passent ce jour *
             </label>
             <div style="background:#f0f2f7; border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+                {% set ns_th = namespace(assigned=[]) %}
+                {% for j in jours_test %}{% if j.type == 'theorie' %}{% for sid in j.candidats_ids %}{% if sid not in ns_th.assigned %}{% set ns_th.assigned = ns_th.assigned + [sid] %}{% endif %}{% endfor %}{% endif %}{% endfor %}
                 {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
-                <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px; background:white; border-radius:8px;">
-                    <input type="checkbox" name="jt-candidat" value="{{ sc.stagiaire_id }}" checked>
-                    {{ nddn(sc.stagiaire) }}
+                {% set already = sc.stagiaire_id in ns_th.assigned %}
+                <label style="display:flex; align-items:center; gap:10px; font-size:14px; {% if already %}opacity:0.45; cursor:not-allowed;{% else %}cursor:pointer;{% endif %} padding:8px; background:white; border-radius:8px;">
+                    <input type="checkbox" name="jt-candidat" value="{{ sc.stagiaire_id }}"{% if not already %} checked{% endif %}{% if already %} disabled{% endif %}>
+                    {{ nddn(sc.stagiaire) }}{% if already %} <span style="margin-left:auto; font-size:11px; color:#888; font-style:italic;">✓ Déjà affecté</span>{% endif %}
                 </label>
                 {% endif %}{% endfor %}
             </div>
