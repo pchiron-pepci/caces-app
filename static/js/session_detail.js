@@ -1,3 +1,5 @@
+var STAGIAIRES_DATA = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     const _d = document.getElementById('session-data');
     if (_d) {
@@ -170,7 +172,76 @@ document.addEventListener('DOMContentLoaded', function() {
             ob.disabled = true;
         });
     });
+
+    // ── Sélecteur stagiaire : init données ──
+    var _stagEl = document.getElementById('stagiaires-data');
+    if (_stagEl) try { STAGIAIRES_DATA = JSON.parse(_stagEl.dataset.stagiaires || '[]'); } catch(_) {}
+
+    // ── Sélecteur stagiaire : input → recherche (debounce 150 ms) ──
+    var _stagTimer = null;
+    document.addEventListener('input', function(e) {
+        if (e.target.id !== 'sc-stagiaire-search') return;
+        document.getElementById('sc-stagiaire').value = '';
+        clearTimeout(_stagTimer);
+        var texte = e.target.value.trim();
+        if (!texte) { var l = document.getElementById('sc-stagiaire-liste'); if (l) l.style.display = 'none'; return; }
+        _stagTimer = setTimeout(function() { _afficherResultatsCandidats(rechercherCandidats(texte)); }, 150);
+    });
+
+    // ── Sélecteur stagiaire : clic item + clic hors dropdown ──
+    document.addEventListener('click', function(e) {
+        var item = e.target.closest('.stag-result-item');
+        if (item) { _selectionnerCandidatStagiaire(item.dataset.id, item.dataset.label); return; }
+        var wrap = document.getElementById('sc-stagiaire-wrap');
+        var liste = document.getElementById('sc-stagiaire-liste');
+        if (liste && liste.style.display !== 'none' && wrap && !wrap.contains(e.target)) liste.style.display = 'none';
+    });
 });
+
+// ── Source des résultats candidats — remplacer le CORPS de cette fonction
+//    pour passer en mode serveur (fetch /api/stagiaires?q=) sans rien changer d'autre ──
+function rechercherCandidats(texte) {
+    if (!texte || texte.length < 2) return [];
+    var q = texte.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return STAGIAIRES_DATA.filter(function(s) {
+        var t = ((s.nom || '') + ' ' + (s.prenom || '')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return t.includes(q);
+    }).slice(0, 30);
+}
+
+function _afficherResultatsCandidats(resultats) {
+    var liste = document.getElementById('sc-stagiaire-liste');
+    if (!liste) return;
+    if (!resultats.length) { liste.style.display = 'none'; return; }
+    var html = resultats.map(function(s) {
+        var label = (s.nom || '') + ' ' + (s.prenom || '');
+        return '<div class="stag-result-item" data-id="' + s.id
+            + '" data-label="' + label.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"'
+            + ' style="padding:9px 14px; cursor:pointer; font-size:14px; border-bottom:1px solid #f0f2f7;">'
+            + label + '</div>';
+    }).join('');
+    if (resultats.length === 30) {
+        html += '<div style="padding:7px 14px; font-size:12px; color:#888; font-style:italic; background:#fafafa;">Affinez votre recherche…</div>';
+    }
+    liste.innerHTML = html;
+    liste.style.display = 'block';
+}
+
+function _selectionnerCandidatStagiaire(id, label) {
+    document.getElementById('sc-stagiaire').value = id;
+    var inp = document.getElementById('sc-stagiaire-search');
+    if (inp) inp.value = label;
+    var liste = document.getElementById('sc-stagiaire-liste');
+    if (liste) liste.style.display = 'none';
+}
+
+function _resetStagiaireSearch() {
+    document.getElementById('sc-stagiaire').value = '';
+    var inp = document.getElementById('sc-stagiaire-search');
+    if (inp) { inp.value = ''; inp.disabled = false; }
+    var liste = document.getElementById('sc-stagiaire-liste');
+    if (liste) liste.style.display = 'none';
+}
 
 function showTab(name, btn) {
     ['sequencage','candidats','testeurs','equipements'].forEach(t => {
@@ -505,7 +576,7 @@ function _syncDispenseNote() {
 function ouvrirAjoutCandidat() {
     document.getElementById('candidat-title').textContent = 'Ajouter un candidat';
     document.getElementById('sc-id').value = '';
-    document.getElementById('sc-stagiaire').value = '';
+    _resetStagiaireSearch();
     document.getElementById('sc-theorie').value = 'normal';
     document.getElementById('sc-dispense-note').value = '';
     document.getElementById('field-dispense-note').style.display = 'none';

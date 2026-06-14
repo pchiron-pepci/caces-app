@@ -377,6 +377,8 @@
     .formation-hdr-left { min-width: 0; flex: 1 1 auto; }
     .formation-hdr-formateurs { display: block !important; margin-top: 4px; }
 
+    .stag-result-item:hover { background: #e3f2fd; }
+
     /* ── Candidats (.table-candidats) — vue cartes mobile ── */
     .table-candidats { display: block !important; min-width: 0 !important; width: 100% !important; }
     .table-candidats thead { display: none !important; }
@@ -1705,12 +1707,18 @@
         <div class="form-grid">
             <div class="form-field" style="grid-column: span 2;" id="field-stagiaire">
                 <label>Stagiaire *</label>
-                <select id="sc-stagiaire">
-                    <option value="">-- Choisir --</option>
-                    {% for s in stagiaires %}
-                    <option value="{{ s.id }}">{{ s.nom }} {{ s.prenom }}</option>
-                    {% endfor %}
-                </select>
+                <div id="stagiaires-data" data-stagiaires="{{ stagiaires_json | e }}" style="display:none;"></div>
+                <div id="sc-stagiaire-wrap" style="position:relative;">
+                    <input type="text" id="sc-stagiaire-search" placeholder="🔍 Nom, prénom…"
+                           autocomplete="off"
+                           style="width:100%; box-sizing:border-box; padding:9px 12px; border:1.5px solid #c8d8f0; border-radius:8px; font-size:14px;">
+                    <div id="sc-stagiaire-liste"
+                         style="display:none; position:absolute; top:100%; left:0; right:0;
+                                background:white; border:1.5px solid #c8d8f0; border-top:none;
+                                border-radius:0 0 8px 8px; z-index:200; max-height:220px;
+                                overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.12);"></div>
+                </div>
+                <input type="hidden" id="sc-stagiaire">
             </div>
             <div class="form-field" style="grid-column: span 2;">
                 <label>Theorie</label>

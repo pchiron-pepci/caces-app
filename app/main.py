@@ -1391,6 +1391,7 @@ def page_session_detail(request: Request, session_id: int):
         ).order_by(Equipement.numero).all()
 
         stagiaires = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
+        stagiaires_json = json.dumps([{"id": s.id, "nom": s.nom or "", "prenom": s.prenom or ""} for s in stagiaires])
         testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
 
         consentements_list = db.query(ConsentementRGPD).filter(
@@ -1486,6 +1487,7 @@ def page_session_detail(request: Request, session_id: int):
                 "resultats_theorie": resultats_theorie,
                 "equipements": equipements,
                 "stagiaires": stagiaires,
+                "stagiaires_json": stagiaires_json,
                 "testeurs": testeurs_list,
                 "options_par_cat": options_par_cat,
                 "opt_incluse_set": opt_incluse_set,
