@@ -376,6 +376,11 @@
     /* ── En-tête jour formation : date+icônes ligne 1, formateurs ligne 2 ── */
     .formation-hdr-left { min-width: 0; flex: 1 1 auto; }
     .formation-hdr-formateurs { display: block !important; margin-top: 4px; }
+
+    /* ── Cadenas session : emoji plus grand + libellé court sur mobile ── */
+    [data-action="cloturer-session"],
+    [data-action="reouvrir-session"] { font-size: 20px !important; padding: 6px 10px !important; }
+    .verr-label { display: inline !important; font-size: 12px; margin-left: 4px; vertical-align: middle; }
 }
 </style>
 
@@ -401,9 +406,9 @@
     <div style="display:flex; gap:8px; align-items:center;">
         {% if session.statut != 'annulee' and user_role in ('admin', 'utilisateur') %}
             {% if session.statut == 'terminee' %}
-            <button class="btn btn-secondary" data-action="reouvrir-session" title="Rouvrir la session" style="font-size:13px;">🔒</button>
+            <button class="btn btn-secondary" data-action="reouvrir-session" title="Rouvrir la session" style="font-size:13px;">🔒<span class="verr-label" style="display:none;">Rouvrir</span></button>
             {% else %}
-            <button class="btn btn-secondary" data-action="cloturer-session" title="Verrouiller la session" style="font-size:13px;">🔓</button>
+            <button class="btn btn-secondary" data-action="cloturer-session" title="Verrouiller la session" style="font-size:13px;">🔓<span class="verr-label" style="display:none;">Verrouiller</span></button>
             {% endif %}
         {% endif %}
     </div>
