@@ -5,7 +5,7 @@
 {% block content %}
 <div class="toolbar">
     <div class="toolbar-left">
-        <input type="text" id="search" placeholder="🔍 Rechercher une session..." class="search-input" onkeyup="filtrer()" autocomplete="new-password">
+        <input type="text" id="search" placeholder="🔍 Rechercher une session..." class="search-input" autocomplete="new-password">
     </div>
     <div class="toolbar-right">
         {% if user_role != 'terrain' %}
@@ -15,7 +15,7 @@
 </div>
 
 <div class="card" style="margin-top:20px;">
-    <table class="table" id="tableau">
+    <table class="table table-sessions" id="tableau">
         <thead>
             <tr>
                 <th data-sort-col="0" style="cursor:pointer; user-select:none;">Référence <span id="arrow-col-0" class="sort-arrow-col"></span></th>
@@ -29,25 +29,25 @@
         <tbody id="tbody">
             {% for s in sessions %}
             <tr>
-                <td><a href="/sessions/{{ s.id }}" style="color:inherit; text-decoration:none; font-weight:700;">{{ s.reference or 'N/A' }}</a></td>
-                <td><span class="badge blue">{{ s.famille }}</span></td>
-                <td>
+                <td class="ses-ref"><a href="/sessions/{{ s.id }}" style="color:inherit; text-decoration:none; font-weight:700;">{{ s.reference or 'N/A' }}</a></td>
+                <td class="ses-famille"><span class="badge blue">{{ s.famille }}</span></td>
+                <td class="ses-lieu" data-label="Lieu">
                     {% for l in lieux %}
                         {% if l.id == s.lieu_id %}{{ l.nom }}{% endif %}
                     {% endfor %}
                 </td>
-                <td data-date="{{ s.date_pratique_debut or '' }}">
+                <td class="ses-periode" data-label="Période" data-date="{{ s.date_pratique_debut or '' }}">
                     {% if s.date_pratique_debut %}{{ s.date_pratique_debut.strftime('%d/%m/%Y') }}{% endif %}
                     {% if s.date_pratique_fin %} au {{ s.date_pratique_fin.strftime('%d/%m/%Y') }}{% endif %}
                 </td>
-                <td>
+                <td class="ses-statut">
                     {% if s.statut == 'planifiee' %}<span class="badge blue">Planifiee</span>
                     {% elif s.statut == 'en_cours' %}<span class="badge orange">En cours</span>
                     {% elif s.statut == 'terminee' %}<span class="badge green">Terminee</span>
                     {% else %}<span class="badge red">Annulee</span>{% endif %}
                 </td>
                 {% if user_role != 'terrain' %}
-                <td>
+                <td class="ses-actions">
                     <button style="background:none; border:1px solid #e0e0e0; border-radius:6px; padding:5px 8px; font-size:16px; cursor:pointer; line-height:1;"
                         data-action="annuler-session" data-id="{{ s.id }}" data-nom="{{ (s.reference or s.famille) | e }}"
                         title="Supprimer la session">🗑️</button>
@@ -125,6 +125,64 @@
     </div>
 </div>
 
+<style>
+@media (max-width: 1023px) {
+    .table-sessions thead { display: none; }
+    .table-sessions tbody { display: block; }
+    .table-sessions tbody tr {
+        display: flex; flex-wrap: wrap;
+        border: 1px solid #c8d8f0; border-radius: 10px;
+        margin-bottom: 10px; overflow: hidden; background: white;
+    }
+    .table-sessions tbody tr td { border: none; }
+    /* Ligne 1 (header bleu) : famille + référence + statut + actions */
+    .table-sessions td.ses-famille {
+        order: 1; flex: 0 0 auto;
+        background: #e3f2fd;
+        padding: 9px 6px 9px 12px;
+        display: flex; align-items: center;
+    }
+    .table-sessions td.ses-ref {
+        order: 1; flex: 1 1 auto;
+        background: #e3f2fd; color: #0d47a1;
+        font-weight: 700; font-size: 15px;
+        padding: 9px 8px;
+        display: flex; align-items: center;
+    }
+    .table-sessions td.ses-statut {
+        order: 1; flex: 0 0 auto;
+        background: #e3f2fd;
+        padding: 9px 8px;
+        display: flex; align-items: center;
+    }
+    .table-sessions td.ses-actions {
+        order: 1; flex: 0 0 auto;
+        background: #e3f2fd;
+        padding: 9px 8px 9px 4px;
+        display: flex; align-items: center;
+        border-left: 1px solid #c8d8f4;
+    }
+    /* Séparateur entre ligne 1 et données */
+    .table-sessions tbody tr::before {
+        content: ''; order: 3; flex: 0 0 100%; height: 0;
+    }
+    /* Ligne 2 : Lieu + Période */
+    .table-sessions tbody td[data-label] {
+        order: 4; flex: 1 1 140px;
+        display: flex; align-items: flex-start; flex-direction: column;
+        padding: 6px 10px; font-size: 13px;
+        border-top: 1px solid #e8f0f8;
+    }
+    .table-sessions tbody td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        color: #1565c0; margin-bottom: 2px;
+    }
+}
+</style>
+
 <script>
 function ouvrirFormulaire() {
     document.getElementById('modal').style.display = 'flex';
@@ -191,6 +249,7 @@ function filtrer() {
 let sortColIdx = null;
 let sortAsc = true;
 document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('search').addEventListener('input', filtrer);
     document.querySelectorAll('th[data-sort-col]').forEach(function(th) {
         th.addEventListener('click', function() {
             const colIdx = parseInt(this.dataset.sortCol);
