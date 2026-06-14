@@ -1429,6 +1429,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Case "Colonne libre" → afficher/masquer le champ titre
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('.acp-cat-cb') && e.target.value === '__libre__') {
+            document.getElementById('acp-libre-titre-wrap').style.display = e.target.checked ? 'block' : 'none';
+        }
+    });
+
     // Ouvrir modal ajout/retrait colonne
     document.addEventListener('click', function(e) {
         var btnAcp = e.target.closest('[data-action="ouvrir-ajouter-cat-planning"]');
@@ -1456,6 +1463,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     lbl.title = hasHours ? 'Contient des heures — remettez à 0 pour retirer' : '';
                 }
             });
+            // Pré-remplir titre colonne libre + afficher/masquer le champ
+            var titrePre = hasLibreCol && table ? (table.querySelector('.libelle-libre') || {value: ''}).value : '';
+            document.getElementById('acp-libre-titre').value = titrePre;
+            document.getElementById('acp-libre-titre-wrap').style.display = hasLibreCol ? 'block' : 'none';
             document.getElementById('modal-ajouter-cat-planning').style.display = 'flex';
         }
 
@@ -1475,6 +1486,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (cb.checked && !wasActive) _addPlanningCol(table, val);
                 else if (!cb.checked && wasActive) _removePlanningCol(table, val);
             });
+            // Injecter le titre saisi dans l'input inline du <th> + data-label des <td>
+            var titreSaisi = document.getElementById('acp-libre-titre').value.trim();
+            var inlineInput = table.querySelector('.libelle-libre');
+            if (inlineInput) {
+                inlineInput.value = titreSaisi;
+                var labelVal = titreSaisi || 'Libre';
+                table.querySelectorAll('.td-libre').forEach(function(td) { td.dataset.label = labelVal; });
+            }
             _sortPlanningCols(table);
             document.getElementById('modal-ajouter-cat-planning').style.display = 'none';
             document.querySelectorAll('tr[data-stagiaire]').forEach(function(tr) { recalculerTotalLigne(tr); });

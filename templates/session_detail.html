@@ -1084,6 +1084,10 @@
                 <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;" id="acp-label-__libre__">
                     <input type="checkbox" class="acp-cat-cb" value="__libre__"> Colonne libre
                 </label>
+                <div id="acp-libre-titre-wrap" style="display:none; margin-left:24px;">
+                    <input type="text" id="acp-libre-titre" placeholder="Titre (ex : TP libre)" maxlength="100"
+                           style="font-size:13px; border:1px solid #ddd; border-radius:6px; padding:4px 8px; width:210px;">
+                </div>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:24px;" id="acp-cat-liste">
                 {% for cat in categories_formation %}
