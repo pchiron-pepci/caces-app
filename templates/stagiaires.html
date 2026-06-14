@@ -13,7 +13,7 @@
 </div>
 
 <div class="card" style="margin-top: 20px;">
-    <table class="table" id="tableau">
+    <table class="table table-stagiaires" id="tableau">
         <thead>
             <tr>
                 <th>Photo</th>
@@ -28,7 +28,7 @@
         <tbody id="tbody">
             {% for s in stagiaires %}
             <tr data-stagiaire-id="{{ s.id }}">
-                <td style="text-align:center; vertical-align:middle; width:56px;">
+                <td class="stag-photo" style="text-align:center; vertical-align:middle; width:56px;">
                     <div class="photo-cell photo-cell-round" data-stag-id="{{ s.id }}" data-stag-nom="{{ s.nom }} {{ s.prenom }}" style="width:48px; height:48px;">
                         {% if s.photo_base64 %}
                             <img class="photo-img" src="data:image/jpeg;base64,{{ s.photo_base64 }}">
@@ -41,17 +41,17 @@
                         {% endif %}
                     </div>
                 </td>
-                <td>
+                <td class="stag-nom">
                     <button class="btn btn-secondary" style="padding:2px 7px; font-size:11px; margin-right:6px; vertical-align:middle;"
                         data-action="historique"
                         data-id="{{ s.id }}"
-                        title="Voir l'historique des sessions">▶</button><strong style="vertical-align:middle;">{{ s.nom }} {{ s.prenom }}</strong>{% if s.note %} <span title="{{ s.note }}" style="cursor:default; vertical-align:middle;">📝</span>{% endif %}
+                        title="Voir l'historique des sessions">▶</button><strong style="vertical-align:middle;">{{ s.nom }} <span class="stag-prenom">{{ s.prenom }}</span></strong>{% if s.note %} <span title="{{ s.note }}" style="cursor:default; vertical-align:middle;">📝</span>{% endif %}
                 </td>
-                <td data-date="{{ s.date_naissance }}">{{ s.date_naissance.strftime('%d/%m/%Y') }}</td>
-                <td>{{ s.employeur or '—' }}</td>
-                <td>{{ s.email or '—' }}</td>
-                <td>{{ s.telephone or '—' }}</td>
-                <td>
+                <td class="stag-ddn" data-label="Né(e) le" data-date="{{ s.date_naissance }}">{{ s.date_naissance.strftime('%d/%m/%Y') }}</td>
+                <td class="stag-employeur" data-label="Employeur">{{ s.employeur or '—' }}</td>
+                <td class="stag-email" data-label="Email">{{ s.email or '—' }}</td>
+                <td class="stag-tel" data-label="Tél.">{{ s.telephone or '—' }}</td>
+                <td class="stag-actions">
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                         data-action="editer"
                         data-id="{{ s.id }}"
@@ -183,6 +183,71 @@
     </div>
 </div>
 
+<style>
+@media (max-width: 1023px) {
+    .table-stagiaires thead { display: none; }
+    .table-stagiaires tbody { display: block; }
+    .table-stagiaires tbody tr:not(.hist-row) {
+        display: flex; flex-wrap: wrap;
+        border: 1px solid #c8d8f0; border-radius: 10px;
+        margin-bottom: 10px; overflow: hidden; background: white;
+    }
+    .table-stagiaires tbody tr:not(.hist-row) td { border: none; }
+    /* hist-row : pleine largeur sous la carte, pas de flex */
+    .table-stagiaires tbody tr.hist-row { display: block; }
+    .table-stagiaires tbody tr.hist-row td { display: block; width: 100%; box-sizing: border-box; border: none; }
+    /* Ligne 1 : photo */
+    .table-stagiaires td.stag-photo {
+        order: 1; flex: 0 0 50px;
+        background: #e3f2fd;
+        padding: 6px 4px 6px 8px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .table-stagiaires td.stag-photo .photo-cell { width: 38px !important; height: 38px !important; }
+    .table-stagiaires td.stag-photo .photo-img { width: 38px !important; height: 38px !important; object-fit: cover; }
+    .table-stagiaires td.stag-photo .photo-placeholder { font-size: 18px !important; }
+    /* Ligne 1 : nom/prénom */
+    .table-stagiaires td.stag-nom {
+        order: 1; flex: 1 1 auto;
+        background: #e3f2fd; color: #0d47a1;
+        font-weight: 700; font-size: 14px;
+        padding: 6px 8px;
+        display: flex; align-items: center;
+    }
+    .table-stagiaires td.stag-nom .stag-prenom {
+        display: block; font-weight: 400; font-size: 12px; color: #5588c0;
+    }
+    /* Ligne 1 : actions */
+    .table-stagiaires td.stag-actions {
+        order: 1; flex: 0 0 auto;
+        background: #e3f2fd;
+        padding: 6px 8px 6px 4px;
+        display: flex; align-items: center; gap: 4px;
+        border-left: 1px solid #c8d8f4;
+    }
+    .table-stagiaires td.stag-actions button { padding: 4px 8px !important; font-size: 14px !important; }
+    /* Séparateur ligne 1 → données */
+    .table-stagiaires tbody tr:not(.hist-row)::before {
+        content: ''; order: 3; flex: 0 0 100%; height: 0;
+    }
+    /* Data-label cells (ligne 2+) */
+    .table-stagiaires tbody td[data-label] {
+        order: 4; flex: 1 1 130px;
+        display: flex; align-items: flex-start; flex-direction: column;
+        padding: 5px 10px; font-size: 13px;
+        border-top: 1px solid #e8f0f8;
+    }
+    .table-stagiaires tbody td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        color: #1565c0; margin-bottom: 2px;
+    }
+    /* DDN en bleu */
+    .table-stagiaires td.stag-ddn { color: #1565c0; font-weight: 600; }
+}
+</style>
 <link rel="stylesheet" href="/static/vendor/cropperjs/cropper.min.css">
 <script src="/static/vendor/cropperjs/cropper.min.js"></script>
 <script src="/static/js/stagiaires.js"></script>
