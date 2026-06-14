@@ -15,6 +15,8 @@ class JourFormation(Base):
     note_privee_auteur_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=True)
     actif                 = Column(Boolean, default=True)
     candidats_ids         = Column(Text, nullable=True)   # JSON [1,3,7] ; NULL = tous (rétrocompat)
+    col_theorie           = Column(Boolean, default=False)
+    col_libre             = Column(Boolean, default=False)
 
 
 class AffectationFormation(Base):

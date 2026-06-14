@@ -1489,6 +1489,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!table) return;
             var libelleInput = table.querySelector('.libelle-libre');
             var libelleLibre = libelleInput ? libelleInput.value : '';
+            var hasTheorieCol = table.querySelector('tbody tr[data-stagiaire] .h-theorie') !== null;
+            var hasLibreCol = table.querySelector('tbody tr[data-stagiaire] .h-libre') !== null;
             var apprenants = [];
             table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
                 var stagId = parseInt(tr.dataset.stagiaire);
@@ -1506,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + jourId + '/planning', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ libelle_colonne_libre: libelleLibre, apprenants: apprenants }),
+                body: JSON.stringify({ libelle_colonne_libre: libelleLibre, has_theorie_col: hasTheorieCol, has_libre_col: hasLibreCol, apprenants: apprenants }),
             }).then(function(r) {
                 if (r.ok) afficherSuccesToast('Données enregistrées ✓');
                 else r.json().then(function(d) { afficherErreur(d.detail || 'Erreur lors de l\'enregistrement.'); });

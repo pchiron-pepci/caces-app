@@ -787,6 +787,8 @@ def add_jour_formation(
         intitule=data.intitule,
         note=data.note,
         candidats_ids=json.dumps(data.stagiaire_ids) if data.stagiaire_ids is not None else None,
+        col_theorie=False,
+        col_libre=False,
     )
     db.add(jf)
     db.commit()
@@ -1176,6 +1178,8 @@ class PlanningApprenantItem(BaseModel):
 
 class PlanningJourBody(BaseModel):
     libelle_colonne_libre: Optional[str] = None
+    has_theorie_col: bool = False
+    has_libre_col: bool = False
     apprenants: List[PlanningApprenantItem] = []
 
 
@@ -1210,6 +1214,8 @@ def save_planning_jour_formation(
 
     if data.libelle_colonne_libre is not None:
         jf.libelle_colonne_libre = data.libelle_colonne_libre
+    jf.col_theorie = data.has_theorie_col
+    jf.col_libre = data.has_libre_col
 
     db.query(PlanningApprenant).filter(PlanningApprenant.jour_formation_id == jour_id).delete()
     for item in data.apprenants:
