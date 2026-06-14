@@ -420,6 +420,42 @@
         text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
     }
 
+    /* ── UT Réelles/Testeur (.table-ut-testeurs) — vue cartes mobile ── */
+    .table-ut-testeurs { display: block !important; min-width: 0 !important; width: 100% !important; }
+    .table-ut-testeurs thead { display: none !important; }
+    .table-ut-testeurs tbody { display: flex !important; flex-direction: column; gap: 10px; width: 100%; }
+    .table-ut-testeurs tbody tr {
+        display: flex !important; flex-wrap: wrap; align-items: stretch; width: 100%;
+        border: 1px solid #c8d8f4 !important; border-radius: 10px;
+        overflow: hidden; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .table-ut-testeurs td.ut-nom {
+        order: 1; flex: 1 1 auto; min-width: 0; padding: 8px 12px !important;
+        font-weight: 600; font-size: 13px; background: #e3f2fd; color: #0d47a1;
+        display: flex !important; align-items: center;
+    }
+    .table-ut-testeurs td.ut-total {
+        order: 1; flex: 0 0 auto; padding: 8px 10px !important;
+        background: #e3f2fd; border-left: 1px solid #c8d8f4;
+        display: flex !important; align-items: center; white-space: nowrap; font-size: 13px;
+    }
+    .table-ut-testeurs td.ut-statut {
+        order: 1; flex: 0 0 auto; padding: 8px 10px !important;
+        background: #e3f2fd; border-left: 1px solid #c8d8f4;
+        display: flex !important; align-items: center;
+    }
+    .table-ut-testeurs tbody tr::before { content: ''; order: 3; flex: 0 0 100%; height: 0; }
+    .table-ut-testeurs tbody td[data-label] {
+        order: 4; flex: 1 1 55px;
+        display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start;
+        padding: 6px 4px 8px !important; gap: 3px; text-align: center;
+        border-right: 1px solid #eef2fb; border-top: 1px solid #c8d8f4;
+    }
+    .table-ut-testeurs tbody td[data-label]::before {
+        content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
+        text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
+    }
+
     /* ── Cadenas session : emoji plus grand + libellé court sur mobile ── */
     [data-action="cloturer-session"],
     [data-action="reouvrir-session"] { font-size: 20px !important; padding: 6px 10px !important; }
@@ -1398,7 +1434,7 @@
     <div class="card">
         <div class="card-header"><h2>UT réelles / Testeur</h2></div>
         {% if ut_testeurs %}
-        <table class="table">
+        <table class="table table-ut-testeurs">
             <thead>
                 <tr>
                     <th>Testeur</th>
@@ -1410,17 +1446,17 @@
             <tbody>
                 {% for t_id, t_info in ut_testeurs.items() %}
                 <tr>
-                    <td><strong>{{ t_info.nom }}</strong></td>
+                    <td class="ut-nom"><strong>{{ t_info.nom }}</strong></td>
                     {% for cat in categories %}
-                    <td style="text-align:center;">
+                    <td data-label="{{ cat }}" style="text-align:center;">
                         {% if cat in t_info.categories %}
                             {% set _v = t_info.categories[cat] %}
                             <span class="badge blue">{% if _v == _v|int %}{{ _v|int }}{% else %}{{ "%.1f"|format(_v)|replace('.', ',') }}{% endif %}</span>
                         {% else %}—{% endif %}
                     </td>
                     {% endfor %}
-                    <td style="text-align:center;"><strong>{% set _t = t_info.ut_pratique %}{% if _t == _t|int %}{{ _t|int }}{% else %}{{ "%.1f"|format(_t)|replace('.', ',') }}{% endif %}</strong>/6</td>
-                    <td style="text-align:center;">
+                    <td class="ut-total" style="text-align:center;"><strong>{% set _t = t_info.ut_pratique %}{% if _t == _t|int %}{{ _t|int }}{% else %}{{ "%.1f"|format(_t)|replace('.', ',') }}{% endif %}</strong>/6</td>
+                    <td class="ut-statut" style="text-align:center;">
                         {% if t_info.ut_pratique > 6 %}<span class="badge red">Depassement</span>
                         {% elif t_info.ut_pratique == 6 %}<span class="badge orange">Complet</span>
                         {% else %}<span class="badge green">OK</span>{% endif %}
