@@ -767,7 +767,7 @@
                     {% endif %}
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <button class="btn-trash"
-                        onclick="supprimerJour({{ j.id }})" title="Supprimer ce jour">🗑️</button>
+                        data-action="supprimer-jour" data-jour-id="{{ j.id }}" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
                 </div>
             </div>

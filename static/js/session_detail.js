@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('[data-action="cloturer-session"]')) cloturerSession();
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="supprimer-jour"]');
+        if (btn) supprimerJour(parseInt(btn.dataset.jourId));
+    });
+    document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="reouvrir-session"]')) reouvrirsession();
     });
     document.addEventListener('click', function(e) {
