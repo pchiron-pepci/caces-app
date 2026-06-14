@@ -1165,6 +1165,13 @@ def page_session_detail(request: Request, session_id: int):
                 jf.candidats_list = [sc for sc in session_candidats if sc.stagiaire_id in _cids]
             else:
                 jf.candidats_list = list(session_candidats)
+            _avec_heures = [
+                sid for sid, v in jf.planning.items()
+                if v.get("heures_theorie", 0) > 0
+                or v.get("heures_libre", 0) > 0
+                or any(h > 0 for h in v.get("heures_par_cat", {}).values())
+            ]
+            jf.candidats_avec_heures_json = json.dumps(_avec_heures)
 
         utilisateurs_terrain = db.query(Utilisateur).filter(
             Utilisateur.role == "terrain",

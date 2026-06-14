@@ -857,6 +857,22 @@ def update_jour_formation(
         nouveaux = set(data.stagiaire_ids)
         retires = anciens - nouveaux
         if retires:
+            for sid in retires:
+                pa = db.query(PlanningApprenant).filter(
+                    PlanningApprenant.jour_formation_id == jf.id,
+                    PlanningApprenant.stagiaire_id == sid,
+                ).first()
+                if pa:
+                    hpc = {}
+                    try:
+                        hpc = json.loads(pa.heures_par_cat) if pa.heures_par_cat else {}
+                    except Exception:
+                        pass
+                    if (pa.heures_theorie or 0) > 0 or (pa.heures_libre or 0) > 0 or any(v > 0 for v in hpc.values()):
+                        raise HTTPException(
+                            status_code=409,
+                            detail="Impossible de retirer ce candidat : il a des heures saisies. Remettez d'abord ses heures à zéro."
+                        )
             db.query(PlanningApprenant).filter(
                 PlanningApprenant.jour_formation_id == jf.id,
                 PlanningApprenant.stagiaire_id.in_(retires),

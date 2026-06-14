@@ -1112,8 +1112,17 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('jf-edit-intitule').value = btnEdit.dataset.intitule || '';
             var jfEditNote = document.getElementById('jf-edit-note'); if (jfEditNote) jfEditNote.value = btnEdit.dataset.note || '';
             var candidats; try { candidats = JSON.parse(btnEdit.dataset.candidats); } catch(_) { candidats = null; }
+            var avecHeures; try { avecHeures = JSON.parse(btnEdit.dataset.avecHeures || '[]'); } catch(_) { avecHeures = []; }
             document.querySelectorAll('#jf-edit-candidats .jf-edit-candidat-cb').forEach(function(cb) {
                 cb.checked = candidats === null || candidats.includes(parseInt(cb.value));
+                var lbl = cb.closest('label');
+                if (avecHeures.includes(parseInt(cb.value))) {
+                    cb.disabled = true;
+                    if (lbl) { lbl.title = 'Remettez d\'abord ses heures à zéro pour pouvoir le retirer'; lbl.style.opacity = '0.55'; }
+                } else {
+                    cb.disabled = false;
+                    if (lbl) { lbl.title = ''; lbl.style.opacity = '1'; }
+                }
             });
             document.getElementById('modal-modifier-jour-formation').style.display = 'flex';
             return;

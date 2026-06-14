@@ -953,6 +953,7 @@
                         data-intitule="{{ jf.intitule or '' }}"
                         data-note="{{ jf.note | e if jf.note else '' }}"
                         data-candidats="{{ jf.candidats_ids or 'null' }}"
+                        data-avec-heures="{{ jf.candidats_avec_heures_json }}"
                         title="Modifier ce jour">✏️</button>
                     <button class="btn-trash" data-action="supprimer-jour-formation" data-id="{{ jf.id }}" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
