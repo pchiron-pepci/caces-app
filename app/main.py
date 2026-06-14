@@ -1094,7 +1094,7 @@ def page_session_detail(request: Request, session_id: int):
             cat = e.categorie
             if cat not in ut_testeurs[e.testeur_id]["categories"]:
                 ut_testeurs[e.testeur_id]["categories"][cat] = 0
-            ut_testeurs[e.testeur_id]["categories"][cat] += 1
+            ut_testeurs[e.testeur_id]["categories"][cat] += e.ut
 
         jours_test = db.query(JourTest).filter(
             JourTest.session_id == session_id,

@@ -1414,11 +1414,12 @@
                     {% for cat in categories %}
                     <td style="text-align:center;">
                         {% if cat in t_info.categories %}
-                            <span class="badge blue">{{ t_info.categories[cat] }}</span>
+                            {% set _v = t_info.categories[cat] %}
+                            <span class="badge blue">{% if _v == _v|int %}{{ _v|int }}{% else %}{{ "%.1f"|format(_v)|replace('.', ',') }}{% endif %}</span>
                         {% else %}—{% endif %}
                     </td>
                     {% endfor %}
-                    <td style="text-align:center;"><strong>{{ t_info.ut_pratique }}</strong>/6</td>
+                    <td style="text-align:center;"><strong>{% set _t = t_info.ut_pratique %}{% if _t == _t|int %}{{ _t|int }}{% else %}{{ "%.1f"|format(_t)|replace('.', ',') }}{% endif %}</strong>/6</td>
                     <td style="text-align:center;">
                         {% if t_info.ut_pratique > 6 %}<span class="badge red">Depassement</span>
                         {% elif t_info.ut_pratique == 6 %}<span class="badge orange">Complet</span>
