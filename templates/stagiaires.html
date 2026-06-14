@@ -8,7 +8,7 @@
         <input type="text" id="search" value="" placeholder="🔍 Rechercher un stagiaire..." class="search-input" autocomplete="new-password" data-lpignore="true" data-1p-ignore data-bwignore>
     </div>
     <div class="toolbar-right">
-        <button class="btn btn-primary" data-action="nouveau-stagiaire">➕ Nouveau stagiaire</button>
+        <button style="background:none; border:none; font-size:22px; cursor:pointer; padding:4px 6px; line-height:1;" data-action="nouveau-stagiaire" title="Ajouter un stagiaire">🧑‍🎓</button>
     </div>
 </div>
 
@@ -147,7 +147,7 @@
     <div style="background:white; border-radius:16px; max-width:500px; width:100%; max-height:92vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
         <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 24px 0;">
             <h3 style="margin:0; font-size:17px; font-family:'Barlow Condensed',sans-serif; font-weight:800; color:#2d2d2d;">📷 Photo du stagiaire</h3>
-            <button onclick="fermerPhotoModal()" style="background:none; border:none; font-size:22px; cursor:pointer; color:#888; line-height:1;">×</button>
+            <button data-action="fermer-photo-modal" style="background:none; border:none; font-size:22px; cursor:pointer; color:#888; line-height:1;">×</button>
         </div>
         <div style="padding:8px 24px 4px;">
             <div id="photo-modal-nom" style="font-size:15px; font-weight:700; color:#2d2d2d;"></div>
@@ -176,7 +176,7 @@
                 </div>
                 <div style="text-align:center; font-size:12px; color:#888; margin-top:6px;">Déplacer pour recadrer · Molette pour zoomer · Pinch sur tablette</div>
             </div>
-            <button id="photo-modal-valider" onclick="validerPhoto()" style="display:none; width:100%; padding:14px; background:#cc0000; color:white; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; letter-spacing:0.5px;">
+            <button id="photo-modal-valider" data-action="valider-photo" style="display:none; width:100%; padding:14px; background:#cc0000; color:white; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; letter-spacing:0.5px;">
                 Valider ✓
             </button>
         </div>
