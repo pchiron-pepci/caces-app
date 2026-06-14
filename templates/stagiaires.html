@@ -62,10 +62,11 @@
                         data-tel="{{ s.telephone or '' }}"
                         data-employeur="{{ s.employeur or '' }}"
                         data-note="{{ s.note or '' }}">✏️</button>
-                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                    <button style="background:none; border:1px solid #e0e0e0; border-radius:6px; padding:5px 8px; font-size:16px; cursor:pointer; line-height:1;"
                         data-action="archiver"
                         data-id="{{ s.id }}"
-                        data-nom="{{ s.nom }} {{ s.prenom }}">🗑️</button>
+                        data-nom="{{ s.nom }} {{ s.prenom }}"
+                        title="Archiver le stagiaire">🗑️</button>
                 </td>
             </tr>
             <tr id="hist-{{ s.id }}" class="hist-row" style="display:none;">
