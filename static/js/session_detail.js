@@ -178,7 +178,7 @@ async function toggleIdentite(jourId, stagiaireId, btn) {
 
 function ouvrirAjoutJourTheorie() {
     document.getElementById('jt-date').value = '';
-    document.querySelectorAll('[name="jt-candidat"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+    document.querySelectorAll('[name="jt-candidat"]').forEach(cb => { cb.checked = !cb.dataset.already; });
     var jtNote = document.getElementById('jt-note'); if (jtNote) jtNote.value = '';
     document.getElementById('modal-jour-theorie').style.display = 'flex';
 }
@@ -191,7 +191,7 @@ async function sauvegarderJourTheorie() {
     if (window.DATE_DEBUT_SESSION && date < window.DATE_DEBUT_SESSION) { alert('⚠️ Date antérieure au début de la session !'); return; }
     if (window.DATE_FIN_SESSION && date > window.DATE_FIN_SESSION) { alert('⚠️ Date postérieure à la fin de la session !'); return; }
     const candidats = [];
-    document.querySelectorAll('[name="jt-candidat"]:checked:not(:disabled)').forEach(cb => candidats.push(parseInt(cb.value)));
+    document.querySelectorAll('[name="jt-candidat"]:checked').forEach(cb => candidats.push(parseInt(cb.value)));
     if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

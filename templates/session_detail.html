@@ -1428,9 +1428,9 @@
                 {% for j in jours_test %}{% if j.type == 'theorie' %}{% for sid in j.candidats_ids %}{% if sid not in ns_th.assigned %}{% set ns_th.assigned = ns_th.assigned + [sid] %}{% endif %}{% endfor %}{% endif %}{% endfor %}
 {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
                 {% set already = sc.stagiaire_id in ns_th.assigned %}
-                <label style="display:flex; align-items:center; gap:10px; font-size:14px; {% if already %}opacity:0.45; cursor:not-allowed;{% else %}cursor:pointer;{% endif %} padding:8px; background:white; border-radius:8px;">
-                    <input type="checkbox" name="jt-candidat" value="{{ sc.stagiaire_id }}"{% if not already %} checked{% endif %}{% if already %} disabled{% endif %}>
-                    {{ nddn(sc.stagiaire) }}{% if already %} <span style="margin-left:auto; font-size:11px; color:#888; font-style:italic;">✓ Déjà affecté</span>{% endif %}
+                <label style="display:flex; align-items:center; gap:10px; font-size:14px; {% if already %}opacity:0.45;{% endif %} cursor:pointer; padding:8px; background:white; border-radius:8px;">
+                    <input type="checkbox" name="jt-candidat" value="{{ sc.stagiaire_id }}"{% if not already %} checked{% endif %}{% if already %} data-already="1"{% endif %}>
+                    {{ nddn(sc.stagiaire) }}{% if already %} <span style="margin-left:auto; font-size:11px; color:#888; font-style:italic;">déjà sur un autre jour</span>{% endif %}
                 </label>
                 {% endif %}{% endfor %}
             </div>

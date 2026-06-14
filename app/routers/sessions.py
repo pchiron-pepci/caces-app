@@ -310,16 +310,6 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     db.flush()
 
     if data.type == "theorie":
-        existing = db.query(JourTestCandidat.stagiaire_id).join(
-            JourTest, JourTest.id == JourTestCandidat.jour_test_id
-        ).filter(
-            JourTest.session_id == session_id,
-            JourTest.type == "theorie",
-            JourTestCandidat.stagiaire_id.in_(data.candidats)
-        ).all()
-        if existing:
-            db.rollback()
-            raise HTTPException(status_code=400, detail="Certains candidats sont déjà affectés à une épreuve théorique dans cette session")
         for stagiaire_id in data.candidats:
             jtc = JourTestCandidat(
                 jour_test_id=jour.id,
