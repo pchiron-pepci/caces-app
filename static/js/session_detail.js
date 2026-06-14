@@ -1345,7 +1345,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var appTh = table.querySelector('thead tr th.col-apprenant');
             if (appTh) appTh.parentNode.insertBefore(th, appTh.nextSibling);
             table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
-                var td = document.createElement('td'); td.style.cssText = 'padding:4px 6px; text-align:center;';
+                var td = document.createElement('td'); td.style.cssText = 'padding:4px 6px; text-align:center;'; td.dataset.label = 'TH';
                 td.innerHTML = '<input type="number" class="h-theorie planning-input" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
                 var appTd = tr.querySelector('td:first-child'); if (appTd) tr.insertBefore(td, appTd.nextSibling);
             });
@@ -1355,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', function() {
             th.innerHTML = '<input type="text" class="libelle-libre" placeholder="Libre" style="width:64px; border:none; background:transparent; font-weight:600; color:#1565c0; text-align:center; font-size:13px; font-family:inherit;">';
             var spacerTh = table.querySelector('thead tr th.col-spacer'); if (spacerTh) spacerTh.parentNode.insertBefore(th, spacerTh);
             table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
-                var td = document.createElement('td'); td.className = 'td-libre'; td.style.cssText = 'padding:4px 6px; text-align:center; background:#fafafa;';
+                var td = document.createElement('td'); td.className = 'td-libre'; td.style.cssText = 'padding:4px 6px; text-align:center; background:#fafafa;'; td.dataset.label = 'Libre';
                 td.innerHTML = '<input type="number" class="h-libre planning-input" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
                 var spacerTd = tr.querySelector('td.td-spacer'); if (spacerTd) tr.insertBefore(td, spacerTd);
             });
@@ -1364,7 +1364,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var th = document.createElement('th'); th.dataset.cat = val; th.textContent = val; th.style.cssText = 'padding:6px 8px; text-align:center; font-weight:600;';
             var anchorTh = table.querySelector('thead tr th.col-libre') || table.querySelector('thead tr th.col-spacer'); if (anchorTh) anchorTh.parentNode.insertBefore(th, anchorTh);
             table.querySelectorAll('tbody tr[data-stagiaire]').forEach(function(tr) {
-                var td = document.createElement('td'); td.style.cssText = 'padding:4px 6px; text-align:center;';
+                var td = document.createElement('td'); td.style.cssText = 'padding:4px 6px; text-align:center;'; td.dataset.label = val;
                 td.innerHTML = '<input type="number" class="h-cat planning-input" data-cat="' + val + '" min="0" max="7" step="0.25" value="0" style="width:58px; text-align:center; border:1px solid #ddd; border-radius:4px; padding:2px 4px;">';
                 var anchorTd = tr.querySelector('td.td-libre') || tr.querySelector('td.td-spacer'); if (anchorTd) tr.insertBefore(td, anchorTd);
             });
