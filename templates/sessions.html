@@ -9,7 +9,7 @@
     </div>
     <div class="toolbar-right">
         {% if user_role != 'terrain' %}
-        <button class="btn btn-primary" onclick="ouvrirFormulaire()">➕ Nouvelle session</button>
+        <button style="background:none; border:none; font-size:22px; cursor:pointer; padding:4px 6px; line-height:1;" data-action="ouvrir-formulaire" title="Ajouter une session">📅</button>
         {% endif %}
     </div>
 </div>
@@ -49,7 +49,7 @@
                 {% if user_role != 'terrain' %}
                 <td>
                     <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                        onclick="annuler({{ s.id }}, '{{ s.reference or s.famille }}')">🗑️</button>
+                        data-action="annuler-session" data-id="{{ s.id }}" data-nom="{{ (s.reference or s.famille) | e }}">🗑️</button>
                 </td>
                 {% endif %}
             </tr>
@@ -101,8 +101,8 @@
             </div>
         </div>
         <div class="form-actions">
-            <button class="btn btn-primary" onclick="sauvegarder()">💾 Creer la session</button>
-            <button class="btn btn-secondary" onclick="fermerModal()">Annuler</button>
+            <button class="btn btn-primary" data-action="sauvegarder-session">💾 Creer la session</button>
+            <button class="btn btn-secondary" data-action="fermer-modal">Annuler</button>
         </div>
     </div>
 </div>
@@ -118,7 +118,7 @@
         </div>
         <div style="display:flex; gap:12px; justify-content:center;">
             <button class="btn btn-danger" id="pin-confirm-btn">Confirmer</button>
-            <button class="btn btn-secondary" onclick="fermerPin()">Annuler</button>
+            <button class="btn btn-secondary" data-action="fermer-pin">Annuler</button>
         </div>
         <p id="pin-error" style="color:red; margin-top:12px; display:none;">❌ Code PIN incorrect !</p>
     </div>
@@ -207,6 +207,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             rows.forEach(function(row) { tbody.appendChild(row); });
         });
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="ouvrir-formulaire"]')) ouvrirFormulaire();
+        if (e.target.closest('[data-action="sauvegarder-session"]')) sauvegarder();
+        if (e.target.closest('[data-action="fermer-modal"]')) fermerModal();
+        if (e.target.closest('[data-action="fermer-pin"]')) fermerPin();
+        var btn = e.target.closest('[data-action="annuler-session"]');
+        if (btn) annuler(parseInt(btn.dataset.id), btn.dataset.nom);
     });
 });
 </script>
