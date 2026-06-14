@@ -420,6 +420,38 @@
         text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
     }
 
+    /* ── Matériel (.table-materiel) — vue cartes mobile ── */
+    .table-materiel { display: block !important; min-width: 0 !important; width: 100% !important; }
+    .table-materiel thead { display: none !important; }
+    .table-materiel tbody { display: flex !important; flex-direction: column; gap: 10px; width: 100%; }
+    .table-materiel tbody tr {
+        display: flex !important; flex-wrap: wrap; align-items: stretch; width: 100%;
+        border: 1px solid #c8d8f4 !important; border-radius: 10px;
+        overflow: hidden; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .table-materiel td.mat-num {
+        order: 1; flex: 0 0 auto; padding: 8px 10px !important;
+        background: #e3f2fd; display: flex !important; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 15px; color: #1565c0;
+        border-right: 1px solid #c8d8f4; white-space: nowrap;
+    }
+    .table-materiel td.mat-designation {
+        order: 1; flex: 1 1 auto; min-width: 0; padding: 8px 12px !important;
+        font-weight: 600; font-size: 13px; background: #e3f2fd; color: #0d47a1;
+        display: flex !important; align-items: center;
+    }
+    .table-materiel tbody tr::before { content: ''; order: 3; flex: 0 0 100%; height: 0; }
+    .table-materiel tbody td[data-label] {
+        order: 4; flex: 1 1 130px;
+        display: flex !important; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+        padding: 6px 10px 8px !important; gap: 2px;
+        border-right: 1px solid #eef2fb; border-top: 1px solid #c8d8f4;
+    }
+    .table-materiel tbody td[data-label]::before {
+        content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
+        text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
+    }
+
     /* ── UT Réelles/Testeur (.table-ut-testeurs) — vue cartes mobile ── */
     .table-ut-testeurs { display: block !important; min-width: 0 !important; width: 100% !important; }
     .table-ut-testeurs thead { display: none !important; }
@@ -1480,7 +1512,7 @@
         {% endif %}
     </div>
     <div class="card">
-        <table class="table">
+        <table class="table table-materiel">
             <thead>
                 <tr>
                     <th>N</th><th>Designation</th><th>Marque</th><th>Type</th>
@@ -1491,16 +1523,16 @@
             <tbody>
                 {% for e in equipements %}
                 <tr>
-                    <td>{{ e.numero }}</td>
-                    <td><strong>{{ e.designation or '—' }}</strong></td>
-                    <td>{{ e.marque or '—' }}</td>
-                    <td>{{ e.type_modele or '—' }}</td>
-                    <td>{{ e.numero_serie or '—' }}</td>
-                    <td>{{ e.date_verification or '—' }}</td>
-                    <td>{{ e.organisme_verification or '—' }}</td>
-                    <td>{{ e.proprietaire or '—' }}</td>
+                    <td class="mat-num">{{ e.numero }}</td>
+                    <td class="mat-designation"><strong>{{ e.designation or '—' }}</strong></td>
+                    <td data-label="Marque">{{ e.marque or '—' }}</td>
+                    <td data-label="Type">{{ e.type_modele or '—' }}</td>
+                    <td data-label="N° Série">{{ e.numero_serie or '—' }}</td>
+                    <td data-label="Date VGP">{{ e.date_verification or '—' }}</td>
+                    <td data-label="Organisme">{{ e.organisme_verification or '—' }}</td>
+                    <td data-label="Propriétaire">{{ e.proprietaire or '—' }}</td>
                     {% if session.statut != 'terminee' %}
-                    <td>
+                    <td data-label="Actions">
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             data-action="editer-equipement"
                             data-eq-id="{{ e.id }}"
