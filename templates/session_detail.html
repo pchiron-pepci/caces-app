@@ -757,7 +757,7 @@
                     {% endif %}
                 </div>
                 <div style="display:flex; gap:8px;">
-                    {% if session.statut != 'terminee' %}
+                    {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                         data-action="modifier-jour-pratique"
                         data-jour-id="{{ j.id }}"
