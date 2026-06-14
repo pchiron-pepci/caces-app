@@ -352,7 +352,7 @@ a:hover { color: #aa0000; }
 /* FORMS */
 .form-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 16px;
 }
 
@@ -517,7 +517,8 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
     /* Grilles responsive */
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .dashboard-grid { grid-template-columns: 1fr; }
-    .form-grid { grid-template-columns: 1fr; }
+    /* span 2 → 1/-1 : évite colonne implicite fantôme en grille 1-colonne */
+    .form-grid > [style*="span 2"] { grid-column: 1 / -1; }
 
     /* Contenu : padding réduit sur mobile (32px→16px) pour maximiser l'espace utile */
     .content { padding: 16px; }
