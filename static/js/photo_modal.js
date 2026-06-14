@@ -178,4 +178,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.target === modalPhoto) fermerPhotoModal();
         });
     }
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-photo-modal"]')) fermerPhotoModal();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="valider-photo"]')) validerPhoto();
+    });
 });

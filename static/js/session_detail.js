@@ -111,6 +111,45 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="fermer-modal-modifier-jour-theorie"]')) document.getElementById('modal-modifier-jour-theorie').style.display = 'none';
     });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="sauvegarder-pratique"]')) sauvegarderPratique();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-modal-pratique"]')) fermerModalPratique();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="annuler-resultat-pratique"]')) annulerResultatPratique();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="sauvegarder-candidat"]')) sauvegarderCandidat();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-modal-candidat"]')) fermerModalCandidat();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="supprimer-equipement"]')) supprimerEquipement();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="sauvegarder-equipement"]')) sauvegarderEquipement();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-modal-equipement"]')) fermerModalEquipement();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="sauvegarder-affectations-test"]')) sauvegarderAffectationsTest();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-modal-testeurs"]')) document.getElementById('modal-testeurs').style.display = 'none';
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-pin"]')) fermerPin();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-confirm"]')) fermerConfirm();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-alerte"]')) fermerAlerte();
+    });
     const scTheorie = document.getElementById('sc-theorie');
     if (scTheorie) scTheorie.addEventListener('change', _syncDispenseNote);
     document.addEventListener('change', function(e) {
