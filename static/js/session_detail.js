@@ -75,6 +75,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const btn = e.target.closest('[data-action="editer-candidat"]');
         if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note);
     });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="ouvrir-ajout-jour-theorie"]')) ouvrirAjoutJourTheorie();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="ouvrir-ajout-jour-pratique"]')) ouvrirAjoutJourPratique();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="ouvrir-ajout-candidat"]')) ouvrirAjoutCandidat();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="ouvrir-ajout-equipement"]')) ouvrirAjoutEquipement();
+    });
     const scTheorie = document.getElementById('sc-theorie');
     if (scTheorie) scTheorie.addEventListener('change', _syncDispenseNote);
     document.addEventListener('change', function(e) {

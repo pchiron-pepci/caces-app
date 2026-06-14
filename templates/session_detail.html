@@ -626,8 +626,8 @@
     <div class="card" style="margin-bottom:16px;">
         <div class="card-header card-accent">
             <h2>CACES® Épreuve théorique</h2>
-            {% if session.statut != 'terminee' and user_role != 'terrain' %}
-            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="ouvrirAjoutJourTheorie()" title="Planifier une théorie">📅</button>
+            {% if session.statut != 'terminee' %}
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" data-action="ouvrir-ajout-jour-theorie" title="Planifier une théorie">📅</button>
             {% endif %}
         </div>
         {% if jours_test %}
@@ -661,10 +661,9 @@
                             class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             title="Accéder aux tests">🚀</a>
                         {% if user_role != 'terrain' %}
-                        <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                            onclick="window.location.href='/sessions/{{ session.id }}/jours/{{ j.id }}/modifier'">✏️</button>
+                        <a href="/sessions/{{ session.id }}/jours/{{ j.id }}/modifier" class="btn btn-secondary" style="padding:6px 12px; font-size:12px; text-decoration:none;">✏️</a>
 <button class="btn-trash"
-    onclick="supprimerJour({{ j.id }})" title="Supprimer ce jour">🗑️</button>
+    data-action="supprimer-jour" data-jour-id="{{ j.id }}" title="Supprimer ce jour">🗑️</button>
                         {% endif %}
                         {% endif %}
                     </div>
@@ -734,7 +733,7 @@
         <div class="card-header card-accent">
             <h2>CACES® Épreuves pratiques</h2>
             {% if session.statut != 'terminee' and user_role != 'terrain' %}
-            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="ouvrirAjoutJourPratique()" title="Planifier une pratique">📅</button>
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" data-action="ouvrir-ajout-jour-pratique" title="Planifier une pratique">📅</button>
             {% endif %}
         </div>
 
@@ -1206,7 +1205,7 @@
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <p style="color:#666; font-size:14px;">{{ session_candidats|length }} candidat(s) inscrit(s)</p>
         {% if session.statut != 'terminee' and user_role != 'terrain' %}
-        <button class="btn btn-secondary" onclick="ouvrirAjoutCandidat()" title="Ajouter un candidat" style="padding:6px 12px; font-size:12px; cursor:pointer;">👥</button>
+        <button class="btn btn-secondary" data-action="ouvrir-ajout-candidat" title="Ajouter un candidat" style="padding:6px 12px; font-size:12px; cursor:pointer;">👥</button>
         {% endif %}
     </div>
     <div class="card">
@@ -1364,7 +1363,7 @@
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <p style="color:#666; font-size:14px;">Equipements utilises lors de la session</p>
         {% if session.statut != 'terminee' %}
-        <button class="btn btn-secondary" onclick="ouvrirAjoutEquipement()" title="Ajouter un équipement" style="padding:6px 12px; font-size:12px; cursor:pointer;">🏗️</button>
+        <button class="btn btn-secondary" data-action="ouvrir-ajout-equipement" title="Ajouter un équipement" style="padding:6px 12px; font-size:12px; cursor:pointer;">🏗️</button>
         {% endif %}
     </div>
     <div class="card">
