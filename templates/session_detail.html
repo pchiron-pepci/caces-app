@@ -1444,8 +1444,8 @@
             La grille theorique sera tiree automatiquement.
         </div>
         <div class="form-actions">
-            <button class="btn btn-primary" onclick="sauvegarderJourTheorie()">Valider et tirer la grille</button>
-            <button class="btn btn-secondary" onclick="fermerModalJourTheorie()">Annuler</button>
+            <button class="btn btn-primary" data-action="sauvegarder-jour-theorie">Valider et tirer la grille</button>
+            <button class="btn btn-secondary" data-action="fermer-modal-jour-theorie">Annuler</button>
         </div>
     </div>
 </div>
@@ -1512,8 +1512,8 @@
         </div>
         {% endif %}
         <div class="form-actions">
-            <button class="btn btn-primary" onclick="sauvegarderJourPratique()">Valider</button>
-            <button class="btn btn-secondary" onclick="fermerModalJourPratique()">Annuler</button>
+            <button class="btn btn-primary" data-action="sauvegarder-jour-pratique">Valider</button>
+            <button class="btn btn-secondary" data-action="fermer-modal-jour-pratique">Annuler</button>
         </div>
     </div>
 </div>
@@ -1571,8 +1571,8 @@
             {% endif %}{% endfor %}
         </div>
         <div class="form-actions">
-            <button class="btn btn-primary" onclick="sauvegarderCandidatJour()">Ajouter</button>
-            <button class="btn btn-secondary" onclick="fermerModalCandidatJour()">Annuler</button>
+            <button class="btn btn-primary" data-action="sauvegarder-candidat-jour">Ajouter</button>
+            <button class="btn btn-secondary" data-action="fermer-modal-candidat-jour">Annuler</button>
         </div>
     </div>
 </div>
@@ -1697,8 +1697,8 @@
             </div>
         </div>
         <div class="form-actions">
-            <button class="btn btn-primary" onclick="sauvegarderModifierJourTheorie()">Sauvegarder</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('modal-modifier-jour-theorie').style.display='none'">Annuler</button>
+            <button class="btn btn-primary" data-action="sauvegarder-modifier-jour-theorie">Sauvegarder</button>
+            <button class="btn btn-secondary" data-action="fermer-modal-modifier-jour-theorie">Annuler</button>
         </div>
     </div>
 </div>

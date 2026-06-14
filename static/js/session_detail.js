@@ -87,6 +87,30 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="ouvrir-ajout-equipement"]')) ouvrirAjoutEquipement();
     });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="sauvegarder-jour-theorie"]')) sauvegarderJourTheorie();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-modal-jour-theorie"]')) fermerModalJourTheorie();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="sauvegarder-jour-pratique"]')) sauvegarderJourPratique();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-modal-jour-pratique"]')) fermerModalJourPratique();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="sauvegarder-candidat-jour"]')) sauvegarderCandidatJour();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-modal-candidat-jour"]')) fermerModalCandidatJour();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="sauvegarder-modifier-jour-theorie"]')) sauvegarderModifierJourTheorie();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-modal-modifier-jour-theorie"]')) document.getElementById('modal-modifier-jour-theorie').style.display = 'none';
+    });
     const scTheorie = document.getElementById('sc-theorie');
     if (scTheorie) scTheorie.addEventListener('change', _syncDispenseNote);
     document.addEventListener('change', function(e) {
