@@ -1068,6 +1068,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('jf-date').value = '';
             document.getElementById('jf-intitule').value = '';
             var jfNote = document.getElementById('jf-note'); if (jfNote) jfNote.value = '';
+            document.querySelectorAll('#jf-candidats .jf-candidat-cb').forEach(function(cb) { cb.checked = false; });
             document.getElementById('modal-jour-formation').style.display = 'flex';
             return;
         }
@@ -1079,10 +1080,12 @@ document.addEventListener('DOMContentLoaded', function() {
             var date = document.getElementById('jf-date').value;
             var intitule = document.getElementById('jf-intitule').value.trim();
             if (!date) { alert('La date est obligatoire.'); return; }
+            var stagIds = [];
+            document.querySelectorAll('#jf-candidats .jf-candidat-cb:checked').forEach(function(cb) { stagIds.push(parseInt(cb.value)); });
             fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ date: date, intitule: intitule || null, note: (document.getElementById('jf-note') || {value: ''}).value.trim() || null })
+                body: JSON.stringify({ date: date, intitule: intitule || null, note: (document.getElementById('jf-note') || {value: ''}).value.trim() || null, stagiaire_ids: stagIds })
             }).then(function(r) {
                 if (r.ok) {
                     document.getElementById('modal-jour-formation').style.display = 'none';
@@ -1108,6 +1111,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('jf-edit-date').value = btnEdit.dataset.date;
             document.getElementById('jf-edit-intitule').value = btnEdit.dataset.intitule || '';
             var jfEditNote = document.getElementById('jf-edit-note'); if (jfEditNote) jfEditNote.value = btnEdit.dataset.note || '';
+            var candidats; try { candidats = JSON.parse(btnEdit.dataset.candidats); } catch(_) { candidats = null; }
+            document.querySelectorAll('#jf-edit-candidats .jf-edit-candidat-cb').forEach(function(cb) {
+                cb.checked = candidats === null || candidats.includes(parseInt(cb.value));
+            });
             document.getElementById('modal-modifier-jour-formation').style.display = 'flex';
             return;
         }
@@ -1120,10 +1127,12 @@ document.addEventListener('DOMContentLoaded', function() {
             var date = document.getElementById('jf-edit-date').value;
             var intitule = document.getElementById('jf-edit-intitule').value.trim();
             if (!date) { alert('La date est obligatoire.'); return; }
+            var editStagIds = [];
+            document.querySelectorAll('#jf-edit-candidats .jf-edit-candidat-cb:checked').forEach(function(cb) { editStagIds.push(parseInt(cb.value)); });
             fetch('/api/sessions/' + window.SESSION_ID + '/jours-formation/' + id, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ date_str: date, intitule: intitule || null, note: (document.getElementById('jf-edit-note') || {value: ''}).value.trim() || null })
+                body: JSON.stringify({ date_str: date, intitule: intitule || null, note: (document.getElementById('jf-edit-note') || {value: ''}).value.trim() || null, stagiaire_ids: editStagIds })
             }).then(function(r) {
                 if (r.ok) {
                     document.getElementById('modal-modifier-jour-formation').style.display = 'none';

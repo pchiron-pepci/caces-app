@@ -952,6 +952,7 @@
                         data-date="{{ jf.date }}"
                         data-intitule="{{ jf.intitule or '' }}"
                         data-note="{{ jf.note | e if jf.note else '' }}"
+                        data-candidats="{{ jf.candidats_ids or 'null' }}"
                         title="Modifier ce jour">✏️</button>
                     <button class="btn-trash" data-action="supprimer-jour-formation" data-id="{{ jf.id }}" title="Supprimer ce jour">🗑️</button>
                     {% endif %}
@@ -988,7 +989,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for sc in session_candidats %}
+                        {% for sc in jf.candidats_list %}
                         {% set pa = jf.planning.get(sc.stagiaire_id) %}
                         {% set hpc = pa.heures_par_cat if pa else {} %}
                         <tr data-stagiaire="{{ sc.stagiaire_id }}" style="border-bottom:1px solid #f0f2f7;">
@@ -1157,6 +1158,17 @@
                 <textarea id="jf-note" class="note-textarea" rows="2" placeholder="Consignes, remarques…"></textarea>
             </div>
             {% endif %}
+            <div class="form-field" style="grid-column:span 2;">
+                <label>Candidats</label>
+                <div id="jf-candidats" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:8px;">
+                    {% for sc in session_candidats %}
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                        <input type="checkbox" class="jf-candidat-cb" value="{{ sc.stagiaire_id }}">
+                        {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
             <div class="form-actions">
                 <button class="btn btn-primary"
                         data-action="sauvegarder-jour-formation">Ajouter</button>
@@ -1189,6 +1201,17 @@
                 <textarea id="jf-edit-note" class="note-textarea" rows="2" placeholder="Consignes, remarques…"></textarea>
             </div>
             {% endif %}
+            <div class="form-field" style="grid-column:span 2;">
+                <label>Candidats</label>
+                <div id="jf-edit-candidats" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:8px;">
+                    {% for sc in session_candidats %}
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                        <input type="checkbox" class="jf-edit-candidat-cb" value="{{ sc.stagiaire_id }}">
+                        {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
             <div class="form-actions">
                 <button class="btn btn-primary"
                         data-action="sauvegarder-modifier-jour-formation">Enregistrer</button>

@@ -749,6 +749,7 @@ class JourFormationCreate(BaseModel):
     date: date
     intitule: Optional[str] = None
     note: Optional[str] = None
+    stagiaire_ids: Optional[List[int]] = None
 
 
 @router.post("/{session_id}/jours-formation")
@@ -780,8 +781,13 @@ def add_jour_formation(
                 ),
             )
 
-    jf = JourFormation(session_id=session_id, date=data.date,
-                       intitule=data.intitule, note=data.note)
+    jf = JourFormation(
+        session_id=session_id,
+        date=data.date,
+        intitule=data.intitule,
+        note=data.note,
+        candidats_ids=json.dumps(data.stagiaire_ids) if data.stagiaire_ids is not None else None,
+    )
     db.add(jf)
     db.commit()
     db.refresh(jf)
@@ -792,6 +798,7 @@ class JourFormationUpdate(BaseModel):
     date_str: Optional[str] = None
     intitule: Optional[str] = None
     note: Optional[str] = None
+    stagiaire_ids: Optional[List[int]] = None
 
 
 @router.patch("/{session_id}/jours-formation/{id}")
@@ -839,6 +846,22 @@ def update_jour_formation(
         jf.intitule = data.intitule or None
     if data.note is not None:
         jf.note = data.note or None
+
+    if data.stagiaire_ids is not None:
+        anciens = set(json.loads(jf.candidats_ids)) if jf.candidats_ids else {
+            sc.stagiaire_id for sc in db.query(SessionCandidat).filter(
+                SessionCandidat.session_id == session_id,
+                SessionCandidat.actif == True,
+            ).all()
+        }
+        nouveaux = set(data.stagiaire_ids)
+        retires = anciens - nouveaux
+        if retires:
+            db.query(PlanningApprenant).filter(
+                PlanningApprenant.jour_formation_id == jf.id,
+                PlanningApprenant.stagiaire_id.in_(retires),
+            ).delete()
+        jf.candidats_ids = json.dumps(data.stagiaire_ids)
 
     db.commit()
     return {"id": jf.id, "date": str(jf.date), "intitule": jf.intitule}

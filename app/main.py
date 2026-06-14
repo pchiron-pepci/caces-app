@@ -113,6 +113,7 @@ def _run_startup_migrations():
         # jours_formation
         "ALTER TABLE jours_formation ADD COLUMN IF NOT EXISTS note_privee TEXT",
         "ALTER TABLE jours_formation ADD COLUMN IF NOT EXISTS note_privee_auteur_id INTEGER REFERENCES utilisateurs(id)",
+        "ALTER TABLE jours_formation ADD COLUMN IF NOT EXISTS candidats_ids TEXT",
         # jour_test_candidats
         "ALTER TABLE jour_test_candidats ADD COLUMN IF NOT EXISTS options_planifiees TEXT",
         # session_epreuves
@@ -1159,6 +1160,11 @@ def page_session_detail(request: Request, session_id: int):
             jf.cats_colonnes = [c for c in categories_formation if c in _cats_set]
             jf.has_theorie = any(v.get("heures_theorie", 0) > 0 for v in jf.planning.values())
             jf.has_libre = bool(jf.libelle_colonne_libre) or any(v.get("heures_libre", 0) > 0 for v in jf.planning.values())
+            if jf.candidats_ids:
+                _cids = set(json.loads(jf.candidats_ids))
+                jf.candidats_list = [sc for sc in session_candidats if sc.stagiaire_id in _cids]
+            else:
+                jf.candidats_list = list(session_candidats)
 
         utilisateurs_terrain = db.query(Utilisateur).filter(
             Utilisateur.role == "terrain",
