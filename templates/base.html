@@ -58,12 +58,12 @@
     <div class="main">
         <div class="topbar">
             <div style="display:flex; align-items:center; gap:12px;">
-                <button class="btn-hamburger" onclick="toggleSidebar()" title="Réduire / déplier le menu">☰</button>
+                <button class="btn-hamburger" data-action="toggle-sidebar" title="Réduire / déplier le menu">☰</button>
                 <h1 class="page-title">{% block title %}{% endblock %}</h1>
             </div>
             <div class="topbar-right">
                 <span class="user-badge">👤 <a href="/profil" style="color:inherit; text-decoration:none;"><span id="user-nom">—</span></a></span>
-                <button onclick="seDeconnecter()" class="btn-logout" title="Déconnexion"
+                <button data-action="se-deconnecter" class="btn-logout" title="Déconnexion"
                     style="background:none; border:1px solid #ddd; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:12px; color:#666; margin-left:8px;">
                     🚪 <span class="btn-logout-text">Deconnexion</span>
                 </button>
@@ -106,6 +106,11 @@
             link.addEventListener('click', function() {
                 if (window.matchMedia('(max-width: 1023px)').matches) closeMobileSidebar();
             });
+        });
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('[data-action="toggle-sidebar"]')) toggleSidebar();
+            if (e.target.closest('[data-action="se-deconnecter"]')) seDeconnecter();
+            if (e.target.closest('[data-action="close-mobile-sidebar"]')) closeMobileSidebar();
         });
     });
     document.addEventListener('keydown', function(e) {
@@ -174,6 +179,6 @@ if (role === 'terrain') {
         return originalFetch(url, options);
     };
     </script>
-    <div id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
+    <div id="sidebar-backdrop" data-action="close-mobile-sidebar"></div>
 </body>
 </html>
