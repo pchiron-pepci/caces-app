@@ -860,8 +860,14 @@ def delete_jour_formation(
     ).first()
     if not jf:
         raise HTTPException(status_code=404, detail="Jour de formation non trouvé")
-    db.query(AffectationFormation).filter(AffectationFormation.jour_formation_id == jf.id).delete()
-    db.query(PlanningApprenant).filter(PlanningApprenant.jour_formation_id == jf.id).delete()
+    if (
+        db.query(AffectationFormation).filter(AffectationFormation.jour_formation_id == jf.id).first()
+        or db.query(PlanningApprenant).filter(PlanningApprenant.jour_formation_id == jf.id).first()
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Ce jour contient des données. Videz-le à zéro avant de le supprimer.",
+        )
     db.delete(jf)
     db.commit()
     return {"message": "Jour de formation supprimé"}
