@@ -22,6 +22,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) showTab(btn.dataset.tab, btn);
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="modifier-jour-pratique"]');
+        if (!btn) return;
+        var cats, opts, epreuves, note;
+        try { cats     = JSON.parse(btn.dataset.categories || '{}'); } catch(_) { cats = {}; }
+        try { opts     = JSON.parse(btn.dataset.options    || '{}'); } catch(_) { opts = {}; }
+        try { epreuves = JSON.parse(btn.dataset.epreuves   || '{}'); } catch(_) { epreuves = {}; }
+        try { note     = JSON.parse(btn.dataset.note);               } catch(_) { note = null; }
+        ouvrirModifierJourPratique(parseInt(btn.dataset.jourId), btn.dataset.date, cats, opts, epreuves, note);
+    });
+    document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action="gerer-testeurs"]');
         if (btn) gererTesteurs(btn.dataset.jourId, btn.dataset.jourType);
     });
