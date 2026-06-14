@@ -626,7 +626,7 @@
     <div class="card" style="margin-bottom:16px;">
         <div class="card-header card-accent">
             <h2>CACES® Épreuve théorique</h2>
-            {% if session.statut != 'terminee' %}
+            {% if session.statut != 'terminee' and user_role != 'terrain' %}
             <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" data-action="ouvrir-ajout-jour-theorie" title="Planifier une théorie">📅</button>
             {% endif %}
         </div>
