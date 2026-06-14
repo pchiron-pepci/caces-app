@@ -588,10 +588,10 @@
 </div>
 
 <div style="display:flex; flex-wrap:nowrap; gap:3px; margin-bottom:0; border-bottom:2px solid #2d2d2d; align-items:flex-end;">
-    <button class="tab-btn active-tab" onclick="showTab('sequencage', this)">📅 <span class="tab-long">Séquence</span><span class="tab-short">Séq.</span></button>
-    <button class="tab-btn" onclick="showTab('candidats', this)">👥 <span class="tab-long">Candidats ({{ session_candidats|length }})</span><span class="tab-short">Cand. ({{ session_candidats|length }})</span></button>
-    <button class="tab-btn" onclick="showTab('testeurs', this)">⚖️ <span class="tab-long">UT Réelles/Testeurs</span><span class="tab-short">UT</span></button>
-    <button class="tab-btn" onclick="showTab('equipements', this)">🏗️ <span class="tab-long">Matériel</span><span class="tab-short">Mat.</span></button>
+    <button class="tab-btn active-tab" data-action="show-tab" data-tab="sequencage">📅 <span class="tab-long">Séquence</span><span class="tab-short">Séq.</span></button>
+    <button class="tab-btn" data-action="show-tab" data-tab="candidats">👥 <span class="tab-long">Candidats ({{ session_candidats|length }})</span><span class="tab-short">Cand. ({{ session_candidats|length }})</span></button>
+    <button class="tab-btn" data-action="show-tab" data-tab="testeurs">⚖️ <span class="tab-long">UT Réelles/Testeurs</span><span class="tab-short">UT</span></button>
+    <button class="tab-btn" data-action="show-tab" data-tab="equipements">🏗️ <span class="tab-long">Matériel</span><span class="tab-short">Mat.</span></button>
 </div>
 
 <style>

@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) retirerCandidatJour(btn.dataset.jourId, btn.dataset.stagiaireId, btn.dataset.nom, btn.dataset.type);
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="show-tab"]');
+        if (btn) showTab(btn.dataset.tab, btn);
+    });
+    document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action="gerer-testeurs"]');
         if (btn) gererTesteurs(btn.dataset.jourId, btn.dataset.jourType);
     });
