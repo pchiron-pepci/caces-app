@@ -48,8 +48,9 @@
                 </td>
                 {% if user_role != 'terrain' %}
                 <td>
-                    <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-                        data-action="annuler-session" data-id="{{ s.id }}" data-nom="{{ (s.reference or s.famille) | e }}">🗑️</button>
+                    <button style="background:none; border:1px solid #e0e0e0; border-radius:6px; padding:5px 8px; font-size:16px; cursor:pointer; line-height:1;"
+                        data-action="annuler-session" data-id="{{ s.id }}" data-nom="{{ (s.reference or s.famille) | e }}"
+                        title="Supprimer la session">🗑️</button>
                 </td>
                 {% endif %}
             </tr>
