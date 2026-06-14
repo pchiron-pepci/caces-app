@@ -1303,7 +1303,9 @@
                             data-note="{{ sc.dispense_note or '' }}"
                             title="Modifier ce candidat">✏️</button>
                         <button class="btn-trash"
-                            onclick="retirerCandidat({{ sc.id }}, '{{ nddn(sc.stagiaire) }}')">🗑️</button>
+                            data-action="retirer-candidat"
+                            data-sc-id="{{ sc.id }}"
+                            data-nom="{{ nddn(sc.stagiaire) }}">🗑️</button>
                     </td>
                     {% endif %}
                 </tr>
@@ -1385,7 +1387,16 @@
                     {% if session.statut != 'terminee' %}
                     <td>
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                            onclick="editerEquipement({{ e.id }}, {{ e.numero }}, '{{ e.designation or '' }}', '{{ e.marque or '' }}', '{{ e.type_modele or '' }}', '{{ e.numero_serie or '' }}', '{{ e.date_verification or '' }}', '{{ e.organisme_verification or '' }}', '{{ e.proprietaire or '' }}')">Modifier</button>
+                            data-action="editer-equipement"
+                            data-eq-id="{{ e.id }}"
+                            data-numero="{{ e.numero }}"
+                            data-designation="{{ e.designation or '' }}"
+                            data-marque="{{ e.marque or '' }}"
+                            data-type="{{ e.type_modele or '' }}"
+                            data-serie="{{ e.numero_serie or '' }}"
+                            data-date-verif="{{ e.date_verification or '' }}"
+                            data-organisme="{{ e.organisme_verification or '' }}"
+                            data-proprietaire="{{ e.proprietaire or '' }}">Modifier</button>
                     </td>
                     {% endif %}
                 </tr>

@@ -29,6 +29,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) supprimerJour(parseInt(btn.dataset.jourId));
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="retirer-candidat"]');
+        if (btn) retirerCandidat(parseInt(btn.dataset.scId), btn.dataset.nom);
+    });
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="editer-equipement"]');
+        if (!btn) return;
+        editerEquipement(
+            parseInt(btn.dataset.eqId),
+            parseInt(btn.dataset.numero),
+            btn.dataset.designation  || '',
+            btn.dataset.marque       || '',
+            btn.dataset.type         || '',
+            btn.dataset.serie        || '',
+            btn.dataset.dateVerif    || '',
+            btn.dataset.organisme    || '',
+            btn.dataset.proprietaire || ''
+        );
+    });
+    document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="reouvrir-session"]')) reouvrirsession();
     });
     document.addEventListener('click', function(e) {
