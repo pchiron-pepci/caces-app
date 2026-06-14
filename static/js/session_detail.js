@@ -1377,4 +1377,22 @@ document.addEventListener('DOMContentLoaded', function() {
             parseInt(btn.dataset.epreuveId)
         );
     });
+
+    // Bouton "+" nouveau résultat pratique (CSP-safe : data-action au lieu de onclick)
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="nouveau-resultat-pratique"]');
+        if (!btn) return;
+        saisirResultatPratique(
+            parseInt(btn.dataset.stagiaireId),
+            btn.dataset.cat,
+            btn.dataset.date,
+            '',
+            btn.dataset.identite === 'true',
+            null,
+            '',
+            JSON.parse(btn.dataset.optsPlanif || '[]'),
+            '',
+            null
+        );
+    });
 });

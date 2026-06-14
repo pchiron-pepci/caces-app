@@ -834,7 +834,12 @@
                                 {% else %}
                                     {% if session.statut != 'terminee' %}
                                     <button style="background:{% if is_option_seule %}#ffe0b2{% else %}#e8eaf6{% endif %}; border:none; border-radius:6px; padding:3px 10px; cursor:pointer; font-size:12px; color:{% if is_option_seule %}#e65100{% else %}#1a237e{% endif %}; font-weight:600;"
-                                        onclick="saisirResultatPratique({{ sc.stagiaire_id }}, '{{ cat }}', '{{ j.date }}', '', {{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}, null, '', {{ opts_planif | tojson | forceescape }}, '', null)">
+                                        data-action="nouveau-resultat-pratique"
+                                        data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                        data-cat="{{ cat }}"
+                                        data-date="{{ j.date }}"
+                                        data-identite="{{ j.identites_verifiees.get(sc.stagiaire_id)|lower }}"
+                                        data-opts-planif="{{ opts_planif | tojson | e }}">
                                         {{ ut_cell }} +
                                     </button>
                                     {% if opts_planif %}<br><small style="font-size:10px; color:{% if is_option_seule %}#e65100{% else %}#888{% endif %};">{{ opts_planif | join(' · ') }}</small>{% endif %}
