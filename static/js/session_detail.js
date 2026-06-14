@@ -29,6 +29,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) supprimerJour(parseInt(btn.dataset.jourId));
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="ouvrir-ajout-candidat-jour"]');
+        if (!btn) return;
+        var dejaIds;
+        try { dejaIds = JSON.parse(btn.dataset.candidats || '[]'); } catch(_) { dejaIds = []; }
+        ouvrirAjoutCandidatJour(btn.dataset.jourId, dejaIds);
+    });
+    document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="retirer-candidat"]');
         if (btn) retirerCandidat(parseInt(btn.dataset.scId), btn.dataset.nom);
     });
@@ -303,9 +310,20 @@ function supprimerJour(id) {
     });
 }
 
-function ouvrirAjoutCandidatJour(jourId) {
+function ouvrirAjoutCandidatJour(jourId, dejaIds) {
     document.getElementById('acj-jour-id').value = jourId;
-    document.querySelectorAll('[name="acj-candidat"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('[name="acj-candidat"]').forEach(function(cb) {
+        var already = dejaIds && dejaIds.includes(parseInt(cb.value));
+        cb.checked = false;
+        cb.disabled = already;
+        var label = cb.closest('label');
+        if (label) {
+            label.style.opacity = already ? '0.45' : '1';
+            label.style.cursor = already ? 'not-allowed' : 'pointer';
+            var tag = label.querySelector('.acj-deja-tag');
+            if (tag) tag.style.display = already ? '' : 'none';
+        }
+    });
     document.getElementById('modal-candidat-jour').style.display = 'flex';
 }
 
@@ -314,7 +332,7 @@ function fermerModalCandidatJour() { document.getElementById('modal-candidat-jou
 async function sauvegarderCandidatJour() {
     const jourId = document.getElementById('acj-jour-id').value;
     const candidats = [];
-    document.querySelectorAll('[name="acj-candidat"]:checked').forEach(cb => candidats.push(parseInt(cb.value)));
+    document.querySelectorAll('[name="acj-candidat"]:checked:not(:disabled)').forEach(cb => candidats.push(parseInt(cb.value)));
     if (candidats.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/jours/' + jourId + '/candidats', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

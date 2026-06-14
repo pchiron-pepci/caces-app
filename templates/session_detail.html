@@ -652,7 +652,10 @@
                         {% if session.statut != 'terminee' %}
                         {% if user_role != 'terrain' %}
                         <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                            onclick="ouvrirAjoutCandidatJour({{ j.id }})" title="Ajouter un candidat">👥</button>
+                            data-action="ouvrir-ajout-candidat-jour"
+                            data-jour-id="{{ j.id }}"
+                            data-candidats="{{ j.candidats_ids | tojson | forceescape }}"
+                            title="Ajouter un candidat">👥</button>
                         {% endif %}
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
                             class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
@@ -1564,6 +1567,7 @@
             <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px; background:white; border-radius:8px;">
                 <input type="checkbox" name="acj-candidat" value="{{ sc.stagiaire_id }}">
                 {{ nddn(sc.stagiaire) }}
+                <span class="acj-deja-tag" style="display:none; margin-left:auto; font-size:11px; color:#888; font-style:italic;">✓ Déjà sur ce jour</span>
             </label>
             {% endif %}{% endfor %}
         </div>

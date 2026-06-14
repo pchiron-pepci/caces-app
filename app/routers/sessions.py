@@ -381,14 +381,14 @@ def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, 
                 )
                 db.add(jtc)
     else:
+        existing_ids = db.query(JourTestCandidat.stagiaire_id).filter(
+            JourTestCandidat.jour_test_id == jour_id,
+            JourTestCandidat.stagiaire_id.in_(data.candidats)
+        ).all()
+        if existing_ids:
+            raise HTTPException(status_code=400, detail="Certains candidats sont déjà affectés à ce jour")
         for stagiaire_id in data.candidats:
-            existing = db.query(JourTestCandidat).filter(
-                JourTestCandidat.jour_test_id == jour_id,
-                JourTestCandidat.stagiaire_id == stagiaire_id
-            ).first()
-            if not existing:
-                jtc = JourTestCandidat(jour_test_id=jour_id, stagiaire_id=stagiaire_id)
-                db.add(jtc)
+            db.add(JourTestCandidat(jour_test_id=jour_id, stagiaire_id=stagiaire_id))
     db.commit()
     return {"message": "Candidats ajoutes"}
 
