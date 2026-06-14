@@ -1481,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var hpc = {};
                 tr.querySelectorAll('.h-cat').forEach(function(inp) {
                     var v = parseFloat(inp.value) || 0;
-                    if (v > 0) hpc[inp.dataset.cat] = v;
+                    hpc[inp.dataset.cat] = v;
                 });
                 apprenants.push({ stagiaire_id: stagId, heures_theorie: theorie, heures_par_cat: hpc, heures_libre: libre });
             });

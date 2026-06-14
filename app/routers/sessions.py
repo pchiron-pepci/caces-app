@@ -1175,7 +1175,7 @@ def save_planning_jour_formation(
     db.query(PlanningApprenant).filter(PlanningApprenant.jour_formation_id == jour_id).delete()
     for item in data.apprenants:
         total = item.heures_theorie + sum(item.heures_par_cat.values()) + item.heures_libre
-        if total > 0:
+        if total > 0 or item.heures_par_cat:
             db.add(PlanningApprenant(
                 jour_formation_id=jour_id,
                 stagiaire_id=item.stagiaire_id,
