@@ -377,6 +377,44 @@
     .formation-hdr-left { min-width: 0; flex: 1 1 auto; }
     .formation-hdr-formateurs { display: block !important; margin-top: 4px; }
 
+    /* ── Candidats (.table-candidats) — vue cartes mobile ── */
+    .table-candidats { display: block !important; min-width: 0 !important; width: 100% !important; }
+    .table-candidats thead { display: none !important; }
+    .table-candidats tbody { display: flex !important; flex-direction: column; gap: 10px; width: 100%; }
+    .table-candidats tbody tr {
+        display: flex !important; flex-wrap: wrap; align-items: stretch; width: 100%;
+        border: 1px solid #c8d8f4 !important; border-radius: 10px;
+        overflow: hidden; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    /* Ligne 1 (header carte) : Photo + Nom + DDN */
+    .table-candidats tbody td:nth-child(1) {
+        order: 1; flex: 0 0 auto; padding: 6px 8px !important;
+        background: #e3f2fd; display: flex !important; align-items: center; justify-content: center;
+        border-right: 1px solid #c8d8f4;
+    }
+    .table-candidats tbody td:nth-child(2) {
+        order: 1; flex: 1 1 auto; min-width: 0; padding: 8px 10px !important;
+        font-weight: 600; font-size: 13px; background: #e3f2fd; color: #0d47a1; overflow: hidden;
+    }
+    .table-candidats tbody td:nth-child(3) {
+        order: 1; flex: 0 0 auto; padding: 8px 10px !important;
+        background: #e3f2fd; border-left: 1px solid #c8d8f4;
+        display: flex !important; align-items: center; white-space: nowrap; font-size: 12px; color: #555;
+    }
+    /* Séparateur entre ligne 1 et ligne 2 */
+    .table-candidats tbody tr::before { content: ''; order: 3; flex: 0 0 100%; height: 0; }
+    /* Ligne 2 : colonnes avec data-label */
+    .table-candidats tbody td[data-label] {
+        order: 4; flex: 1 1 80px;
+        display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start;
+        padding: 6px 6px 8px !important; gap: 3px; text-align: center;
+        border-right: 1px solid #eef2fb; border-top: 1px solid #c8d8f4;
+    }
+    .table-candidats tbody td[data-label]::before {
+        content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
+        text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
+    }
+
     /* ── Cadenas session : emoji plus grand + libellé court sur mobile ── */
     [data-action="cloturer-session"],
     [data-action="reouvrir-session"] { font-size: 20px !important; padding: 6px 10px !important; }
@@ -1242,7 +1280,7 @@
         {% endif %}
     </div>
     <div class="card">
-        <table class="table">
+        <table class="table table-candidats">
             <thead>
                 <tr>
                     <th>Photo</th>
@@ -1276,8 +1314,8 @@
                     </td>
 
                     <td>{{ sc.stagiaire.date_naissance.strftime('%d/%m/%Y') if sc.stagiaire.date_naissance else '—' }}</td>
-                    <td>{{ sc.stagiaire.employeur or '—' }}</td>
-                    <td style="text-align:center;">
+                    <td data-label="Employeur">{{ sc.stagiaire.employeur or '—' }}</td>
+                    <td data-label="RGPD" style="text-align:center;">
                         {% set cs = consentements_map.get(sc.stagiaire_id) %}
                         {% if session.statut == 'terminee' %}
                             {% if cs and cs.horodatage %}
@@ -1325,11 +1363,11 @@
                             {% endif %}
                         {% endif %}
                     </td>
-                    <td style="text-align:center;">
+                    <td data-label="TH" style="text-align:center;">
                         {% if sc.theorie_dispensee %}<span class="badge orange" style="font-size:10px;" title="{{ sc.dispense_note or 'Dispensé de théorie' }}">Disp.</span>{% else %}—{% endif %}
                     </td>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
-                    <td style="text-align:center; white-space:nowrap;">
+                    <td data-label="Actions" style="text-align:center; white-space:nowrap;">
                         <button class="btn-edit"
                             data-action="editer-candidat"
                             data-sc-id="{{ sc.id }}"
