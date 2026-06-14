@@ -1364,6 +1364,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="modifier-epreuve-pratique"]');
         if (!btn) return;
+        var optsPlanif; try { optsPlanif = JSON.parse(btn.dataset.optsPlanif || '[]'); } catch(e) { optsPlanif = []; }
         saisirResultatPratique(
             parseInt(btn.dataset.stagiaireId),
             btn.dataset.cat,
@@ -1372,7 +1373,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.dataset.identite === 'true',
             btn.dataset.obtenue === 'true',
             btn.dataset.noteTesteur,
-            JSON.parse(btn.dataset.optsPlanif || '[]'),
+            optsPlanif,
             btn.dataset.optsObtenues,
             parseInt(btn.dataset.epreuveId)
         );
@@ -1382,6 +1383,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="nouveau-resultat-pratique"]');
         if (!btn) return;
+        var optsPlanifNew; try { optsPlanifNew = JSON.parse(btn.dataset.optsPlanif || '[]'); } catch(e) { optsPlanifNew = []; }
         saisirResultatPratique(
             parseInt(btn.dataset.stagiaireId),
             btn.dataset.cat,
@@ -1390,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.dataset.identite === 'true',
             null,
             '',
-            JSON.parse(btn.dataset.optsPlanif || '[]'),
+            optsPlanifNew,
             '',
             null
         );
