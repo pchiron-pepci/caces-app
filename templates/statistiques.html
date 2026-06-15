@@ -5,15 +5,28 @@
 {% block content %}
 
 <style>
-.tab-btn { padding:10px 20px; border:none; background:none; font-size:14px; font-weight:600; color:#888; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
-.tab-btn:hover { color:#1a237e; }
-.active-tab { color:#1a237e !important; border-bottom:3px solid #1a237e !important; }
+.tab-btn {
+    width: 160px; text-align: center;
+    padding: 9px 12px; font-size: 14px; font-weight: 600; color: #555; cursor: pointer;
+    background: #f0f2f7; border: 2px solid #ddd; border-bottom: none;
+    border-radius: 8px 8px 0 0; transition: all 0.15s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tab-btn:hover { background: #e4e8f0; color: #2d2d2d; }
+.active-tab {
+    background: #2d2d2d !important; color: white !important;
+    border-color: #2d2d2d !important; border-bottom: 2px solid #2d2d2d !important;
+    margin-bottom: -2px; position: relative; z-index: 1;
+}
+@media (max-width: 1023px) {
+    .tab-btn { width: auto; flex: 1; min-width: 0; font-size: 12px; padding: 8px 6px; }
+}
 </style>
 
-<div style="display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
-    <button class="tab-btn active-tab" onclick="showTab('grilles', this)">📊 Statistiques grilles</button>
-    <button class="tab-btn" onclick="showTab('tests-cdt', this)">📋 Tests & CDT</button>
-    <button class="tab-btn" onclick="showTab('testeurs', this)">👨‍🏫 Testeurs</button>
+<div style="display:flex; flex-wrap:nowrap; gap:3px; margin-bottom:16px; border-bottom:2px solid #2d2d2d; align-items:flex-end;">
+    <button class="tab-btn active-tab" data-action="show-tab" data-tab="grilles">📊 Statistiques grilles</button>
+    <button class="tab-btn" data-action="show-tab" data-tab="tests-cdt">📋 Tests &amp; CDT</button>
+    <button class="tab-btn" data-action="show-tab" data-tab="testeurs">👨‍🏫 Testeurs</button>
 </div>
 
 <div id="tab-grilles">
@@ -248,12 +261,18 @@
 </div>
 
 <script>
-function showTab(tabId, btn) {
-    document.querySelectorAll('[id^="tab-"]').forEach(function(el) { el.style.display = 'none'; });
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active-tab'); });
-    document.getElementById('tab-' + tabId).style.display = 'block';
-    btn.classList.add('active-tab');
-}
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="show-tab"]');
+        if (!btn) return;
+        var tabId = btn.dataset.tab;
+        document.querySelectorAll('[id^="tab-"]').forEach(function(el) { el.style.display = 'none'; });
+        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active-tab'); });
+        var tabEl = document.getElementById('tab-' + tabId);
+        if (tabEl) tabEl.style.display = 'block';
+        btn.classList.add('active-tab');
+    });
+});
 
 function demanderConfirmation(message, callback) {
     document.getElementById('confirm-message').textContent = message;
