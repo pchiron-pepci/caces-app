@@ -135,45 +135,6 @@
 </div>
 {% endfor %}
 
-<!-- ALERTE CONFORMITÉ -->
-{% if alertes %}
-<div class="card" style="margin-bottom:20px; border-left:4px solid #c62828;">
-    <div class="card-header" style="background:#ffebee;">
-        <h2 style="color:#c62828;">⚠️ Thèmes hors zone ({{ alertes|length }})</h2>
-    </div>
-    <div style="padding:16px;">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Famille</th>
-                    <th>Thème</th>
-                    <th>Grille</th>
-                    <th>Taux</th>
-                    <th>Problème</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for a in alertes %}
-                <tr>
-                    <td>{{ a.famille }}</td>
-                    <td>{{ a.theme_nom }}</td>
-                    <td>Grille n°{{ a.grille_numero }}</td>
-                    <td>{{ a.pct }}%</td>
-                    <td>
-                        {% if a.statut == 'SOUS' %}
-                            <span style="color:#e65100;">⚠️ Sous-utilisée (min 10%)</span>
-                        {% else %}
-                            <span style="color:#c62828;">❌ Sur-utilisée (max 30%)</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
 <!-- HISTORIQUE -->
 <div class="card">
     <div class="card-header">
