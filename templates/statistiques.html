@@ -20,6 +20,13 @@
 }
 @media (max-width: 1023px) {
     .tab-btn { width: auto; flex: 1; min-width: 0; font-size: 12px; padding: 8px 6px; }
+    .table-stat-pct th, .table-stat-pct td,
+    .table-stat-occ th, .table-stat-occ td,
+    .table-stat-hist th, .table-stat-hist td {
+        padding: 6px 5px;
+        font-size: 12px;
+        min-width: 0 !important;
+    }
 }
 </style>
 
@@ -74,7 +81,7 @@
         <span style="font-size:13px; color:#666;">{{ totaux_famille[famille] }} session(s)</span>
     </div>
     <div style="overflow-x:auto;">
-    <table class="table">
+    <table class="table table-stat-pct">
         <thead>
             <tr>
                 <th style="min-width:70px;">Grille</th>
@@ -116,7 +123,7 @@
         <span style="font-size:13px; color:#666;">Nombre de fois que chaque grille a été tirée, par thème</span>
     </div>
     <div style="overflow-x:auto;">
-    <table class="table">
+    <table class="table table-stat-occ">
         <thead>
             <tr>
                 <th style="min-width:70px;">Grille</th>
@@ -154,7 +161,8 @@
         <h2>Historique des tirages {{ annee }}</h2>
         <span style="font-size:13px; color:#666;">{{ historique|length }} tirage(s)</span>
     </div>
-    <table class="table">
+    <div style="overflow-x:auto;">
+    <table class="table table-stat-hist">
         <thead>
             <tr>
                 <th>Session</th>
@@ -191,6 +199,7 @@
             {% endif %}
         </tbody>
     </table>
+    </div>
 </div>
 
 </div><!-- /tab-grilles -->
