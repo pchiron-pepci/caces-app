@@ -142,6 +142,10 @@
 
 <style>
 #modal .form-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+@media (max-width: 600px) {
+    #modal > div { padding: 16px !important; }
+    #modal .form-grid { grid-template-columns: 1fr; }
+}
 @media (max-width: 1023px) {
     .table-sessions thead { display: none; }
     .table-sessions tbody { display: block; }
