@@ -412,6 +412,13 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouve")
 
+    # Niveau 0 — refus si des candidats sont encore inscrits (théorie ET pratique)
+    if db.query(JourTestCandidat).filter(JourTestCandidat.jour_test_id == j.id).first():
+        raise HTTPException(
+            status_code=409,
+            detail="Retirez d'abord les candidats de ce jour avant de le supprimer."
+        )
+
     if j.type == "theorie":
         # Niveau 1 — blocage si CACES délivré sur une théorie réussie de ce jour
         rt_positifs = db.query(ResultatTheorie).filter(
@@ -741,7 +748,7 @@ def check_resultat_theorie_candidat(session_id: int, jour_id: int, stagiaire_id:
     return {"has_resultat": has_resultat}
 
 @router.delete("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}")
-def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, pin: str = "", db: DBSession = Depends(get_db)):
+def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
     _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
     jtc = db.query(JourTestCandidat).filter(
         JourTestCandidat.jour_test_id == jour_id,
@@ -752,29 +759,40 @@ def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, pin: 
 
     jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
 
+    # CacesObtenu actif dans cette session (a_valider ou valide) — gap : SE peut être supprimée mais CO persiste
+    if db.query(CacesObtenu).filter(
+        CacesObtenu.session_id == session_id,
+        CacesObtenu.stagiaire_id == stagiaire_id,
+        CacesObtenu.statut.in_(["a_valider", "valide"])
+    ).first():
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Ce candidat a un CACES® en cours ou validé dans cette session — annulez-le d'abord avant de le retirer."
+        )
+
     if jour and jour.type == 'pratique':
-        epreuve_existante = db.query(SessionEpreuve).filter(
+        if db.query(SessionEpreuve).filter(
             SessionEpreuve.session_id == session_id,
             SessionEpreuve.stagiaire_id == stagiaire_id,
             SessionEpreuve.date == jour.date
-        ).first()
-        if epreuve_existante:
+        ).first():
+            db.rollback()
             raise HTTPException(
                 status_code=400,
-                detail="Supprimez d'abord les résultats de ce candidat avant de le retirer du jour"
+                detail="Ce candidat a déjà un résultat saisi — supprimez d'abord son résultat pour le retirer."
             )
 
-    resultat_theorie = db.query(ResultatTheorie).filter(
-        ResultatTheorie.jour_test_id == jour_id,
-        ResultatTheorie.stagiaire_id == stagiaire_id
-    ).first()
-    if resultat_theorie:
-        if pin != get_pin_admin(db):
-            raise HTTPException(status_code=403, detail="Code PIN incorrect")
-        db.query(ResultatTheorie).filter(
+    if jour and jour.type == 'theorie':
+        if db.query(ResultatTheorie).filter(
             ResultatTheorie.jour_test_id == jour_id,
             ResultatTheorie.stagiaire_id == stagiaire_id
-        ).delete()
+        ).first():
+            db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail="Ce candidat a déjà un résultat saisi — supprimez d'abord son résultat pour le retirer."
+            )
 
     db.delete(jtc)
     db.commit()

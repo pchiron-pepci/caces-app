@@ -1292,9 +1292,9 @@
             {% endif %}
             <div class="form-field" style="grid-column:span 2;">
                 <label>Candidats</label>
-                <div id="jf-candidats" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:8px;">
+                <div id="jf-candidats" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;background:#f0f2f7;border-radius:10px;padding:10px;">
                     {% for sc in session_candidats %}
-                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                    <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px; background:white; border-radius:8px;">
                         <input type="checkbox" class="jf-candidat-cb" value="{{ sc.stagiaire_id }}">
                         {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
                     </label>
@@ -1335,9 +1335,9 @@
             {% endif %}
             <div class="form-field" style="grid-column:span 2;">
                 <label>Candidats</label>
-                <div id="jf-edit-candidats" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:8px;">
+                <div id="jf-edit-candidats" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;background:#f0f2f7;border-radius:10px;padding:10px;">
                     {% for sc in session_candidats %}
-                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                    <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px; background:white; border-radius:8px;">
                         <input type="checkbox" class="jf-edit-candidat-cb" value="{{ sc.stagiaire_id }}">
                         {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
                     </label>
