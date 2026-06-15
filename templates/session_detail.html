@@ -1294,7 +1294,7 @@
                 <label>Candidats</label>
                 <div id="jf-candidats" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;background:#f0f2f7;border-radius:10px;padding:10px;">
                     {% for sc in session_candidats %}
-                    <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px; background:white; border-radius:8px;">
+                    <label style="display:flex; align-items:center; gap:10px; font-size:14px; font-weight:400; text-transform:none; letter-spacing:normal; color:#333; cursor:pointer; padding:8px; background:white; border-radius:8px;">
                         <input type="checkbox" class="jf-candidat-cb" value="{{ sc.stagiaire_id }}">
                         {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
                     </label>
@@ -1337,7 +1337,7 @@
                 <label>Candidats</label>
                 <div id="jf-edit-candidats" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;background:#f0f2f7;border-radius:10px;padding:10px;">
                     {% for sc in session_candidats %}
-                    <label style="display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; padding:8px; background:white; border-radius:8px;">
+                    <label style="display:flex; align-items:center; gap:10px; font-size:14px; font-weight:400; text-transform:none; letter-spacing:normal; color:#333; cursor:pointer; padding:8px; background:white; border-radius:8px;">
                         <input type="checkbox" class="jf-edit-candidat-cb" value="{{ sc.stagiaire_id }}">
                         {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
                     </label>

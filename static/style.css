@@ -394,6 +394,19 @@ a:hover { color: #aa0000; }
     background: white;
 }
 
+/* Checkboxes inside form-field must NOT inherit text-input styles */
+.form-field input[type="checkbox"] {
+    width: auto;
+    min-width: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 0;
+    transition: none;
+    font-size: inherit;
+    flex-shrink: 0;
+}
+
 .form-actions {
     display: flex;
     gap: 12px;
