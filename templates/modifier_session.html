@@ -21,13 +21,13 @@
         <form method="POST" action="/sessions/{{ session.id }}/modifier">
             <div class="form-grid">
                 <div class="form-field">
-                    <label>Date début session</label>
-                    <input type="date" name="date_pratique_debut" 
+                    <label>Date début session *</label>
+                    <input type="date" name="date_pratique_debut" required
                         value="{{ session.date_pratique_debut or '' }}">
                 </div>
                 <div class="form-field">
-                    <label>Date fin session</label>
-                    <input type="date" name="date_pratique_fin"
+                    <label>Date fin session *</label>
+                    <input type="date" name="date_pratique_fin" required
                         value="{{ session.date_pratique_fin or '' }}">
                 </div>
                 <div class="form-field" style="grid-column:span 2;">

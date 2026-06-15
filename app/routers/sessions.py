@@ -128,6 +128,10 @@ def create_session(data: SessionCreate, db: DBSession = Depends(get_db)):
     if not data.reference:
         nb = db.query(Session).filter(Session.annee == annee).count()
         data.reference = f"SESSION-{annee}-{str(nb + 1).zfill(3)}"
+    if not data.date_pratique_debut or not data.date_pratique_fin:
+        raise HTTPException(400, "Les dates de début et de fin sont obligatoires")
+    if data.date_pratique_debut > data.date_pratique_fin:
+        raise HTTPException(400, "La date de début doit être ≤ à la date de fin")
     s = Session(**data.model_dump())
     db.add(s)
     db.commit()
@@ -672,6 +676,21 @@ def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
     _check_modifiable(s)
+    if not data.date_pratique_debut or not data.date_pratique_fin:
+        raise HTTPException(400, "Les dates de début et de fin sont obligatoires")
+    if data.date_pratique_debut > data.date_pratique_fin:
+        raise HTTPException(400, "La date de début doit être ≤ à la date de fin")
+    debut = str(data.date_pratique_debut)
+    fin = str(data.date_pratique_fin)
+    jours_hors = []
+    for j in db.query(JourTest).filter(JourTest.session_id == id, JourTest.actif == True).all():
+        if j.date and (str(j.date) < debut or str(j.date) > fin):
+            jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
+    for j in db.query(JourFormation).filter(JourFormation.session_id == id, JourFormation.actif == True).all():
+        if j.date and (str(j.date) < debut or str(j.date) > fin):
+            jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} (formation)")
+    if jours_hors:
+        raise HTTPException(400, f"Ces jours sont hors de l'intervalle : {', '.join(jours_hors)}")
     s.date_theorie = data.date_theorie
     s.date_pratique_debut = data.date_pratique_debut
     s.date_pratique_fin = data.date_pratique_fin

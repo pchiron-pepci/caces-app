@@ -973,28 +973,34 @@ async def post_modifier_session(request: Request, session_id: int):
         debut = form.get("date_pratique_debut")
         fin = form.get("date_pratique_fin")
         responsable = form.get("responsable")
-        if debut or fin:
-            jours = db.query(JourTest).filter(JourTest.session_id == session_id, JourTest.actif == True).all()
-            jours_hors = []
-            for j in jours:
-                if j.date:
-                    if debut and str(j.date) < debut:
-                        jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
-                    elif fin and str(j.date) > fin:
-                        jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
-            if jours_hors:
-                jours_str = ", ".join(jours_hors)
-                return templates.TemplateResponse(
-                    request=request,
-                    name="modifier_session.html",
-                    context={
-                        "session": s,
-                        "lieux": [],
-                        "erreur": f"⚠️ Ces jours sont hors de l'intervalle : {jours_str}"
-                    }
-                )
-        s.date_pratique_debut = date.fromisoformat(debut) if debut else None
-        s.date_pratique_fin = date.fromisoformat(fin) if fin else None
+
+        def erreur_resp(msg):
+            return templates.TemplateResponse(
+                request=request,
+                name="modifier_session.html",
+                context={"session": s, "lieux": [], "erreur": msg}
+            )
+
+        if not debut:
+            return erreur_resp("La date de début est obligatoire")
+        if not fin:
+            return erreur_resp("La date de fin est obligatoire")
+        if date.fromisoformat(debut) > date.fromisoformat(fin):
+            return erreur_resp("La date de début doit être ≤ à la date de fin")
+
+        jours_hors = []
+        for j in db.query(JourTest).filter(JourTest.session_id == session_id, JourTest.actif == True).all():
+            if j.date and (str(j.date) < debut or str(j.date) > fin):
+                jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} ({j.type})")
+        for j in db.query(JourFormation).filter(JourFormation.session_id == session_id, JourFormation.actif == True).all():
+            if j.date and (str(j.date) < debut or str(j.date) > fin):
+                jours_hors.append(f"{j.date.strftime('%d/%m/%Y')} (formation)")
+        if jours_hors:
+            db.rollback()
+            return erreur_resp(f"⚠️ Ces jours sont hors de l'intervalle : {', '.join(jours_hors)}")
+
+        s.date_pratique_debut = date.fromisoformat(debut)
+        s.date_pratique_fin = date.fromisoformat(fin)
         s.responsable = responsable or None
         db.commit()
         return RedirectResponse(url=f"/sessions/{session_id}", status_code=303)
