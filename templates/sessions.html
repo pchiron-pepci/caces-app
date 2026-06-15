@@ -160,10 +160,15 @@
     }
     .table-sessions td.ses-ref {
         order: 1; flex: 1 1 auto;
+        min-width: 0; overflow: hidden;
         background: #e3f2fd; color: #0d47a1;
         font-weight: 700; font-size: 15px;
         padding: 9px 8px;
         display: flex; align-items: center;
+    }
+    .table-sessions td.ses-ref a {
+        min-width: 0; overflow: hidden;
+        white-space: nowrap; text-overflow: ellipsis;
     }
     .table-sessions td.ses-statut {
         order: 1; flex: 0 0 auto;
