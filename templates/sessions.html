@@ -141,10 +141,14 @@
 </div>
 
 <style>
-#modal .form-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-@media (max-width: 600px) {
-    #modal > div { padding: 16px !important; }
-    #modal .form-grid { grid-template-columns: 1fr; }
+#modal .form-grid { grid-template-columns: 1fr; }
+@media (min-width: 768px) {
+    #modal .form-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767px) {
+    #modal > div { padding: 20px 16px !important; }
+    #modal .form-actions { flex-wrap: wrap; }
+    #modal .form-actions .btn { flex: 1 1 auto; text-align: center; justify-content: center; }
 }
 @media (max-width: 1023px) {
     .table-sessions thead { display: none; }
