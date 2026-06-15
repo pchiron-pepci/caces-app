@@ -138,6 +138,7 @@ def _build_historique(famille, annee, db):
     for session_id, themes in sessions_map.items():
         session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
         historique.append({
+            "session_id": session_id,
             "session_ref": session.reference if session else f"Session #{session_id}",
             "famille": famille,
             "themes": themes,

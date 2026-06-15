@@ -169,7 +169,7 @@
         <tbody>
             {% for h in historique %}
             <tr>
-                <td><strong>{{ h.session_ref }}</strong></td>
+                <td><strong><a href="/sessions/{{ h.session_id }}" style="color:#1a3a8f; text-decoration:none;">{{ h.session_ref }}</a></strong></td>
                 <td><span class="badge blue">{{ h.famille }}</span></td>
                 {% for t in [1,2,3,4,5] %}
                 <td style="text-align:center;">
