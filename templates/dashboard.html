@@ -3,6 +3,15 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
+<style>
+@media (max-width: 1023px) {
+    .dash-grid { grid-template-columns: 1fr; }
+    .dash-grid > .card:not(.dash-a-traiter) { display: none; }
+}
+@media (max-width: 360px) {
+    .stats-grid { grid-template-columns: 1fr; }
+}
+</style>
 <div class="stats-grid">
     <div class="stat-card blue">
         <div class="stat-icon">👥</div>
@@ -34,10 +43,10 @@
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; align-items:stretch;">
+<div class="dash-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; align-items:stretch;">
 
     <!-- Carte À traiter -->
-    <div class="card">
+    <div class="card dash-a-traiter">
         <div class="card-header">
             <h2>⚡ À traiter</h2>
         </div>
