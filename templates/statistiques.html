@@ -89,22 +89,21 @@
                         Grille n°{{ s.grille_numero }}
                     </span>
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-size:12px; color:#888;">{{ s.count }} utilisation(s)</span>
                         {% if s.count == 0 %}
                             <span class="badge" style="background:#d0d8e8; color:#555; padding:2px 8px; border-radius:12px; font-size:11px;">
                                 Jamais utilisée
                             </span>
                         {% elif s.statut == 'OK' %}
                             <span class="badge" style="background:#e8f5e9; color:#2e7d32; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.pct }}% ✅
+                                {{ s.count }} · {{ s.pct }}% ✅
                             </span>
                         {% elif s.statut == 'SOUS' %}
                             <span class="badge" style="background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.pct }}% ⚠️ Sous-utilisée
+                                {{ s.count }} · {{ s.pct }}% ⚠️ Sous-utilisée
                             </span>
                         {% else %}
                             <span class="badge" style="background:#ffebee; color:#c62828; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.pct }}% ❌ Sur-utilisée
+                                {{ s.count }} · {{ s.pct }}% ❌ Sur-utilisée
                             </span>
                         {% endif %}
                     </div>
