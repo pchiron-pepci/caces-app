@@ -23,7 +23,7 @@
                 <th data-sort-col="2" style="cursor:pointer; user-select:none;">Lieu <span id="arrow-col-2" class="sort-arrow-col"></span></th>
                 <th data-sort-col="3" style="cursor:pointer; user-select:none;">Période <span id="arrow-col-3" class="sort-arrow-col"></span></th>
                 <th data-sort-col="4" style="cursor:pointer; user-select:none;">Statut <span id="arrow-col-4" class="sort-arrow-col"></span></th>
-                {% if user_role != 'terrain' %}<th>Suppression</th>{% endif %}
+                {% if user_role != 'terrain' %}<th>Actions</th>{% endif %}
             </tr>
         </thead>
         <tbody id="tbody">
@@ -48,8 +48,21 @@
                 </td>
                 {% if user_role != 'terrain' %}
                 <td class="ses-actions">
+                    {% if s.statut not in ('terminee', 'annulee') %}
                     <button style="background:none; border:1px solid #e0e0e0; border-radius:6px; padding:5px 8px; font-size:16px; cursor:pointer; line-height:1;"
-                        data-action="annuler-session" data-id="{{ s.id }}" data-nom="{{ (s.reference or s.famille) | e }}"
+                        data-action="editer-session"
+                        data-id="{{ s.id }}"
+                        data-famille="{{ s.famille }}"
+                        data-lieu="{{ s.lieu_id }}"
+                        data-reference="{{ s.reference or '' }}"
+                        data-responsable="{{ (s.responsable or '') | e }}"
+                        data-debut="{{ s.date_pratique_debut or '' }}"
+                        data-fin="{{ s.date_pratique_fin or '' }}"
+                        data-note="{{ (s.note or '') | e }}"
+                        title="Modifier la session">✏️</button>
+                    {% endif %}
+                    <button style="background:none; border:1px solid #e0e0e0; border-radius:6px; padding:5px 8px; font-size:16px; cursor:pointer; line-height:1;"
+                        data-action="supprimer-session" data-id="{{ s.id }}" data-nom="{{ (s.reference or s.famille) | e }}"
                         title="Supprimer la session">🗑️</button>
                 </td>
                 {% endif %}
@@ -122,6 +135,7 @@
             <button class="btn btn-danger" id="pin-confirm-btn">Confirmer</button>
             <button class="btn btn-secondary" data-action="fermer-pin">Annuler</button>
         </div>
+        <p id="pin-api-error" style="color:#c62828; margin-top:12px; display:none; font-size:13px;"></p>
         <p id="pin-error" style="color:red; margin-top:12px; display:none;">❌ Code PIN incorrect !</p>
     </div>
 </div>
@@ -188,12 +202,45 @@
 </style>
 
 <script>
+let currentSessionId = null;
+
 function ouvrirFormulaire() {
+    currentSessionId = null;
+    document.querySelector('#modal h2').textContent = 'Nouvelle session';
+    document.getElementById('f-famille').disabled = false;
+    document.getElementById('f-famille').selectedIndex = 0;
+    document.getElementById('f-lieu').selectedIndex = 0;
+    document.getElementById('f-reference').value = '';
+    document.getElementById('f-responsable').value = '';
+    document.getElementById('f-pratique-debut').value = '';
+    document.getElementById('f-pratique-fin').value = '';
+    document.getElementById('f-note').value = '';
+    document.querySelector('[data-action="sauvegarder-session"]').textContent = '💾 Créer la session';
+    hideModalError();
+    document.getElementById('modal').style.display = 'flex';
+}
+
+function editerSession(btn) {
+    currentSessionId = btn.dataset.id;
+    document.querySelector('#modal h2').textContent = 'Modifier la session';
+    document.getElementById('f-famille').value = btn.dataset.famille;
+    document.getElementById('f-famille').disabled = true;
+    document.getElementById('f-lieu').value = btn.dataset.lieu;
+    document.getElementById('f-reference').value = btn.dataset.reference || '';
+    document.getElementById('f-responsable').value = btn.dataset.responsable || '';
+    document.getElementById('f-pratique-debut').value = btn.dataset.debut || '';
+    document.getElementById('f-pratique-fin').value = btn.dataset.fin || '';
+    document.getElementById('f-note').value = btn.dataset.note || '';
+    document.querySelector('[data-action="sauvegarder-session"]').textContent = '💾 Modifier la session';
+    hideModalError();
     document.getElementById('modal').style.display = 'flex';
 }
 
 function fermerModal() {
     document.getElementById('modal').style.display = 'none';
+    document.getElementById('f-famille').disabled = false;
+    currentSessionId = null;
+    document.querySelector('#modal h2').textContent = 'Nouvelle session';
     hideModalError();
 }
 
@@ -231,36 +278,62 @@ async function sauvegarder() {
         return;
     }
 
-    const resp = await fetch('/api/sessions/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-
-    if (resp.ok) {
-        const session = await resp.json();
-        window.location.href = '/sessions/' + session.id;
+    if (currentSessionId) {
+        const resp = await fetch('/api/sessions/' + currentSessionId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (resp.ok) {
+            fermerModal();
+            location.reload();
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showModalError(err.detail || 'Erreur lors de la modification !');
+        }
     } else {
-        const err = await resp.json().catch(() => ({}));
-        showModalError(err.detail || 'Erreur lors de la création !');
+        const resp = await fetch('/api/sessions/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (resp.ok) {
+            const session = await resp.json();
+            window.location.href = '/sessions/' + session.id;
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showModalError(err.detail || 'Erreur lors de la création !');
+        }
     }
 }
 
-function annuler(id, nom) {
-    document.getElementById('pin-message').textContent = 'Annuler la session "' + nom + '" ?';
+function supprimer(id, nom) {
+    document.getElementById('pin-message').textContent = 'Supprimer définitivement la session "' + nom + '" ?';
     document.getElementById('pin-input').value = '';
     document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('pin-api-error').style.display = 'none';
+    document.getElementById('pin-api-error').textContent = '';
     document.getElementById('modal-pin').style.display = 'flex';
     document.getElementById('pin-confirm-btn').onclick = async () => {
         const pin = document.getElementById('pin-input').value;
-        const resp = await fetch('/api/sessions/' + id + '?pin=' + pin, { method: 'DELETE' });
-        if (resp.ok) { fermerPin(); location.reload(); }
-        else document.getElementById('pin-error').style.display = 'block';
+        const resp = await fetch('/api/sessions/' + id + '?pin=' + encodeURIComponent(pin), { method: 'DELETE' });
+        if (resp.ok) {
+            fermerPin();
+            location.reload();
+        } else if (resp.status === 400) {
+            const err = await resp.json().catch(() => ({}));
+            document.getElementById('pin-api-error').textContent = err.detail || 'Suppression impossible.';
+            document.getElementById('pin-api-error').style.display = 'block';
+        } else {
+            document.getElementById('pin-error').style.display = 'block';
+        }
     };
 }
 
 function fermerPin() {
     document.getElementById('modal-pin').style.display = 'none';
+    document.getElementById('pin-api-error').style.display = 'none';
+    document.getElementById('pin-api-error').textContent = '';
 }
 
 function filtrer() {
@@ -297,8 +370,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('[data-action="sauvegarder-session"]')) sauvegarder();
         if (e.target.closest('[data-action="fermer-modal"]')) fermerModal();
         if (e.target.closest('[data-action="fermer-pin"]')) fermerPin();
-        var btn = e.target.closest('[data-action="annuler-session"]');
-        if (btn) annuler(parseInt(btn.dataset.id), btn.dataset.nom);
+        var btn = e.target.closest('[data-action="supprimer-session"]');
+        if (btn) supprimer(parseInt(btn.dataset.id), btn.dataset.nom);
+        btn = e.target.closest('[data-action="editer-session"]');
+        if (btn) editerSession(btn);
     });
 });
 </script>

@@ -11,8 +11,10 @@ from app.models.categorie import Categorie, Famille
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant, AffectationTest
 from app.models.caces_obtenu import CacesObtenu
-from app.models.grille_theorie import GrilleTheorie, ReponseGrille
+from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
 from app.models.consentement_rgpd import ConsentementRGPD
+from app.models.utilisations_themes import UtilisationTheme
+from app.models.non_conformite import NonConformite
 from app.services.tirage_grille import (
     tirer_grille, calculer_resultat_theorie,
     tirer_themes_phase2, enregistrer_tirage_themes,
@@ -117,6 +119,19 @@ def _check_modifiable(session: Session):
         raise HTTPException(status_code=409, detail="Session verrouillée — réouvrez-la d'abord")
 
 
+def session_a_des_donnees(session_id: int, db: DBSession) -> bool:
+    for model in [JourTest, ResultatTheorie, JourFormation, SessionEpreuve,
+                  SessionCandidat, Equipement, CacesObtenu,
+                  UtilisationTheme, UtilisationGrille]:
+        if db.query(model).filter(model.session_id == session_id).first():
+            return True
+    if db.query(NonConformite).filter(NonConformite.session_id == session_id).first():
+        return True
+    if db.query(ConsentementRGPD).filter(ConsentementRGPD.session_id == session_id).first():
+        return True
+    return False
+
+
 @router.get("/", response_model=list[SessionResponse])
 def liste_sessions(db: DBSession = Depends(get_db)):
     return db.query(Session).order_by(Session.id.desc()).all()
@@ -145,9 +160,14 @@ def delete_session(id: int, pin: str, db: DBSession = Depends(get_db)):
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
-    s.statut = "annulee"
+    if session_a_des_donnees(id, db):
+        raise HTTPException(
+            status_code=400,
+            detail="Cette session contient des données (jours, épreuves, stagiaires, matériel, CACES® ou consentements). Clôturez-la depuis la vue détail."
+        )
+    db.delete(s)
     db.commit()
-    return {"message": "Session annulee"}
+    return {"message": "Session supprimee"}
 
 @router.post("/{id}/cloturer")
 def cloturer_session(id: int, db: DBSession = Depends(get_db),
@@ -280,12 +300,11 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     tirage_json = None
     if data.type == "theorie":
         from datetime import datetime
-        from app.models.utilisations_themes import UtilisationTheme as UT
         annee = datetime.now().year
         tirages_existants = (
-            db.query(UT)
-            .filter(UT.session_id == session_id, UT.famille == session.famille)
-            .order_by(UT.theme)
+            db.query(UtilisationTheme)
+            .filter(UtilisationTheme.session_id == session_id, UtilisationTheme.famille == session.famille)
+            .order_by(UtilisationTheme.theme)
             .all()
         )
         if tirages_existants:
@@ -467,7 +486,6 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
     j.actif = False
 
     if j.type == "theorie" and j.grille_id:
-        from app.models.grille_theorie import UtilisationGrille
         uti = db.query(UtilisationGrille).filter(
             UtilisationGrille.grille_id == j.grille_id,
             UtilisationGrille.session_id == j.session_id,
@@ -476,7 +494,6 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
             db.delete(uti)
 
     if j.type == "theorie":
-        from app.models.utilisations_themes import UtilisationTheme
         autres_jours_theorie = (
             db.query(JourTest)
             .filter(
@@ -696,6 +713,8 @@ def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)
     s.date_pratique_fin = data.date_pratique_fin
     s.responsable = data.responsable
     s.note = data.note
+    s.lieu_id = data.lieu_id
+    s.reference = data.reference
     db.commit()
     return {"message": "Session mise a jour"}
 
