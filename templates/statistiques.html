@@ -66,70 +66,44 @@
     </div>
 </div>
 
-<!-- STATS PAR THÈME -->
-{% for famille, themes in stats_par_theme.items() %}
+<!-- STATS PAR THÈME — tableau croisé % -->
+{% for famille, recap in recap_occurrences.items() %}
 <div class="card" style="margin-bottom:20px;">
     <div class="card-header">
-        <h2>{{ famille }} — Utilisation par thème</h2>
-        <span style="font-size:13px; color:#666;">{{ totaux_famille[famille] }} session(s) au total</span>
+        <h2>{{ famille }} — % d'utilisation par thème</h2>
+        <span style="font-size:13px; color:#666;">{{ totaux_famille[famille] }} session(s)</span>
     </div>
-    <div style="padding:16px;">
-
-        {% for theme_num, grilles in themes.items() %}
-        <div style="margin-bottom:24px;">
-            <div style="font-weight:600; font-size:14px; color:#1a3a8f; margin-bottom:10px; 
-                        padding-bottom:6px; border-bottom:2px solid #e8ecf4;">
-                {{ theme_noms[famille][theme_num] }}
-            </div>
-
-            {% for s in grilles %}
-            <div style="margin-bottom:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <span style="font-size:13px; color:#444;">
-                        Grille n°{{ s.grille_numero }}
-                    </span>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        {% if s.count == 0 %}
-                            <span class="badge" style="background:#d0d8e8; color:#555; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                Jamais utilisée
-                            </span>
-                        {% elif s.statut == 'OK' %}
-                            <span class="badge" style="background:#e8f5e9; color:#2e7d32; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.pct }}%
-                            </span>
-                        {% elif s.statut == 'SOUS' %}
-                            <span class="badge" style="background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.pct }}%
-                            </span>
-                        {% else %}
-                            <span class="badge" style="background:#ffebee; color:#c62828; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.pct }}%
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-                <!-- Barre de progression avec zones colorées -->
-                <div style="position:relative; background:#f0f2f7; border-radius:6px; height:10px;">
-                    <!-- Zone valide 10-30% en vert clair -->
-                    <div style="position:absolute; left:10%; width:20%; height:10%; background:rgba(46,125,50,0.15); 
-                                top:0; bottom:0; border-radius:6px;"></div>
-                    <!-- Marqueurs 10% et 30% -->
-                    <div style="position:absolute; left:10%; top:-4px; bottom:-4px; 
-                                width:1px; background:#2e7d32; opacity:0.4;"></div>
-                    <div style="position:absolute; left:30%; top:-4px; bottom:-4px; 
-                                width:1px; background:#2e7d32; opacity:0.4;"></div>
-                    <!-- Barre valeur -->
-                    {% if s.pct > 0 %}
-                    <div style="width:{{ [s.pct, 100]|min }}%; height:10px; border-radius:6px; 
-                                background:{% if s.statut == 'OK' %}#2e7d32{% elif s.statut == 'SOUS' %}#e65100{% else %}#c62828{% endif %};">
-                    </div>
+    <div style="overflow-x:auto;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="min-width:70px;">Grille</th>
+                {% for t in recap.themes %}
+                <th style="text-align:center; min-width:60px;">T{{ t }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in recap.grilles %}
+            <tr>
+                <td><strong>G{{ row.numero }}</strong></td>
+                {% for pct in row.pct_counts %}
+                <td style="text-align:center;">
+                    {% if pct == 0 %}
+                        <span class="badge" style="background:#d0d8e8; color:#555; padding:2px 8px; border-radius:12px; font-size:11px;">0%</span>
+                    {% elif pct < 10 %}
+                        <span class="badge" style="background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; font-size:11px;">{{ pct }}%</span>
+                    {% elif pct > 30 %}
+                        <span class="badge" style="background:#ffebee; color:#c62828; padding:2px 8px; border-radius:12px; font-size:11px;">{{ pct }}%</span>
+                    {% else %}
+                        <span class="badge" style="background:#e8f5e9; color:#2e7d32; padding:2px 8px; border-radius:12px; font-size:11px;">{{ pct }}%</span>
                     {% endif %}
-                </div>
-            </div>
+                </td>
+                {% endfor %}
+            </tr>
             {% endfor %}
-        </div>
-        {% endfor %}
-
+        </tbody>
+    </table>
     </div>
 </div>
 {% endfor %}

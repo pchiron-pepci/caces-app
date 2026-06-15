@@ -185,7 +185,13 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
                 "row_counts": row_counts,
                 "total": sum(row_counts),
             })
-        recap_occurrences[famille] = {"themes": theme_keys, "grilles": matrix}
+        col_totals = [sum(row["row_counts"][j] for row in matrix) for j in range(len(theme_keys))]
+        for row in matrix:
+            row["pct_counts"] = [
+                round(row["row_counts"][j] / col_totals[j] * 100) if col_totals[j] > 0 else 0
+                for j in range(len(theme_keys))
+            ]
+        recap_occurrences[famille] = {"themes": theme_keys, "grilles": matrix, "col_totals": col_totals}
 
     return templates.TemplateResponse(
         request=request,
