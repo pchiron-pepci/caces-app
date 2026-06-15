@@ -95,15 +95,15 @@
                             </span>
                         {% elif s.statut == 'OK' %}
                             <span class="badge" style="background:#e8f5e9; color:#2e7d32; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.count }} · {{ s.pct }}% ✅
+                                {{ s.pct }}%
                             </span>
                         {% elif s.statut == 'SOUS' %}
                             <span class="badge" style="background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.count }} · {{ s.pct }}% ⚠️ Sous-utilisée
+                                {{ s.pct }}%
                             </span>
                         {% else %}
                             <span class="badge" style="background:#ffebee; color:#c62828; padding:2px 8px; border-radius:12px; font-size:11px;">
-                                {{ s.count }} · {{ s.pct }}% ❌ Sur-utilisée
+                                {{ s.pct }}%
                             </span>
                         {% endif %}
                     </div>
