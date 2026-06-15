@@ -39,27 +39,10 @@ def get_grilles_famille(famille: str, db: DBSession) -> list[GrilleTheorie]:
     )
 
 
-def _stats_utilisation_themes(famille: str, annee: int, db: DBSession) -> dict:
-    rows = (
-        db.query(
-            UtilisationTheme.theme,
-            UtilisationTheme.grille_id,
-            func.count(UtilisationTheme.id).label("cnt")
-        )
-        .filter(
-            UtilisationTheme.famille == famille,
-            UtilisationTheme.annee == annee
-        )
-        .group_by(UtilisationTheme.theme, UtilisationTheme.grille_id)
-        .all()
-    )
-    stats = defaultdict(lambda: defaultdict(int))
-    for theme, grille_id, cnt in rows:
-        stats[theme][grille_id] = cnt
-    return stats
-
-
 def tirer_themes_phase2(famille: str, session_id: int, annee: int, db: DBSession) -> dict:
+    # Compteur minimum strict, par thème indépendamment.
+    # Source de vérité : historique global (utilisations_themes), sans filtre annee.
+    # Tirage aléatoire parmi les ex-aequo au compteur minimum.
     grilles = get_grilles_famille(famille, db)
     if not grilles:
         raise ValueError(f"Aucune grille active pour la famille {famille}")
@@ -68,26 +51,29 @@ def tirer_themes_phase2(famille: str, session_id: int, annee: int, db: DBSession
     if not themes:
         raise ValueError(f"Aucun thème trouvé pour la famille {famille}")
 
-    stats = _stats_utilisation_themes(famille, annee, db)
+    rows = (
+        db.query(
+            UtilisationTheme.theme,
+            UtilisationTheme.grille_id,
+            func.count(UtilisationTheme.id).label("cnt")
+        )
+        .filter(UtilisationTheme.famille == famille)
+        .group_by(UtilisationTheme.theme, UtilisationTheme.grille_id)
+        .all()
+    )
+    compteurs = defaultdict(lambda: defaultdict(int))
+    for theme, grille_id, cnt in rows:
+        compteurs[theme][grille_id] = cnt
+
+    grille_ids = [g.id for g in grilles]
+    grille_by_id = {g.id: g for g in grilles}
 
     tirage = {}
-    grilles_deja_utilisees = set()
-
     for theme in themes:
-        usages = stats.get(theme, {})
-        total = sum(usages.values()) or 1
-
-        scored = []
-        for g in grilles:
-            taux = usages.get(g.id, 0) / total
-            penalite = 0.25 if g.id in grilles_deja_utilisees else 0.0
-            score = abs(taux - 0.20) + penalite
-            scored.append((score, random.random(), g))
-
-        scored.sort(key=lambda x: (x[0], x[1]))
-        choisie = scored[0][2]
-        tirage[theme] = choisie
-        grilles_deja_utilisees.add(choisie.id)
+        counts = {g_id: compteurs[theme].get(g_id, 0) for g_id in grille_ids}
+        min_count = min(counts.values())
+        candidats = [g_id for g_id, c in counts.items() if c == min_count]
+        tirage[theme] = grille_by_id[random.choice(candidats)]
 
     return tirage
 
