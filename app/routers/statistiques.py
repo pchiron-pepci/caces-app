@@ -170,6 +170,23 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
         all_alertes.extend(alertes)
         historique.extend(_build_historique(famille, annee, db))
 
+    recap_occurrences = {}
+    for famille in sorted(familles):
+        th_stats = stats_par_theme.get(famille, {})
+        theme_keys = sorted(th_stats.keys())
+        if not theme_keys:
+            continue
+        grilles_ref = th_stats[theme_keys[0]]
+        matrix = []
+        for i, g in enumerate(grilles_ref):
+            row_counts = [th_stats[t][i]["count"] for t in theme_keys]
+            matrix.append({
+                "numero": g["grille_numero"],
+                "row_counts": row_counts,
+                "total": sum(row_counts),
+            })
+        recap_occurrences[famille] = {"themes": theme_keys, "grilles": matrix}
+
     return templates.TemplateResponse(
         request=request,
         name="statistiques.html",
@@ -180,6 +197,7 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             "theme_noms": THEME_NOMS,
             "alertes": all_alertes,
             "historique": historique,
+            "recap_occurrences": recap_occurrences,
         }
     )
 

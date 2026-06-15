@@ -135,6 +135,46 @@
 </div>
 {% endfor %}
 
+<!-- RÉCAP OCCURRENCES -->
+{% for famille, recap in recap_occurrences.items() %}
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+        <h2>{{ famille }} — Occurrences des tirages</h2>
+        <span style="font-size:13px; color:#666;">Nombre de fois que chaque grille a été tirée, par thème</span>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="min-width:70px;">Grille</th>
+                {% for t in recap.themes %}
+                <th style="text-align:center; min-width:50px;">T{{ t }}</th>
+                {% endfor %}
+                <th style="text-align:center; min-width:60px; color:#1a3a8f;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in recap.grilles %}
+            <tr>
+                <td><strong>G{{ row.numero }}</strong></td>
+                {% for count in row.row_counts %}
+                <td style="text-align:center;">
+                    {% if count == 0 %}
+                        <span style="color:#ccc;">—</span>
+                    {% else %}
+                        {{ count }}
+                    {% endif %}
+                </td>
+                {% endfor %}
+                <td style="text-align:center; font-weight:700; color:#1a3a8f;">{{ row.total }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endfor %}
+
 <!-- HISTORIQUE -->
 <div class="card">
     <div class="card-header">
