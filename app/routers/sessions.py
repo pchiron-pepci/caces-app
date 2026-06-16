@@ -169,7 +169,7 @@ def delete_session(id: int, pin: str, db: DBSession = Depends(get_db)):
     if db.query(UtilisationTheme).filter(UtilisationTheme.session_id == id).first():
         raise HTTPException(
             status_code=400,
-            detail="Cette session a un tirage grille déclenché et ne peut plus être supprimée."
+            detail="Cette session a un tirage déclenché et ne peut plus être supprimée."
         )
     if session_a_des_donnees(id, db):
         raise HTTPException(
@@ -488,22 +488,6 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
         ).first()
         if uti:
             db.delete(uti)
-
-    if j.type == "theorie":
-        autres_jours_theorie = (
-            db.query(JourTest)
-            .filter(
-                JourTest.session_id == j.session_id,
-                JourTest.type == "theorie",
-                JourTest.actif == True,
-                JourTest.id != j.id,
-            )
-            .count()
-        )
-        if autres_jours_theorie == 0:
-            db.query(UtilisationTheme).filter(
-                UtilisationTheme.session_id == j.session_id
-            ).delete()
 
     db.commit()
     return {"message": "Jour supprime"}
@@ -853,31 +837,6 @@ def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: D
             )
 
     db.delete(jtc)
-    db.flush()  # exécuter le DELETE avant de requêter les restants
-
-    # Soft-delete SessionCandidat si plus aucune présence dans cette session
-    remaining_jtc = db.query(JourTestCandidat).filter(
-        JourTestCandidat.stagiaire_id == stagiaire_id,
-        JourTestCandidat.jour_test_id.in_(
-            db.query(JourTest.id).filter(JourTest.session_id == session_id)
-        )
-    ).count()
-    remaining_planning = db.query(PlanningApprenant).filter(
-        PlanningApprenant.stagiaire_id == stagiaire_id,
-        PlanningApprenant.actif == True,
-        PlanningApprenant.jour_formation_id.in_(
-            db.query(JourFormation.id).filter(JourFormation.session_id == session_id)
-        )
-    ).count()
-    if remaining_jtc == 0 and remaining_planning == 0:
-        sc_to_clean = db.query(SessionCandidat).filter(
-            SessionCandidat.session_id == session_id,
-            SessionCandidat.stagiaire_id == stagiaire_id,
-            SessionCandidat.actif == True
-        ).first()
-        if sc_to_clean:
-            sc_to_clean.actif = False
-
     db.commit()
     return {"message": "Candidat retire du jour"}
 
