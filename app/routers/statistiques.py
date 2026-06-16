@@ -10,6 +10,7 @@ from app.config_utils import get_pin_admin
 from app.models.grille_theorie import GrilleTheorie
 from app.models.utilisations_themes import UtilisationTheme
 from app.models.session import Session as SessionModel
+from app.models.utilisateur import Utilisateur
 from app.templates_instance import templates
 
 router = APIRouter()
@@ -129,19 +130,40 @@ def _build_historique(famille, annee, db):
         .all()
     )
 
+    # batch-load grilles and users to avoid N+1
+    grille_ids = {t.grille_id for t in tirages}
+    grilles_map = {g.id: g for g in db.query(GrilleTheorie).filter(GrilleTheorie.id.in_(grille_ids)).all()} if grille_ids else {}
+
+    user_ids = {t.declenche_par_id for t in tirages if t.declenche_par_id}
+    users_map = {u.id: u for u in db.query(Utilisateur).filter(Utilisateur.id.in_(user_ids)).all()} if user_ids else {}
+
     sessions_map = defaultdict(dict)
+    meta_map = {}  # session_id → {date_tirage, declenche_par_id}
     for t in tirages:
-        grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == t.grille_id).first()
+        grille = grilles_map.get(t.grille_id)
         sessions_map[t.session_id][t.theme] = grille.numero if grille else "?"
+        if t.session_id not in meta_map:
+            meta_map[t.session_id] = {
+                "date_tirage": t.date_tirage,
+                "declenche_par_id": t.declenche_par_id,
+            }
+
+    session_ids = list(sessions_map.keys())
+    sessions_db = {s.id: s for s in db.query(SessionModel).filter(SessionModel.id.in_(session_ids)).all()} if session_ids else {}
 
     historique = []
     for session_id, themes in sessions_map.items():
-        session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+        session = sessions_db.get(session_id)
+        meta = meta_map.get(session_id, {})
+        user = users_map.get(meta.get("declenche_par_id"))
+        declenche_par = f"{user.prenom} {user.nom}" if user else None
         historique.append({
             "session_id": session_id,
             "session_ref": session.reference if session else f"Session #{session_id}",
             "famille": famille,
             "themes": themes,
+            "date_tirage": meta.get("date_tirage"),
+            "declenche_par": declenche_par,
         })
 
     return historique

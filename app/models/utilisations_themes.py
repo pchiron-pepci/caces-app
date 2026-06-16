@@ -13,6 +13,7 @@ class UtilisationTheme(Base):
     annee = Column(Integer, nullable=False)
 
     date_tirage = Column(DateTime, nullable=True)
+    declenche_par_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=True)
 
     __table_args__ = (
         UniqueConstraint(

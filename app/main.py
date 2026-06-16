@@ -142,6 +142,7 @@ def _run_startup_migrations():
         "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_note TEXT",
         # utilisations_themes
         "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS date_tirage TIMESTAMP",
+        "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS declenche_par_id INTEGER",
     ]
     for sql in _MIGRATIONS:
         try:

@@ -724,7 +724,7 @@ def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-    enregistrer_tirage_themes(id, s.famille, annee, tirage, db, date_tirage=now)
+    enregistrer_tirage_themes(id, s.famille, annee, tirage, db, date_tirage=now, declenche_par_id=current_user.id)
     return {"deja_declenche": False, "date_tirage": now.isoformat()}
 
 

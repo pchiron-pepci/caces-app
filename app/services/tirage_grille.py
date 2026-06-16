@@ -78,7 +78,7 @@ def tirer_themes_phase2(famille: str, session_id: int, annee: int, db: DBSession
     return tirage
 
 
-def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage: dict, db: DBSession, date_tirage=None) -> None:
+def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage: dict, db: DBSession, date_tirage=None, declenche_par_id=None) -> None:
     for theme, grille in tirage.items():
         existing = (
             db.query(UtilisationTheme)
@@ -94,6 +94,8 @@ def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage:
             existing.annee = annee
             if date_tirage:
                 existing.date_tirage = date_tirage
+            if declenche_par_id:
+                existing.declenche_par_id = declenche_par_id
         else:
             db.add(UtilisationTheme(
                 session_id=session_id,
@@ -102,6 +104,7 @@ def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage:
                 grille_id=grille.id,
                 annee=annee,
                 date_tirage=date_tirage,
+                declenche_par_id=declenche_par_id,
             ))
     db.commit()
 
