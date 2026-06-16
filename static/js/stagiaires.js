@@ -187,9 +187,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function archiver(id, nom) {
         idAArchiver = id;
-        document.getElementById('pin-message').textContent = 'Archiver "' + nom + '" ?';
+        document.getElementById('pin-message').textContent = 'Supprimer définitivement "' + nom + '" ?';
         document.getElementById('pin-input').value = '';
-        document.getElementById('pin-error').style.display = 'none';
+        const errEl = document.getElementById('pin-error');
+        errEl.textContent = '';
+        errEl.style.display = 'none';
         document.getElementById('modal-pin').style.display = 'flex';
     }
 
@@ -205,7 +207,14 @@ document.addEventListener('DOMContentLoaded', function () {
             fermerPin();
             location.reload();
         } else {
-            document.getElementById('pin-error').style.display = 'block';
+            const errEl = document.getElementById('pin-error');
+            try {
+                const d = await resp.json();
+                errEl.textContent = '❌ ' + (d.detail || 'Erreur inconnue');
+            } catch (_) {
+                errEl.textContent = resp.status === 403 ? '❌ Code PIN incorrect !' : '❌ Erreur lors de la suppression.';
+            }
+            errEl.style.display = 'block';
         }
     }
 

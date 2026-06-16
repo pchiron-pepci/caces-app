@@ -3,6 +3,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.config_utils import get_pin_admin
 from app.models.stagiaire import Stagiaire
+from app.models.session_candidat import SessionCandidat
+from app.models.jour_test import JourTestCandidat, ResultatTheorie
+from app.models.session_epreuve import SessionEpreuve
+from app.models.caces_obtenu import CacesObtenu
+from app.models.carte_caces import CarteCaces
+from app.models.jour_formation import PlanningApprenant
+from app.models.non_conformite import NonConformite
+from app.models.consentement_rgpd import ConsentementRGPD
+from app.models.attestation_neutralite import AttestationNeutralite
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
@@ -128,10 +137,50 @@ def delete_stagiaire(id: int, pin: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Stagiaire).filter(Stagiaire.id == id).first()
     if not s:
-        raise HTTPException(status_code=404, detail="Stagiaire non trouve")
-    s.actif = 0
+        raise HTTPException(status_code=404, detail="Stagiaire non trouvé")
+
+    rattachements = []
+
+    n = db.query(SessionCandidat).filter(SessionCandidat.stagiaire_id == id).count()
+    if n: rattachements.append(f"inscrit à {n} session(s)")
+
+    n = db.query(JourTestCandidat).filter(JourTestCandidat.stagiaire_id == id).count()
+    if n: rattachements.append(f"planifié sur {n} jour(s) de test")
+
+    n = db.query(ResultatTheorie).filter(ResultatTheorie.stagiaire_id == id).count()
+    if n: rattachements.append(f"{n} résultat(s) théorique(s)")
+
+    n = db.query(SessionEpreuve).filter(SessionEpreuve.stagiaire_id == id).count()
+    if n: rattachements.append(f"{n} résultat(s) pratique(s)")
+
+    n = db.query(CacesObtenu).filter(CacesObtenu.stagiaire_id == id).count()
+    if n: rattachements.append(f"{n} CACES® obtenu(s)")
+
+    n = db.query(CarteCaces).filter(CarteCaces.stagiaire_id == id).count()
+    if n: rattachements.append(f"{n} carte(s) CACES®")
+
+    n = db.query(PlanningApprenant).filter(PlanningApprenant.stagiaire_id == id).count()
+    if n: rattachements.append(f"planifié dans {n} jour(s) de formation")
+
+    n = db.query(NonConformite).filter(NonConformite.stagiaire_id == id).count()
+    if n: rattachements.append(f"{n} non-conformité(s) liée(s)")
+
+    n = db.query(ConsentementRGPD).filter(ConsentementRGPD.stagiaire_id == id).count()
+    if n: rattachements.append(f"{n} consentement(s) RGPD")
+
+    n = db.query(AttestationNeutralite).filter(AttestationNeutralite.stagiaire_id == id).count()
+    if n: rattachements.append(f"{n} attestation(s) de neutralité")
+
+    if rattachements:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Suppression impossible — rattachements existants : " + ", ".join(rattachements)
+        )
+
+    db.delete(s)
     db.commit()
-    return {"message": "Stagiaire archive"}
+    return {"message": "Stagiaire supprimé"}
 
 @router.get("/{id}/historique")
 def get_historique_stagiaire(id: int, db: Session = Depends(get_db)):
