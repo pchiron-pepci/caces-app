@@ -229,13 +229,3 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             "recap_occurrences": recap_occurrences,
         }
     )
-
-
-@router.post("/api/statistiques/reset-themes")
-async def reset_themes(pin: str = None, db: DBSession = Depends(get_db)):
-    if pin != get_pin_admin(db):
-        raise HTTPException(status_code=403, detail="Code PIN incorrect")
-    annee = datetime.now().year
-    nb = db.query(UtilisationTheme).filter(UtilisationTheme.annee == annee).delete()
-    db.commit()
-    return {"message": f"{nb} enregistrement(s) supprimé(s)"}

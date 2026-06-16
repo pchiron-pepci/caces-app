@@ -48,10 +48,6 @@
             Année {{ annee }} — Tirage par thème (Phase 2 INRS, applicable jan 2029)
         </p>
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
-        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
-            onclick="resetCompteurs()">🗑 Remettre à zéro</button>
-    </div>
 </div>
 
 <!-- LÉGENDE -->
@@ -282,18 +278,7 @@ function demanderPin(message, callback) {
 }
 function fermerPin() { document.getElementById('modal-pin').style.display = 'none'; }
 
-function resetCompteurs() {
-    demanderConfirmation(
-        'Remettre tous les compteurs à zéro ? Cette action supprime tout l\'historique Phase 2 de l\'année en cours.',
-        () => {
-            demanderPin('Code PIN pour confirmer la remise à zéro :', async (pin) => {
-                const resp = await fetch(`/api/statistiques/reset-themes?pin=${pin}`, { method: 'POST' });
-                if (resp.ok) { alert('✅ Compteurs remis à zéro !'); location.reload(); }
-                else { const d = await resp.json(); alert('Erreur : ' + (d.detail || 'inconnue')); }
-            });
-        }
-    );
-}
+
 </script>
 
 {% endblock %}
