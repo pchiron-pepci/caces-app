@@ -85,64 +85,65 @@
         {% endif %}
     </div>
 
-    <div class="nc-body" id="nc-body-{{ nc.id }}" style="display:none; border-top:1px solid #e8ecf4; padding:20px 24px;">
-        <div style="display:grid; grid-template-columns:210px 1fr; gap:32px; align-items:start;">
+    <div class="nc-body" id="nc-body-{{ nc.id }}" style="display:none; border-top:1px solid #e8ecf4; padding:20px 24px 24px;">
 
-            <!-- Colonne gauche : métadonnées -->
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                {% set lbl = "font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;white-space:nowrap;" %}
-                {% set val = "font-size:14px;color:#333;" %}
-                <div style="display:flex;align-items:baseline;gap:8px;">
-                    <div style="{{ lbl }}">Origine</div>
-                    <div style="{{ val }}">{% if nc.origine == 'interne' %}Interne{% elif nc.origine == 'reclamation_client' %}Réclamation client{% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant{% elif nc.origine == 'audit' %}Audit{% else %}{{ nc.origine }}{% endif %}</div>
+        <div class="nc-body-layout">
+
+            <!-- Métadonnées -->
+            <div class="nc-meta">
+                <div class="nc-meta-row">
+                    <span class="nc-meta-lbl">Origine</span>
+                    <span class="nc-meta-val">{% if nc.origine == 'interne' %}Interne{% elif nc.origine == 'reclamation_client' %}Réclamation client{% elif nc.origine == 'reclamation_apprenant' %}Réclamation apprenant{% elif nc.origine == 'audit' %}Audit{% else %}{{ nc.origine }}{% endif %}</span>
                 </div>
-                <div style="display:flex;align-items:baseline;gap:8px;">
-                    <div style="{{ lbl }}">Type</div>
-                    <div style="{{ val }}">{% if nc.type_nc == 'incident' %}Incident{% elif nc.type_nc == 'non-conformite' %}Non-conformité{% elif nc.type_nc == 'observation' %}Observation{% else %}{{ nc.type_nc }}{% endif %}</div>
+                <div class="nc-meta-row">
+                    <span class="nc-meta-lbl">Type</span>
+                    <span class="nc-meta-val">{% if nc.type_nc == 'incident' %}Incident{% elif nc.type_nc == 'non-conformite' %}Non-conformité{% elif nc.type_nc == 'observation' %}Observation{% else %}{{ nc.type_nc }}{% endif %}</span>
                 </div>
-                <div style="display:flex;align-items:baseline;gap:8px;">
-                    <div style="{{ lbl }}">Déclarant</div>
-                    <div style="{{ val }}">{% if nc.declarant_id and nc.declarant_id in utilisateurs %}{{ utilisateurs[nc.declarant_id].nom }} {{ utilisateurs[nc.declarant_id].prenom }}{% else %}—{% endif %}</div>
+                <div class="nc-meta-row">
+                    <span class="nc-meta-lbl">Nature</span>
+                    <span class="nc-meta-val">{% if nc.nature == 'documentaire' %}Documentaire{% elif nc.nature == 'materiel' %}Matériel{% elif nc.nature == 'organisationnel' %}Organisationnel{% elif nc.nature %}{{ nc.nature }}{% else %}—{% endif %}</span>
                 </div>
-                <div style="display:flex;align-items:baseline;gap:8px;">
-                    <div style="{{ lbl }}">Date clôture</div>
-                    <div style="{{ val }}">{% if nc.date_cloture %}{{ nc.date_cloture.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</div>
+                <div class="nc-meta-row">
+                    <span class="nc-meta-lbl">Déclarant</span>
+                    <span class="nc-meta-val">{% if nc.declarant_id and nc.declarant_id in utilisateurs %}{{ utilisateurs[nc.declarant_id].nom }} {{ utilisateurs[nc.declarant_id].prenom }}{% else %}—{% endif %}</span>
                 </div>
                 {% if nc.session_id and nc.session_id in sessions_map %}
-                <div style="display:flex;align-items:baseline;gap:8px;">
-                    <div style="{{ lbl }}">Session</div>
-                    <div style="{{ val }}"><a href="/sessions/{{ nc.session_id }}" style="color:#1a3a8f;">{{ sessions_map[nc.session_id].reference or ('Session #' ~ nc.session_id) }}</a></div>
+                <div class="nc-meta-row">
+                    <span class="nc-meta-lbl">Session</span>
+                    <span class="nc-meta-val"><a href="/sessions/{{ nc.session_id }}" style="color:#1a3a8f; text-decoration:none; font-weight:600;">{{ sessions_map[nc.session_id].reference or ('Session #' ~ nc.session_id) }} →</a></span>
                 </div>
                 {% endif %}
+                <div class="nc-meta-row">
+                    <span class="nc-meta-lbl">Date clôture</span>
+                    <span class="nc-meta-val">{% if nc.date_cloture %}{{ nc.date_cloture.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</span>
+                </div>
                 {% if nc.justificatif_nom %}
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="{{ lbl }}">Justificatif</div>
-                    <a href="/api/non-conformites/{{ nc.id }}/justificatif" target="_blank"
-                       class="btn btn-secondary" style="font-size:12px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;">
-                        📄 {{ nc.justificatif_nom }}
-                    </a>
+                <div class="nc-meta-row">
+                    <span class="nc-meta-lbl">Justificatif</span>
+                    <span class="nc-meta-val"><a href="/api/non-conformites/{{ nc.id }}/justificatif" target="_blank" style="color:#1a3a8f; text-decoration:none; font-size:13px;">📄 {{ nc.justificatif_nom }}</a></span>
                 </div>
                 {% endif %}
             </div>
 
-            <!-- Colonne droite : contenus -->
-            <div style="display:flex; flex-direction:column; gap:20px;">
-                <div style="border-left:3px solid #c62828;padding-left:14px;">
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Description</div>
-                    <div style="white-space:pre-wrap;color:{% if nc.description %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.description or '—' }}</div>
+            <!-- 3 sous-cartes -->
+            <div class="nc-volets">
+                <div class="nc-volet nc-volet-desc">
+                    <div class="nc-volet-titre">Description</div>
+                    <div class="nc-volet-contenu{{ '' if nc.description else ' nc-vide' }}">{{ nc.description or '—' }}</div>
                 </div>
-                <div style="border-left:3px solid #2e7d32;padding-left:14px;">
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Action corrective</div>
-                    <div style="white-space:pre-wrap;color:{% if nc.action_corrective %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.action_corrective or '—' }}</div>
+                <div class="nc-volet nc-volet-corr">
+                    <div class="nc-volet-titre">Action corrective</div>
+                    <div class="nc-volet-contenu{{ '' if nc.action_corrective else ' nc-vide' }}">{{ nc.action_corrective or '—' }}</div>
                 </div>
-                <div style="border-left:3px solid #1565c0;padding-left:14px;">
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#999;margin-bottom:6px;">Action préventive</div>
-                    <div style="white-space:pre-wrap;color:{% if nc.action_preventive %}#333{% else %}#bbb{% endif %};font-size:14px;line-height:1.6;">{{ nc.action_preventive or '—' }}</div>
+                <div class="nc-volet nc-volet-prev">
+                    <div class="nc-volet-titre">Action préventive</div>
+                    <div class="nc-volet-contenu{{ '' if nc.action_preventive else ' nc-vide' }}">{{ nc.action_preventive or '—' }}</div>
                 </div>
             </div>
+
         </div>
 
-        <!-- Boutons alignés à droite -->
+        <!-- Boutons -->
         <div style="display:flex; gap:8px; margin-top:20px; justify-content:flex-end; flex-wrap:wrap;">
             {% if nc.statut not in ['cloture', 'sans_objet'] %}
             <button class="btn btn-secondary nc-edit-btn" data-id="{{ nc.id }}" style="font-size:13px;">✏️ Modifier</button>
@@ -253,6 +254,58 @@
 </div>
 
 <style>
+/* ── NC body redesign ─────────────────────────────────── */
+.nc-body-layout {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+.nc-meta {
+    background: #f4f5f8;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+}
+.nc-meta-row { display: flex; flex-direction: column; gap: 2px; }
+.nc-meta-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: #999;
+}
+.nc-meta-val { font-size: 13px; color: #2d2d2d; line-height: 1.4; }
+.nc-volets { display: flex; flex-direction: column; gap: 12px; }
+.nc-volet {
+    border-radius: 8px;
+    padding: 14px 16px 14px 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    min-width: 0;
+}
+.nc-volet-desc { border-left: 4px solid #cc0000; background: #fff8f8; }
+.nc-volet-corr { border-left: 4px solid #2e7d32; background: #f5fdf6; }
+.nc-volet-prev { border-left: 4px solid #1565c0; background: #f5f8fe; }
+.nc-volet-titre {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+}
+.nc-volet-desc .nc-volet-titre { color: #cc0000; }
+.nc-volet-corr .nc-volet-titre { color: #2e7d32; }
+.nc-volet-prev .nc-volet-titre { color: #1565c0; }
+.nc-volet-contenu { font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: #333; word-break: break-word; }
+.nc-volet-contenu.nc-vide { color: #bbb; }
+@media (max-width: 767px) {
+    .nc-body-layout { grid-template-columns: 1fr; }
+    .nc-body { padding: 16px 14px !important; }
+}
+/* ── Modal NC ─────────────────────────────────────────── */
 #modal-nc .form-grid { grid-template-columns: 1fr; }
 @media (min-width: 768px) {
     #modal-nc .form-grid { grid-template-columns: 1fr 1fr; }
