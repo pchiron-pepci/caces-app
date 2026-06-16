@@ -120,9 +120,15 @@ def _check_modifiable(session: Session):
 
 
 def session_a_des_donnees(session_id: int, db: DBSession) -> bool:
-    for model in [JourTest, ResultatTheorie, JourFormation, SessionEpreuve,
-                  SessionCandidat, Equipement, CacesObtenu,
-                  UtilisationTheme, UtilisationGrille]:
+    # Soft-deleted : ne compter que les enregistrements actifs
+    for model in [JourTest, SessionCandidat]:
+        if db.query(model).filter(
+            model.session_id == session_id, model.actif == True
+        ).first():
+            return True
+    # Hard-deleted ou sans soft-delete : toute ligne est une vraie donnée
+    for model in [ResultatTheorie, JourFormation, SessionEpreuve,
+                  Equipement, CacesObtenu, UtilisationGrille]:
         if db.query(model).filter(model.session_id == session_id).first():
             return True
     if db.query(NonConformite).filter(NonConformite.session_id == session_id).first():
@@ -160,6 +166,11 @@ def delete_session(id: int, pin: str, db: DBSession = Depends(get_db)):
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
+    if db.query(UtilisationTheme).filter(UtilisationTheme.session_id == id).first():
+        raise HTTPException(
+            status_code=400,
+            detail="Cette session a un tirage grille déclenché et ne peut plus être supprimée."
+        )
     if session_a_des_donnees(id, db):
         raise HTTPException(
             status_code=400,
