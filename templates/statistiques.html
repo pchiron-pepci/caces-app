@@ -152,9 +152,18 @@
 
 <!-- HISTORIQUE -->
 <div class="card">
-    <div class="card-header">
-        <h2>Historique des tirages {{ annee }}</h2>
-        <span style="font-size:13px; color:#666;">{{ historique|length }} tirage(s)</span>
+    <div class="card-header" style="flex-wrap:wrap; gap:8px;">
+        <h2>Historique des tirages</h2>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span style="font-size:13px; color:#666;">{{ historique|length }} tirage(s)</span>
+            {% if annees_historique %}
+            <select id="filtre-annee-hist" data-action="filtrer-historique"
+                    style="font-size:13px; border:1.5px solid #ddd; border-radius:6px; padding:4px 8px; background:#fff;">
+                <option value="">Toutes les années</option>
+                {% for a in annees_historique %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+            </select>
+            {% endif %}
+        </div>
     </div>
     <div style="overflow-x:auto;">
     <table class="table table-stat-hist">
@@ -170,9 +179,9 @@
                 <th>Déclenché le / par</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="hist-tbody">
             {% for h in historique %}
-            <tr>
+            <tr data-annee="{{ h.date_tirage.year if h.date_tirage else '' }}">
                 <td><strong><a href="/sessions/{{ h.session_id }}" style="color:#1a3a8f; text-decoration:none;">{{ h.session_ref }}</a></strong></td>
                 <td><span class="badge blue">{{ h.famille }}</span></td>
                 {% for t in [1,2,3,4,5] %}
@@ -196,10 +205,15 @@
             {% if not historique %}
             <tr>
                 <td colspan="8" style="text-align:center; color:#888; padding:20px;">
-                    Aucun tirage Phase 2 cette année
+                    Aucun tirage Phase 2
                 </td>
             </tr>
             {% endif %}
+            <tr id="hist-no-match" style="display:none;">
+                <td colspan="8" style="text-align:center; color:#888; padding:20px;">
+                    Aucun tirage pour cette année
+                </td>
+            </tr>
         </tbody>
     </table>
     </div>
@@ -254,6 +268,18 @@ document.addEventListener('DOMContentLoaded', function() {
         var tabEl = document.getElementById('tab-' + tabId);
         if (tabEl) tabEl.style.display = 'block';
         btn.classList.add('active-tab');
+    });
+
+    document.addEventListener('change', function(e) {
+        if (!e.target.closest('[data-action="filtrer-historique"]')) return;
+        var annee = e.target.value;
+        var visible = 0;
+        document.querySelectorAll('#hist-tbody tr[data-annee]').forEach(function(tr) {
+            var show = !annee || tr.dataset.annee === annee;
+            tr.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        document.getElementById('hist-no-match').style.display = visible === 0 ? '' : 'none';
     });
 });
 

@@ -119,13 +119,10 @@ def _build_stats(famille, annee, db):
     return stats_par_theme, alertes, total_sessions
 
 
-def _build_historique(famille, annee, db):
+def _build_historique(famille, db):
     tirages = (
         db.query(UtilisationTheme)
-        .filter(
-            UtilisationTheme.famille == famille,
-            UtilisationTheme.annee == annee
-        )
+        .filter(UtilisationTheme.famille == famille)
         .order_by(UtilisationTheme.session_id, UtilisationTheme.theme)
         .all()
     )
@@ -191,7 +188,7 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
         stats_par_theme[famille] = th_stats
         totaux_famille[famille] = total
         all_alertes.extend(alertes)
-        historique.extend(_build_historique(famille, annee, db))
+        historique.extend(_build_historique(famille, db))
 
     recap_occurrences = {}
     for famille in sorted(familles):
@@ -216,6 +213,11 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             ]
         recap_occurrences[famille] = {"themes": theme_keys, "grilles": matrix, "col_totals": col_totals}
 
+    annees_historique = sorted(
+        {h["date_tirage"].year for h in historique if h.get("date_tirage")},
+        reverse=True
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="statistiques.html",
@@ -226,6 +228,7 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             "theme_noms": THEME_NOMS,
             "alertes": all_alertes,
             "historique": historique,
+            "annees_historique": annees_historique,
             "recap_occurrences": recap_occurrences,
         }
     )
