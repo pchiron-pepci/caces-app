@@ -896,6 +896,14 @@ def page_sessions(request: Request):
         lieux = db.query(Lieu).filter(Lieu.actif == True).all()
         familles = db.query(Famille).filter(Famille.actif == True).all()
         testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+        from app.models.utilisations_themes import UtilisationTheme as _UTSess
+        _sess_ids = [s.id for s in liste]
+        sessions_avec_tirage = {
+            row.session_id
+            for row in db.query(_UTSess.session_id).filter(
+                _UTSess.session_id.in_(_sess_ids)
+            ).distinct().all()
+        } if _sess_ids else set()
         return templates.TemplateResponse(
             request=request,
             name="sessions.html",
@@ -906,6 +914,7 @@ def page_sessions(request: Request):
                 "familles": familles,
                 "testeurs": testeurs_list,
                 "user_role": _u.role if _u else None,
+                "sessions_avec_tirage": sessions_avec_tirage,
             }
         )
     finally:
