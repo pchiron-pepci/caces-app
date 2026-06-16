@@ -131,6 +131,26 @@ def sans_objet_nc(id: int, pin: str, db: Session = Depends(get_db)):
     return {"message": "Non-conformité classée sans objet"}
 
 
+class DeleteNcBody(BaseModel):
+    pin: str = ""
+
+@router.delete("/{id}")
+def delete_nc(id: int, body: DeleteNcBody, db: Session = Depends(get_db)):
+    if body.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    nc = db.query(NonConformite).filter(NonConformite.id == id).first()
+    if not nc:
+        raise HTTPException(status_code=404, detail="Non-conformité non trouvée")
+    if nc.session_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Cette non-conformité est liée à une session — supprimez d'abord le lien avant de la supprimer."
+        )
+    db.delete(nc)
+    db.commit()
+    return {"message": "Non-conformité supprimée"}
+
+
 @router.get("/{id}/justificatif")
 def download_justificatif(id: int, db: Session = Depends(get_db)):
     nc = db.query(NonConformite).filter(NonConformite.id == id).first()

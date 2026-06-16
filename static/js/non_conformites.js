@@ -278,4 +278,40 @@ document.addEventListener('DOMContentLoaded', function () {
             envoyer(null, nc ? nc.justificatif_nom : null);
         }
     });
+
+    // ── Modal PIN ──────────────────────────────────────────────────────────
+    function fermerPin() { document.getElementById('modal-pin').style.display = 'none'; }
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-action="fermer-pin"]')) fermerPin();
+    });
+
+    // ── Supprimer ──────────────────────────────────────────────────────────
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.nc-supprimer-btn');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        document.getElementById('pin-message').textContent = 'Supprimer définitivement cette non-conformité ? Cette action est irréversible.';
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('pin-api-error').style.display = 'none';
+        document.getElementById('pin-api-error').textContent = '';
+        document.getElementById('modal-pin').style.display = 'flex';
+        document.getElementById('pin-confirm-btn').onclick = async function () {
+            const pin = document.getElementById('pin-input').value;
+            const resp = await fetch('/api/non-conformites/' + id, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin })
+            });
+            if (resp.ok) { fermerPin(); location.reload(); return; }
+            const data = await resp.json();
+            if (resp.status === 403) {
+                document.getElementById('pin-error').style.display = 'block';
+            } else {
+                document.getElementById('pin-api-error').textContent = data.detail || 'Erreur';
+                document.getElementById('pin-api-error').style.display = 'block';
+            }
+        };
+    });
 });
