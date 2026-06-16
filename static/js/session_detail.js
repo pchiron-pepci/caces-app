@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!btn) return;
         var sessionId = btn.dataset.sessionId;
         demanderConfirmation(
-            '⚠️ Attention — opération irréversible.\n\nLe tirage sera figé définitivement pour cette session. Continuer ?',
+            '⚠️ Attention.\n\nLe tirage sera figé définitivement pour cette session. Continuer ?',
             function() {
                 document.getElementById('pin-message').textContent = 'Saisir le code PIN administrateur pour déclencher le tirage.';
                 document.getElementById('pin-input').value = '';
