@@ -675,10 +675,12 @@ def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSess
     return {"identite_verifiee": jtc.identite_verifiee}
 
 @router.post("/{id}/declencher-tirage")
-def declencher_tirage(id: int, db: DBSession = Depends(get_db),
+def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
                       current_user: Utilisateur = Depends(get_utilisateur_courant)):
     if current_user.role == "terrain":
         raise HTTPException(status_code=403, detail="Réservé aux administrateurs")
+    if pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvée")

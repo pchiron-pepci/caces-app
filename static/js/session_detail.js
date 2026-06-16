@@ -29,12 +29,28 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="declencher-tirage"]');
         if (!btn) return;
+        var sessionId = btn.dataset.sessionId;
         demanderConfirmation(
-            'Le tirage sera figé définitivement pour cette session. Continuer ?',
-            async function() {
-                var r = await fetch('/api/sessions/' + btn.dataset.sessionId + '/declencher-tirage', { method: 'POST' });
-                if (r.ok) location.reload();
-                else { var d = await r.json(); afficherErreur(d.detail || 'Erreur lors du déclenchement du tirage.'); }
+            '⚠️ Attention — opération irréversible.\n\nLe tirage sera figé définitivement pour cette session. Continuer ?',
+            function() {
+                document.getElementById('pin-message').textContent = 'Saisir le code PIN administrateur pour déclencher le tirage.';
+                document.getElementById('pin-input').value = '';
+                document.getElementById('pin-error').style.display = 'none';
+                document.getElementById('modal-pin').style.display = 'flex';
+                document.getElementById('pin-confirm-btn').onclick = async function() {
+                    var pin = document.getElementById('pin-input').value;
+                    var r = await fetch('/api/sessions/' + sessionId + '/declencher-tirage?pin=' + encodeURIComponent(pin), { method: 'POST' });
+                    if (r.ok) { fermerPin(); location.reload(); }
+                    else {
+                        var d = await r.json();
+                        if (d.detail && d.detail.toLowerCase().includes('pin')) {
+                            document.getElementById('pin-error').style.display = 'block';
+                        } else {
+                            fermerPin();
+                            afficherErreur(d.detail || 'Erreur lors du déclenchement du tirage.');
+                        }
+                    }
+                };
             }
         );
     });
