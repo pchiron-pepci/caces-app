@@ -31,9 +31,9 @@
     <span class="nc-sort-col" data-col="reference" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Référence <span class="sort-arrow" id="arrow-reference"></span></span>
     <span class="nc-sort-col" data-col="date" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Date <span class="sort-arrow" id="arrow-date"></span></span>
     <span class="nc-sort-col" data-col="titre" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Titre <span class="sort-arrow" id="arrow-titre"></span></span>
-    <span class="nc-sort-col" data-col="origine" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Origine <span class="sort-arrow" id="arrow-origine"></span></span>
-    <span class="nc-sort-col" data-col="type_nc" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Type <span class="sort-arrow" id="arrow-type_nc"></span></span>
-    <span class="nc-sort-col" data-col="nature" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Nature <span class="sort-arrow" id="arrow-nature"></span></span>
+    <span class="nc-sort-col nc-col-origine" data-col="origine" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Origine <span class="sort-arrow" id="arrow-origine"></span></span>
+    <span class="nc-sort-col nc-col-type" data-col="type_nc" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Type <span class="sort-arrow" id="arrow-type_nc"></span></span>
+    <span class="nc-sort-col nc-col-nature" data-col="nature" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Nature <span class="sort-arrow" id="arrow-nature"></span></span>
     <span class="nc-sort-col" data-col="statut" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Statut <span class="sort-arrow" id="arrow-statut"></span></span>
 </div>
 
@@ -53,21 +53,24 @@
         <span class="nc-arrow" style="color:#1a237e; font-size:12px; transition:transform 0.2s; display:inline-block;">▶</span>
         <span style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.reference or '—' }}</span>
         <span style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
-        <span style="font-weight:600; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.titre }}</span>
-        <span style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        <span style="font-weight:600; color:#1a237e; display:flex; align-items:center; gap:5px; min-width:0; overflow:hidden;">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;">{{ nc.titre }}</span>
+            {% if nc.session_id %}<span style="flex-shrink:0; font-size:12px; line-height:1;" title="Liée à une session">🚩</span>{% endif %}
+        </span>
+        <span class="nc-col-origine" style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.origine == 'interne' %}Interne
             {% elif nc.origine == 'reclamation_client' %}Récl. client
             {% elif nc.origine == 'reclamation_apprenant' %}Récl. apprenant
             {% elif nc.origine == 'audit' %}Audit
             {% else %}{{ nc.origine }}{% endif %}
         </span>
-        <span style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        <span class="nc-col-type" style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.type_nc == 'incident' %}Incident
             {% elif nc.type_nc == 'non-conformite' %}Non-conformité
             {% elif nc.type_nc == 'observation' %}Observation
             {% else %}{{ nc.type_nc }}{% endif %}
         </span>
-        <span style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        <span class="nc-col-nature" style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.nature == 'documentaire' %}Documentaire
             {% elif nc.nature == 'materiel' %}Matériel
             {% elif nc.nature == 'organisationnel' %}Organisationnel
@@ -302,6 +305,15 @@
 .nc-volet-contenu { font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: #333; word-break: break-word; }
 .nc-volet-contenu.nc-vide { color: #bbb; }
 @media (max-width: 767px) {
+    /* En-tête liste */
+    #nc-sort-header { display: none !important; }
+    .nc-toggle-header {
+        grid-template-columns: 20px auto auto 1fr auto !important;
+        gap: 6px !important;
+        padding: 12px 14px !important;
+    }
+    .nc-col-origine, .nc-col-type, .nc-col-nature { display: none !important; }
+    /* NC body */
     .nc-body-layout { grid-template-columns: 1fr; }
     .nc-body { padding: 16px 14px !important; }
 }
