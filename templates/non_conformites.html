@@ -51,12 +51,9 @@
     <div class="nc-toggle-header" data-id="{{ nc.id }}"
          style="display:grid; grid-template-columns:20px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:14px 16px; cursor:pointer; user-select:none;">
         <span class="nc-arrow" style="color:#1a237e; font-size:12px; transition:transform 0.2s; display:inline-block;">▶</span>
-        <span style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.reference or '—' }}</span>
-        <span style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
-        <span style="font-weight:600; color:#1a237e; display:flex; align-items:center; gap:5px; min-width:0; overflow:hidden;">
-            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;">{{ nc.titre }}</span>
-            {% if nc.session_id %}<span style="flex-shrink:0; font-size:12px; line-height:1;" title="Liée à une session">🚩</span>{% endif %}
-        </span>
+        <span class="nc-ref-cell" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.reference or '—' }}</span>
+        <span class="nc-date-cell" style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
+        <span class="nc-titre-cell" style="font-weight:600; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.titre }}</span>
         <span class="nc-col-origine" style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.origine == 'interne' %}Interne
             {% elif nc.origine == 'reclamation_client' %}Récl. client
@@ -77,6 +74,7 @@
             {% elif nc.nature %}{{ nc.nature }}
             {% else %}—{% endif %}
         </span>
+        {% if nc.session_id %}<span class="nc-flag-cell" style="display:none;" title="Liée à une session">🚩</span>{% endif %}
         {% if nc.statut == 'ouvert' %}
             <span class="badge" style="background:#ffebee;color:#c62828;">Ouvert</span>
         {% elif nc.statut == 'en_cours' %}
@@ -305,14 +303,38 @@
 .nc-volet-contenu { font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: #333; word-break: break-word; }
 .nc-volet-contenu.nc-vide { color: #bbb; }
 @media (max-width: 767px) {
-    /* En-tête liste */
+    /* En-tête liste : masquer la barre de tri */
     #nc-sort-header { display: none !important; }
+    /* En-tête replié : flex 2 lignes */
     .nc-toggle-header {
-        grid-template-columns: 20px auto auto 1fr auto !important;
-        gap: 6px !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        gap: 4px 8px !important;
         padding: 12px 14px !important;
     }
     .nc-col-origine, .nc-col-type, .nc-col-nature { display: none !important; }
+    /* Ligne 1 : chevron + réf + date + flag(→droite) + badge */
+    .nc-toggle-header .nc-ref-cell,
+    .nc-toggle-header .nc-date-cell { flex-shrink: 0; }
+    .nc-toggle-header .nc-flag-cell {
+        display: inline !important;
+        flex-shrink: 0;
+        margin-left: auto;
+        font-size: 13px;
+        line-height: 1;
+    }
+    .nc-toggle-header .badge { flex-shrink: 0; }
+    /* Ligne 2 : titre seul, pleine largeur */
+    .nc-toggle-header .nc-titre-cell {
+        order: 10;
+        flex: 0 0 100%;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: initial !important;
+        font-size: 14px !important;
+        padding-top: 2px;
+    }
     /* NC body */
     .nc-body-layout { grid-template-columns: 1fr; }
     .nc-body { padding: 16px 14px !important; }
