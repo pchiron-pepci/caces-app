@@ -601,6 +601,14 @@ def dashboard(request: Request):
         sessions_actives = db.query(Session).filter(
             Session.statut.in_(["planifiee", "en_cours"])
         ).order_by(Session.date_theorie, Session.date_pratique_debut).all()
+        from app.models.utilisations_themes import UtilisationTheme as _UTDash
+        _sa_ids = [s.id for s in sessions_actives]
+        sessions_avec_tirage = {
+            row.session_id
+            for row in db.query(_UTDash.session_id).filter(
+                _UTDash.session_id.in_(_sa_ids)
+            ).distinct().all()
+        } if _sa_ids else set()
         alertes_testeurs = []
         for t in testeurs_list:
             alertes = []
@@ -662,6 +670,7 @@ def dashboard(request: Request):
                 "referents": referents,
                 "nc_ouvertes": nc_ouvertes,
                 "sessions_actives": sessions_actives,
+                "sessions_avec_tirage": sessions_avec_tirage,
                 "alertes_testeurs": alertes_testeurs,
                 "familles_carto": familles_carto,
                 "lieux_cdt": lieux_cdt,

@@ -69,11 +69,14 @@
                         {{ date_debut.strftime('%d/%m/%Y') if date_debut else '—' }}
                         {% if date_fin and date_fin != date_debut %} → {{ date_fin.strftime('%d/%m/%Y') }}{% endif %}
                     </td>
-                    <td>
+                    <td style="white-space:nowrap;">
                         {% if s.statut == 'planifiee' %}
                             <span class="badge" style="background:#e3f2fd;color:#1565c0;">Ouverte</span>
                         {% else %}
                             <span class="badge" style="background:#fff3e0;color:#e65100;">En cours</span>
+                        {% endif %}
+                        {% if s.id in sessions_avec_tirage %}
+                            <span class="badge" style="background:#fff3e0;color:#e65100;margin-left:4px;" title="Tirage grille déclenché — famille figée">🔒</span>
                         {% endif %}
                     </td>
                 </tr>

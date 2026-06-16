@@ -503,7 +503,11 @@
     [data-action="cloturer-session"],
     [data-action="reouvrir-session"] { font-size: 20px !important; padding: 6px 10px !important; }
     .verr-label { display: inline !important; font-size: 12px; margin-left: 4px; vertical-align: middle; }
+    /* Date courte tirage : visible sur mobile */
+    .tirage-date-mobile { display: inline !important; }
 }
+/* Date courte tirage : masquée sur desktop (remplacée par title/tooltip) */
+.tirage-date-mobile { display: none; font-size: 11px; color: #888; margin-left: 4px; white-space: nowrap; }
 </style>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
@@ -513,6 +517,11 @@
             {% elif session.statut == 'en_cours' %}<span class="badge orange">En cours</span>
             {% elif session.statut == 'terminee' %}<span class="badge green">Terminee</span>
             {% else %}<span class="badge red">Annulee</span>{% endif %}
+            {% if tirage_declenche %}
+            <span class="badge" style="background:#fff3e0;color:#e65100;" title="Tirage déclenché — famille {{ session.famille }} figée">🔒 Figée</span>
+            {% else %}
+            <span class="badge" style="background:#e3f2fd;color:#1565c0;" title="Famille modifiable — tirage non déclenché">Libre</span>
+            {% endif %}
             <span class="badge blue">{{ lieu.nom if lieu else '—' }}</span>
             {% if session.date_pratique_debut %}
             <span class="badge" style="background:#f0f2f7; color:#555;">
@@ -534,9 +543,10 @@
                 🎲 Tirage grille
             </button>
             {% else %}
-            <span style="font-size:12px; font-weight:600; color:#2e7d32; white-space:nowrap;">
-                ✅ Tirage déclenché{% if date_tirage %} le {{ date_tirage.strftime('%d/%m/%Y à %H:%M') }}{% endif %}
-            </span>
+            <span class="badge" style="background:#e8f5e9;color:#2e7d32;white-space:nowrap;"
+                  {% if date_tirage %}title="Tirage déclenché le {{ date_tirage.strftime('%d/%m/%Y à %H:%M') }}"{% endif %}>
+                ✅ Tirage fait
+            </span>{% if date_tirage %}<span class="tirage-date-mobile">{{ date_tirage.strftime('%d/%m') }}</span>{% endif %}
             {% endif %}
         {% endif %}
         {% if session.statut != 'annulee' and user_role in ('admin', 'utilisateur') %}
