@@ -140,6 +140,8 @@ def _run_startup_migrations():
         "ALTER TABLE consentements_rgpd ADD COLUMN IF NOT EXISTS horodatage_verification TIMESTAMP",
         # session_candidats
         "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_note TEXT",
+        # utilisations_themes
+        "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS date_tirage TIMESTAMP",
     ]
     for sql in _MIGRATIONS:
         try:

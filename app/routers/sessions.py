@@ -658,9 +658,6 @@ def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSessio
 class ReouvrirBody(BaseModel):
     pin: str = ""
 
-class DeclencherTirageBody(BaseModel):
-    pin: str = ""
-
 @router.post("/{id}/reouvrir")
 def reouvrir_session(id: int, body: ReouvrirBody, db: DBSession = Depends(get_db),
                      current_user: Utilisateur = Depends(get_utilisateur_courant)):
@@ -689,11 +686,11 @@ def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSess
     return {"identite_verifiee": jtc.identite_verifiee}
 
 @router.post("/{id}/declencher-tirage")
-def declencher_tirage(id: int, body: DeclencherTirageBody, db: DBSession = Depends(get_db),
+def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
                       current_user: Utilisateur = Depends(get_utilisateur_courant)):
     if current_user.role == "terrain":
         raise HTTPException(status_code=403, detail="Réservé aux administrateurs")
-    if body.pin != get_pin_admin(db):
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
