@@ -64,7 +64,7 @@
                 {% set date_fin = s.date_pratique_fin %}
                 <tr>
                     <td style="white-space:nowrap;"><a href="/sessions/{{ s.id }}" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; text-decoration:none;">{{ s.reference or '—' }}</a></td>
-                    <td style="font-size:13px; color:#444;">{{ s.famille }}</td>
+                    <td>{% if s.id in sessions_avec_tirage %}<span class="badge orange" title="Tirage déclenché — famille figée">{{ s.famille }}</span>{% else %}<span class="badge blue">{{ s.famille }}</span>{% endif %}</td>
                     <td style="font-size:12px; color:#888; white-space:nowrap;">
                         {{ date_debut.strftime('%d/%m/%Y') if date_debut else '—' }}
                         {% if date_fin and date_fin != date_debut %} → {{ date_fin.strftime('%d/%m/%Y') }}{% endif %}
@@ -74,9 +74,6 @@
                             <span class="badge" style="background:#e3f2fd;color:#1565c0;">Ouverte</span>
                         {% else %}
                             <span class="badge" style="background:#fff3e0;color:#e65100;">En cours</span>
-                        {% endif %}
-                        {% if s.id in sessions_avec_tirage %}
-                            <span class="badge" style="background:#fff3e0;color:#e65100;margin-left:4px;" title="Tirage grille déclenché — famille figée">🔒</span>
                         {% endif %}
                     </td>
                 </tr>
