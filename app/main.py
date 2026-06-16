@@ -1808,6 +1808,8 @@ def page_non_conformites(request: Request):
         nc_list = db.query(NonConformite).order_by(NonConformite.date.desc()).all()
         utilisateurs_list = db.query(Utilisateur).all()
         utilisateurs_map = {u.id: u for u in utilisateurs_list}
+        session_ids = [nc.session_id for nc in nc_list if nc.session_id]
+        sessions_map = {s.id: s for s in db.query(Session).filter(Session.id.in_(session_ids)).all()} if session_ids else {}
         nc_json = json.dumps([{
             "id": nc.id,
             "reference": nc.reference or "",
@@ -1823,6 +1825,8 @@ def page_non_conformites(request: Request):
             "justificatif_nom": nc.justificatif_nom or "",
             "statut": nc.statut,
             "date_cloture": nc.date_cloture.isoformat() if nc.date_cloture else "",
+            "session_id": nc.session_id,
+            "session_ref": sessions_map[nc.session_id].reference if nc.session_id and nc.session_id in sessions_map else None,
         } for nc in nc_list])
         return templates.TemplateResponse(
             request=request,
@@ -1831,6 +1835,7 @@ def page_non_conformites(request: Request):
                 "page": "non_conformites",
                 "non_conformites": nc_list,
                 "utilisateurs": utilisateurs_map,
+                "sessions_map": sessions_map,
                 "nc_json": nc_json,
             }
         )

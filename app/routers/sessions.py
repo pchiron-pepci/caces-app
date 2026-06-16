@@ -138,6 +138,13 @@ def session_a_des_donnees(session_id: int, db: DBSession) -> bool:
     return False
 
 
+@router.get("/search")
+def search_sessions(q: str = "", db: DBSession = Depends(get_db)):
+    rows = db.query(Session).filter(
+        Session.reference.ilike(f"%{q}%")
+    ).order_by(Session.id.desc()).limit(10).all()
+    return [{"id": s.id, "reference": s.reference or f"Session #{s.id}", "famille": s.famille, "statut": s.statut} for s in rows]
+
 @router.get("/", response_model=list[SessionResponse])
 def liste_sessions(db: DBSession = Depends(get_db)):
     return db.query(Session).order_by(Session.id.desc()).all()
@@ -170,6 +177,11 @@ def delete_session(id: int, pin: str, db: DBSession = Depends(get_db)):
         raise HTTPException(
             status_code=400,
             detail="Cette session a un tirage déclenché et ne peut plus être supprimée."
+        )
+    if db.query(NonConformite).filter(NonConformite.session_id == id).first():
+        raise HTTPException(
+            status_code=400,
+            detail="Des non-conformités sont liées à cette session — déliez-les d'abord."
         )
     if session_a_des_donnees(id, db):
         raise HTTPException(

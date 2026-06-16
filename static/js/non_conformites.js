@@ -104,6 +104,67 @@ document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('modal-nc');
     const today = new Date().toISOString().slice(0, 10);
 
+    // Session search
+    const sessionSearch = document.getElementById('nc-session-search');
+    const sessionListe = document.getElementById('nc-session-liste');
+    const sessionIdEl = document.getElementById('nc-session-id');
+    const clearSessionBtn = document.getElementById('btn-clear-session');
+    let _sessionDebounce = null;
+
+    function resetSessionFields() {
+        if (sessionIdEl) sessionIdEl.value = '';
+        if (sessionSearch) sessionSearch.value = '';
+        if (clearSessionBtn) clearSessionBtn.style.display = 'none';
+        if (sessionListe) sessionListe.style.display = 'none';
+    }
+
+    if (sessionSearch) {
+        sessionSearch.addEventListener('input', function () {
+            clearTimeout(_sessionDebounce);
+            const q = this.value.trim();
+            if (!q) {
+                sessionIdEl.value = '';
+                sessionListe.style.display = 'none';
+                clearSessionBtn.style.display = 'none';
+                return;
+            }
+            _sessionDebounce = setTimeout(function () {
+                fetch('/api/sessions/search?q=' + encodeURIComponent(q))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        sessionListe.innerHTML = '';
+                        if (!data.length) { sessionListe.style.display = 'none'; return; }
+                        data.forEach(function (s) {
+                            const li = document.createElement('li');
+                            li.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f0;';
+                            li.textContent = s.reference + ' — ' + s.famille + ' (' + s.statut + ')';
+                            li.addEventListener('mouseenter', function () { this.style.background = '#f0f4ff'; });
+                            li.addEventListener('mouseleave', function () { this.style.background = ''; });
+                            li.addEventListener('mousedown', function (e) {
+                                e.preventDefault();
+                                sessionIdEl.value = s.id;
+                                sessionSearch.value = s.reference;
+                                sessionListe.style.display = 'none';
+                                clearSessionBtn.style.display = 'inline';
+                            });
+                            sessionListe.appendChild(li);
+                        });
+                        sessionListe.style.display = 'block';
+                    });
+            }, 300);
+        });
+
+        sessionSearch.addEventListener('blur', function () {
+            setTimeout(function () { if (sessionListe) sessionListe.style.display = 'none'; }, 200);
+        });
+    }
+
+    if (clearSessionBtn) {
+        clearSessionBtn.addEventListener('click', function () {
+            resetSessionFields();
+        });
+    }
+
     function ouvrirModal(nc) {
         document.getElementById('nc-id').value = nc ? nc.id : '';
         document.getElementById('modal-nc-titre').textContent = nc ? 'Modifier la non-conformité' : 'Nouvelle non-conformité';
@@ -120,11 +181,19 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('nc-justificatif-file').value = '';
         const actuelDiv = document.getElementById('nc-justificatif-actuel');
         actuelDiv.textContent = nc && nc.justificatif_nom ? nc.justificatif_nom : '';
+        if (nc && nc.session_id) {
+            sessionIdEl.value = nc.session_id;
+            sessionSearch.value = nc.session_ref || '';
+            clearSessionBtn.style.display = 'inline';
+        } else {
+            resetSessionFields();
+        }
         modal.style.display = 'block';
     }
 
     function fermerModal() {
         modal.style.display = 'none';
+        resetSessionFields();
     }
 
     document.getElementById('btn-nouvelle-nc').addEventListener('click', function () {
@@ -180,6 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 action_corrective: document.getElementById('nc-action-corrective').value || null,
                 justificatif_pdf: pdfB64 || null,
                 justificatif_nom: pdfNom || null,
+                session_id: parseInt(sessionIdEl.value) || null,
             };
             const url = id ? '/api/non-conformites/' + id : '/api/non-conformites';
             const method = id ? 'PUT' : 'POST';
