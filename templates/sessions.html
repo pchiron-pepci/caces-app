@@ -53,6 +53,7 @@
                         data-action="editer-session"
                         data-id="{{ s.id }}"
                         data-famille="{{ s.famille }}"
+                        data-tirage="{{ 'true' if s.id in sessions_avec_tirage else 'false' }}"
                         data-lieu="{{ s.lieu_id }}"
                         data-reference="{{ s.reference or '' }}"
                         data-responsable="{{ (s.responsable or '') | e }}"
@@ -85,6 +86,7 @@
                     <option value="{{ f.code }}">{{ f.code }} -- {{ f.libelle }}</option>
                     {% endfor %}
                 </select>
+                <span id="famille-lock-msg" style="display:none; font-size:12px; color:#e65100; margin-top:4px;">🔒 Famille verrouillée — un tirage a été déclenché.</span>
             </div>
             <div class="form-field">
                 <label>Lieu *</label>
@@ -219,6 +221,7 @@ function ouvrirFormulaire() {
     currentSessionId = null;
     document.querySelector('#modal h2').textContent = 'Nouvelle session';
     document.getElementById('f-famille').disabled = false;
+    document.getElementById('famille-lock-msg').style.display = 'none';
     document.getElementById('f-famille').selectedIndex = 0;
     document.getElementById('f-lieu').selectedIndex = 0;
     document.getElementById('f-reference').value = '';
@@ -235,7 +238,9 @@ function editerSession(btn) {
     currentSessionId = btn.dataset.id;
     document.querySelector('#modal h2').textContent = 'Modifier la session';
     document.getElementById('f-famille').value = btn.dataset.famille;
-    document.getElementById('f-famille').disabled = true;
+    const tirageFige = btn.dataset.tirage === 'true';
+    document.getElementById('f-famille').disabled = tirageFige;
+    document.getElementById('famille-lock-msg').style.display = tirageFige ? 'block' : 'none';
     document.getElementById('f-lieu').value = btn.dataset.lieu;
     document.getElementById('f-reference').value = btn.dataset.reference || '';
     document.getElementById('f-responsable').value = btn.dataset.responsable || '';
@@ -250,6 +255,7 @@ function editerSession(btn) {
 function fermerModal() {
     document.getElementById('modal').style.display = 'none';
     document.getElementById('f-famille').disabled = false;
+    document.getElementById('famille-lock-msg').style.display = 'none';
     currentSessionId = null;
     document.querySelector('#modal h2').textContent = 'Nouvelle session';
     hideModalError();
