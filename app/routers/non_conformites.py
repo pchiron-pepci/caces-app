@@ -83,6 +83,9 @@ def update_nc(id: int, data: NonConformiteUpdate, db: Session = Depends(get_db))
     update_data = data.model_dump(exclude_none=True, exclude={"statut"})
     for key, value in update_data.items():
         setattr(nc, key, value)
+    # session_id peut être None (déliaison) — traiter explicitement car exclude_none l'exclut
+    if 'session_id' in data.model_fields_set:
+        nc.session_id = data.session_id
     if data.statut in ("ouvert", "en_cours"):
         nc.statut = data.statut
     db.commit()

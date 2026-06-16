@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 action_corrective: document.getElementById('nc-action-corrective').value || null,
                 justificatif_pdf: pdfB64 || null,
                 justificatif_nom: pdfNom || null,
-                session_id: parseInt(sessionIdEl.value) || null,
+                session_id: sessionSearch.value.trim() ? (parseInt(sessionIdEl.value) || null) : null,
             };
             const url = id ? '/api/non-conformites/' + id : '/api/non-conformites';
             const method = id ? 'PUT' : 'POST';
