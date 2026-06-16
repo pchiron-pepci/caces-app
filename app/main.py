@@ -906,6 +906,9 @@ def page_sessions(request: Request):
         familles = db.query(Famille).filter(Famille.actif == True).all()
         testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
         from app.models.utilisations_themes import UtilisationTheme as _UTSess
+        from sqlalchemy import func as _func
+        from datetime import date as _date
+        from app.services.session_statut import statut_affichage_session
         _sess_ids = [s.id for s in liste]
         sessions_avec_tirage = {
             row.session_id
@@ -913,6 +916,44 @@ def page_sessions(request: Request):
                 _UTSess.session_id.in_(_sess_ids)
             ).distinct().all()
         } if _sess_ids else set()
+        _today = _date.today()
+        _candidats_actifs = dict(
+            db.query(SessionCandidat.session_id, _func.count(SessionCandidat.id))
+            .filter(SessionCandidat.session_id.in_(_sess_ids), SessionCandidat.actif == True)
+            .group_by(SessionCandidat.session_id)
+            .all()
+        ) if _sess_ids else {}
+        _sessions_avec_grille = {
+            row.session_id
+            for row in db.query(JourTest.session_id).filter(
+                JourTest.session_id.in_(_sess_ids),
+                JourTest.type == "theorie",
+                JourTest.grille_id.isnot(None),
+            ).distinct().all()
+        } if _sess_ids else set()
+        _sessions_avec_epreuve = {
+            row.session_id
+            for row in db.query(SessionEpreuve.session_id).filter(
+                SessionEpreuve.session_id.in_(_sess_ids)
+            ).distinct().all()
+        } if _sess_ids else set()
+        _sessions_avec_rt = {
+            row.session_id
+            for row in db.query(ResultatTheorie.session_id).filter(
+                ResultatTheorie.session_id.in_(_sess_ids)
+            ).distinct().all()
+        } if _sess_ids else set()
+        statuts_affichage = {
+            s.id: statut_affichage_session(
+                s,
+                nb_candidats_actifs=_candidats_actifs.get(s.id, 0),
+                a_grille_theorie=s.id in _sessions_avec_grille,
+                a_epreuve=s.id in _sessions_avec_epreuve,
+                a_resultat_theorie=s.id in _sessions_avec_rt,
+                today=_today,
+            )
+            for s in liste
+        }
         return templates.TemplateResponse(
             request=request,
             name="sessions.html",
@@ -924,6 +965,7 @@ def page_sessions(request: Request):
                 "testeurs": testeurs_list,
                 "user_role": _u.role if _u else None,
                 "sessions_avec_tirage": sessions_avec_tirage,
+                "statuts_affichage": statuts_affichage,
             }
         )
     finally:

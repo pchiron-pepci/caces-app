@@ -41,10 +41,12 @@
                     {% if s.date_pratique_fin %} au {{ s.date_pratique_fin.strftime('%d/%m/%Y') }}{% endif %}
                 </td>
                 <td class="ses-statut">
-                    {% if s.statut == 'planifiee' %}<span class="badge blue">Ouverte</span>
-                    {% elif s.statut == 'en_cours' %}<span class="badge orange">En cours</span>
-                    {% elif s.statut == 'terminee' %}<span class="badge green">Terminee</span>
-                    {% else %}<span class="badge red">Annulee</span>{% endif %}
+                    {% set sa = statuts_affichage[s.id] %}
+                    {% if sa == 'Ouverte' %}<span class="badge blue">Ouverte</span>
+                    {% elif sa == 'À planifier' %}<span class="badge" style="background:#f5f5f5;color:#757575;">À planifier</span>
+                    {% elif sa == 'À reprendre' %}<span class="badge" style="background:#ffebee;color:#cc0000;">À reprendre</span>
+                    {% elif sa == 'Clôturée' %}<span class="badge green">Clôturée</span>
+                    {% else %}<span class="badge orange">À traiter</span>{% endif %}
                 </td>
                 {% if user_role != 'terrain' %}
                 <td class="ses-actions">
