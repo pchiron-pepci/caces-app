@@ -1473,6 +1473,14 @@ def page_session_detail(request: Request, session_id: int):
             (a.jour_test_id, a.stagiaire_id): a for a in attestations_neutralite_list
         }
 
+        from app.models.utilisations_themes import UtilisationTheme as _UT
+        _ut = db.query(_UT).filter(
+            _UT.session_id == session_id,
+            _UT.famille == session.famille
+        ).first()
+        tirage_declenche = _ut is not None
+        date_tirage = _ut.date_tirage if _ut else None
+
         return templates.TemplateResponse(
             request=request,
             name="session_detail.html",
@@ -1510,6 +1518,8 @@ def page_session_detail(request: Request, session_id: int):
                 "user_role": _u.role if _u else None,
                 "acces_notes_test": acces_notes_test,
                 "acces_notes_formation": acces_notes_formation,
+                "tirage_declenche": tirage_declenche,
+                "date_tirage": date_tirage,
             }
         )
     finally:

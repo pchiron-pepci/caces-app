@@ -297,36 +297,11 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
         raise HTTPException(status_code=404, detail="Session non trouvee")
     _check_modifiable(session)
 
-    tirage_json = None
-    if data.type == "theorie":
-        from datetime import datetime
-        annee = datetime.now().year
-        tirages_existants = (
-            db.query(UtilisationTheme)
-            .filter(UtilisationTheme.session_id == session_id, UtilisationTheme.famille == session.famille)
-            .order_by(UtilisationTheme.theme)
-            .all()
-        )
-        if tirages_existants:
-            grille_map = {
-                g.id: g.numero
-                for g in db.query(GrilleTheorie).filter(GrilleTheorie.famille == session.famille).all()
-            }
-            tirage_json = json.dumps({str(t.theme): grille_map.get(t.grille_id, 0) for t in tirages_existants})
-        else:
-            try:
-                tirage = tirer_themes_phase2(session.famille, session_id, annee, db)
-                enregistrer_tirage_themes(session_id, session.famille, annee, tirage, db)
-                tirage_json = tirage_to_json(tirage)
-            except ValueError:
-                tirage_json = None
-
     jour = JourTest(
         session_id=session_id,
         date=data.date,
         type=data.type,
         grille_id=None,
-        tirage_themes_json=tirage_json,
         note=data.note
     )
     db.add(jour)
@@ -352,10 +327,7 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     db.commit()
     db.refresh(jour)
 
-    result = {"message": "Jour de test ajoute", "id": jour.id}
-    if tirage_json:
-        result["tirage"] = json.loads(tirage_json)
-    return result
+    return {"message": "Jour de test ajoute", "id": jour.id}
 
 @router.post("/{session_id}/jours/{jour_id}/candidats")
 def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, db: DBSession = Depends(get_db)):
@@ -584,7 +556,15 @@ def get_grille_jour(session_id: int, jour_id: int, db: DBSession = Depends(get_d
         raise HTTPException(status_code=404, detail="Jour non trouve")
 
     session = db.query(Session).filter(Session.id == session_id).first()
-    data = get_questions_phase2(session_id, session.famille, db)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    try:
+        data = get_questions_phase2(session_id, session.famille, db)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Le tirage n'a pas encore été déclenché pour cette session — déclenchez-le avant de lancer le test."
+        )
 
     return {
         "grille_id": None,
@@ -694,12 +674,56 @@ def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSess
     db.commit()
     return {"identite_verifiee": jtc.identite_verifiee}
 
+@router.post("/{id}/declencher-tirage")
+def declencher_tirage(id: int, db: DBSession = Depends(get_db),
+                      current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    if current_user.role == "terrain":
+        raise HTTPException(status_code=403, detail="Réservé aux administrateurs")
+    s = db.query(Session).filter(Session.id == id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    if s.statut == "terminee":
+        raise HTTPException(status_code=400, detail="Impossible de déclencher le tirage sur une session clôturée")
+
+    existants = (
+        db.query(UtilisationTheme)
+        .filter(UtilisationTheme.session_id == id, UtilisationTheme.famille == s.famille)
+        .all()
+    )
+    if existants:
+        date_t = existants[0].date_tirage
+        return {
+            "deja_declenche": True,
+            "date_tirage": date_t.isoformat() if date_t else None,
+        }
+
+    from datetime import datetime
+    annee = datetime.now().year
+    now = datetime.now()
+    try:
+        tirage = tirer_themes_phase2(s.famille, id, annee, db)
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+    enregistrer_tirage_themes(id, s.famille, annee, tirage, db, date_tirage=now)
+    return {"deja_declenche": False, "date_tirage": now.isoformat()}
+
+
 @router.put("/{id}")
 def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)):
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
     _check_modifiable(s)
+    if data.famille != s.famille:
+        tirage_existant = db.query(UtilisationTheme).filter(
+            UtilisationTheme.session_id == id
+        ).first()
+        if tirage_existant:
+            raise HTTPException(status_code=400,
+                detail="La famille ne peut pas être modifiée après le déclenchement du tirage.")
+        s.famille = data.famille
     if not data.date_pratique_debut or not data.date_pratique_fin:
         raise HTTPException(400, "Les dates de début et de fin sont obligatoires")
     if data.date_pratique_debut > data.date_pratique_fin:

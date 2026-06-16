@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, DateTime
 from app.database import Base
 
 
@@ -11,6 +11,8 @@ class UtilisationTheme(Base):
     theme = Column(Integer, nullable=False)
     grille_id = Column(Integer, ForeignKey("grilles_theorie.id"), nullable=False)
     annee = Column(Integer, nullable=False)
+
+    date_tirage = Column(DateTime, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(

@@ -27,6 +27,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('[data-action="cloturer-session"]')) cloturerSession();
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="declencher-tirage"]');
+        if (!btn) return;
+        demanderConfirmation(
+            'Le tirage sera figé définitivement pour cette session. Continuer ?',
+            async function() {
+                var r = await fetch('/api/sessions/' + btn.dataset.sessionId + '/declencher-tirage', { method: 'POST' });
+                if (r.ok) location.reload();
+                else { var d = await r.json(); afficherErreur(d.detail || 'Erreur lors du déclenchement du tirage.'); }
+            }
+        );
+    });
+    document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="supprimer-jour"]');
         if (btn) supprimerJour(parseInt(btn.dataset.jourId));
     });

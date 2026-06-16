@@ -525,7 +525,19 @@
 </span>{% if session.statut != 'terminee' and session.statut != 'annulee' and user_role != 'terrain' %}<a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary" title="Modifier les infos de la session" style="padding:2px 7px; font-size:13px;">✏️</a>{% endif %}
         </div>
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        {% if user_role in ('admin', 'utilisateur') and session.statut != 'terminee' %}
+            {% if not tirage_declenche %}
+            <button class="btn btn-secondary" data-action="declencher-tirage" data-session-id="{{ session.id }}"
+                    style="font-size:13px; background:#fff8e1; border:1px solid #f9a825; color:#5d4037;">
+                🎲 Déclencher le tirage
+            </button>
+            {% else %}
+            <span style="font-size:12px; font-weight:600; color:#2e7d32; white-space:nowrap;">
+                ✅ Tirage déclenché{% if date_tirage %} le {{ date_tirage.strftime('%d/%m/%Y à %H:%M') }}{% endif %}
+            </span>
+            {% endif %}
+        {% endif %}
         {% if session.statut != 'annulee' and user_role in ('admin', 'utilisateur') %}
             {% if session.statut == 'terminee' %}
             <button class="btn btn-secondary" data-action="reouvrir-session" title="Rouvrir la session" style="font-size:13px;">🔒<span class="verr-label" style="display:none;">Rouvrir</span></button>
