@@ -529,7 +529,8 @@
         {% if user_role in ('admin', 'utilisateur') and session.statut != 'terminee' %}
             {% if not tirage_declenche %}
             <button class="btn btn-secondary" data-action="declencher-tirage" data-session-id="{{ session.id }}"
-                    style="font-size:13px; background:#fff8e1; border:1px solid #f9a825; color:#5d4037;">
+                    {% if not a_candidats_theorie %}disabled title="Aucun candidat inscrit en théorie"{% endif %}
+                    style="font-size:13px; background:#fff8e1; border:1px solid #f9a825; color:#5d4037;{% if not a_candidats_theorie %} opacity:0.45; cursor:not-allowed;{% endif %}">
                 🎲 Déclencher le tirage
             </button>
             {% else %}

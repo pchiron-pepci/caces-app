@@ -39,7 +39,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('modal-pin').style.display = 'flex';
                 document.getElementById('pin-confirm-btn').onclick = async function() {
                     var pin = document.getElementById('pin-input').value;
-                    var r = await fetch('/api/sessions/' + sessionId + '/declencher-tirage?pin=' + encodeURIComponent(pin), { method: 'POST' });
+                    var r = await fetch('/api/sessions/' + sessionId + '/declencher-tirage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pin: pin })
+                    });
                     if (r.ok) { fermerPin(); location.reload(); }
                     else {
                         var d = await r.json();

@@ -1481,6 +1481,14 @@ def page_session_detail(request: Request, session_id: int):
         tirage_declenche = _ut is not None
         date_tirage = _ut.date_tirage if _ut else None
 
+        a_candidats_theorie = db.query(JourTestCandidat).join(
+            JourTest, JourTest.id == JourTestCandidat.jour_test_id
+        ).filter(
+            JourTest.session_id == session_id,
+            JourTest.type == "theorie",
+            JourTest.actif == True
+        ).first() is not None
+
         return templates.TemplateResponse(
             request=request,
             name="session_detail.html",
@@ -1520,6 +1528,7 @@ def page_session_detail(request: Request, session_id: int):
                 "acces_notes_formation": acces_notes_formation,
                 "tirage_declenche": tirage_declenche,
                 "date_tirage": date_tirage,
+                "a_candidats_theorie": a_candidats_theorie,
             }
         )
     finally:
