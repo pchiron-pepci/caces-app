@@ -162,7 +162,7 @@
 
 <!-- MODAL Nouvelle / Modifier NC -->
 <div id="modal-nc" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; overflow-y:auto;">
-    <div style="background:white; margin:40px auto 60px; padding:32px; border-radius:16px; max-width:640px; position:relative; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="background:white; margin:20px auto 60px; padding:32px; border-radius:16px; width:95vw; max-width:640px; position:relative; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
         <button id="btn-fermer-nc" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#888; line-height:1;">✕</button>
         <h2 id="modal-nc-titre" style="margin-bottom:24px; color:#2d2d2d; font-size:1.15rem; font-weight:700;">Nouvelle non-conformité</h2>
         <input type="hidden" id="nc-id" value="">
@@ -212,7 +212,7 @@
             </div>
             <div class="form-field" style="grid-column:1/-1;">
                 <label>Session liée</label>
-                <div style="position:relative;">
+                <div style="position:relative; width:100%;">
                     <input type="text" id="nc-session-search" placeholder="Rechercher par référence de session..." autocomplete="off" style="width:100%; box-sizing:border-box; padding-right:30px;">
                     <button type="button" id="btn-clear-session" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:16px;line-height:1;display:none;">✕</button>
                     <ul id="nc-session-liste" style="display:none;position:absolute;z-index:200;background:white;border:1.5px solid #ddd;border-radius:6px;max-height:200px;overflow-y:auto;list-style:none;padding:0;margin:0;width:100%;box-shadow:0 4px 12px rgba(0,0,0,0.1);top:100%;left:0;"></ul>
@@ -252,5 +252,16 @@
     </div>
 </div>
 
+<style>
+#modal-nc .form-grid { grid-template-columns: 1fr; }
+@media (min-width: 768px) {
+    #modal-nc .form-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767px) {
+    #modal-nc > div { padding: 20px 16px !important; }
+    #modal-nc .form-actions { flex-wrap: wrap; }
+    #modal-nc .form-actions .btn { flex: 1 1 auto; text-align: center; justify-content: center; }
+}
+</style>
 <script src="/static/js/non_conformites.js"></script>
 {% endblock %}
