@@ -7,6 +7,25 @@
 @media (max-width: 1023px) {
     .dash-grid { grid-template-columns: 1fr !important; }
     .dash-grid > .card:not(.dash-a-traiter) { display: none; }
+    .table-sessions-dash { display: block; }
+    .table-sessions-dash tbody { display: block; }
+    .table-sessions-dash tr {
+        display: block; border: 1px solid #c8d8f0; border-radius: 10px;
+        margin: 0 0 10px; overflow: hidden; background: white;
+    }
+    .table-sessions-dash tr:last-child { margin-bottom: 0; }
+    .table-sessions-dash td {
+        display: flex; align-items: center; gap: 8px;
+        padding: 5px 14px; border-bottom: 1px solid #f0f4fb; white-space: normal;
+    }
+    .table-sessions-dash tr td:last-child { border-bottom: none; }
+    .table-sessions-dash td::before {
+        content: attr(data-label);
+        font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: #1565c0;
+        flex: 0 0 68px; white-space: nowrap;
+    }
+    .nc-flag { margin-right: 0.2em; }
 }
 @media (max-width: 360px) {
     .stats-grid { grid-template-columns: 1fr; }
@@ -57,19 +76,19 @@
             <a href="/sessions" style="font-size:11px; font-weight:400; color:#1a237e; text-decoration:none;">Voir tout</a>
         </div>
         {% if sessions_actives %}
-        <table class="table" style="margin-bottom:0;">
+        <table class="table table-sessions-dash" style="margin-bottom:0;">
             <tbody>
                 {% for s in sessions_actives %}
                 {% set date_debut = s.date_theorie or s.date_pratique_debut %}
                 {% set date_fin = s.date_pratique_fin %}
                 <tr>
-                    <td style="white-space:nowrap; min-width:0;">{% if s.id in sessions_avec_nc %}<span class="nc-flag" title="Non-conformité(s) à traiter" aria-label="Non-conformité à traiter">⚑</span>{% endif %}<a href="/sessions/{{ s.id }}" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; text-decoration:none;">{{ s.reference or '—' }}</a></td>
-                    <td>{% if s.id in sessions_avec_tirage %}<span class="badge orange" title="Tirage déclenché — famille figée">{{ s.famille }}</span>{% else %}<span class="badge blue">{{ s.famille }}</span>{% endif %}</td>
-                    <td style="font-size:12px; color:#888; white-space:nowrap;">
+                    <td data-label="Référence" style="min-width:0;">{% if s.id in sessions_avec_nc %}<span class="nc-flag" title="Non-conformité(s) à traiter" aria-label="Non-conformité à traiter">⚑</span>{% endif %}<a href="/sessions/{{ s.id }}" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; text-decoration:none;">{{ s.reference or '—' }}</a></td>
+                    <td data-label="Famille">{% if s.id in sessions_avec_tirage %}<span class="badge orange" title="Tirage déclenché — famille figée">{{ s.famille }}</span>{% else %}<span class="badge blue">{{ s.famille }}</span>{% endif %}</td>
+                    <td data-label="Dates" style="font-size:12px; color:#888;">
                         {{ date_debut.strftime('%d/%m/%Y') if date_debut else '—' }}
                         {% if date_fin and date_fin != date_debut %} → {{ date_fin.strftime('%d/%m/%Y') }}{% endif %}
                     </td>
-                    <td style="white-space:nowrap;">
+                    <td data-label="Statut" style="white-space:nowrap;">
                         {% if s.statut == 'planifiee' %}
                             <span class="badge" style="background:#e3f2fd;color:#1565c0;">Ouverte</span>
                         {% else %}
