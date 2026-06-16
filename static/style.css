@@ -321,6 +321,8 @@ body {
 .badge.red { background: #ffebee; color: var(--red); }
 .badge.blue { background: #e3f2fd; color: var(--blue); }
 
+.nc-flag { color: #cc0000; margin-right: 0.4em; font-size: 1em; line-height: 1; }
+
 /* BUTTONS */
 .btn {
     padding: 10px 20px;

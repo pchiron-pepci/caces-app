@@ -610,6 +610,13 @@ def dashboard(request: Request):
                 _UTDash.session_id.in_(_sa_ids)
             ).distinct().all()
         } if _sa_ids else set()
+        sessions_avec_nc = {
+            row.session_id
+            for row in db.query(NonConformite.session_id).filter(
+                NonConformite.session_id.in_(_sa_ids),
+                NonConformite.statut.in_(["ouvert", "en_cours"])
+            ).distinct().all()
+        } if _sa_ids else set()
         alertes_testeurs = []
         for t in testeurs_list:
             alertes = []
@@ -672,6 +679,7 @@ def dashboard(request: Request):
                 "nc_ouvertes": nc_ouvertes,
                 "sessions_actives": sessions_actives,
                 "sessions_avec_tirage": sessions_avec_tirage,
+                "sessions_avec_nc": sessions_avec_nc,
                 "alertes_testeurs": alertes_testeurs,
                 "familles_carto": familles_carto,
                 "lieux_cdt": lieux_cdt,
