@@ -176,6 +176,12 @@ def delete_session(id: int, pin: str, db: DBSession = Depends(get_db)):
             status_code=400,
             detail="Cette session contient des données (jours, épreuves, stagiaires, matériel, CACES® ou consentements). Clôturez-la depuis la vue détail."
         )
+    # Nettoyer les enregistrements soft-deletés avant suppression (FK PostgreSQL)
+    jour_ids = [row.id for row in db.query(JourTest.id).filter(JourTest.session_id == id).all()]
+    if jour_ids:
+        db.query(AffectationTest).filter(AffectationTest.jour_test_id.in_(jour_ids)).delete(synchronize_session=False)
+        db.query(JourTest).filter(JourTest.session_id == id).delete(synchronize_session=False)
+    db.query(SessionCandidat).filter(SessionCandidat.session_id == id).delete(synchronize_session=False)
     db.delete(s)
     db.commit()
     return {"message": "Session supprimee"}

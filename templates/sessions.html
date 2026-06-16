@@ -331,12 +331,12 @@ function supprimer(id, nom) {
         if (resp.ok) {
             fermerPin();
             location.reload();
-        } else if (resp.status === 400) {
+        } else if (resp.status === 403) {
+            document.getElementById('pin-error').style.display = 'block';
+        } else {
             const err = await resp.json().catch(() => ({}));
             document.getElementById('pin-api-error').textContent = err.detail || 'Suppression impossible.';
             document.getElementById('pin-api-error').style.display = 'block';
-        } else {
-            document.getElementById('pin-error').style.display = 'block';
         }
     };
 }
