@@ -51,3 +51,4 @@ class ResultatTheorie(Base):
     obtenue = Column(Boolean, nullable=True)
     dispense = Column(Boolean, default=False)
     bloque = Column(Boolean, default=False, nullable=False)
+    mode = Column(String(12), nullable=False, default="numerique")

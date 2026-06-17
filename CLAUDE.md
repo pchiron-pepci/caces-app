@@ -114,8 +114,11 @@ app/
 - `admin.html` valide aussi côté client dans `demanderPin()` avant d'appeler l'API
 
 ### Résultats théorie
-- Jamais écrasés — chaque passage crée un nouvel enregistrement (`ResultatTheorie`)
-- Traçabilité totale : tous les passages sont conservés
+- **Un seul `ResultatTheorie` par couple `(jour_test_id, stagiaire_id)`** — contrainte UNIQUE en base `uq_resultat_theorie_jour_stagiaire`
+- Un candidat peut repasser sur un **autre jour** (même session) → nouvelle ligne (couple différent)
+- Mode `numerique` : test numérique `test_theorie.html` → reprise par écrasement si déjà existant (guard dans `soumettre_reponses_theorie`)
+- Mode `degrade` : saisie manuelle par thème (à implémenter) → 409 si un résultat numérique existe déjà pour ce jour
+- Correction = écrasement assumé, toujours sous PIN formateur
 - Affichage : meilleur résultat réussi en priorité, sinon le plus récent
 
 ### Grilles INRS (théorie)
@@ -143,6 +146,8 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `/api/sessions/\d+/jours/\d+/candidats/\d+/identite` | PUT | Toggle identité candidat à l'accueil |
 | `/api/sessions/\d+/epreuves/\d+` | DELETE | Annulation résultat erroné |
 | `/api/sessions/\d+/theorie/reponses` | POST | Public (_PUBLIC_PATTERNS), bypass total |
+| `/api/sessions/\d+/theorie/reponses/\d+/\d+` | DELETE | Public, PIN formateur dans body |
+| `/api/sessions/\d+/theorie/reouvrir/\d+/\d+` | POST | Public, PIN formateur dans body |
 
 `rouvrir-terrain` n'est PAS whitelisté — réservé admin/utilisateur.
 
@@ -160,7 +165,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
    - Calcul dans `main.py` (total_ut jour + ut_planifie_candidat) : filtre via `opt_incluse_set = {(categorie, code_option)}`
    - Calcul dans `sessions.py:add_epreuve` : filtre `incluse_codes` avant `options_count * 0.5`
    - Cartographie admin : options incluses masquées des sous-lignes, annotation `incl. XX obligatoire` sur la ligne catégorie via `options_incluses_map` (route GET /admin)
-3. **Résultats théorie** : jamais écrasés, traçabilité totale
+3. **Résultats théorie** : un seul par `(jour_test_id, stagiaire_id)`, reprise par écrasement sous PIN formateur ; plusieurs jours = plusieurs lignes
 4. **Meilleur résultat réussi** affiché sur la carte CACES® avec sa date
 5. **Grilles INRS** : règle 10-30% par thème, comptage sur jours actifs uniquement
 6. **Identité candidat** : case à cocher (non bloquante) dans la modal saisie résultat pratique
@@ -184,7 +189,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
 | `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
 | `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` |
-| `ResultatTheorie` | `resultats_theorie` | jamais écrasé ; `bloque` Boolean défaut False — positionné comme SE, empêche la recherche de théorie dans `calculer_et_synchroniser` |
+| `ResultatTheorie` | `resultats_theorie` | UNIQUE `(jour_test_id, stagiaire_id)` ; `mode` VARCHAR(12) NOT NULL DEFAULT 'numerique' ('numerique'/'degrade') ; `bloque` Boolean défaut False — positionné comme SE, empêche la recherche de théorie dans `calculer_et_synchroniser` ; reprise par écrasement si mode='numerique', 409 si mode='degrade' |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete ; `option_pe`/`option_tel` legacy — remplacés par `HabilitationOption` |
 | `OptionCategorie` | `option_categorie` | table de référence des options disponibles par famille/catégorie ; codes : PE=Porte-engins, TEL=Télécommande, CC=Conduite cabine, TR=Translation sur rails, CEC=Circulation en charge ; `incluse` Boolean (défaut False) : option obligatoire incluse dans l'UT de la catégorie (pas de +0.5 UT) vs option facultative ; peuplé par `init_options.py` |
 | `HabilitationOption` | `habilitation_option` | options actives par habilitation (habilitation_id FK, code_option) ; modifiable avec PIN 1505 via `PUT /admin/habilitation/{id}/options` |
@@ -374,6 +379,38 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 - `dashboard.html:85` (section sessions) : `⚑ .nc-flag aria-label` → `🚩 .nc-flag title="Non-conformité(s) non soldée(s)"`
 - `dashboard.html:140` (section NC ouvertes) : suppression `color:#cc0000` (sans effet sur emoji) ; title → "NC liée à une session"
 - `non_conformites.html:77` : suppression `style="display:none;"` (bug desktop) ; title → "NC liée à une session" — `.nc-flag-cell` conservé pour le positionnement flex mobile
+
+### ✅ Chantier terminé : fondation test théorique — unicité, mode, anti-doublon, réouverture/suppression (2026-06-17)
+
+**Contexte :** prépare les évolutions du test numérique (mode dégradé hors-ligne, réouverture sous PIN, correction assumée).
+
+**Modèle `ResultatTheorie` (resultats_theorie) :**
+- Colonne `mode VARCHAR(12) NOT NULL DEFAULT 'numerique'` ajoutée — valeurs : `'numerique'` / `'degrade'`
+- Migration startup : `ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS mode VARCHAR(12) NOT NULL DEFAULT 'numerique'` (PostgreSQL prod idempotent)
+- Index unique `uq_resultat_theorie_jour_stagiaire ON resultats_theorie (jour_test_id, stagiaire_id)` — non silencieux, vérifié au démarrage
+- **ATTENTION prod** : avant déploiement, refaire `SELECT jour_test_id, stagiaire_id, COUNT(*) FROM resultats_theorie GROUP BY jour_test_id, stagiaire_id HAVING COUNT(*) > 1` sur prod et résoudre (rule : garder le plus récent = id max, supprimer tous les autres)
+
+**Résolution doublons (réutilisable prod) :**
+```python
+# Pour chaque couple (jour_test_id, stagiaire_id) en doublon : garder id_max, supprimer les autres
+SELECT jour_test_id, stagiaire_id FROM resultats_theorie GROUP BY ... HAVING COUNT(*) > 1
+# → pour chaque couple : DELETE WHERE id != max(id) AND jour_test_id=X AND stagiaire_id=Y
+```
+
+**Garde anti-doublon dans `soumettre_reponses_theorie` (sessions.py) :**
+- Existe + `mode='numerique'` → REPRISE : update du résultat existant (recalcul + écrasement `reponses_json`/notes/obtenue)
+- Existe + `mode='degrade'` → 409 "Un résultat saisi manuellement existe pour ce jour — supprimez-le d'abord."
+- N'existe pas → créer (comportement antérieur)
+
+**Nouvelles routes (socle serveur — UI à câbler ultérieurement) :**
+- `POST /api/sessions/{id}/theorie/reouvrir/{stagiaire_id}/{jour_test_id}` — PIN formateur dans body (`TheoriePinBody`), public (_PUBLIC_PATTERNS) ; retourne `{resultat_id, mode, reponses, note_totale, obtenue}` sans rien supprimer
+- `DELETE /api/sessions/{id}/theorie/reponses/{stagiaire_id}/{jour_test_id}` — PIN formateur dans body, public ; supprime le `ResultatTheorie` (sert à vider une saisie dégradée erronée ou changer de mode)
+
+**Principes métier validés :**
+- Unicité par jour, pas par session (plusieurs jours = plusieurs lignes légitimes)
+- Numérique et dégradé coexistent le même jour, candidat par candidat
+- Correction = écrasement assumé, toujours sous PIN formateur
+- Reprise numérique = réouverture + update (jamais de delete avant fin, `reponses_json` préservé même si page fermée)
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).

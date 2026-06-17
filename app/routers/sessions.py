@@ -582,30 +582,98 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    rt = ResultatTheorie(
-        session_id=session_id,
-        stagiaire_id=data.stagiaire_id,
-        jour_test_id=data.jour_test_id,
-        grille_id=None,
-        reponses_json=json.dumps(data.reponses),
-        note_totale=resultat["note_totale"],
-        note_theme1=resultat["notes_themes"].get("1"),
-        note_theme2=resultat["notes_themes"].get("2"),
-        note_theme3=resultat["notes_themes"].get("3"),
-        note_theme4=resultat["notes_themes"].get("4"),
-        note_theme5=resultat["notes_themes"].get("5"),
-        theme1_ok=resultat["themes_ok"].get("1"),
-        theme2_ok=resultat["themes_ok"].get("2"),
-        theme3_ok=resultat["themes_ok"].get("3"),
-        theme4_ok=resultat["themes_ok"].get("4"),
-        theme5_ok=resultat["themes_ok"].get("5"),
-        obtenue=resultat["obtenue"],
-        dispense=False,
-    )
-    db.add(rt)
-    db.commit()
+    existing = db.query(ResultatTheorie).filter(
+        ResultatTheorie.jour_test_id == data.jour_test_id,
+        ResultatTheorie.stagiaire_id == data.stagiaire_id,
+    ).first()
 
+    if existing:
+        if existing.mode == "degrade":
+            raise HTTPException(
+                status_code=409,
+                detail="Un résultat saisi manuellement existe pour ce jour — supprimez-le d'abord.",
+            )
+        # mode == 'numerique' : reprise — écrasement du résultat existant
+        existing.reponses_json = json.dumps(data.reponses)
+        existing.note_totale = resultat["note_totale"]
+        existing.note_theme1 = resultat["notes_themes"].get("1")
+        existing.note_theme2 = resultat["notes_themes"].get("2")
+        existing.note_theme3 = resultat["notes_themes"].get("3")
+        existing.note_theme4 = resultat["notes_themes"].get("4")
+        existing.note_theme5 = resultat["notes_themes"].get("5")
+        existing.theme1_ok = resultat["themes_ok"].get("1")
+        existing.theme2_ok = resultat["themes_ok"].get("2")
+        existing.theme3_ok = resultat["themes_ok"].get("3")
+        existing.theme4_ok = resultat["themes_ok"].get("4")
+        existing.theme5_ok = resultat["themes_ok"].get("5")
+        existing.obtenue = resultat["obtenue"]
+        existing.mode = "numerique"
+    else:
+        rt = ResultatTheorie(
+            session_id=session_id,
+            stagiaire_id=data.stagiaire_id,
+            jour_test_id=data.jour_test_id,
+            grille_id=None,
+            reponses_json=json.dumps(data.reponses),
+            note_totale=resultat["note_totale"],
+            note_theme1=resultat["notes_themes"].get("1"),
+            note_theme2=resultat["notes_themes"].get("2"),
+            note_theme3=resultat["notes_themes"].get("3"),
+            note_theme4=resultat["notes_themes"].get("4"),
+            note_theme5=resultat["notes_themes"].get("5"),
+            theme1_ok=resultat["themes_ok"].get("1"),
+            theme2_ok=resultat["themes_ok"].get("2"),
+            theme3_ok=resultat["themes_ok"].get("3"),
+            theme4_ok=resultat["themes_ok"].get("4"),
+            theme5_ok=resultat["themes_ok"].get("5"),
+            obtenue=resultat["obtenue"],
+            dispense=False,
+            mode="numerique",
+        )
+        db.add(rt)
+
+    db.commit()
     return {"resultat": resultat}
+
+
+class TheoriePinBody(BaseModel):
+    pin: str
+
+
+@router.post("/{session_id}/theorie/reouvrir/{stagiaire_id}/{jour_test_id}")
+def reouvrir_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
+                     body: TheoriePinBody, db: DBSession = Depends(get_db)):
+    if body.pin != get_pin_formateur(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    rt = db.query(ResultatTheorie).filter(
+        ResultatTheorie.jour_test_id == jour_test_id,
+        ResultatTheorie.stagiaire_id == stagiaire_id,
+    ).first()
+    if not rt:
+        raise HTTPException(status_code=404, detail="Aucun résultat théorique pour ce candidat et ce jour")
+    return {
+        "resultat_id": rt.id,
+        "mode": rt.mode,
+        "reponses": json.loads(rt.reponses_json) if rt.reponses_json else {},
+        "note_totale": rt.note_totale,
+        "obtenue": rt.obtenue,
+    }
+
+
+@router.delete("/{session_id}/theorie/reponses/{stagiaire_id}/{jour_test_id}")
+def supprimer_resultat_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
+                                body: TheoriePinBody, db: DBSession = Depends(get_db)):
+    if body.pin != get_pin_formateur(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    rt = db.query(ResultatTheorie).filter(
+        ResultatTheorie.jour_test_id == jour_test_id,
+        ResultatTheorie.stagiaire_id == stagiaire_id,
+    ).first()
+    if not rt:
+        raise HTTPException(status_code=404, detail="Aucun résultat théorique pour ce candidat et ce jour")
+    db.delete(rt)
+    db.commit()
+    return {"ok": True}
 
 @router.get("/{session_id}/jours/{jour_id}/grille")
 def get_grille_jour(session_id: int, jour_id: int, db: DBSession = Depends(get_db)):

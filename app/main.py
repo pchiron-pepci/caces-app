@@ -123,6 +123,7 @@ def _run_startup_migrations():
         "ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE",
         # resultats_theorie
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS mode VARCHAR(12) NOT NULL DEFAULT 'numerique'",
         # caces_obtenus
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT",
         # carte_caces
@@ -186,6 +187,32 @@ try:
             print("[migration] ERREUR : uq_session_reference introuvable apres creation — doublons residuels ?", flush=True)
 except Exception as _e:
     print(f"[migration] ERREUR creation uq_session_reference : {_e}", flush=True)
+
+# Index unique résultat théorique (jour_test_id, stagiaire_id) — posé après résolution des doublons base de test (2026-06-17)
+# ATTENTION : refaire SELECT jour_test_id, stagiaire_id, COUNT(*) FROM resultats_theorie
+#             GROUP BY jour_test_id, stagiaire_id HAVING COUNT(*) > 1  sur PROD avant déploiement
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_resultat_theorie_jour_stagiaire "
+            "ON resultats_theorie (jour_test_id, stagiaire_id)"
+        ))
+        _conn.commit()
+    with engine.connect() as _conn:
+        try:
+            row = _conn.execute(text(
+                "SELECT indexname FROM pg_indexes WHERE indexname = 'uq_resultat_theorie_jour_stagiaire'"
+            )).fetchone()
+        except Exception:
+            row = _conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='index' AND name='uq_resultat_theorie_jour_stagiaire'"
+            )).fetchone()
+        if row:
+            print("[migration] uq_resultat_theorie_jour_stagiaire : index unique cree et verifie.", flush=True)
+        else:
+            print("[migration] ERREUR : uq_resultat_theorie_jour_stagiaire introuvable apres creation — doublons residuels ?", flush=True)
+except Exception as _e:
+    print(f"[migration] ERREUR creation uq_resultat_theorie_jour_stagiaire : {_e}", flush=True)
 
 try:
     with engine.connect() as _conn:
@@ -440,6 +467,8 @@ _PUBLIC_EXACT = {"/api/auth/token", "/api/auth/logout", "/health"}
 _PUBLIC_PATTERNS = [
     _re.compile(r"^/api/sessions/\d+/jours/\d+/grille$"),
     _re.compile(r"^/api/sessions/\d+/theorie/reponses$"),
+    _re.compile(r"^/api/sessions/\d+/theorie/reponses/\d+/\d+$"),
+    _re.compile(r"^/api/sessions/\d+/theorie/reouvrir/\d+/\d+$"),
     _re.compile(r"^/admin/config/verifier-pin-formateur$"),
     _re.compile(r"^/api/consentements/"),
     _re.compile(r"^/api/neutralite/"),
