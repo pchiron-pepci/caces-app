@@ -456,6 +456,14 @@
         <p style="color:#555; font-size:15px; line-height:1.6;">Les tests théoriques de cette session ont été validés et ne peuvent plus être démarrés. Contactez le formateur.</p>
     </div>
 </div>
+{% elif not (tirage_declenche | default(false)) %}
+<div style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f5f6fa; padding:32px; text-align:center;">
+    <div style="background:white; border:2px solid #e65100; border-radius:16px; padding:40px 32px; max-width:480px; box-shadow:0 4px 20px rgba(0,0,0,0.10);">
+        <div style="font-size:48px; margin-bottom:16px;">🎲</div>
+        <h2 style="color:#bf360c; margin-bottom:16px; font-size:20px;">Tirage non déclenché</h2>
+        <p style="color:#555; font-size:15px; line-height:1.6;">Aucun tirage de grille n'a été effectué pour cette session. Revenez dans l'application et déclenchez le tirage avant de lancer le test théorique.</p>
+    </div>
+</div>
 {% else %}
 
 <!-- HEADER -->
@@ -509,6 +517,7 @@
         <div style="font-size:11px; color:#888; margin-top:10px;">Scannez pour passer le test sur votre téléphone</div>
     </div>
 
+    <div id="msg-erreur-grille" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
     <button class="btn-action" onclick="allerConfirmation()">Preparer le test →</button>
 </div>
 
@@ -717,6 +726,13 @@ const THEME_NOMS = {
 async function chargerQuestions() {
     try {
         const resp = await fetch('/api/sessions/' + SESSION_ID + '/jours/' + JOUR_ID + '/grille');
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            const msg = err.detail || 'Erreur lors du chargement des questions.';
+            const el = document.getElementById('msg-erreur-grille');
+            if (el) { el.textContent = msg; el.style.display = 'block'; }
+            return;
+        }
         const data = await resp.json();
         questions = [];
         for (let t = 1; t <= 5; t++) {

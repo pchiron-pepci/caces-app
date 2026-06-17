@@ -1857,6 +1857,8 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
         if not session or not jour:
             return {"error": "Non trouve"}
         grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first()
+        from app.models.utilisations_themes import UtilisationTheme as _UT2
+        _tirage = db.query(_UT2).filter(_UT2.session_id == session_id, _UT2.famille == session.famille).first()
         candidats_ids = [
             jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
                 JourTestCandidat.jour_test_id == jour_id,
@@ -1880,6 +1882,7 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
                 "grille_numero": grille.numero if grille else "Phase 2",
                 "session_candidats": session_candidats,
                 "terrain_gele": session.date_cloture_terrain is not None,
+                "tirage_declenche": _tirage is not None,
             }
         )
     finally:
@@ -1896,6 +1899,8 @@ def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: i
         session = db.query(Session).filter(Session.id == jour.session_id).first()
         grille = db.query(GrilleTheorie).filter(GrilleTheorie.id == jour.grille_id).first() if jour.grille_id else None
         stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
+        from app.models.utilisations_themes import UtilisationTheme as _UT3
+        _tirage2 = db.query(_UT3).filter(_UT3.session_id == jour.session_id, _UT3.famille == session.famille).first() if session else None
         candidats_ids = [
             jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
                 JourTestCandidat.jour_test_id == jour_test_id,
@@ -1924,6 +1929,7 @@ def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: i
                 "start_prenom": stagiaire.prenom if stagiaire else "",
                 "start_ddn": stagiaire.date_naissance.isoformat() if stagiaire and stagiaire.date_naissance else "",
                 "terrain_gele": session.date_cloture_terrain is not None if session else False,
+                "tirage_declenche": _tirage2 is not None,
             }
         )
     finally:

@@ -821,9 +821,14 @@
                             title="Ajouter un candidat">👥</button>
                         {% endif %}
                         {% if session.date_cloture_terrain is none %}
-                        <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
-                            class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
-                            title="Accéder aux tests">🚀</a>
+                            {% if tirage_declenche %}
+                            <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
+                                class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                                title="Accéder aux tests">🚀</a>
+                            {% else %}
+                            <span class="btn btn-secondary" style="padding:6px 12px; font-size:12px; opacity:0.45; cursor:not-allowed;"
+                                title="Tirage non déclenché — déclenchez la grille avant de lancer le test">🚀</span>
+                            {% endif %}
                         {% else %}
                         <span class="badge" style="background:#f3e5f5;color:#7b1fa2;font-size:12px;" title="Session clôturée terrain — tests désactivés">🔐 Tests clos</span>
                         {% endif %}

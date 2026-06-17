@@ -413,6 +413,14 @@ SELECT jour_test_id, stagiaire_id FROM resultats_theorie GROUP BY ... HAVING COU
 - Correction = écrasement assumé, toujours sous PIN formateur
 - Reprise numérique = réouverture + update (jamais de delete avant fin, `reponses_json` préservé même si page fermée)
 
+### ✅ Chantier terminé : garde-fou lancement test théorique sans tirage (2026-06-17)
+
+- **Cause** : `get_questions_phase2` lève `ValueError` → `HTTPException(400)` si `UtilisationTheme` vide pour la session — le JS plantait sur `data.themes[1]` au lieu d'afficher l'erreur.
+- **Couche 1 — UI** : 🚀 dans `session_detail.html` remplacé par `<span>` désactivé (opacity 0.45, cursor not-allowed, tooltip explicatif) quand `not tirage_declenche` — l'utilisateur ne peut pas lancer le test sans tirage.
+- **Couche 2 — Page test** : `test_theorie.html` affiche écran bloquant "Tirage non déclenché" si `tirage_declenche | default(false)` est faux (fail-safe : `default(false)` bloque si variable absente). `tirage_declenche` passé par les deux routes GET (`page_test_theorie` et `page_test_theorie_start`).
+- **Couche 3 — JS** : `chargerQuestions()` vérifie `resp.ok`, lit `err.detail` et affiche le message dans `#msg-erreur-grille` (div rouge dans ecran-selection) — plus de crash sur `data.themes[1]`, plus de `alert()`.
+- **Route serveur** : `GET /{session_id}/jours/{jour_id}/grille` — message déjà clair : "Le tirage n'a pas encore été déclenché..." — inchangé (source de vérité).
+
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
 
