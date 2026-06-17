@@ -181,6 +181,22 @@
     min-width: 70px;
   }
 
+  /* ── Mobile ≤ 600 px ────────────────────────────────────────────
+     Barre de contrôles : boutons réduits, libellé #proj-etat masqué.
+     Desktop (> 600 px) : aucun changement.                          */
+  @media (max-width: 600px) {
+    #proj-controls {
+      gap: 8px;
+      padding: 0 10px;
+    }
+    .ctrl-btn {
+      padding: 6px 8px;
+      font-size: 12px;
+      gap: 3px;
+    }
+    #proj-etat { display: none; }
+  }
+
   /* ── Overlay fin de temps ─────────────────────────────────────── */
   #proj-overlay-fin {
     display: none;
