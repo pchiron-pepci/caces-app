@@ -513,15 +513,11 @@
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            {% if session.statut == 'planifiee' %}<span class="badge blue">Planifiee</span>
-            {% elif session.statut == 'en_cours' %}<span class="badge orange">En cours</span>
-            {% elif session.statut == 'terminee' %}<span class="badge green">Terminee</span>
-            {% else %}<span class="badge red">Annulee</span>{% endif %}
-            {% if tirage_declenche %}
-            <span class="badge" style="background:#fff3e0;color:#e65100;" title="Tirage déclenché — famille {{ session.famille }} figée">🔒 Figée</span>
-            {% else %}
-            <span class="badge" style="background:#e3f2fd;color:#1565c0;" title="Famille modifiable — tirage non déclenché">Libre</span>
-            {% endif %}
+            {% if statut_affichage == 'Clôturée' %}<span class="badge green">Clôturée</span>
+            {% elif statut_affichage == 'Validée terrain' %}<span class="badge violet" title="Validée terrain le {{ session.date_cloture_terrain.strftime('%d/%m/%Y') }}">Validée terrain</span>
+            {% elif statut_affichage == 'À réutiliser' %}<span class="badge orange">À réutiliser</span>
+            {% elif statut_affichage == 'Annulée' %}<span class="badge red">Annulée</span>
+            {% else %}<span class="badge blue">Ouverte</span>{% endif %}
             <span class="badge blue">{{ lieu.nom if lieu else '—' }}</span>
             {% if session.date_pratique_debut %}
             <span class="badge" style="background:#f0f2f7; color:#555;">

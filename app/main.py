@@ -1545,6 +1545,12 @@ def page_session_detail(request: Request, session_id: int):
         tirage_declenche = _ut is not None
         date_tirage = _ut.date_tirage if _ut else None
 
+        from app.services.session_statut import statut_affichage_session as _sas
+        _a_epreuve = db.query(SessionEpreuve).filter(SessionEpreuve.session_id == session_id).first() is not None
+        _a_rt = db.query(ResultatTheorie).filter(ResultatTheorie.session_id == session_id).first() is not None
+        statut_affichage = ("Annulée" if session.statut == "annulee"
+                            else _sas(session, a_tirage=tirage_declenche, a_epreuve=_a_epreuve, a_resultat_theorie=_a_rt))
+
         a_candidats_theorie = db.query(JourTestCandidat).join(
             JourTest, JourTest.id == JourTestCandidat.jour_test_id
         ).filter(
@@ -1593,6 +1599,7 @@ def page_session_detail(request: Request, session_id: int):
                 "tirage_declenche": tirage_declenche,
                 "date_tirage": date_tirage,
                 "a_candidats_theorie": a_candidats_theorie,
+                "statut_affichage": statut_affichage,
             }
         )
     finally:
