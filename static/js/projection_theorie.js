@@ -98,6 +98,16 @@
         }
     }
 
+    // ── Recalage chrono sur un index cible ────────────────────────
+    // Après un saut manuel, on pose elapsed = idx * DUR_MS pour que
+    // tick() calcule expectedIdx == currentIdx et n'écrase pas le saut.
+    function seekTo(idx) {
+        var target = idx * DUR_MS;
+        elapsedBeforePause = (playStartTs !== null)
+            ? target - (Date.now() - playStartTs)
+            : target;
+    }
+
     // ── Tick (interval 250 ms pour un affichage chrono fluide) ────
     function tick() {
         renderTimer();
@@ -161,18 +171,20 @@
                 break;
             case 'prev':
                 if (currentIdx > 0) {
-                    cancelSpeech();             // coupe la question quittée
+                    cancelSpeech();
                     currentIdx--;
+                    seekTo(currentIdx);         // recale le chrono → tick() ne réécrase pas
                     renderQuestion(currentIdx);
-                    if (playStartTs !== null) speak(questions[currentIdx].texte); // lit si en lecture
+                    if (playStartTs !== null) speak(questions[currentIdx].texte);
                 }
                 break;
             case 'next':
                 if (currentIdx < N - 1) {
-                    cancelSpeech();             // coupe la question quittée
+                    cancelSpeech();
                     currentIdx++;
+                    seekTo(currentIdx);         // recale le chrono → tick() ne réécrase pas
                     renderQuestion(currentIdx);
-                    if (playStartTs !== null) speak(questions[currentIdx].texte); // lit si en lecture
+                    if (playStartTs !== null) speak(questions[currentIdx].texte);
                 }
                 break;
             case 'reset':
