@@ -634,7 +634,6 @@ app.include_router(neutralite.router)
 
 @app.get("/sessions/{session_id}/projection/{jour_id}")
 def page_projection_theorie(session_id: int, jour_id: int, request: Request, db: DBSession = Depends(get_db)):
-    import json as _json
     user = getattr(request.state, "user", None)
     if not user:
         raise HTTPException(status_code=401, detail="Non authentifié")
@@ -658,14 +657,17 @@ def page_projection_theorie(session_id: int, jour_id: int, request: Request, db:
                 seq += 1
     except ValueError:
         tirage_ok = False
-    return templates.TemplateResponse("projection_theorie.html", {
-        "request": request,
-        "session_ref": session.reference or f"Session {session.id}",
-        "famille": session.famille,
-        "tirage_ok": tirage_ok,
-        "questions": questions_flat,
-        "total": len(questions_flat),
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="projection_theorie.html",
+        context={
+            "session_ref": session.reference or f"Session {session.id}",
+            "famille": session.famille,
+            "tirage_ok": tirage_ok,
+            "questions": questions_flat,
+            "total": len(questions_flat),
+        },
+    )
 
 
 @app.get("/api/sessions/{session_id}/theorie/pdf/sujet")
