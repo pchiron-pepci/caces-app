@@ -2068,6 +2068,16 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
         ).all()
         for sc in session_candidats:
             sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
+        rt_list = db.query(ResultatTheorie).filter(
+            ResultatTheorie.jour_test_id == jour_id
+        ).all()
+        rt_par_stagiaire = {rt.stagiaire_id: rt.mode for rt in rt_list}
+        candidats_eligibles_ids = [
+            sc.stagiaire_id for sc in session_candidats if not sc.theorie_dispensee
+        ]
+        tous_notes = bool(candidats_eligibles_ids) and all(
+            sid in rt_par_stagiaire for sid in candidats_eligibles_ids
+        )
         return templates.TemplateResponse(
             request=request,
             name="test_theorie.html",
@@ -2079,6 +2089,8 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
                 "session_candidats": session_candidats,
                 "terrain_gele": session.date_cloture_terrain is not None,
                 "tirage_declenche": _tirage is not None,
+                "rt_par_stagiaire": rt_par_stagiaire,
+                "tous_notes": tous_notes,
             }
         )
     finally:
@@ -2110,6 +2122,16 @@ def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: i
         ).all()
         for sc in session_candidats:
             sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
+        rt_list = db.query(ResultatTheorie).filter(
+            ResultatTheorie.jour_test_id == jour_test_id
+        ).all()
+        rt_par_stagiaire = {rt.stagiaire_id: rt.mode for rt in rt_list}
+        candidats_eligibles_ids = [
+            sc.stagiaire_id for sc in session_candidats if not sc.theorie_dispensee
+        ]
+        tous_notes = bool(candidats_eligibles_ids) and all(
+            sid in rt_par_stagiaire for sid in candidats_eligibles_ids
+        )
         return templates.TemplateResponse(
             request=request,
             name="test_theorie.html",
@@ -2126,6 +2148,8 @@ def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: i
                 "start_ddn": stagiaire.date_naissance.isoformat() if stagiaire and stagiaire.date_naissance else "",
                 "terrain_gele": session.date_cloture_terrain is not None if session else False,
                 "tirage_declenche": _tirage2 is not None,
+                "rt_par_stagiaire": rt_par_stagiaire,
+                "tous_notes": tous_notes,
             }
         )
     finally:

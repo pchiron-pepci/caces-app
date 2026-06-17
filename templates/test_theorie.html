@@ -515,11 +515,14 @@
         <select id="select-candidat">
             <option value="">-- Choisir le candidat --</option>
             {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
+            {% set _rt_mode = rt_par_stagiaire.get(sc.stagiaire_id) %}
             <option value="{{ sc.stagiaire_id }}"
                 data-nom="{{ sc.stagiaire.nom }}"
                 data-prenom="{{ sc.stagiaire.prenom }}"
-                data-naissance="{{ sc.stagiaire.date_naissance or '' }}">
-                {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}
+                data-naissance="{{ sc.stagiaire.date_naissance or '' }}"
+                data-a-resultat="{{ 'true' if _rt_mode else 'false' }}"
+                data-mode="{{ _rt_mode or '' }}">
+                {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}{% if _rt_mode == 'degrade' %} — 📄 papier{% elif _rt_mode == 'numerique' %} — ✅ passé{% endif %}
             </option>
             {% endif %}{% endfor %}
         </select>
@@ -536,6 +539,12 @@
     </div>
 
     <div id="msg-erreur-grille" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
+    {% if tous_notes %}
+    <div style="background:#fff3e0; border:1.5px solid #fb8c00; border-radius:10px; padding:14px 16px; color:#e65100; font-size:13px; margin-top:12px;">
+        ⚠️ Tous les candidats ont déjà un résultat enregistré pour ce jour — aucun nouveau test ne peut être lancé depuis cet écran.
+    </div>
+    {% endif %}
+    <div id="msg-bloque-select" style="display:none; margin-top:12px; background:#fff3e0; border:1.5px solid #fb8c00; border-radius:10px; padding:14px 16px; color:#e65100; font-size:14px; line-height:1.5;"></div>
     <button class="btn-action" onclick="allerConfirmation()">Preparer le test →</button>
 </div>
 
@@ -777,11 +786,29 @@ chargerQuestions();
 
 let _qrInstance = null;
 document.getElementById('select-candidat').addEventListener('change', function() {
-    const val = this.value;
-    const section = document.getElementById('qr-section');
-    const box = document.getElementById('qr-box');
-    if (!val) { section.style.display = 'none'; return; }
+    const val       = this.value;
+    const section   = document.getElementById('qr-section');
+    const box       = document.getElementById('qr-box');
+    const msgBloque = document.getElementById('msg-bloque-select');
+
+    msgBloque.style.display = 'none';
+    msgBloque.textContent   = '';
     box.innerHTML = '';
+
+    if (!val) { section.style.display = 'none'; return; }
+
+    const opt  = this.options[this.selectedIndex];
+    const aRes = opt.getAttribute('data-a-resultat') === 'true';
+    if (aRes) {
+        section.style.display = 'none';
+        const mode = opt.getAttribute('data-mode');
+        msgBloque.textContent = mode === 'degrade'
+            ? '📄 Une saisie papier a déjà été enregistrée pour ce candidat. Pour corriger, utilisez "Corriger" depuis la page de session (sous PIN formateur).'
+            : '✅ Ce candidat a déjà passé le test numérique. Pour corriger, utilisez "Corriger" depuis la page de session (sous PIN formateur).';
+        msgBloque.style.display = '';
+        return;
+    }
+
     _qrInstance = new QRCode(box, {
         text: window.location.origin + '/test/theorie/' + JOUR_ID + '/' + val + '/start',
         width: 150,
@@ -809,6 +836,18 @@ function allerConfirmation() {
     const sel = document.getElementById('select-candidat');
     stagiaireId = sel.value;
     if (!stagiaireId) { alert('Veuillez selectionner un candidat !'); return; }
+
+    const opt  = sel.options[sel.selectedIndex];
+    const aRes = opt.getAttribute('data-a-resultat') === 'true';
+    if (aRes) {
+        const mode = opt.getAttribute('data-mode');
+        const msgBloque = document.getElementById('msg-bloque-select');
+        msgBloque.textContent = mode === 'degrade'
+            ? '📄 Une saisie papier a déjà été enregistrée. Utilisez "Corriger" depuis la page de session.'
+            : '✅ Ce candidat a déjà passé le test numérique. Utilisez "Corriger" depuis la page de session.';
+        msgBloque.style.display = '';
+        return;
+    }
 
     // RESET complet pour le nouveau candidat
     reponses = {};
