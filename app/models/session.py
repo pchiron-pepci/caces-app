@@ -18,3 +18,4 @@ class Session(Base):
     responsable = Column(String(200), nullable=True)
     date_creation = Column(DateTime, default=datetime.utcnow)
     type = Column(String(20), default="caces", nullable=True)
+    date_cloture_terrain = Column(DateTime, nullable=True)

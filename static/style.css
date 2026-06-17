@@ -320,6 +320,17 @@ body {
 .badge.orange { background: #fff3e0; color: var(--orange); }
 .badge.red { background: #ffebee; color: var(--red); }
 .badge.blue { background: #e3f2fd; color: var(--blue); }
+.badge.violet { background: #f3e5f5; color: #7b1fa2; }
+
+.cloture-terrain-date { display: none; }
+@media (max-width: 1023px) {
+    .cloture-terrain-date {
+        display: block;
+        font-size: 11px;
+        color: #888;
+        margin-top: 2px;
+    }
+}
 
 .nc-flag { color: #cc0000; margin-right: 0.4em; font-size: 1em; line-height: 1; }
 
