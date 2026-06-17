@@ -764,7 +764,11 @@ function cloturerTerrain() {
             body: JSON.stringify({ pin })
         });
         if (resp.ok) { fermerPin(); location.reload(); }
-        else { document.getElementById('pin-error').style.display = 'block'; }
+        else {
+            const data = await resp.json().catch(() => ({}));
+            document.getElementById('pin-error').textContent = data.detail || 'Erreur';
+            document.getElementById('pin-error').style.display = 'block';
+        }
     };
 }
 
@@ -781,7 +785,11 @@ function rouvrirTerrain() {
             body: JSON.stringify({ pin })
         });
         if (resp.ok) { fermerPin(); location.reload(); }
-        else { document.getElementById('pin-error').style.display = 'block'; }
+        else {
+            const data = await resp.json().catch(() => ({}));
+            document.getElementById('pin-error').textContent = data.detail || 'Erreur';
+            document.getElementById('pin-error').style.display = 'block';
+        }
     };
 }
 

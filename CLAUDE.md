@@ -131,6 +131,21 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 - `GET /test/theorie/{session_id}/{jour_id}` — tablette testeur : affiche `test_theorie.html` avec sélection candidat (écran 1→2→3→4)
 - `GET /test/theorie/{jour_test_id}/{stagiaire_id}/start` — QR code candidat : démarre directement le test (skip écrans sélection/identité/consignes) ; `jour_test_id` est l'id du `JourTest` (pas `session_id`) ; contexte supplémentaire : `start_direct=True`, `start_stagiaire_id`, `start_nom`, `start_prenom` ; QR générés dans `session_detail.js` via `qrcode.js` (CDN cdnjs) sur `.qr-container[data-qr-url]`
 
+### Middleware _verifier_role (main.py) — périmètre rôle terrain
+
+Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/sessions/*` sauf whitelist explicite. Routes whitelistées pour terrain (état après correctifs 2026-06-17) :
+
+| Route | Méthode | Raison |
+|---|---|---|
+| `/api/sessions/\d+/jours(-formation)?/\d+/note-privee` | PUT, DELETE | Note privée du testeur principal |
+| `/api/sessions/\d+/epreuves` | POST | Saisie résultat pratique |
+| `/api/sessions/\d+/cloturer-terrain` | POST | Clôture terrain (PIN formateur requis) |
+| `/api/sessions/\d+/jours/\d+/candidats/\d+/identite` | PUT | Toggle identité candidat à l'accueil |
+| `/api/sessions/\d+/epreuves/\d+` | DELETE | Annulation résultat erroné |
+| `/api/sessions/\d+/theorie/reponses` | POST | Public (_PUBLIC_PATTERNS), bypass total |
+
+`rouvrir-terrain` n'est PAS whitelisté — réservé admin/utilisateur.
+
 ---
 
 ## Règles métier
@@ -165,7 +180,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 |---|---|---|
 | `Famille` | `familles` | R482, R483 (Grues mobiles — cats A, B), R484, R485 (cats 1, 2), R486 (cats A, B, C), R487 (Grues à tour — cats 1, 2, 3), R489 (cats 1A, 1B, 2A, 2B, 3, 4, 5, 6, 7), R490 (cat 1 unique) |
 | `Categorie` | `categories` | `ut_pratique`, `pepci_habilite`, `est_option` |
-| `Session` | `sessions` | `famille`, `lieu_id`, `statut`, `reference` |
+| `Session` | `sessions` | `famille`, `lieu_id`, `statut`, `reference`, `date_cloture_terrain` (DateTime nullable — clôture terrain) |
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
 | `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
 | `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` |
@@ -175,7 +190,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `HabilitationOption` | `habilitation_option` | options actives par habilitation (habilitation_id FK, code_option) ; modifiable avec PIN 1505 via `PUT /admin/habilitation/{id}/options` |
 | `Testeur` | `testeurs` | soft delete (`actif`) ; `etat` : actif/suspendu/sorti — modifiable avec PIN 1505 via `PUT /api/testeurs/{id}/etat`, défaut actif à la création ; docs PDF en base64 : `attestation_prevention_pdf/nom/date`, `visite_medicale_pdf/nom/visite_medicale_date`, `evaluation_pdf/nom/evaluation_date`, `autorisation_conduite_pdf/nom`, `carte_pdf/carte_nom_fichier` (legacy) |
 | `CarteTesteur` | `carte_testeur` | multi-cartes par testeur, soft delete (`actif`) ; champs : `famille`, `nom_fichier`, `contenu_pdf` base64, `date_upload` |
-| `ConfigOrganisme` | `config_organisme` | singleton (1 ligne) ; `nom_organisme`, `logo_base64` (image base64), `logo_nom` ; `adresse` Text, `siret` VARCHAR(20), `email` VARCHAR(200), `telephone` VARCHAR(50) ; `signataire_nom`, `signataire_prenom`, `signataire_qualite` VARCHAR(100) ; `signature_base64` Text, `signature_nom` VARCHAR(200) (image signature upload) ; `url_verification_caces` VARCHAR(500) (optionnel, si non renseigné → défaut `https://caces-app.onrender.com/verifier/`) — utilisé par `_build_verify_url()` pour construire `verify_url = base + token_verification` (fallback `numero_carte`) passé dans `config.verify_url` au frontend JS (QR code recto) ; `audit_interne_date`, `audit_externe_date`, `revue_direction_date` (Date nullable) ; `pin_formateur` VARCHAR(20) défaut "1234" — PIN saisi par le formateur pour débloquer "Ce n'est pas moi" dans test_theorie.html, vérifié via `POST /admin/config/verifier-pin-formateur`, modifiable dans Administration → Paramètres avec PIN admin 1505 ; `prochain_numero_caces` Integer défaut 1 — prochain numéro attribué lors de la validation d'un CACES® (affiché sur 4 chiffres : 0001, 0002…), incrémenté auto à chaque `POST /api/caces-obtenus/valider/{id}`, configurable dans Administration → Paramètres ; routes : `POST /admin/config-organisme/signature` + `DELETE /admin/config-organisme/signature` (upload/suppression image signature, PIN 1505) ; affiché via Jinja2 globals `nom_organisme()`, `logo_organisme()`, `get_config_organisme()` |
+| `ConfigOrganisme` | `config_organisme` | singleton (1 ligne) ; `nom_organisme`, `logo_base64` (image base64), `logo_nom` ; `adresse` Text, `siret` VARCHAR(20), `email` VARCHAR(200), `telephone` VARCHAR(50) ; `signataire_nom`, `signataire_prenom`, `signataire_qualite` VARCHAR(100) ; `signature_base64` Text, `signature_nom` VARCHAR(200) (image signature upload) ; `url_verification_caces` VARCHAR(500) (optionnel, si non renseigné → défaut `https://caces-app.onrender.com/verifier/`) — utilisé par `_build_verify_url()` pour construire `verify_url = base + token_verification` (fallback `numero_carte`) passé dans `config.verify_url` au frontend JS (QR code recto) ; `audit_interne_date`, `audit_externe_date`, `revue_direction_date` (Date nullable) ; `pin_formateur` VARCHAR(20) défaut "1234" — PIN saisi par le formateur pour débloquer "Ce n'est pas moi" dans test_theorie.html ET pour clôturer terrain, vérifié via `POST /admin/config/verifier-pin-formateur` ou dans le handler `cloturer-terrain`, modifiable dans Administration → Paramètres avec PIN admin 1505 ; `prochain_numero_caces` Integer défaut 1 — prochain numéro attribué lors de la validation d'un CACES® (affiché sur 4 chiffres : 0001, 0002…), incrémenté auto à chaque `POST /api/caces-obtenus/valider/{id}`, configurable dans Administration → Paramètres ; routes : `POST /admin/config-organisme/signature` + `DELETE /admin/config-organisme/signature` (upload/suppression image signature, PIN 1505) ; affiché via Jinja2 globals `nom_organisme()`, `logo_organisme()`, `get_config_organisme()` |
 | `Stagiaire` | `stagiaires` | soft delete (`actif`) ; `photo_base64` Text — photo stockée en base64 PostgreSQL (upload via `POST /stagiaires/photo/{id}`, prioritaire sur `photo`) ; `photo` String(500) — chemin fichier legacy conservé pour rétro-compatibilité |
 | `CacesObtenu` | `caces_obtenus` | statut : `a_valider`/`valide`/`annule` ; `numero_ordre` (Integer unique, attribué à la validation) ; `motif_annulation` Text nullable ; UNIQUE(stagiaire_id, session_id, categorie) ; routes : GET `/api/caces-obtenus/a-valider` (sync + liste), GET `/api/caces-obtenus/valides` (trié : validé en haut, annulé en bas), POST `/api/caces-obtenus/valider/{id}?pin=` (attribue numéro incrémental, bouton "📜 Émettre le CACES®"), POST `/api/caces-obtenus/annuler/{id}?pin=` body `{motif, bloquer_pratique: bool, bloquer_theorie: bool}` (statut→`annule`, si `bloquer_pratique` → `SessionEpreuve.bloque=True`, si `bloquer_theorie` → `ResultatTheorie.bloque=True` pour tous les RT obtenue=True du stagiaire dans la session, motif "Erreur administrative" : ne bloque rien + recréation auto au prochain /a-valider), PATCH `/api/caces-obtenus/{id}/motif?pin=` body `{motif}` (mise à jour motif_annulation) ; au prochain appel `/a-valider` les records `annule` repassent en `a_valider` seulement si SE/RT non bloqués ; modal annulation : select obligatoire (Erreur administrative / Non conforme / CACES® annulé / Autre) + cases à cocher visibles pour Non conforme et CACES® annulé uniquement ; service `app/services/caces_obtenus.py` → `calculer_et_synchroniser(db)` (filtre `SE.bloque != True` et `RT.bloque != True`) |
 | `CarteCaces` | `carte_caces` | `stagiaire_id` FK, `famille`, `numero_carte` (unique, format `PEPCI-{YY}-{NNNNN}`, incrément annuel remis à zéro), `token_verification` (String 36, UUID4 unique, généré à l'émission, utilisé dans l'URL /verifier/{token}), `date_generation`, `statut` (`en_preparation` legacy/`emise`/`remplacee`/`annulee`), `motif_annulation`, `caces_json` Text (snapshot JSON des CacesObtenu au moment de l'émission : liste [{categorie, categorie_libelle, numero_ordre, options_obtenues, date_obtention, date_echeance, testeur_nom}]) — **une carte émise est figée définitivement** : le snapshot `caces_json` stocké à l'émission est la source de vérité ; les CACES® validés/annulés après l'émission n'affectent pas cette carte ; pour une carte à jour → générer une nouvelle carte (l'ancienne passe en `remplacee`) ; **pas de blocage de l'annulation CACES® par une carte émise** — une carte est une photo statique, l'organisme est responsable de réémettre si nécessaire ; page `/cartes-caces` — workflow : select stagiaire → familles filtrées → tableau CACES® validés → bouton Générer et imprimer (PIN) → fenêtre impression CR80 (≤4 cats, 85.6×54mm) ou A5 landscape (>4 cats) — à l'impression la carte passe en `emise`, l'ancienne `emise` passe en `remplacee` ; section Cartes émises : ▶/▼ déplie snapshot, boutons 🖨️ réimprimer + ❌ annuler uniquement sur `emise` ; badges : ✅ Émise / 📷 Remplacée / ❌ Annulée ; routes : `GET /stagiaires`, `GET /familles/{stag_id}`, `GET /caces-valides/{stag_id}/{famille}`, `POST /emettre/{stag_id}/{famille}?pin=`, `GET /{id}/caces` (retourne snapshot ou fallback legacy), `GET /reimprimer/{id}`, `GET /emises`, `POST /annuler/{id}?pin=` body {motif}, `GET /{id}/pdf` (PDF CR80 recto/verso protégé — WeasyPrint (rendu HTML CR80 identique au template JS) + pypdf (permissions_flag=2052, impression seule), téléchargement direct) ; **page publique** : `GET /verifier/{token}` (main.py, pas de login) — token = `token_verification` UUID4 (fallback `numero_carte` pour rétro-compatibilité) ; **anonymisation RGPD obligatoire côté serveur** : la route ne passe JAMAIS `s.prenom` ni `s.date_naissance` bruts au template — uniquement `stagiaire_prenom = prenom[0] + "."` et `stagiaire_ddn_annee = date_naissance.year` — template `verifier.html` standalone (pas de base.html) — affiche titulaire + tableau CACES® si `emise`, bandeau avertissement si `annulee`/`remplacee`, message d'erreur si introuvable |
@@ -195,6 +210,7 @@ Certaines actions complexes utilisent des pages GET/POST dédiées plutôt qu'un
 | `migrate_ut_categories.py` | R482/A `ut_pratique=1.5`, R482/G `ut_pratique=1.2` | à exécuter |
 | `migrate_token_verification.py` | `ALTER TABLE carte_caces ADD COLUMN token_verification VARCHAR(36)` + backfill UUID | à exécuter |
 | `migrate_r483_r487_r490.py` | Swap libellés R483↔R487, déplace cats A/B vers R483, crée cats 1/2/3 sous R487, supprime cats parasites R483 et R490/2-3/OPT-TEL | à exécuter |
+| `migrate_cloture_terrain.py` | `ALTER TABLE sessions ADD COLUMN date_cloture_terrain TIMESTAMP` | **à exécuter sur prod (Render Shell)** |
 
 Ordre d'exécution sur prod (toutes migrations puis init_options) :
 ```
@@ -204,6 +220,7 @@ python migrate_ut_categories.py
 python migrate_token_verification.py
 python migrate_r483_r487_r490.py
 python init_options.py
+python migrate_cloture_terrain.py
 ```
 
 ---
@@ -298,7 +315,7 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 ### Note : doublons date_habilitation / date_expiration_habilitation
 `Testeur.date_habilitation` et `Testeur.date_expiration_habilitation` sont des doublons avec `HabilitationTesteur` — à supprimer dans une passe de nettoyage ultérieure après vérification qu'ils ne sont utilisés nulle part (modèle, routes, templates, migrations).
 
-### ✅ Chantier terminé : clôture terrain (date 2026-06-17)
+### ✅ Chantier terminé : clôture terrain (2026-06-17)
 
 **Nouveaux éléments :**
 - `Session.date_cloture_terrain` (DateTime nullable) — migration : `migrate_cloture_terrain.py` (idempotent, **à exécuter sur prod via Render Shell**)
@@ -306,13 +323,18 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 - Helper `assert_modifiable_terrain(session, role)` dans `sessions.py` — bloque role=="terrain" si session gélée terrain (403)
 - Route `POST /api/sessions/{id}/cloturer-terrain` — tous rôles, PIN formateur, idempotent
 - Route `POST /api/sessions/{id}/rouvrir-terrain` — admin/utilisateur uniquement, PIN admin
-- `current_user` ajouté sur 15 routes de modification (candidats ×3, equipements ×3, jours ×3, candidats_jour ×2, toggle_identite, update_session, modifier_jour, epreuves ×2) — **aucune n'était volontairement publique**
+- `current_user` ajouté sur 15 routes de modification (candidats ×3, equipements ×3, jours ×3, candidats_jour ×2, toggle_identite, update_session, modifier_jour, epreuves ×2)
 - Route publique `POST /api/sessions/{session_id}/theorie/reponses` : check direct `if session.date_cloture_terrain is not None: 403`
 - UX `session_detail.html` : bouton "🔐 Clôturer terrain" (tous rôles), badge "🔐 Validée terrain" + titre date, bouton "🔓 Rouvrir terrain" (admin/utilisateur seulement)
 - `data-terrain-gele` + `data-user-role` sur `#session-data`
-- `session_detail.js` : fonctions `cloturerTerrain()` + `rouvrirTerrain()`, masquage visuel conditionné à `USER_ROLE === 'terrain'` (admin conserve ses boutons)
+- `session_detail.js` : fonctions `cloturerTerrain()` + `rouvrirTerrain()`, masquage visuel conditionné à `USER_ROLE === 'terrain'`
 
-**Décision :** gel LARGE (toutes routes de modification Terrain), PIN formateur pour clôture (tous rôles), PIN admin pour réouverture (back-office uniquement).
+**Correctifs post-push (2026-06-17) :**
+- Bug : middleware `_verifier_role` bloquait terrain sur `POST /cloturer-terrain` (catch-all sessions) → affichage "Code PIN incorrect" à tort (JS montrait #pin-error pour tout 4xx)
+- Ajout de 3 exceptions dans `_verifier_role` pour rôle terrain : `POST /cloturer-terrain`, `PUT /jours/{j}/candidats/{s}/identite`, `DELETE /epreuves/{eid}`
+- JS `cloturerTerrain()` + `rouvrirTerrain()` : lecture `data.detail` au lieu de texte en dur dans `#pin-error`
+
+**Décision :** gel LARGE (toutes routes de modification Terrain), PIN formateur pour clôture (tous rôles), PIN admin pour réouverture (back-office uniquement). `rouvrir-terrain` non whitelisté dans le middleware.
 
 **À faire** : `python migrate_cloture_terrain.py` dans Render Shell (prod).
 

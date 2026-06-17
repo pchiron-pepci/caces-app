@@ -470,6 +470,15 @@ def _verifier_role(path: str, method: str, role: str):
         # Exception : saisie/modification résultat pratique — le terrain est testeur, c'est son rôle
         if method == "POST" and _re.match(r"^/api/sessions/\d+/epreuves$", base):
             return True
+        # Exception : clôture terrain — déclenchable par tous les rôles (PIN formateur requis)
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/cloturer-terrain$", base):
+            return True
+        # Exception : toggle identité candidat — coché par le testeur sur tablette à l'accueil
+        if method == "PUT" and _re.match(r"^/api/sessions/\d+/jours/\d+/candidats/\d+/identite$", base):
+            return True
+        # Exception : annulation résultat pratique — testeur corrige une erreur de saisie
+        if method == "DELETE" and _re.match(r"^/api/sessions/\d+/epreuves/\d+$", base):
+            return True
         # Toutes les routes d'écriture sur les sessions (création + toutes sous-ressources)
         if method != "GET" and (base == "/api/sessions" or _re.match(r"^/api/sessions/\d+", base)):
             return False
