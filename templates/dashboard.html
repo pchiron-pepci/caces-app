@@ -82,7 +82,7 @@
                 {% set date_debut = s.date_theorie or s.date_pratique_debut %}
                 {% set date_fin = s.date_pratique_fin %}
                 <tr>
-                    <td data-label="Référence" style="min-width:0;">{% if s.id in sessions_avec_nc %}<span class="nc-flag" title="Non-conformité(s) à traiter" aria-label="Non-conformité à traiter">⚑</span>{% endif %}<a href="/sessions/{{ s.id }}" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; text-decoration:none;">{{ s.reference or '—' }}</a></td>
+                    <td data-label="Référence" style="min-width:0;">{% if s.id in sessions_avec_nc %}<span class="nc-flag" title="Non-conformité(s) non soldée(s)">🚩</span>{% endif %}<a href="/sessions/{{ s.id }}" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; text-decoration:none;">{{ s.reference or '—' }}</a></td>
                     <td data-label="Famille">{% if s.id in sessions_avec_tirage %}<span class="badge orange" title="Tirage déclenché — famille figée">{{ s.famille }}</span>{% else %}<span class="badge blue">{{ s.famille }}</span>{% endif %}</td>
                     <td data-label="Dates" style="font-size:12px; color:#888;">
                         {{ date_debut.strftime('%d/%m/%Y') if date_debut else '—' }}
@@ -137,7 +137,7 @@
                 <tr>
                     <td style="white-space:nowrap;">
                         <a href="/non-conformites#{{ nc.reference }}" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; text-decoration:none;">{{ nc.reference or '—' }}</a>
-                        {% if nc.session_id %}<span title="Liée à une session" style="font-size:12px; color:#cc0000; margin-left:4px; line-height:1;">🚩</span>{% endif %}
+                        {% if nc.session_id %}<span title="NC liée à une session" style="font-size:12px; margin-left:4px; line-height:1;">🚩</span>{% endif %}
                     </td>
                     <td style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</td>
                     <td>

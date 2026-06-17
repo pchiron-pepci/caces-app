@@ -364,6 +364,17 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 
 **Contexte prod :** doublon `SESSION-2026-006` supprimé manuellement avant création de l'index. Format mixte `SESSION-2026-01` / `SESSION-2026-002` confirmé en dev — raison pour laquelle le tri DESC alphabétique a été écarté.
 
+### ✅ Chantier terminé : uniformisation drapeau NC 🚩 (2026-06-17)
+
+**Avant :** trois rendus différents — `⚑` texte noir sans couleur (dashboard/sessions), `🚩` rouge `color:#cc0000` inline (dashboard/NC ouvertes), `🚩` masqué desktop via `display:none` (page NC).
+
+**Standard retenu :** `🚩` emoji triangulaire rouge natif, visible partout (desktop + mobile), `title` au survol précisant le sens.
+
+**Modifications :**
+- `dashboard.html:85` (section sessions) : `⚑ .nc-flag aria-label` → `🚩 .nc-flag title="Non-conformité(s) non soldée(s)"`
+- `dashboard.html:140` (section NC ouvertes) : suppression `color:#cc0000` (sans effet sur emoji) ; title → "NC liée à une session"
+- `non_conformites.html:77` : suppression `style="display:none;"` (bug desktop) ; title → "NC liée à une session" — `.nc-flag-cell` conservé pour le positionnement flex mobile
+
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
 
