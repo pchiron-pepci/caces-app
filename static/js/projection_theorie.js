@@ -34,7 +34,7 @@
             _speakTimer = null;
             var u = new SpeechSynthesisUtterance(text);
             u.lang = 'fr-FR';
-            u.rate = 0.9;
+            u.rate = 0.8;
             window.speechSynthesis.speak(u);
         }, 100);
     }
