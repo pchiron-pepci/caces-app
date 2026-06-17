@@ -560,7 +560,6 @@
                 🔐 Clôturer terrain
             </button>
             {% else %}
-            <span class="badge violet" title="Clôturée terrain le {{ session.date_cloture_terrain.strftime('%d/%m/%Y à %H:%M') }}">🔐 Validée terrain</span>
             {% if user_role in ('admin', 'utilisateur') %}
             <button class="btn btn-secondary" data-action="rouvrir-terrain"
                     title="Réouvrir la session côté terrain (PIN admin requis)"
