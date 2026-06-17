@@ -362,6 +362,15 @@ body {
                 {% endif %}
             </div>
 
+            {% if cand.rt and cand.rt.mode == 'degrade' and user_role != 'terrain' %}
+            <button data-action="supprimer-degrade"
+                    data-stagiaire-id="{{ cand.stagiaire_id }}"
+                    data-nom="{{ cand.nom }} {{ cand.prenom }}"
+                    style="margin:10px 0 4px; padding:8px 14px; background:none; border:2px solid #c62828; border-radius:8px; color:#c62828; font-size:13px; font-weight:700; cursor:pointer; display:block;">
+                🗑️ Supprimer ce résultat
+            </button>
+            {% endif %}
+
             <!-- Formulaire de saisie -->
             <div class="themes-grid" id="form-{{ cand.stagiaire_id }}">
                 {% for theme in themes %}

@@ -21,8 +21,18 @@
 
     // ── Modal PIN ─────────────────────────────────────────────────
     function ouvrirPin(stagiaireId, nom, notes) {
-        _pending = { stagiaireId: stagiaireId, nom: nom, notes: notes };
-        document.getElementById('pin-nom').textContent  = nom;
+        _pending = { stagiaireId: stagiaireId, nom: nom, notes: notes, action: 'enregistrer' };
+        document.getElementById('pin-message').innerHTML = 'Confirmez la saisie pour <strong>' + nom + '</strong>';
+        document.getElementById('pin-input').value      = '';
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('pin-error').textContent   = '';
+        document.getElementById('modal-pin').style.display = 'flex';
+        setTimeout(function () { document.getElementById('pin-input').focus(); }, 50);
+    }
+
+    function ouvrirPinSupprimer(stagiaireId, nom) {
+        _pending = { stagiaireId: stagiaireId, nom: nom, action: 'supprimer' };
+        document.getElementById('pin-message').innerHTML = 'Supprimer définitivement le résultat de <strong>' + nom + '</strong>&nbsp;?';
         document.getElementById('pin-input').value      = '';
         document.getElementById('pin-error').style.display = 'none';
         document.getElementById('pin-error').textContent   = '';
@@ -105,6 +115,39 @@
         }
     }
 
+    // ── Suppression d'un résultat dégradé (back-office uniquement) ───────────
+    async function supprimerDegrade(pin) {
+        if (!_pending) return;
+        var stagId = _pending.stagiaireId;
+        var resp;
+        try {
+            resp = await fetch(
+                '/api/sessions/' + SESSION_ID + '/theorie/reponses/' + stagId + '/' + JOUR_ID,
+                {
+                    method:      'DELETE',
+                    headers:     authHeaders(),
+                    body:        JSON.stringify({ pin: pin }),
+                    credentials: 'same-origin',
+                }
+            );
+        } catch (err) {
+            afficherErreurPin('Erreur réseau — vérifiez votre connexion.');
+            return;
+        }
+        if (resp.status === 403) {
+            var err403 = await resp.json().catch(function () { return {}; });
+            afficherErreurPin(err403.detail || 'Code PIN incorrect.');
+            return;
+        }
+        if (!resp.ok) {
+            var errData = await resp.json().catch(function () { return {}; });
+            afficherErreurPin('Erreur ' + resp.status + ' : ' + (errData.detail || 'Erreur serveur.'));
+            return;
+        }
+        fermerPin();
+        location.reload();
+    }
+
     // ── Appel API ─────────────────────────────────────────────────
     async function soumettre(pin) {
         if (!_pending) return;
@@ -160,8 +203,20 @@
             ouvrirPin(stagId, nom, notes);
             return;
         }
+        var btnSupp = e.target.closest('[data-action="supprimer-degrade"]');
+        if (btnSupp) {
+            var stagId = parseInt(btnSupp.dataset.stagiaireId, 10);
+            var nom    = btnSupp.dataset.nom;
+            ouvrirPinSupprimer(stagId, nom);
+            return;
+        }
         if (e.target.closest('[data-action="pin-confirmer"]')) {
-            soumettre(document.getElementById('pin-input').value);
+            var pin = document.getElementById('pin-input').value;
+            if (_pending && _pending.action === 'supprimer') {
+                supprimerDegrade(pin);
+            } else {
+                soumettre(pin);
+            }
             return;
         }
         if (e.target.closest('[data-action="pin-annuler"]')) {
@@ -171,7 +226,14 @@
     });
 
     document.getElementById('pin-input').addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') soumettre(this.value);
+        if (e.key === 'Enter') {
+            var pin = this.value;
+            if (_pending && _pending.action === 'supprimer') {
+                supprimerDegrade(pin);
+            } else {
+                soumettre(pin);
+            }
+        }
     });
 
 }());

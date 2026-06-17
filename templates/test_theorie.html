@@ -794,11 +794,29 @@ async function chargerQuestions() {
                     });
                 } catch (_e) {}
                 localStorage.removeItem(_cle);
+                // Mode correction : mise à jour visuelle de la grille récap + atterrissage direct sur #ecran-recap
+                if (MODE_CORRECTION) {
+                    questions.forEach((q, idx) => {
+                        const el = document.getElementById('rq-' + q.theme + '-' + q.idx_theme);
+                        if (el && idx in reponses) {
+                            el.className = 'recap-q ' + (reponses[idx] ? 'vrai' : 'faux');
+                        }
+                    });
+                    afficherRecap();
+                }
             }
         }
     } catch(e) {
         console.error('Erreur chargement grille:', e);
     }
+}
+
+// Détection synchrone : correction d'un test numérique existant (clé posée par session_detail.js).
+// Doit être lu AVANT chargerQuestions() pour pouvoir conditionner l'écran initial.
+let MODE_CORRECTION = false;
+if (START_DIRECT && START_STAGIAIRE_ID) {
+    const _cleCheck = 'corriger_rt_' + SESSION_ID + '_' + JOUR_ID + '_' + START_STAGIAIRE_ID;
+    MODE_CORRECTION = localStorage.getItem(_cleCheck) !== null;
 }
 
 chargerQuestions();
@@ -847,7 +865,11 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
     document.getElementById('header-candidat').textContent = nomComplet;
     document.getElementById('confirm-identite').checked = false;
     document.getElementById('ecran-selection').style.display = 'none';
-    document.getElementById('ecran-identite').style.display = 'block';
+    if (!MODE_CORRECTION) {
+        // Flux normal : candidat confirme son identité avant de démarrer
+        document.getElementById('ecran-identite').style.display = 'block';
+    }
+    // En mode correction : aucun écran affiché ici — chargerQuestions() atterrit directement sur le récap pré-rempli
 }
 
 // ECRAN 1 → 2

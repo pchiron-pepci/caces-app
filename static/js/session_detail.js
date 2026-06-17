@@ -1795,16 +1795,51 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// ── Correction / suppression résultat théorique ──────────────────────────────
+// ── Loupe résultat théorique (numérique uniquement) ──────────────────────────
 document.addEventListener('click', function(e) {
 
-    // ── Corriger (tous rôles, PIN formateur) ──────────────────────────────────
-    var btnCorriger = e.target.closest('[data-action="corriger-theorie"]');
-    if (btnCorriger) {
-        var mode      = btnCorriger.dataset.mode;
-        var sessionId = btnCorriger.dataset.sessionId;
-        var stagId    = btnCorriger.dataset.stagiaireId;
-        var jourId    = btnCorriger.dataset.jourId;
+    // ── Ouvrir le menu loupe ──────────────────────────────────────────────────
+    var btnLoupe = e.target.closest('[data-action="loupe-theorie"]');
+    if (btnLoupe) {
+        var modal = document.getElementById('modal-loupe-theorie');
+        modal.dataset.sessionId   = btnLoupe.dataset.sessionId;
+        modal.dataset.stagiaireId = btnLoupe.dataset.stagiaireId;
+        modal.dataset.jourId      = btnLoupe.dataset.jourId;
+        modal.dataset.cloture     = btnLoupe.dataset.cloture;
+
+        var btnModifier  = document.getElementById('btn-loupe-modifier');
+        var btnSupprimer = document.getElementById('btn-loupe-supprimer');
+        if (btnModifier)  btnModifier.style.display  = (btnLoupe.dataset.cloture === '1') ? 'none' : '';
+        if (btnSupprimer) btnSupprimer.style.display = (window.USER_ROLE === 'terrain') ? 'none' : '';
+
+        modal.style.display = 'flex';
+        return;
+    }
+
+    // ── Fermer le menu loupe ──────────────────────────────────────────────────
+    if (e.target.closest('[data-action="fermer-loupe-theorie"]')) {
+        document.getElementById('modal-loupe-theorie').style.display = 'none';
+        return;
+    }
+
+    // ── Visualiser — ouvre la page Détail ────────────────────────────────────
+    if (e.target.closest('[data-action="loupe-visualiser"]')) {
+        var modal = document.getElementById('modal-loupe-theorie');
+        var sid   = modal.dataset.sessionId;
+        var stag  = modal.dataset.stagiaireId;
+        var jid   = modal.dataset.jourId;
+        modal.style.display = 'none';
+        window.open('/sessions/' + sid + '/theorie/' + stag + '/detail?jour_id=' + jid, '_blank');
+        return;
+    }
+
+    // ── Modifier — PIN → reouvrir → localStorage → /start (atterrit sur récap) ─
+    if (e.target.closest('[data-action="loupe-modifier"]')) {
+        var modal = document.getElementById('modal-loupe-theorie');
+        var sid   = modal.dataset.sessionId;
+        var stag  = modal.dataset.stagiaireId;
+        var jid   = modal.dataset.jourId;
+        modal.style.display = 'none';
 
         document.getElementById('pin-message').textContent = 'Code PIN formateur — corriger le résultat.';
         document.getElementById('pin-input').value = '';
@@ -1814,23 +1849,13 @@ document.addEventListener('click', function(e) {
 
         document.getElementById('pin-confirm-btn').onclick = async function() {
             var pin = document.getElementById('pin-input').value;
-
-            if (mode === 'degrade') {
-                // La vérification PIN réelle est au submit dans saisie-dégradée.
-                // On ouvre la page directement ; elle est pré-remplie avec le rt existant.
-                fermerPin();
-                window.open('/sessions/' + sessionId + '/theorie/saisie-degrade/' + jourId, '_blank');
-                return;
-            }
-
-            // mode == 'numerique' : appel reouvrir (JWT + PIN), récupère reponses_json
             var tok = localStorage.getItem('token');
             var h   = { 'Content-Type': 'application/json' };
             if (tok) h['Authorization'] = 'Bearer ' + tok;
             var resp;
             try {
                 resp = await fetch(
-                    '/api/sessions/' + sessionId + '/theorie/reouvrir/' + stagId + '/' + jourId,
+                    '/api/sessions/' + sid + '/theorie/reouvrir/' + stag + '/' + jid,
                     { method: 'POST', headers: h, credentials: 'same-origin', body: JSON.stringify({ pin: pin }) }
                 );
             } catch (err) {
@@ -1850,22 +1875,21 @@ document.addEventListener('click', function(e) {
                 return;
             }
             var data = await resp.json();
-            // Stocker les réponses pour pré-remplissage dans la page test (clé consommée une seule fois)
-            var cle = 'corriger_rt_' + sessionId + '_' + jourId + '_' + stagId;
+            var cle = 'corriger_rt_' + sid + '_' + jid + '_' + stag;
             localStorage.setItem(cle, JSON.stringify(data.reponses || {}));
             fermerPin();
-            // Ouvrir le test en mode START_DIRECT pour ce candidat
-            window.open('/test/theorie/' + sessionId + '/' + jourId + '/' + stagId + '/start', '_blank');
+            window.open('/test/theorie/' + sid + '/' + jid + '/' + stag + '/start', '_blank');
         };
         return;
     }
 
-    // ── Supprimer (back-office uniquement, terrain filtré côté template) ──────
-    var btnSupprimer = e.target.closest('[data-action="supprimer-theorie"]');
-    if (btnSupprimer) {
-        var sessionId = btnSupprimer.dataset.sessionId;
-        var stagId    = btnSupprimer.dataset.stagiaireId;
-        var jourId    = btnSupprimer.dataset.jourId;
+    // ── Supprimer — PIN → DELETE → reload ────────────────────────────────────
+    if (e.target.closest('[data-action="loupe-supprimer"]')) {
+        var modal = document.getElementById('modal-loupe-theorie');
+        var sid   = modal.dataset.sessionId;
+        var stag  = modal.dataset.stagiaireId;
+        var jid   = modal.dataset.jourId;
+        modal.style.display = 'none';
 
         document.getElementById('pin-message').textContent = 'Code PIN formateur — supprimer définitivement ce résultat théorique ?';
         document.getElementById('pin-input').value = '';
@@ -1881,7 +1905,7 @@ document.addEventListener('click', function(e) {
             var resp;
             try {
                 resp = await fetch(
-                    '/api/sessions/' + sessionId + '/theorie/reponses/' + stagId + '/' + jourId,
+                    '/api/sessions/' + sid + '/theorie/reponses/' + stag + '/' + jid,
                     { method: 'DELETE', headers: h, credentials: 'same-origin', body: JSON.stringify({ pin: pin }) }
                 );
             } catch (err) {

@@ -524,14 +524,16 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Anticipation Section 6 : exception aussi ajoutée pour `POST theorie/justificatif/\d+/\d+`
 - `Number.isNaN` (explicite, sans coercition) remplace `isNaN` dans `collecterNotes`
 
-**Sections restantes :**
+**Section 5 terminée (2026-06-18) :**
 
-*Section 5 — Bouton correction polymorphe (ligne candidat session_detail.html) :*
-- Dans `td-th-result`, bouton `✏️ Corriger` (data-action="corriger-theorie", data-mode, data-session-id, data-stagiaire-id, data-jour-id)
-- Visible tous rôles, demande PIN formateur
-- `mode=='degrade'` → ouvre page saisie dégradée pré-remplie (GET avec candidat sélectionné)
-- `mode=='numerique'` → appelle `POST reouvrir/{stag}/{jour}` (PIN) puis ouvre test numérique avec `reponses` pré-chargées
-- Bouton DELETE séparé (🗑️ Supprimer résultat) — `user_role != 'terrain'` uniquement
+*Loupe numérique + correction qui atterrit sur le récap + suppression dégradée :*
+- `td-th-result` dans `session_detail.html` : remplace Detail + ✏️ + 🗑️ par **🔍 loupe** (`data-action="loupe-theorie"`) uniquement si `rt.mode == 'numerique'` ; dégradé n'a pas de loupe (correction/suppression via saisie_degrade)
+- `data-cloture="{{ '1' if session.statut == 'terminee' else '0' }}"` sur la loupe
+- Modal `#modal-loupe-theorie` dans `session_detail.html` : 3 boutons (👁️ Visualiser / ✏️ Modifier / 🗑️ Supprimer) — Modifier masqué si `cloture=='1'`, Supprimer masqué si `USER_ROLE=='terrain'`
+- `session_detail.js` : nouveau bloc listener `loupe-theorie` (remplace les anciens `corriger-theorie`/`supprimer-theorie`) ; Visualiser → `window.open Detail` ; Modifier → PIN → POST reouvrir → localStorage `corriger_rt_*` → `window.open /start` ; Supprimer → PIN → DELETE reponses → reload
+- `test_theorie.html` : `MODE_CORRECTION` (bool synchrone, lu avant `chargerQuestions()`) → si true, ne pas afficher `#ecran-identite` au démarrage ; en fin de pré-remplissage dans `chargerQuestions()` : met à jour la grille récap + appelle `afficherRecap()` → atterrit directement sur `#ecran-recap` pré-rempli, pas de timer
+- `saisie_degrade.html` : bouton 🗑️ "Supprimer ce résultat" (`data-action="supprimer-degrade"`) visible seulement si `cand.rt.mode == 'degrade' and user_role != 'terrain'`
+- `saisie_degrade.js` : `ouvrirPinSupprimer()`, `supprimerDegrade()`, dispatch action dans listener PIN (`_pending.action`) et dans keydown Enter
 
 *Section 6 — Justificatif PDF (upload + consultation) :*
 - Route `POST /api/sessions/{id}/theorie/justificatif/{stag_id}/{jour_id}` : JWT + PIN formateur, stocke base64 dans `justificatif_pdf` + nom dans `justificatif_nom`, ne touche pas aux notes
