@@ -844,6 +844,12 @@
                         {% else %}
                         <span class="badge" style="background:#f3e5f5;color:#7b1fa2;font-size:12px;" title="Session clôturée terrain — tests désactivés">🔐 Tests clos</span>
                         {% endif %}
+                        {% if tirage_declenche %}
+                        <button class="btn btn-secondary" data-action="projection-theorie"
+                                data-session-id="{{ session.id }}" data-jour-id="{{ j.id }}"
+                                style="padding:6px 12px; font-size:12px;"
+                                title="Lancer la projection en salle">📽️</button>
+                        {% endif %}
                         {% if user_role != 'terrain' %}
                         <a href="/sessions/{{ session.id }}/jours/{{ j.id }}/modifier" class="btn btn-secondary" style="padding:6px 12px; font-size:12px; text-decoration:none;">✏️</a>
 <button class="btn-trash"

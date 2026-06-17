@@ -56,6 +56,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="projection-theorie"]');
+        if (btn) {
+            window.open('/sessions/' + btn.dataset.sessionId + '/projection/' + btn.dataset.jourId, '_blank');
+        }
+    });
+    document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="pdf-corrige-theorie"]');
         if (btn) {
             var sid = btn.dataset.sessionId;

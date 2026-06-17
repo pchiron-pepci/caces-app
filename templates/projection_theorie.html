@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projection — {{ session_ref }}</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%; width: 100%;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f2f5;
+    overflow: hidden;
+  }
+
+  /* ── En-tête ─────────────────────────────────────────────────── */
+  #proj-header {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 56px;
+    background: #1a237e;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 100;
+    gap: 16px;
+  }
+  #proj-ref {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  #proj-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 1 auto;
+    text-align: center;
+  }
+  #proj-q-num {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  #proj-theme-label {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 1px;
+  }
+  #proj-timer {
+    font-size: 26px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    min-width: 90px;
+    text-align: right;
+  }
+  #proj-timer.urgent { color: #ff5252; }
+
+  /* ── Zone question ───────────────────────────────────────────── */
+  #proj-main {
+    position: fixed;
+    top: 56px; bottom: 72px; left: 0; right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 48px 16px;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  #proj-q-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    max-width: 900px;
+    width: 100%;
+  }
+
+  #proj-q-numero {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1a237e;
+    text-align: center;
+  }
+
+  #proj-q-texte {
+    font-size: clamp(20px, 2.8vw, 34px);
+    font-weight: 500;
+    color: #111;
+    text-align: center;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  #proj-img-zone {
+    display: none;
+    justify-content: center;
+  }
+  #proj-img-zone.visible { display: flex; }
+  #proj-img {
+    max-height: 260px;
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.15);
+    object-fit: contain;
+  }
+
+  /* ── Boutons VRAI / FAUX (décoratifs, non interactifs) ──────── */
+  #proj-vf {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    margin-top: 4px;
+  }
+  .btn-vf {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 52px;
+    font-size: clamp(18px, 2.2vw, 26px);
+    font-weight: 700;
+    border: 3px solid #bdbdbd;
+    border-radius: 10px;
+    color: #757575;
+    background: #fafafa;
+    pointer-events: none;
+    user-select: none;
+    letter-spacing: 2px;
+  }
+
+  /* ── Barre de contrôles testeur ──────────────────────────────── */
+  #proj-controls {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 72px;
+    background: #263238;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 24px;
+    z-index: 100;
+  }
+  .ctrl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s;
+    background: #37474f;
+    color: white;
+  }
+  .ctrl-btn:hover { background: #455a64; }
+  .ctrl-btn:active { background: #546e7a; }
+  #btn-playpause { background: #1565c0; }
+  #btn-playpause:hover { background: #1976d2; }
+  #btn-reset { background: #4e342e; }
+  #btn-reset:hover { background: #6d4c41; }
+  #proj-etat {
+    font-size: 12px;
+    color: #90a4ae;
+    margin-left: 8px;
+    min-width: 70px;
+  }
+
+  /* ── Overlay fin de temps ─────────────────────────────────────── */
+  #proj-overlay-fin {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.82);
+    z-index: 200;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  #proj-overlay-fin .fin-icone { font-size: 72px; }
+  #proj-overlay-fin .fin-texte {
+    font-size: 42px;
+    font-weight: 800;
+    color: white;
+    text-align: center;
+  }
+  #proj-overlay-fin .fin-sous {
+    font-size: 18px;
+    color: #cfd8dc;
+    text-align: center;
+  }
+  #btn-fin-reset {
+    margin-top: 24px;
+    padding: 12px 32px;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    background: #1565c0;
+    color: white;
+    cursor: pointer;
+  }
+  #btn-fin-reset:hover { background: #1976d2; }
+
+  /* ── Écran bloquant : tirage non déclenché ────────────────────── */
+  #ecran-no-tirage {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f2f5;
+  }
+  .no-tirage-card {
+    background: white;
+    border: 2px solid #e65100;
+    border-radius: 12px;
+    padding: 40px 48px;
+    text-align: center;
+    max-width: 480px;
+  }
+  .no-tirage-card .icon { font-size: 56px; margin-bottom: 12px; }
+  .no-tirage-card h2 { color: #bf360c; font-size: 22px; margin-bottom: 10px; }
+  .no-tirage-card p { color: #555; font-size: 15px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- Conteneur de données — injecté côté serveur, lu par le JS -->
+<div id="projection-data"
+     data-questions="{{ questions | tojson | forceescape }}"
+     data-total="{{ total }}">
+</div>
+
+{% if not tirage_ok %}
+<!-- Écran bloquant si pas de tirage -->
+<div id="ecran-no-tirage">
+  <div class="no-tirage-card">
+    <div class="icon">🎲</div>
+    <h2>Tirage non déclenché</h2>
+    <p>Aucun tirage de grille n'a été effectué pour cette session
+       ({{ session_ref }} — CACES® {{ famille }}).<br><br>
+       Déclenchez le tirage depuis la page de détail de la session avant
+       de lancer la projection.</p>
+  </div>
+</div>
+
+{% else %}
+<!-- ── En-tête ─────────────────────────────────────── -->
+<div id="proj-header">
+  <div id="proj-ref">{{ session_ref }} — CACES® {{ famille }}</div>
+  <div id="proj-center">
+    <div id="proj-q-num">Question —/{{ total }}</div>
+    <div id="proj-theme-label">Thème —</div>
+  </div>
+  <div id="proj-timer">60:00</div>
+</div>
+
+<!-- ── Zone principale ──────────────────────────────── -->
+<div id="proj-main">
+  <div id="proj-q-body">
+    <div id="proj-q-numero"></div>
+    <div id="proj-q-texte"></div>
+    <div id="proj-img-zone">
+      <img id="proj-img" src="" alt="Illustration question" />
+    </div>
+    <div id="proj-vf">
+      <div class="btn-vf">VRAI</div>
+      <div class="btn-vf">FAUX</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Contrôles testeur ─────────────────────────────── -->
+<div id="proj-controls">
+  <button class="ctrl-btn" data-action="prev" title="Question précédente">⏮ Précédent</button>
+  <button class="ctrl-btn" id="btn-playpause" data-action="playpause" title="Lecture / Pause">▶ Lecture</button>
+  <button class="ctrl-btn" data-action="next" title="Question suivante">⏭ Suivant</button>
+  <button class="ctrl-btn" id="btn-reset" data-action="reset" title="Revenir au début">⟳ Reset</button>
+  <span id="proj-etat">En pause</span>
+</div>
+
+<!-- ── Overlay fin de temps ──────────────────────────── -->
+<div id="proj-overlay-fin">
+  <div class="fin-icone">⏰</div>
+  <div class="fin-texte">Temps écoulé</div>
+  <div class="fin-sous">Le test théorique est terminé.</div>
+  <button id="btn-fin-reset" data-action="reset">⟳ Recommencer depuis le début</button>
+</div>
+
+<script src="/static/js/projection_theorie.js"></script>
+{% endif %}
+
+</body>
+</html>

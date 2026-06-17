@@ -632,6 +632,42 @@ app.include_router(consentements.router)
 app.include_router(neutralite.router)
 
 
+@app.get("/sessions/{session_id}/projection/{jour_id}")
+def page_projection_theorie(session_id: int, jour_id: int, request: Request, db: DBSession = Depends(get_db)):
+    import json as _json
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session introuvable")
+    from app.services.tirage_grille import get_questions_phase2 as _gqp2
+    tirage_ok = True
+    questions_flat = []
+    try:
+        data = _gqp2(session_id, session.famille, db)
+        seq = 1
+        for theme_num in sorted(data["themes"].keys()):
+            for q in data["themes"][theme_num]:
+                questions_flat.append({
+                    "seq": seq,
+                    "theme": theme_num,
+                    "texte": q.get("texte") or "",
+                    "image": q.get("image") or None,
+                })
+                seq += 1
+    except ValueError:
+        tirage_ok = False
+    return templates.TemplateResponse("projection_theorie.html", {
+        "request": request,
+        "session_ref": session.reference or f"Session {session.id}",
+        "famille": session.famille,
+        "tirage_ok": tirage_ok,
+        "questions": questions_flat,
+        "total": len(questions_flat),
+    })
+
+
 @app.get("/api/sessions/{session_id}/theorie/pdf/sujet")
 def pdf_sujet_vierge(session_id: int, request: Request, db: DBSession = Depends(get_db)):
     from fastapi.responses import StreamingResponse
