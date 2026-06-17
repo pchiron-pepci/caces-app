@@ -12,6 +12,7 @@
     var DUR_MS   = TOTAL_MS / N;   // durée par question, recalculée sur N réel
 
     var currentIdx          = 0;
+    var lastAutoStep        = 0;   // dernier palier d'auto-avance franchi
     var elapsedBeforePause  = 0;   // ms accumulées hors session courante
     var playStartTs         = null; // Date.now() au dernier play (null si pause)
     var interval            = null;
@@ -98,35 +99,31 @@
         }
     }
 
-    // ── Recalage chrono sur un index cible ────────────────────────
-    // Après un saut manuel, on pose elapsed = idx * DUR_MS pour que
-    // tick() calcule expectedIdx == currentIdx et n'écrase pas le saut.
-    function seekTo(idx) {
-        var target = idx * DUR_MS;
-        elapsedBeforePause = (playStartTs !== null)
-            ? target - (Date.now() - playStartTs)
-            : target;
-    }
-
     // ── Tick (interval 250 ms pour un affichage chrono fluide) ────
     function tick() {
         renderTimer();
 
         if (remainingMs() <= 0 && !finished) {
             finished = true;
-            pause(true);   // pause() appelle cancelSpeech()
+            pause(true);
             document.getElementById('proj-overlay-fin').style.display = 'flex';
             return;
         }
 
-        var expectedIdx = Math.min(
-            Math.floor(getElapsedMs() / DUR_MS),
-            N - 1
-        );
-        if (expectedIdx !== currentIdx) {
-            currentIdx = expectedIdx;
-            renderQuestion(currentIdx);
-            speak(questions[currentIdx].texte); // lecture auto-avance
+        // Chrono monotone — auto-avance par crans depuis la position courante.
+        // lastAutoStep est le dernier palier franchi ; on avance d'autant de crans
+        // que de paliers nouveaux, borné à N-1. Un saut manuel ne modifie JAMAIS
+        // elapsed ni lastAutoStep : la prochaine auto-avance fera +1 depuis la
+        // position manuelle courante, au franchissement du palier suivant.
+        var palier = Math.floor(getElapsedMs() / DUR_MS);
+        if (palier > lastAutoStep) {
+            var crans = Math.min(palier - lastAutoStep, N - 1 - currentIdx);
+            lastAutoStep = palier;
+            if (crans > 0) {
+                currentIdx += crans;
+                renderQuestion(currentIdx);
+                speak(questions[currentIdx].texte);
+            }
         }
     }
 
@@ -150,12 +147,13 @@
     }
 
     function reset() {
-        pause(true);           // pause() coupe la voix et l'intervalle
-        finished              = false;
-        elapsedBeforePause    = 0;
-        playStartTs           = null;
-        currentIdx            = 0;
-        renderQuestion(0);     // affiche sans lire (état pause)
+        pause(true);
+        finished           = false;
+        elapsedBeforePause = 0;
+        playStartTs        = null;
+        currentIdx         = 0;
+        lastAutoStep       = 0;
+        renderQuestion(0);
         renderTimer();
         renderEtat(false);
         document.getElementById('proj-overlay-fin').style.display = 'none';
@@ -173,7 +171,6 @@
                 if (currentIdx > 0) {
                     cancelSpeech();
                     currentIdx--;
-                    seekTo(currentIdx);         // recale le chrono → tick() ne réécrase pas
                     renderQuestion(currentIdx);
                     if (playStartTs !== null) speak(questions[currentIdx].texte);
                 }
@@ -182,7 +179,6 @@
                 if (currentIdx < N - 1) {
                     cancelSpeech();
                     currentIdx++;
-                    seekTo(currentIdx);         // recale le chrono → tick() ne réécrase pas
                     renderQuestion(currentIdx);
                     if (playStartTs !== null) speak(questions[currentIdx].texte);
                 }
