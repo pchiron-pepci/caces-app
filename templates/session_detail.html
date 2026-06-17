@@ -908,6 +908,22 @@
                                                 data-cloture="{{ '1' if session.statut == 'terminee' else '0' }}"
                                                 style="background:none; border:none; cursor:pointer; font-size:15px; margin-left:6px; padding:0;"
                                                 title="Options : visualiser / modifier / supprimer">🔍</button>
+                                        {% elif rt.mode == 'degrade' %}
+                                            {% if rt.justificatif_nom %}
+                                        <button data-action="justif-voir"
+                                                data-session-id="{{ session.id }}"
+                                                data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                                data-jour-id="{{ j.id }}"
+                                                style="background:none; border:none; cursor:pointer; font-size:14px; margin-left:6px; padding:0; color:#2e7d32;"
+                                                title="Voir le justificatif PDF">📎</button>
+                                            {% else %}
+                                        <button data-action="justif-upload"
+                                                data-session-id="{{ session.id }}"
+                                                data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                                data-jour-id="{{ j.id }}"
+                                                style="background:none; border:none; cursor:pointer; font-size:14px; margin-left:6px; padding:0; color:#bbb;"
+                                                title="Ajouter un justificatif PDF">📎</button>
+                                            {% endif %}
                                         {% endif %}
                                     </td>
                                 {% else %}
@@ -2161,6 +2177,9 @@
         <button data-action="fermer-choix-test" style="margin-top:20px; background:none; border:none; color:#888; font-size:14px; cursor:pointer; text-decoration:underline;">Annuler</button>
     </div>
 </div>
+
+<!-- Input file caché pour upload justificatif PDF (dégradé) -->
+<input type="file" id="justif-file-input" accept="application/pdf" style="display:none">
 
 <!-- MODAL LOUPE THÉORIE -->
 <div id="modal-loupe-theorie" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">

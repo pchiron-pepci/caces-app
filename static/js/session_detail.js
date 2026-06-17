@@ -1810,7 +1810,7 @@ document.addEventListener('click', function(e) {
         var btnModifier  = document.getElementById('btn-loupe-modifier');
         var btnSupprimer = document.getElementById('btn-loupe-supprimer');
         if (btnModifier)  btnModifier.style.display  = (btnLoupe.dataset.cloture === '1') ? 'none' : '';
-        if (btnSupprimer) btnSupprimer.style.display = (window.USER_ROLE === 'terrain') ? 'none' : '';
+        if (btnSupprimer) btnSupprimer.style.display = '';   // Tous rôles — PIN formateur requis côté serveur
 
         modal.style.display = 'flex';
         return;
@@ -1878,7 +1878,10 @@ document.addEventListener('click', function(e) {
             var cle = 'corriger_rt_' + sid + '_' + jid + '_' + stag;
             localStorage.setItem(cle, JSON.stringify(data.reponses || {}));
             fermerPin();
-            window.open('/test/theorie/' + sid + '/' + jid + '/' + stag + '/start', '_blank');
+            // Route : /test/theorie/{jour_test_id}/{stagiaire_id}/start (sans session_id)
+            // La clé localStorage corriger_rt_{sid}_{jid}_{stag} garde bien sid — c'est le SESSION_ID
+            // passé par le template page_test_theorie_start (jour.session_id).
+            window.open('/test/theorie/' + jid + '/' + stag + '/start', '_blank');
         };
         return;
     }
@@ -1927,6 +1930,79 @@ document.addEventListener('click', function(e) {
             fermerPin();
             location.reload();
         };
+        return;
+    }
+});
+
+// ── Justificatif PDF (résultat dégradé) ──────────────────────────────────────
+var _justifCtx = null;   // { sessionId, stagId, jourId, fichier_base64, fichier_nom }
+
+document.getElementById('justif-file-input').addEventListener('change', function() {
+    var file = this.files[0];
+    this.value = '';   // reset pour permettre re-sélection
+    if (!file || !_justifCtx) return;
+
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        // ev.target.result = "data:application/pdf;base64,XXXXX"
+        _justifCtx.fichier_base64 = ev.target.result.split(',')[1];
+        _justifCtx.fichier_nom    = file.name;
+
+        document.getElementById('pin-message').textContent = 'Code PIN formateur — ajouter le justificatif PDF.';
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('pin-error').textContent = '';
+        document.getElementById('modal-pin').style.display = 'flex';
+
+        document.getElementById('pin-confirm-btn').onclick = async function() {
+            var pin = document.getElementById('pin-input').value;
+            var tok = localStorage.getItem('token');
+            var h   = { 'Content-Type': 'application/json' };
+            if (tok) h['Authorization'] = 'Bearer ' + tok;
+            var ctx = _justifCtx;
+            var resp;
+            try {
+                resp = await fetch(
+                    '/api/sessions/' + ctx.sessionId + '/theorie/justificatif/' + ctx.stagId + '/' + ctx.jourId,
+                    { method: 'POST', headers: h, credentials: 'same-origin',
+                      body: JSON.stringify({ pin: pin, fichier_base64: ctx.fichier_base64, fichier_nom: ctx.fichier_nom }) }
+                );
+            } catch (err) {
+                document.getElementById('pin-error').textContent = 'Erreur réseau.';
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            if (resp.status === 403) {
+                document.getElementById('pin-error').textContent = 'Code PIN incorrect.';
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            if (!resp.ok) {
+                var errData = await resp.json().catch(function() { return {}; });
+                document.getElementById('pin-error').textContent = errData.detail || 'Erreur ' + resp.status;
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            fermerPin();
+            location.reload();
+        };
+    };
+    reader.readAsDataURL(file);
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-action="justif-voir"]')) {
+        var btn = e.target.closest('[data-action="justif-voir"]');
+        window.open(
+            '/api/sessions/' + btn.dataset.sessionId + '/theorie/justificatif/' + btn.dataset.stagiaireId + '/' + btn.dataset.jourId,
+            '_blank'
+        );
+        return;
+    }
+    if (e.target.closest('[data-action="justif-upload"]')) {
+        var btn = e.target.closest('[data-action="justif-upload"]');
+        _justifCtx = { sessionId: btn.dataset.sessionId, stagId: btn.dataset.stagiaireId, jourId: btn.dataset.jourId };
+        document.getElementById('justif-file-input').click();
         return;
     }
 });

@@ -535,12 +535,16 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - `saisie_degrade.html` : bouton 🗑️ "Supprimer ce résultat" (`data-action="supprimer-degrade"`) visible seulement si `cand.rt.mode == 'degrade' and user_role != 'terrain'`
 - `saisie_degrade.js` : `ouvrirPinSupprimer()`, `supprimerDegrade()`, dispatch action dans listener PIN (`_pending.action`) et dans keydown Enter
 
-*Section 6 — Justificatif PDF (upload + consultation) :*
-- Route `POST /api/sessions/{id}/theorie/justificatif/{stag_id}/{jour_id}` : JWT + PIN formateur, stocke base64 dans `justificatif_pdf` + nom dans `justificatif_nom`, ne touche pas aux notes
-- Route `GET /api/sessions/{id}/theorie/justificatif/{stag_id}/{jour_id}` : JWT, StreamingResponse PDF ou 404
-- UI : bouton 📎 dans ligne candidat et/ou saisie_degrade — upload si absent, ouverture si présent
-- Tous rôles (terrain inclus — whitelisté dans `_verifier_role`)
-- Terrain whitelisté : déjà anticipé dans `_verifier_role` (commit 81a38d1)
+**Section 6 terminée (2026-06-18) :**
+
+*Justificatif PDF — routes + UI session_detail + UI saisie_degrade :*
+- `POST /api/sessions/{id}/theorie/justificatif/{stag}/{jour}` (sessions.py) : JWT + PIN formateur (`JustificatifBody`), stocke `fichier_base64` → `rt.justificatif_pdf` + `fichier_nom` → `rt.justificatif_nom`. Whitelist terrain déjà posée dans `_verifier_role` (commit 81a38d1).
+- `GET /api/sessions/{id}/theorie/justificatif/{stag}/{jour}` (sessions.py) : JWT, `StreamingResponse` PDF ou 404. GET non bloqué par catch-all middleware.
+- `main.py` (`page_saisie_degrade`) : `justificatif_nom` ajouté dans `rt_data` (dict candidat → template)
+- `session_detail.html` : cellule `td-th-result` mode dégradé → 📎 vert si `rt.justificatif_nom` (`justif-voir`), 📎 gris sinon (`justif-upload`). Input caché `#justif-file-input`.
+- `session_detail.js` : listener `justif-voir` → `window.open GET justificatif` ; listener `justif-upload` → stocke contexte, déclenche file input ; handler `change` sur `#justif-file-input` → FileReader → base64 → PIN modal → POST upload → reload.
+- `saisie_degrade.html` : bouton 📎 (voir/upload) dans result-zone dégradé, tous rôles. Input caché `#sd-justif-file-input`.
+- `saisie_degrade.js` : `uploadJustificatif()`, listener `sd-justif-file-input`, dispatch `action === 'justif'` dans `pin-confirmer` et `keydown Enter`.
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).

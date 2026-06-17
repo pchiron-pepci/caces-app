@@ -543,6 +543,9 @@ def _verifier_role(path: str, method: str, role: str):
         # Exception : upload justificatif PDF — terrain et back-office peuvent attacher le scan (PIN formateur requis)
         if method == "POST" and _re.match(r"^/api/sessions/\d+/theorie/justificatif/\d+/\d+$", base):
             return True
+        # Exception : suppression résultat théorique — terrain peut corriger un mauvais candidat (PIN formateur requis)
+        if method == "DELETE" and _re.match(r"^/api/sessions/\d+/theorie/reponses/\d+/\d+$", base):
+            return True
         # Toutes les routes d'écriture sur les sessions (création + toutes sous-ressources)
         if method != "GET" and (base == "/api/sessions" or _re.match(r"^/api/sessions/\d+", base)):
             return False
@@ -2018,6 +2021,7 @@ def page_saisie_degrade(session_id: int, jour_id: int, request: Request, db: DBS
                     "1": rt.theme1_ok, "2": rt.theme2_ok, "3": rt.theme3_ok,
                     "4": rt.theme4_ok, "5": rt.theme5_ok,
                 },
+                "justificatif_nom": rt.justificatif_nom or "",
             }
         cands.append({
             "stagiaire_id": sc.stagiaire_id,

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
 from app.models.session import Session
@@ -683,6 +683,56 @@ def supprimer_resultat_theorie(session_id: int, stagiaire_id: int, jour_test_id:
     db.delete(rt)
     db.commit()
     return {"ok": True}
+
+
+class JustificatifBody(BaseModel):
+    pin: str
+    fichier_base64: str   # contenu PDF encodé base64 (sans préfixe data:...)
+    fichier_nom: str
+
+
+@router.post("/{session_id}/theorie/justificatif/{stagiaire_id}/{jour_test_id}")
+def upload_justificatif_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
+                                 body: JustificatifBody, db: DBSession = Depends(get_db),
+                                 current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    if body.pin != get_pin_formateur(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    rt = db.query(ResultatTheorie).filter(
+        ResultatTheorie.jour_test_id == jour_test_id,
+        ResultatTheorie.stagiaire_id == stagiaire_id,
+    ).first()
+    if not rt:
+        raise HTTPException(status_code=404, detail="Aucun résultat théorique pour ce candidat et ce jour")
+    rt.justificatif_pdf = body.fichier_base64
+    rt.justificatif_nom = body.fichier_nom
+    db.commit()
+    return {"ok": True, "fichier_nom": rt.justificatif_nom}
+
+
+@router.get("/{session_id}/theorie/justificatif/{stagiaire_id}/{jour_test_id}")
+def get_justificatif_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
+                              request: Request, db: DBSession = Depends(get_db)):
+    # Auth via cookie (middleware) — window.open n'envoie PAS le Bearer header.
+    # Même pattern que les routes PDF sujet/corrigé.
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    import base64
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse as SR
+    rt = db.query(ResultatTheorie).filter(
+        ResultatTheorie.jour_test_id == jour_test_id,
+        ResultatTheorie.stagiaire_id == stagiaire_id,
+    ).first()
+    if not rt or not rt.justificatif_pdf:
+        raise HTTPException(status_code=404, detail="Aucun justificatif pour ce résultat")
+    pdf_bytes = base64.b64decode(rt.justificatif_pdf)
+    nom = rt.justificatif_nom or "justificatif.pdf"
+    return SR(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{nom}"'},
+    )
 
 
 @router.post("/{session_id}/theorie/reponses-degrade")

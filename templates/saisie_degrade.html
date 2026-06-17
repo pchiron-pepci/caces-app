@@ -362,7 +362,29 @@ body {
                 {% endif %}
             </div>
 
-            {% if cand.rt and cand.rt.mode == 'degrade' and user_role != 'terrain' %}
+            {% if cand.rt and cand.rt.mode == 'degrade' %}
+            <div style="margin: 8px 0 4px;">
+                {% if cand.rt.justificatif_nom %}
+                <button data-action="sd-justif-voir"
+                        data-session-id="{{ session_id }}"
+                        data-stagiaire-id="{{ cand.stagiaire_id }}"
+                        data-jour-id="{{ jour_id }}"
+                        style="background:none; border:2px solid #2e7d32; border-radius:8px; padding:6px 12px; color:#2e7d32; font-size:13px; font-weight:700; cursor:pointer;">
+                    📎 {{ cand.rt.justificatif_nom }}
+                </button>
+                {% else %}
+                <button data-action="sd-justif-upload"
+                        data-session-id="{{ session_id }}"
+                        data-stagiaire-id="{{ cand.stagiaire_id }}"
+                        data-jour-id="{{ jour_id }}"
+                        style="background:none; border:2px solid #bbb; border-radius:8px; padding:6px 12px; color:#888; font-size:13px; font-weight:700; cursor:pointer;">
+                    📎 Ajouter justificatif
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if cand.rt and cand.rt.mode == 'degrade' %}
             <button data-action="supprimer-degrade"
                     data-stagiaire-id="{{ cand.stagiaire_id }}"
                     data-nom="{{ cand.nom }} {{ cand.prenom }}"
@@ -415,6 +437,7 @@ body {
     </div>
 </div>
 
+<input type="file" id="sd-justif-file-input" accept="application/pdf" style="display:none">
 <script src="/static/js/saisie_degrade.js"></script>
 </body>
 </html>

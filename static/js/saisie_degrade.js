@@ -115,6 +115,64 @@
         }
     }
 
+    // ── Justificatif PDF ──────────────────────────────────────────────────────
+    var _sdJustifCtx = null;   // { sessionId, stagId, jourId, fichier_base64, fichier_nom }
+
+    async function uploadJustificatif(pin) {
+        if (!_sdJustifCtx) return;
+        var ctx = _sdJustifCtx;
+        var resp;
+        try {
+            resp = await fetch(
+                '/api/sessions/' + ctx.sessionId + '/theorie/justificatif/' + ctx.stagId + '/' + ctx.jourId,
+                {
+                    method:      'POST',
+                    headers:     authHeaders(),
+                    body:        JSON.stringify({ pin: pin, fichier_base64: ctx.fichier_base64, fichier_nom: ctx.fichier_nom }),
+                    credentials: 'same-origin',
+                }
+            );
+        } catch (err) {
+            afficherErreurPin('Erreur réseau — vérifiez votre connexion.');
+            return;
+        }
+        if (resp.status === 403) {
+            var err403 = await resp.json().catch(function () { return {}; });
+            afficherErreurPin(err403.detail || 'Code PIN incorrect.');
+            return;
+        }
+        if (!resp.ok) {
+            var errData = await resp.json().catch(function () { return {}; });
+            afficherErreurPin('Erreur ' + resp.status + ' : ' + (errData.detail || 'Erreur serveur.'));
+            return;
+        }
+        fermerPin();
+        location.reload();
+    }
+
+    var _sdFileInput = document.getElementById('sd-justif-file-input');
+    if (_sdFileInput) {
+        _sdFileInput.addEventListener('change', function () {
+            var file = this.files[0];
+            this.value = '';   // reset pour permettre re-sélection
+            if (!file || !_sdJustifCtx) return;
+
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+                _sdJustifCtx.fichier_base64 = ev.target.result.split(',')[1];
+                _sdJustifCtx.fichier_nom    = file.name;
+                _pending = { action: 'justif' };
+                document.getElementById('pin-message').innerHTML = 'PIN formateur — ajouter <strong>' + file.name + '</strong>';
+                document.getElementById('pin-input').value       = '';
+                document.getElementById('pin-error').style.display = 'none';
+                document.getElementById('pin-error').textContent   = '';
+                document.getElementById('modal-pin').style.display = 'flex';
+                setTimeout(function () { document.getElementById('pin-input').focus(); }, 50);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     // ── Suppression d'un résultat dégradé (back-office uniquement) ───────────
     async function supprimerDegrade(pin) {
         if (!_pending) return;
@@ -210,10 +268,26 @@
             ouvrirPinSupprimer(stagId, nom);
             return;
         }
+        if (e.target.closest('[data-action="sd-justif-voir"]')) {
+            var btn = e.target.closest('[data-action="sd-justif-voir"]');
+            window.open(
+                '/api/sessions/' + btn.dataset.sessionId + '/theorie/justificatif/' + btn.dataset.stagiaireId + '/' + btn.dataset.jourId,
+                '_blank'
+            );
+            return;
+        }
+        if (e.target.closest('[data-action="sd-justif-upload"]')) {
+            var btn = e.target.closest('[data-action="sd-justif-upload"]');
+            _sdJustifCtx = { sessionId: btn.dataset.sessionId, stagId: btn.dataset.stagiaireId, jourId: btn.dataset.jourId };
+            if (_sdFileInput) _sdFileInput.click();
+            return;
+        }
         if (e.target.closest('[data-action="pin-confirmer"]')) {
             var pin = document.getElementById('pin-input').value;
             if (_pending && _pending.action === 'supprimer') {
                 supprimerDegrade(pin);
+            } else if (_pending && _pending.action === 'justif') {
+                uploadJustificatif(pin);
             } else {
                 soumettre(pin);
             }
@@ -230,6 +304,8 @@
             var pin = this.value;
             if (_pending && _pending.action === 'supprimer') {
                 supprimerDegrade(pin);
+            } else if (_pending && _pending.action === 'justif') {
+                uploadJustificatif(pin);
             } else {
                 soumettre(pin);
             }
