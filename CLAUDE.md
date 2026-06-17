@@ -444,6 +444,41 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 
 **Principe de sécurité appliqué :** garde fail-closed dans chaque route (`if not user: raise 401`) — protège même si le path se retrouvait accidentellement dans `_PUBLIC_PATTERNS`.
 
+### ✅ Chantier terminé : page de projection collective test théorique (2026-06-17)
+
+**Objectif :** afficher les questions à l'écran pour les candidats papier, sans jamais exposer la bonne réponse.
+
+**Route `GET /sessions/{session_id}/projection/{jour_id}` (main.py) :**
+- Garde fail-closed `if not user: raise 401` (même pattern routes PDF)
+- Autorisée même si `date_cloture_terrain` non null (affichage pur, rien ne s'enregistre)
+- Appelle `get_questions_phase2` (lecture seule, n'inclut pas `reponse_correcte`)
+- Aplatissement en liste séquentielle 1→N dans l'ordre des thèmes (seq, theme, texte, image — jamais reponse_correcte)
+- `ValueError` (pas de tirage) → `tirage_ok=False` → écran bloquant dans le template
+- Passe `questions` (liste Python) au template, rendu via `tojson|forceescape` sur `#projection-data`
+
+**Template `templates/projection_theorie.html` (standalone, pas base.html) :**
+- Données injectées `data-questions` sur `#projection-data` (CSP-safe, pas d'inline JS)
+- Boutons VRAI/FAUX : gris, `pointer-events:none` — décoratifs, aucune indication de réponse
+- En-tête fixe bleu marine : réf/famille | Q{i}/{N}+Thème | chrono MM:SS (rouge si ≤60 s)
+- Contrôles bas : ⏮ Précédent | ▶ Lecture | ⏭ Suivant | ⟳ Reset (tous `data-action`, CSP)
+- Overlay fin : "⏰ Temps écoulé", bouton Reset
+- Écran bloquant orange si `tirage_ok=False`
+
+**JS `static/js/projection_theorie.js` :**
+- Timer timestamp-based (`elapsedBeforePause + Date.now() - playStartTs`) — pas de dérive sur 1h
+- `DUR_MS = 3600000 / N` — tient toujours dans l'heure quel que soit N
+- Démarre en PAUSE sur Q1, chrono 60:00
+- Auto-avance : `floor(elapsed / DUR_MS)`, borné à N-1
+- ⏮/⏭ : override manuel sans toucher au chrono
+- ⟳ Reset : Q1, 60:00, pause, overlay masqué
+- Fin à 0:00 : arrêt sans boucle, overlay affiché
+- AUCUN fetch, AUCUN enregistrement
+
+**UX session_detail.html :**
+- Bouton 📽️ dans `{% for j in jours_test %}{% if j.type == 'theorie' %}` — `j` défini, `data-jour-id="{{ j.id }}"`
+- Conditionné sur `tirage_declenche`, visible tous rôles, disponible même si session terrain clôturée
+- Listener `window.open('/sessions/'+sid+'/projection/'+jourId, '_blank')` dans `session_detail.js`
+
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
 
