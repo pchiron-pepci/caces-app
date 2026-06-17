@@ -11,12 +11,12 @@
     var TOTAL_MS = 3600 * 1000;
     var DUR_MS   = TOTAL_MS / N;   // durée par question, recalculée sur N réel
 
-    var currentIdx          = 0;
-    var lastAutoStep        = 0;   // dernier palier d'auto-avance franchi
-    var elapsedBeforePause  = 0;   // ms accumulées hors session courante
-    var playStartTs         = null; // Date.now() au dernier play (null si pause)
-    var interval            = null;
-    var finished            = false;
+    var currentIdx    = 0;
+    var lastAutoStep  = 0;     // dernier palier d'auto-avance franchi
+    var chronoStartTs = null;  // timestamp du 1er Lecture ; null = pas encore démarré
+    var playing       = false; // défilement actif (distinct du chrono monotone)
+    var interval      = null;
+    var finished      = false;
 
     // ── Synthèse vocale — config identique à test_theorie.html ────
     // lang fr-FR, rate 0.9, pas de voix sélectionnée, pas de pitch.
@@ -46,7 +46,7 @@
 
     // ── Utilitaires temps ──────────────────────────────────────────
     function getElapsedMs() {
-        return elapsedBeforePause + (playStartTs !== null ? Date.now() - playStartTs : 0);
+        return chronoStartTs !== null ? Date.now() - chronoStartTs : 0;
     }
 
     function remainingMs() {
@@ -99,22 +99,24 @@
         }
     }
 
-    // ── Tick (interval 250 ms pour un affichage chrono fluide) ────
+    // ── Tick (250 ms — tourne sans interruption une fois le chrono démarré) ────
     function tick() {
         renderTimer();
 
         if (remainingMs() <= 0 && !finished) {
             finished = true;
-            pause(true);
+            playing  = false;
+            if (interval) { clearInterval(interval); interval = null; }
+            cancelSpeech();
             document.getElementById('proj-overlay-fin').style.display = 'flex';
             return;
         }
 
-        // Chrono monotone — auto-avance par crans depuis la position courante.
-        // lastAutoStep est le dernier palier franchi ; on avance d'autant de crans
-        // que de paliers nouveaux, borné à N-1. Un saut manuel ne modifie JAMAIS
-        // elapsed ni lastAutoStep : la prochaine auto-avance fera +1 depuis la
-        // position manuelle courante, au franchissement du palier suivant.
+        if (!playing) return; // chrono tourne ; défilement gelé en pause
+
+        // Auto-avance par crans relatifs depuis la position courante.
+        // Si une pause a duré plusieurs paliers, on les rattrape d'un coup
+        // à la reprise ; currentIdx reste toujours borné [0, N-1].
         var palier = Math.floor(getElapsedMs() / DUR_MS);
         if (palier > lastAutoStep) {
             var crans = Math.min(palier - lastAutoStep, N - 1 - currentIdx);
@@ -130,29 +132,29 @@
     // ── Contrôles ─────────────────────────────────────────────────
     function play() {
         if (finished) return;
-        playStartTs = Date.now();
+        if (chronoStartTs === null) {
+            chronoStartTs = Date.now();         // 1er Lecture : démarre le chrono global
+            interval = setInterval(tick, 250);  // interval continu (tourne même en pause)
+        }
+        playing = true;
         renderEtat(true);
-        interval = setInterval(tick, 250);
-        speak(questions[currentIdx].texte); // lecture de la question courante au démarrage
+        speak(questions[currentIdx].texte);
     }
 
     function pause(silent) {
-        if (playStartTs !== null) {
-            elapsedBeforePause += Date.now() - playStartTs;
-            playStartTs = null;
-        }
-        if (interval) { clearInterval(interval); interval = null; }
-        cancelSpeech();                // coupe la voix dans tous les cas
+        playing = false;
+        cancelSpeech();
         if (!silent) renderEtat(false);
     }
 
     function reset() {
-        pause(true);
-        finished           = false;
-        elapsedBeforePause = 0;
-        playStartTs        = null;
-        currentIdx         = 0;
-        lastAutoStep       = 0;
+        playing = false;
+        if (interval) { clearInterval(interval); interval = null; }
+        cancelSpeech();
+        finished      = false;
+        chronoStartTs = null;
+        currentIdx    = 0;
+        lastAutoStep  = 0;
         renderQuestion(0);
         renderTimer();
         renderEtat(false);
@@ -165,14 +167,14 @@
         if (!btn) return;
         switch (btn.dataset.action) {
             case 'playpause':
-                if (playStartTs !== null) pause(false); else play();
+                if (playing) pause(false); else play();
                 break;
             case 'prev':
                 if (currentIdx > 0) {
                     cancelSpeech();
                     currentIdx--;
                     renderQuestion(currentIdx);
-                    if (playStartTs !== null) speak(questions[currentIdx].texte);
+                    if (playing) speak(questions[currentIdx].texte);
                 }
                 break;
             case 'next':
@@ -180,7 +182,7 @@
                     cancelSpeech();
                     currentIdx++;
                     renderQuestion(currentIdx);
-                    if (playStartTs !== null) speak(questions[currentIdx].texte);
+                    if (playing) speak(questions[currentIdx].texte);
                 }
                 break;
             case 'reset':
