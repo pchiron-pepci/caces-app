@@ -666,6 +666,7 @@
 
     <button class="btn-valider" onclick="valider()">✅ Valider mes reponses</button>
     <button class="btn-retour" onclick="retourQcm()">← Continuer a repondre</button>
+    <div id="msg-erreur-submit" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
 </div>
 
 <!-- ECRAN 6 : RESULTAT -->
@@ -1050,7 +1051,10 @@ async function valider(force = false) {
         const data = await resp.json();
         afficherResultat(data.resultat);
     } else {
-        alert('Erreur lors de la sauvegarde !');
+        const errData = await resp.json().catch(() => ({}));
+        const el = document.getElementById('msg-erreur-submit');
+        el.textContent = errData.detail || 'Erreur lors de la sauvegarde (' + resp.status + ').';
+        el.style.display = '';
     }
 }
 
