@@ -148,6 +148,8 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `/api/sessions/\d+/theorie/reponses` | POST | Public (_PUBLIC_PATTERNS), bypass total |
 | `/api/sessions/\d+/theorie/reponses/\d+/\d+` | DELETE | JWT requis + PIN formateur dans body — admin/utilisateur uniquement (terrain bloqué catch-all) |
 | `/api/sessions/\d+/theorie/reouvrir/\d+/\d+` | POST | JWT requis + PIN formateur dans body — terrain+admin+utilisateur (whitelisté _verifier_role) |
+| `/api/sessions/\d+/theorie/reponses-degrade` | POST | JWT requis + PIN formateur dans body — testeur corrige papier et saisit les notes (whitelisté _verifier_role) |
+| `/api/sessions/\d+/theorie/justificatif/\d+/\d+` | POST | JWT requis + PIN formateur dans body — upload justificatif PDF (terrain + back-office, whitelisté _verifier_role) |
 
 `rouvrir-terrain` n'est PAS whitelisté — réservé admin/utilisateur.
 
@@ -189,7 +191,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
 | `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
 | `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` |
-| `ResultatTheorie` | `resultats_theorie` | UNIQUE `(jour_test_id, stagiaire_id)` ; `mode` VARCHAR(12) NOT NULL DEFAULT 'numerique' ('numerique'/'degrade') ; `bloque` Boolean défaut False — positionné comme SE, empêche la recherche de théorie dans `calculer_et_synchroniser` ; reprise par écrasement si mode='numerique', 409 si mode='degrade' |
+| `ResultatTheorie` | `resultats_theorie` | UNIQUE `(jour_test_id, stagiaire_id)` ; `mode` VARCHAR(12) NOT NULL DEFAULT 'numerique' ('numerique'/'degrade') ; `bloque` Boolean défaut False — positionné comme SE, empêche la recherche de théorie dans `calculer_et_synchroniser` ; reprise par écrasement si mode='numerique', 409 si mode='degrade' ; `justificatif_pdf` Text nullable (base64) ; `justificatif_nom` VARCHAR(255) nullable — ajoutés par migration startup + `migrate_justificatif_theorie.py` ; update notes ne touche JAMAIS justificatif (opérations indépendantes) |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete ; `option_pe`/`option_tel` legacy — remplacés par `HabilitationOption` |
 | `OptionCategorie` | `option_categorie` | table de référence des options disponibles par famille/catégorie ; codes : PE=Porte-engins, TEL=Télécommande, CC=Conduite cabine, TR=Translation sur rails, CEC=Circulation en charge ; `incluse` Boolean (défaut False) : option obligatoire incluse dans l'UT de la catégorie (pas de +0.5 UT) vs option facultative ; peuplé par `init_options.py` |
 | `HabilitationOption` | `habilitation_option` | options actives par habilitation (habilitation_id FK, code_option) ; modifiable avec PIN 1505 via `PUT /admin/habilitation/{id}/options` |
@@ -216,6 +218,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `migrate_token_verification.py` | `ALTER TABLE carte_caces ADD COLUMN token_verification VARCHAR(36)` + backfill UUID | à exécuter |
 | `migrate_r483_r487_r490.py` | Swap libellés R483↔R487, déplace cats A/B vers R483, crée cats 1/2/3 sous R487, supprime cats parasites R483 et R490/2-3/OPT-TEL | à exécuter |
 | `migrate_cloture_terrain.py` | `ALTER TABLE sessions ADD COLUMN date_cloture_terrain TIMESTAMP` | **à exécuter sur prod (Render Shell)** |
+| `migrate_justificatif_theorie.py` | `ALTER TABLE resultats_theorie ADD COLUMN justificatif_pdf TEXT` + `justificatif_nom VARCHAR(255)` | **à exécuter sur prod (Render Shell)** |
 
 Ordre d'exécution sur prod (toutes migrations puis init_options) :
 ```
@@ -479,6 +482,63 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Les 3 boutons 📽️/📄/📝 sont dans le **card-header "CACES® Épreuve théorique"** (hors boucle) — `{% set _jour_theorie = (jours_test | default([])) | selectattr('type', 'equalto', 'theorie') | first | default(none) %}` avant la carte ; 📽️ conditionné `tirage_declenche and _jour_theorie`, `data-jour-id="{{ _jour_theorie.id }}"` ; 📄/📝 conditionnés `tirage_declenche` seul
 - Visible tous rôles, disponible même si session terrain clôturée
 - Listener `window.open('/sessions/'+sid+'/projection/'+jourId, '_blank')` dans `session_detail.js`
+
+### Chantier en cours : saisie dégradée test théorique — Sections 5 + 6 restantes
+
+**Principe directeur :** ne jamais réimplémenter la règle de réussite — toujours via `calculer_resultat_theorie_phase2(reponses_synthetique, session_id, famille, db)` avec reponses synthétiques (N premières questions correctes).
+
+**Sections terminées (commits 53fc22c + 81a38d1) :**
+
+*Section 1 — Migration justificatif :*
+- `ResultatTheorie` : +`justificatif_pdf` (Text) +`justificatif_nom` (VARCHAR 255)
+- Startup migrations + `migrate_justificatif_theorie.py` (idempotent, **à exécuter sur prod**)
+
+*Section 2 — Route POST `/api/sessions/{id}/theorie/reponses-degrade` :*
+- JWT requis, PIN formateur dans le body (`NotesParThemeCreate`)
+- Body : `{jour_test_id, stagiaire_id, pin, notes_par_theme: {str: int}}` — nb bonnes réponses par thème
+- Totaux par thème depuis le tirage réel (UtilisationTheme + ReponseGrille), pas les valeurs hardcodées templates
+- Validation : `0 ≤ note ≤ len(questions_du_theme)` (0 = thème entièrement raté = valide)
+- Reponses synthétiques : N premières questions = correctes, reste = incorrectes → `calculer_resultat_theorie_phase2`
+- 409 si résultat numérique existant ; écrasement dégradé sans toucher justificatif
+- Terrain accessible (whitelisté dans `_verifier_role`)
+
+*Section 3 — Modal choix test sur bouton 🚀 (session_detail.html) :*
+- `<a href="/test/theorie/...">` → `<button data-action="choix-test" data-session-id data-jour-id>`
+- Modal `#modal-choix-test` : boutons `data-action="choix-test-numerique"` et `data-action="choix-test-degrade"`
+- Contexte stocké sur `modal.dataset` (sid, jid) ; fermeture sur cancel ou choix
+- `choix-test-numerique` → `window.open('/test/theorie/{sid}/{jid}', '_blank')`
+- `choix-test-degrade` → `window.open('/sessions/{sid}/theorie/saisie-degrade/{jid}', '_blank')`
+- Guards Jinja inchangés : `session.date_cloture_terrain is none` + `tirage_declenche`
+
+*Section 4 — Page saisie dégradée :*
+- Route `GET /sessions/{session_id}/theorie/saisie-degrade/{jour_id}` (main.py) — guard `request.state.user` ou 401
+- Passe : `candidats` (avec `rt_data.notes = {str: int}` pour pré-remplissage, `rt_data.mode`), `themes` (tirage réel : `{num, nom, total}`)
+- Template `templates/saisie_degrade.html` standalone : formulaire par candidat, blocage si mode numérique, pré-remplissage si dégradé existant, warning si pas de tirage
+- `static/js/saisie_degrade.js` : auth Bearer (localStorage) + cookie (credentials same-origin) — double chemin auth pour page standalone (hors intercepteur base.html)
+- `collecterNotes()` : `val === '' || Number.isNaN(parseInt(val, 10))` — 0 accepté (valide métier), champ vide rejeté
+- Erreurs PIN : dans `#pin-error` DOM (aucun alert()), modal reste ouverte sur 403 et autres erreurs HTTP
+- `afficherResultat()` : lit `resultat.notes_themes/max_themes/themes_ok` — zéro navigation DOM fragile
+
+*Correctifs (commit 81a38d1) :*
+- Terrain recevait 403 sur `reponses-degrade` : catch-all middleware bloquait → ajout exception dans `_verifier_role`
+- Anticipation Section 6 : exception aussi ajoutée pour `POST theorie/justificatif/\d+/\d+`
+- `Number.isNaN` (explicite, sans coercition) remplace `isNaN` dans `collecterNotes`
+
+**Sections restantes :**
+
+*Section 5 — Bouton correction polymorphe (ligne candidat session_detail.html) :*
+- Dans `td-th-result`, bouton `✏️ Corriger` (data-action="corriger-theorie", data-mode, data-session-id, data-stagiaire-id, data-jour-id)
+- Visible tous rôles, demande PIN formateur
+- `mode=='degrade'` → ouvre page saisie dégradée pré-remplie (GET avec candidat sélectionné)
+- `mode=='numerique'` → appelle `POST reouvrir/{stag}/{jour}` (PIN) puis ouvre test numérique avec `reponses` pré-chargées
+- Bouton DELETE séparé (🗑️ Supprimer résultat) — `user_role != 'terrain'` uniquement
+
+*Section 6 — Justificatif PDF (upload + consultation) :*
+- Route `POST /api/sessions/{id}/theorie/justificatif/{stag_id}/{jour_id}` : JWT + PIN formateur, stocke base64 dans `justificatif_pdf` + nom dans `justificatif_nom`, ne touche pas aux notes
+- Route `GET /api/sessions/{id}/theorie/justificatif/{stag_id}/{jour_id}` : JWT, StreamingResponse PDF ou 404
+- UI : bouton 📎 dans ligne candidat et/ou saisie_degrade — upload si absent, ouverture si présent
+- Tous rôles (terrain inclus — whitelisté dans `_verifier_role`)
+- Terrain whitelisté : déjà anticipé dans `_verifier_role` (commit 81a38d1)
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
