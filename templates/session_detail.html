@@ -788,28 +788,32 @@
     <!-- EPREUVE THEORIQUE -->
     {% set _jour_theorie = (jours_test | default([])) | selectattr('type', 'equalto', 'theorie') | first | default(none) %}
     <div class="card" style="margin-bottom:16px;">
-        <div class="card-header card-accent">
-            <h2>CACES® Épreuve théorique</h2>
-            {% if tirage_declenche and _jour_theorie %}
-            <button class="btn btn-secondary" data-action="projection-theorie"
-                    data-session-id="{{ session.id }}" data-jour-id="{{ _jour_theorie.id }}"
-                    style="padding:6px 12px; font-size:12px;"
-                    title="Lancer la projection en salle">📽️</button>
-            {% endif %}
+        <div class="card-header card-accent" style="flex-direction:column; align-items:stretch; gap:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>CACES® Épreuve théorique</h2>
+                {% if session.statut != 'terminee' and user_role != 'terrain' %}
+                <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" data-action="ouvrir-ajout-jour-theorie" title="Planifier une théorie">📅</button>
+                {% endif %}
+            </div>
             {% if tirage_declenche %}
-            <button class="btn btn-secondary" data-action="pdf-sujet-theorie" data-session-id="{{ session.id }}"
-                    title="Télécharger le sujet vierge (PDF)"
-                    style="font-size:13px; background:#e3f2fd; border:1px solid #1976d2; color:#0d47a1;">
-                📄 Sujet PDF
-            </button>
-            <button class="btn btn-secondary" data-action="pdf-corrige-theorie" data-session-id="{{ session.id }}"
-                    title="Télécharger le corrigé (PDF)"
-                    style="font-size:13px; background:#e8f5e9; border:1px solid #4caf50; color:#1b5e20;">
-                📝 Corrigé PDF
-            </button>
-            {% endif %}
-            {% if session.statut != 'terminee' and user_role != 'terrain' %}
-            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" data-action="ouvrir-ajout-jour-theorie" title="Planifier une théorie">📅</button>
+            <div style="display:flex; gap:8px;">
+                {% if _jour_theorie %}
+                <button class="btn btn-secondary" data-action="projection-theorie"
+                        data-session-id="{{ session.id }}" data-jour-id="{{ _jour_theorie.id }}"
+                        style="padding:6px 12px; font-size:12px;"
+                        title="Lancer la projection en salle">📽️</button>
+                {% endif %}
+                <button class="btn btn-secondary" data-action="pdf-sujet-theorie" data-session-id="{{ session.id }}"
+                        title="Télécharger le sujet vierge (PDF)"
+                        style="font-size:13px; background:#e3f2fd; border:1px solid #1976d2; color:#0d47a1;">
+                    📄 Sujet
+                </button>
+                <button class="btn btn-secondary" data-action="pdf-corrige-theorie" data-session-id="{{ session.id }}"
+                        title="Télécharger le corrigé (PDF)"
+                        style="font-size:13px; background:#e8f5e9; border:1px solid #4caf50; color:#1b5e20;">
+                    📝 Corrigé
+                </button>
+            </div>
             {% endif %}
         </div>
         {% if jours_test %}
