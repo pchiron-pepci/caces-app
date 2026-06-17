@@ -354,6 +354,16 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 
 **Note architecture :** `POST /cloturer` n'exige **pas de PIN** (auth JWT seule). C'est délibéré (admin/utilisateur sont authentifiés) mais à noter si un niveau supplémentaire est souhaité.
 
+### ✅ Chantier terminé : numérotation sessions robuste aux suppressions (2026-06-17)
+
+**Bug :** `create_session` utilisait `COUNT(sessions de l'année) + 1` → une suppression creuse un trou dans la séquence, le prochain numéro calculé retombait sur un numéro déjà pris → doublon silencieux (pas de contrainte unique en base).
+
+**Correction :**
+- `app/routers/sessions.py` (route `POST /`) : passage au **MAX numérique** — regex `-(\d+)$` sur toutes les refs `SESSION-{annee}-%`, parse int de chacune (ignore formats non conformes), `max + 1` ou `1` si aucune. Robuste aux formats mélangés (`01` et `002` coexistants → max=2 → prochain=003).
+- `app/main.py` (startup) : `CREATE UNIQUE INDEX IF NOT EXISTS uq_session_reference ON sessions (reference) WHERE reference IS NOT NULL` — avec **vérification explicite** post-création (pg_indexes/sqlite_master) et affichage non-silencieux si l'index n'existe pas après création.
+
+**Contexte prod :** doublon `SESSION-2026-006` supprimé manuellement avant création de l'index. Format mixte `SESSION-2026-01` / `SESSION-2026-002` confirmé en dev — raison pour laquelle le tri DESC alphabétique a été écarté.
+
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
 

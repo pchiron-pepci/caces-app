@@ -161,6 +161,32 @@ try:
 except Exception:
     pass
 
+# Index unique référence session — créé après résolution du doublon prod (2026-06-17)
+# Non-silencieux : vérifie explicitement que l'index existe après création
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_session_reference "
+            "ON sessions (reference) WHERE reference IS NOT NULL"
+        ))
+        _conn.commit()
+    # Vérification explicite (pg_indexes pour PostgreSQL, sqlite_master pour SQLite)
+    with engine.connect() as _conn:
+        try:
+            row = _conn.execute(text(
+                "SELECT indexname FROM pg_indexes WHERE indexname = 'uq_session_reference'"
+            )).fetchone()
+        except Exception:
+            row = _conn.execute(text(
+                "SELECT name FROM sqlite_master WHERE type='index' AND name='uq_session_reference'"
+            )).fetchone()
+        if row:
+            print("[migration] uq_session_reference : index unique cree et verifie.", flush=True)
+        else:
+            print("[migration] ERREUR : uq_session_reference introuvable apres creation — doublons residuels ?", flush=True)
+except Exception as _e:
+    print(f"[migration] ERREUR creation uq_session_reference : {_e}", flush=True)
+
 try:
     with engine.connect() as _conn:
         _conn.execute(text("""

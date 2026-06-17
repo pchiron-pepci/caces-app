@@ -162,8 +162,18 @@ def create_session(data: SessionCreate, db: DBSession = Depends(get_db)):
     from datetime import datetime
     annee = datetime.now().year
     if not data.reference:
-        nb = db.query(Session).filter(Session.annee == annee).count()
-        data.reference = f"SESSION-{annee}-{str(nb + 1).zfill(3)}"
+        import re as _re
+        _prefix = f"SESSION-{annee}-"
+        _refs = db.query(Session.reference).filter(
+            Session.reference.like(f"{_prefix}%")
+        ).all()
+        _nums = []
+        for (_r,) in _refs:
+            _m = _re.search(r'-(\d+)$', _r or "")
+            if _m:
+                _nums.append(int(_m.group(1)))
+        _next = (max(_nums) + 1) if _nums else 1
+        data.reference = f"{_prefix}{str(_next).zfill(3)}"
     if not data.date_pratique_debut or not data.date_pratique_fin:
         raise HTTPException(400, "Les dates de début et de fin sont obligatoires")
     if data.date_pratique_debut > data.date_pratique_fin:
