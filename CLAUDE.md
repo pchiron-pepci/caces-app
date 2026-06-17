@@ -439,7 +439,7 @@ La route corrigé était initialement bloquée terrain (403) — décision révi
 Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les routes GET → pas de whitelist nécessaire dans `_verifier_role`.
 
 **UX `session_detail.html` + `session_detail.js` :**
-- Boutons `📄 Sujet PDF` et `📝 Corrigé PDF` dans le `div` flex des boutons session, conditionnés sur `tirage_declenche` uniquement (visibles tous rôles)
+- Boutons `📄 Sujet PDF` et `📝 Corrigé PDF` dans le **card-header "CACES® Épreuve théorique"**, conditionnés sur `tirage_declenche` uniquement (visibles tous rôles)
 - Listeners `data-action="pdf-sujet-theorie"` et `data-action="pdf-corrige-theorie"` → `window.open(url, '_blank')`
 
 **Principe de sécurité appliqué :** garde fail-closed dans chaque route (`if not user: raise 401`) — protège même si le path se retrouvait accidentellement dans `_PUBLIC_PATTERNS`.
@@ -476,8 +476,8 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - **Synthèse vocale** : `speak()` config `fr-FR / rate 0.9` identique à `test_theorie.html` ; contournement bug Chrome cancel→speak : `setTimeout(fn, 100)` CSP-safe + `clearTimeout(_speakTimer)` anti-chevauchement sur auto-avances ; `cancelSpeech()` annule aussi le timer pending ; lecture auto sur `play()` + auto-avance + prev/next en mode lecture ; `cancelSpeech()` sur pause / reset / fin chrono ; bouton `🔊 Relire` dans la barre de contrôles (`data-action="relire"`, CSP-safe)
 
 **UX session_detail.html :**
-- Bouton 📽️ dans `{% for j in jours_test %}{% if j.type == 'theorie' %}` — `j` défini, `data-jour-id="{{ j.id }}"`
-- Conditionné sur `tirage_declenche`, visible tous rôles, disponible même si session terrain clôturée
+- Les 3 boutons 📽️/📄/📝 sont dans le **card-header "CACES® Épreuve théorique"** (hors boucle) — `{% set _jour_theorie = (jours_test | default([])) | selectattr('type', 'equalto', 'theorie') | first | default(none) %}` avant la carte ; 📽️ conditionné `tirage_declenche and _jour_theorie`, `data-jour-id="{{ _jour_theorie.id }}"` ; 📄/📝 conditionnés `tirage_declenche` seul
+- Visible tous rôles, disponible même si session terrain clôturée
 - Listener `window.open('/sessions/'+sid+'/projection/'+jourId, '_blank')` dans `session_detail.js`
 
 ### Chantier en cours : suppression habilitation (hard delete)
