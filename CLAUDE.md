@@ -465,13 +465,14 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Écran bloquant orange si `tirage_ok=False`
 
 **JS `static/js/projection_theorie.js` :**
-- Timer timestamp-based (`elapsedBeforePause + Date.now() - playStartTs`) — pas de dérive sur 1h
+- Timer timestamp-based (`elapsedBeforePause + Date.now() - playStartTs`) — monotone, jamais modifié par prev/next
 - `DUR_MS = 3600000 / N` — tient toujours dans l'heure quel que soit N
 - Démarre en PAUSE sur Q1, chrono 60:00
-- Auto-avance : `floor(elapsed / DUR_MS)`, borné à N-1
-- ⏮/⏭ : override manuel sans toucher au chrono
-- ⟳ Reset : Q1, 60:00, pause, overlay masqué
-- Fin à 0:00 : arrêt sans boucle, overlay affiché
+- **Chrono et index découplés** : `currentIdx` évolue indépendamment du temps écoulé
+- **Auto-avance** : variable `lastAutoStep` (palier franchi). À chaque tick : `palier = floor(elapsed/DUR_MS)` ; si `palier > lastAutoStep` → avance `currentIdx` de `min(palier-lastAutoStep, N-1-currentIdx)` crans, puis `lastAutoStep = palier`. Jamais de saut brutal à `floor(elapsed/DUR_MS)` — seul un incrément relatif depuis la position courante.
+- **⏮/⏭ manuels** : `currentIdx--/++` (borné 0..N-1). NE modifient NI `elapsed` NI `lastAutoStep`. La prochaine auto-avance fera +1 depuis la position manuelle au franchissement du palier suivant.
+- ⟳ Reset : `currentIdx=0`, `lastAutoStep=0`, `elapsedBeforePause=0`, pause, overlay masqué
+- Fin à 0:00 : arrêt sans boucle, overlay affiché — indépendant de `currentIdx`
 - AUCUN fetch, AUCUN enregistrement
 - **Synthèse vocale** : `speak()` config `fr-FR / rate 0.9` identique à `test_theorie.html` ; contournement bug Chrome cancel→speak : `setTimeout(fn, 100)` CSP-safe + `clearTimeout(_speakTimer)` anti-chevauchement sur auto-avances ; `cancelSpeech()` annule aussi le timer pending ; lecture auto sur `play()` + auto-avance + prev/next en mode lecture ; `cancelSpeech()` sur pause / reset / fin chrono ; bouton `🔊 Relire` dans la barre de contrôles (`data-action="relire"`, CSP-safe)
 
