@@ -631,6 +631,49 @@ app.include_router(dev.router)
 app.include_router(consentements.router)
 app.include_router(neutralite.router)
 
+
+@app.get("/api/sessions/{session_id}/theorie/pdf/sujet")
+def pdf_sujet_vierge(session_id: int, request: Request, db: DBSession = Depends(get_db)):
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO as _BIO
+    from app.services.pdf_test_theorie import generer_sujet_vierge
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    try:
+        pdf_bytes = generer_sujet_vierge(session_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur génération PDF : {e}")
+    return StreamingResponse(
+        _BIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=sujet_theorie_session{session_id}.pdf"},
+    )
+
+
+@app.get("/api/sessions/{session_id}/theorie/pdf/corrige")
+def pdf_corrige(session_id: int, request: Request, db: DBSession = Depends(get_db)):
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO as _BIO
+    from app.services.pdf_test_theorie import generer_corrige
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    try:
+        pdf_bytes = generer_corrige(session_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur génération PDF : {e}")
+    return StreamingResponse(
+        _BIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=corrige_theorie_session{session_id}.pdf"},
+    )
+
+
 @app.get("/")
 def dashboard(request: Request):
     from datetime import date, timedelta

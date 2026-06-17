@@ -49,6 +49,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('[data-action="cloturer-session"]')) cloturerSession();
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="pdf-sujet-theorie"]');
+        if (btn) {
+            var sid = btn.dataset.sessionId;
+            window.open('/api/sessions/' + sid + '/theorie/pdf/sujet', '_blank');
+        }
+    });
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="pdf-corrige-theorie"]');
+        if (btn) {
+            var sid = btn.dataset.sessionId;
+            window.open('/api/sessions/' + sid + '/theorie/pdf/corrige', '_blank');
+        }
+    });
+    document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="declencher-tirage"]');
         if (!btn) return;
         var sessionId = btn.dataset.sessionId;
