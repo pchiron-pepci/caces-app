@@ -4,6 +4,18 @@ Application de pilotage CACES® & Autorisation de conduite pour PEPCI Formation.
 
 ---
 
+## ⚠️ Règle permanente — tenue du MP
+
+**À la fin de chaque chantier** (nouvelle fonctionnalité, correction, décision architecturale, migration), mettre à jour ce fichier CLAUDE.md **AVANT** de considérer la tâche terminée :
+
+- Consigner ce qui a été fait (modèles/routes/templates touchés, règles métier nouvelles ou modifiées).
+- Mettre à jour le tableau "Chantiers en cours / À faire" (statut à jour).
+- Noter toute décision tranchée (réversibilité, gel, exceptions) pour qu'une conversation ultérieure n'ait pas à la redemander.
+
+**Présenter en fin de réponse un court résumé "MP mis à jour :" listant les lignes ajoutées ou modifiées.**
+
+---
+
 ## Stack technique
 
 ```
@@ -219,6 +231,8 @@ python init_questions_r482.py
 | Priorité | Item | Statut |
 |---|---|---|
 | URGENT | Upgrader caces-db Render avant 05/07/2026 | en attente |
+| Haute | Grille statuts sessions 3 états (Ouverte / À réutiliser / Clôturée) | ✅ fait |
+| Haute | Harmoniser affichage statut sessions dans dashboard.html (actuellement logique séparée inline) | à faire |
 | Haute | Suppression habilitation testeur — hard delete avec PIN (modal testeurs) | en cours |
 | Haute | Cartes CACES® PDF (format CR80, WeasyPrint) | ✅ fait |
 | Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | ✅ fait |
