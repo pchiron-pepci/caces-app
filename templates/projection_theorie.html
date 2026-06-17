@@ -54,6 +54,13 @@
     opacity: 0.8;
     margin-top: 1px;
   }
+  #proj-logo {
+    height: 40px;
+    width: auto;
+    flex: 0 0 auto;
+    object-fit: contain;
+    border-radius: 4px;
+  }
   #proj-timer {
     font-size: 26px;
     font-weight: 800;
@@ -182,19 +189,19 @@
   }
 
   /* ── Mobile ≤ 600 px ────────────────────────────────────────────
-     Barre de contrôles : boutons réduits, libellé #proj-etat masqué.
+     Header : réf/famille masquée (Q{i}/N + chrono suffisent), logo
+     et chrono réduits. Contrôles : boutons réduits, état masqué.
      Desktop (> 600 px) : aucun changement.                          */
   @media (max-width: 600px) {
-    #proj-controls {
-      gap: 8px;
-      padding: 0 10px;
-    }
-    .ctrl-btn {
-      padding: 6px 8px;
-      font-size: 12px;
-      gap: 3px;
-    }
-    #proj-etat { display: none; }
+    #proj-header   { padding: 0 10px; gap: 8px; }
+    #proj-logo     { height: 28px; }
+    #proj-ref      { display: none; }
+    #proj-q-num    { font-size: 15px; }
+    #proj-theme-label { font-size: 10px; }
+    #proj-timer    { font-size: 20px; min-width: 68px; letter-spacing: 1px; }
+    #proj-controls { gap: 8px; padding: 0 10px; }
+    .ctrl-btn      { padding: 6px 8px; font-size: 12px; gap: 3px; }
+    #proj-etat     { display: none; }
   }
 
   /* ── Overlay fin de temps ─────────────────────────────────────── */
@@ -280,6 +287,8 @@
 {% else %}
 <!-- ── En-tête ─────────────────────────────────────── -->
 <div id="proj-header">
+  {% set _logo = logo_organisme() %}
+  {% if _logo %}<img id="proj-logo" src="{{ _logo }}" alt="Logo organisme" />{% endif %}
   <div id="proj-ref">{{ session_ref }} — CACES® {{ famille }}</div>
   <div id="proj-center">
     <div id="proj-q-num">Question —/{{ total }}</div>
