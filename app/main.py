@@ -124,6 +124,8 @@ def _run_startup_migrations():
         # resultats_theorie
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS bloque BOOLEAN NOT NULL DEFAULT FALSE",
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS mode VARCHAR(12) NOT NULL DEFAULT 'numerique'",
+        "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS justificatif_pdf TEXT",
+        "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS justificatif_nom VARCHAR(255)",
         # caces_obtenus
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT",
         # carte_caces
@@ -1928,6 +1930,113 @@ def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jo
         )
     finally:
         db.close()
+
+
+@app.get("/sessions/{session_id}/theorie/saisie-degrade/{jour_id}")
+def page_saisie_degrade(session_id: int, jour_id: int, request: Request, db: DBSession = Depends(get_db)):
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session introuvable")
+    jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
+    if not jour:
+        raise HTTPException(status_code=404, detail="Jour introuvable")
+
+    # Candidats inscrits sur ce jour
+    candidats_ids = [
+        jtc.stagiaire_id for jtc in db.query(JourTestCandidat).filter(
+            JourTestCandidat.jour_test_id == jour_id,
+            JourTestCandidat.actif == True,
+        ).all()
+    ]
+    session_candidats = db.query(SessionCandidat).filter(
+        SessionCandidat.session_id == session_id,
+        SessionCandidat.stagiaire_id.in_(candidats_ids),
+        SessionCandidat.actif == True,
+    ).all()
+    for sc in session_candidats:
+        sc.stagiaire = db.query(Stagiaire).filter(Stagiaire.id == sc.stagiaire_id).first()
+
+    # Résultats théoriques existants pour ce jour
+    rt_list = db.query(ResultatTheorie).filter(
+        ResultatTheorie.jour_test_id == jour_id,
+        ResultatTheorie.stagiaire_id.in_(candidats_ids),
+    ).all()
+    rt_par_stagiaire = {rt.stagiaire_id: rt for rt in rt_list}
+
+    # Tirage réel : totaux par thème depuis DB (identique à calculer_resultat_theorie_phase2)
+    from app.models.utilisations_themes import UtilisationTheme as _UTd
+    tirages = db.query(_UTd).filter(
+        _UTd.session_id == session_id,
+        _UTd.famille == session.famille,
+    ).order_by(_UTd.theme).all()
+    _THEME_NOMS = {
+        1: 'Connaissances générales',
+        2: 'Technologie et stabilité',
+        3: 'Exploitation',
+        4: 'Circulation',
+        5: 'Fin de poste',
+    }
+    themes = []
+    for ut in tirages:
+        qs = db.query(ReponseGrille).filter(
+            ReponseGrille.grille_id == ut.grille_id,
+            ReponseGrille.theme == ut.theme,
+        ).all()
+        themes.append({
+            "num": ut.theme,
+            "nom": _THEME_NOMS.get(ut.theme, f"Thème {ut.theme}"),
+            "total": len(qs),
+        })
+
+    # Construction de la liste candidats pour le template
+    cands = []
+    for sc in session_candidats:
+        rt = rt_par_stagiaire.get(sc.stagiaire_id)
+        rt_data = None
+        if rt:
+            rt_data = {
+                "mode": rt.mode,
+                "note_totale": rt.note_totale,
+                "obtenue": rt.obtenue,
+                "notes": {
+                    "1": int(rt.note_theme1) if rt.note_theme1 is not None else None,
+                    "2": int(rt.note_theme2) if rt.note_theme2 is not None else None,
+                    "3": int(rt.note_theme3) if rt.note_theme3 is not None else None,
+                    "4": int(rt.note_theme4) if rt.note_theme4 is not None else None,
+                    "5": int(rt.note_theme5) if rt.note_theme5 is not None else None,
+                },
+                "themes_ok": {
+                    "1": rt.theme1_ok, "2": rt.theme2_ok, "3": rt.theme3_ok,
+                    "4": rt.theme4_ok, "5": rt.theme5_ok,
+                },
+            }
+        cands.append({
+            "stagiaire_id": sc.stagiaire_id,
+            "nom": sc.stagiaire.nom or "" if sc.stagiaire else "",
+            "prenom": sc.stagiaire.prenom or "" if sc.stagiaire else "",
+            "ddn": sc.stagiaire.date_naissance.strftime('%d/%m/%Y') if sc.stagiaire and sc.stagiaire.date_naissance else "",
+            "dispensee": bool(sc.theorie_dispensee),
+            "rt": rt_data,
+        })
+
+    return templates.TemplateResponse(
+        request=request,
+        name="saisie_degrade.html",
+        context={
+            "session_id": session_id,
+            "session_ref": session.reference or f"Session {session.id}",
+            "famille": session.famille,
+            "jour_id": jour_id,
+            "jour_date": jour.date.strftime('%d/%m/%Y') if jour.date else "",
+            "candidats": cands,
+            "themes": themes,
+            "user_role": user.get("role", "") if isinstance(user, dict) else getattr(user, "role", ""),
+        },
+    )
+
 
 @app.get("/test/theorie/{session_id}/{jour_id}")
 def page_test_theorie(request: Request, session_id: int, jour_id: int):

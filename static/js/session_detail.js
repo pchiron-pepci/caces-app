@@ -1762,3 +1762,35 @@ document.addEventListener('DOMContentLoaded', function() {
         );
     });
 });
+
+// ── Modal choix test théorique (numérique vs dégradé) ───────────────────────
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-action="choix-test"]');
+    if (btn) {
+        var modal = document.getElementById('modal-choix-test');
+        modal.dataset.sessionId = btn.dataset.sessionId;
+        modal.dataset.jourId    = btn.dataset.jourId;
+        modal.style.display = 'flex';
+        return;
+    }
+    if (e.target.closest('[data-action="fermer-choix-test"]')) {
+        document.getElementById('modal-choix-test').style.display = 'none';
+        return;
+    }
+    if (e.target.closest('[data-action="choix-test-numerique"]')) {
+        var modal = document.getElementById('modal-choix-test');
+        var sid = modal.dataset.sessionId;
+        var jid = modal.dataset.jourId;
+        modal.style.display = 'none';
+        window.open('/test/theorie/' + sid + '/' + jid, '_blank');
+        return;
+    }
+    if (e.target.closest('[data-action="choix-test-degrade"]')) {
+        var modal = document.getElementById('modal-choix-test');
+        var sid = modal.dataset.sessionId;
+        var jid = modal.dataset.jourId;
+        modal.style.display = 'none';
+        window.open('/sessions/' + sid + '/theorie/saisie-degrade/' + jid, '_blank');
+        return;
+    }
+});

@@ -640,6 +640,13 @@ class TheoriePinBody(BaseModel):
     pin: str
 
 
+class NotesParThemeCreate(BaseModel):
+    jour_test_id: int
+    stagiaire_id: int
+    pin: str
+    notes_par_theme: Dict[str, int]  # {"1": 8, "2": 20, …} — nb bonnes réponses saisies
+
+
 @router.post("/{session_id}/theorie/reouvrir/{stagiaire_id}/{jour_test_id}")
 def reouvrir_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
                      body: TheoriePinBody, db: DBSession = Depends(get_db),
@@ -676,6 +683,143 @@ def supprimer_resultat_theorie(session_id: int, stagiaire_id: int, jour_test_id:
     db.delete(rt)
     db.commit()
     return {"ok": True}
+
+
+@router.post("/{session_id}/theorie/reponses-degrade")
+def soumettre_reponses_theorie_degrade(
+    session_id: int,
+    data: NotesParThemeCreate,
+    db: DBSession = Depends(get_db),
+    current_user: Utilisateur = Depends(get_utilisateur_courant),
+):
+    # a. PIN formateur
+    if data.pin != get_pin_formateur(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+
+    # b. Session + jour
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    _check_modifiable(session)
+    if session.date_cloture_terrain is not None:
+        raise HTTPException(status_code=403, detail="Session clôturée terrain — modification impossible.")
+    jour = db.query(JourTest).filter(JourTest.id == data.jour_test_id).first()
+    if not jour:
+        raise HTTPException(status_code=404, detail="Jour non trouvé")
+
+    # c. Totaux réels par thème depuis le tirage (identique à calculer_resultat_theorie_phase2)
+    tirages = (
+        db.query(UtilisationTheme)
+        .filter(
+            UtilisationTheme.session_id == session_id,
+            UtilisationTheme.famille == session.famille,
+        )
+        .all()
+    )
+    if not tirages:
+        raise HTTPException(status_code=400, detail="Aucun tirage Phase 2 pour cette session")
+
+    questions_par_theme: Dict[str, list] = {}
+    for ut in tirages:
+        questions = (
+            db.query(ReponseGrille)
+            .filter(
+                ReponseGrille.grille_id == ut.grille_id,
+                ReponseGrille.theme == ut.theme,
+            )
+            .order_by(ReponseGrille.numero_question)
+            .all()
+        )
+        questions_par_theme[str(ut.theme)] = questions
+
+    # d. Validation
+    for t_str, qs in questions_par_theme.items():
+        if t_str not in data.notes_par_theme:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Thème {t_str} manquant dans la saisie",
+            )
+        note = data.notes_par_theme[t_str]
+        nb_q = len(qs)
+        if note < 0 or note > nb_q:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Thème {t_str} : valeur {note} hors bornes (0–{nb_q})",
+            )
+
+    # e. Reponses synthétiques : N premières questions marquées correctes,
+    #    le reste incorrect — calculer_resultat_theorie_phase2 recompte
+    #    exactement N bonnes pour ce thème.
+    reponses_synthetique: Dict[str, bool] = {}
+    for t_str, qs in questions_par_theme.items():
+        n_bonnes = data.notes_par_theme[t_str]
+        for i, q in enumerate(qs):
+            if i < n_bonnes:
+                reponses_synthetique[str(q.numero_question)] = q.reponse_correcte
+            else:
+                reponses_synthetique[str(q.numero_question)] = not q.reponse_correcte
+
+    # f. Calcul résultat via la règle officielle — pas de duplication
+    try:
+        resultat = calculer_resultat_theorie_phase2(
+            reponses_synthetique, session_id, session.famille, db
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # g. Écriture ResultatTheorie
+    existing = db.query(ResultatTheorie).filter(
+        ResultatTheorie.jour_test_id == data.jour_test_id,
+        ResultatTheorie.stagiaire_id == data.stagiaire_id,
+    ).first()
+
+    if existing:
+        if existing.mode == "numerique":
+            raise HTTPException(
+                status_code=409,
+                detail="Un résultat numérique existe pour ce candidat — supprimez-le d'abord.",
+            )
+        # mode == 'degrade' : mise à jour des notes, justificatif préservé
+        existing.note_totale = resultat["note_totale"]
+        existing.note_theme1 = resultat["notes_themes"].get("1")
+        existing.note_theme2 = resultat["notes_themes"].get("2")
+        existing.note_theme3 = resultat["notes_themes"].get("3")
+        existing.note_theme4 = resultat["notes_themes"].get("4")
+        existing.note_theme5 = resultat["notes_themes"].get("5")
+        existing.theme1_ok   = resultat["themes_ok"].get("1")
+        existing.theme2_ok   = resultat["themes_ok"].get("2")
+        existing.theme3_ok   = resultat["themes_ok"].get("3")
+        existing.theme4_ok   = resultat["themes_ok"].get("4")
+        existing.theme5_ok   = resultat["themes_ok"].get("5")
+        existing.obtenue     = resultat["obtenue"]
+        # reponses_json et justificatif_* intentionnellement non modifiés
+    else:
+        rt = ResultatTheorie(
+            session_id=session_id,
+            stagiaire_id=data.stagiaire_id,
+            jour_test_id=data.jour_test_id,
+            grille_id=None,
+            reponses_json=None,
+            note_totale=resultat["note_totale"],
+            note_theme1=resultat["notes_themes"].get("1"),
+            note_theme2=resultat["notes_themes"].get("2"),
+            note_theme3=resultat["notes_themes"].get("3"),
+            note_theme4=resultat["notes_themes"].get("4"),
+            note_theme5=resultat["notes_themes"].get("5"),
+            theme1_ok=resultat["themes_ok"].get("1"),
+            theme2_ok=resultat["themes_ok"].get("2"),
+            theme3_ok=resultat["themes_ok"].get("3"),
+            theme4_ok=resultat["themes_ok"].get("4"),
+            theme5_ok=resultat["themes_ok"].get("5"),
+            obtenue=resultat["obtenue"],
+            dispense=False,
+            mode="degrade",
+        )
+        db.add(rt)
+
+    db.commit()
+    return {"resultat": resultat}
+
 
 @router.get("/{session_id}/jours/{jour_id}/grille")
 def get_grille_jour(session_id: int, jour_id: int, db: DBSession = Depends(get_db)):
