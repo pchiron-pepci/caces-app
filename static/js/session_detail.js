@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try { window.OPTIONS_PAR_CAT = JSON.parse(_d.dataset.optionsParCat || '{}'); } catch(e) { console.error('OPTIONS_PAR_CAT parse error:', e, _d.dataset.optionsParCat); window.OPTIONS_PAR_CAT = {}; }
         try { window.UTILISATEURS_TESTEURS = JSON.parse(_d.dataset.testeurs || '[]'); } catch(e) { window.UTILISATEURS_TESTEURS = []; }
         window.TERRAIN_GELE = _d.dataset.terrainGele === 'true';
+        window.SESSION_SANS_RESULTAT = _d.dataset.sansResultat === 'true';
         window.USER_ROLE = _d.dataset.userRole || '';
     }
 
@@ -205,6 +206,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="fermer-confirm"]')) fermerConfirm();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="confirmer-avert-cloture"]')) {
+            document.getElementById('modal-avert-cloture').style.display = 'none';
+            _executerCloture();
+        }
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="fermer-avert-cloture"]'))
+            document.getElementById('modal-avert-cloture').style.display = 'none';
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="fermer-alerte"]')) fermerAlerte();
@@ -745,11 +756,20 @@ async function sauvegarderEquipement() {
     if (resp.ok) { fermerModalEquipement(); location.reload(); } else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
 }
 
+function _executerCloture() {
+    fetch('/api/sessions/' + window.SESSION_ID + '/cloturer', { method: 'POST' })
+        .then(function(resp) {
+            if (resp.ok) { location.reload(); }
+            else { resp.json().then(function(d) { afficherErreur(d.detail || 'Erreur !'); }); }
+        });
+}
+
 function cloturerSession() {
-    demanderConfirmation('Clôturer la session ? Les résultats seront verrouillés.', async () => {
-        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/cloturer', { method: 'POST' });
-        if (resp.ok) location.reload(); else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
-    });
+    if (window.SESSION_SANS_RESULTAT) {
+        document.getElementById('modal-avert-cloture').style.display = 'flex';
+    } else {
+        demanderConfirmation('Clôturer la session ? Les résultats seront verrouillés.', _executerCloture);
+    }
 }
 
 function cloturerTerrain() {

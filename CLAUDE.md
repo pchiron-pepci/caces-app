@@ -250,7 +250,7 @@ python init_questions_r482.py
 | URGENT | Upgrader caces-db Render avant 05/07/2026 | en attente |
 | Haute | Grille statuts sessions 4 états (Ouverte / À réutiliser / Validée terrain / Clôturée) | ✅ fait |
 | Haute | Bouton + route clôture terrain (POST /sessions/{id}/cloturer-terrain, PIN) | ✅ fait |
-| Haute | Harmoniser affichage statut sessions dans dashboard.html (actuellement logique séparée inline) | à faire |
+| Haute | Harmoniser affichage statut sessions dans dashboard.html (actuellement logique séparée inline) | ✅ fait |
 | Haute | Suppression habilitation testeur — hard delete avec PIN (modal testeurs) | en cours |
 | Haute | Cartes CACES® PDF (format CR80, WeasyPrint) | ✅ fait |
 | Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | ✅ fait |
@@ -342,6 +342,17 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 **Décision :** gel LARGE (toutes routes de modification Terrain), PIN formateur pour clôture (tous rôles), PIN admin pour réouverture (back-office uniquement). `rouvrir-terrain` non whitelisté dans le middleware.
 
 **À faire** : `python migrate_cloture_terrain.py` dans Render Shell (prod).
+
+### ✅ Chantier terminé : avertissement clôture définitive session "À réutiliser" (2026-06-17)
+
+**Contexte :** quand une session est "À réutiliser" (tirage déclenché + aucun résultat saisi), la clôturer définitivement (`POST /cloturer`) la fige inutilement et perd le tirage. Un avertissement explicite s'impose avant confirmation.
+
+**Implémentation :**
+- `app/main.py` (route `page_session_detail`) : calcul `session_sans_resultat = tirage_declenche and not _a_epreuve and not _a_rt` (zéro requête supplémentaire — variables déjà présentes) ; passé dans le contexte template
+- `templates/session_detail.html` : `data-sans-resultat` sur `#session-data` ; nouvelle modal `#modal-avert-cloture` avec texte explicite ("Cette session a une grille tirée mais aucun résultat saisi..."), bouton "Confirmer la clôture" (`data-action="confirmer-avert-cloture"`) et bouton "Annuler" (`data-action="fermer-avert-cloture"`)
+- `static/js/session_detail.js` : `window.SESSION_SANS_RESULTAT` lu depuis `#session-data` ; `_executerCloture()` = point unique du fetch `POST /cloturer` ; `cloturerSession()` redirige vers `#modal-avert-cloture` si `SESSION_SANS_RESULTAT`, sinon `demanderConfirmation` habituel — les deux chemins aboutissent à `_executerCloture()` ; listeners `data-action` propres (CSP)
+
+**Note architecture :** `POST /cloturer` n'exige **pas de PIN** (auth JWT seule). C'est délibéré (admin/utilisateur sont authentifiés) mais à noter si un niveau supplémentaire est souhaité.
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).

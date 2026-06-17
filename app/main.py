@@ -1570,6 +1570,7 @@ def page_session_detail(request: Request, session_id: int):
         _a_rt = db.query(ResultatTheorie).filter(ResultatTheorie.session_id == session_id).first() is not None
         statut_affichage = ("Annulée" if session.statut == "annulee"
                             else _sas(session, a_tirage=tirage_declenche, a_epreuve=_a_epreuve, a_resultat_theorie=_a_rt))
+        session_sans_resultat = tirage_declenche and not _a_epreuve and not _a_rt
 
         a_candidats_theorie = db.query(JourTestCandidat).join(
             JourTest, JourTest.id == JourTestCandidat.jour_test_id
@@ -1620,6 +1621,7 @@ def page_session_detail(request: Request, session_id: int):
                 "date_tirage": date_tirage,
                 "a_candidats_theorie": a_candidats_theorie,
                 "statut_affichage": statut_affichage,
+                "session_sans_resultat": session_sans_resultat,
             }
         )
     finally:
