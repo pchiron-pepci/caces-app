@@ -626,6 +626,25 @@ def dashboard(request: Request):
                 NonConformite.statut.in_(["ouvert", "en_cours"])
             ).distinct().all()
         } if _sa_ids else set()
+        from app.services.session_statut import statut_affichage_session as _sas_dash
+        _dash_avec_epreuve = {
+            row.session_id
+            for row in db.query(SessionEpreuve.session_id).filter(
+                SessionEpreuve.session_id.in_(_sa_ids)
+            ).distinct().all()
+        } if _sa_ids else set()
+        _dash_avec_rt = {
+            row.session_id
+            for row in db.query(ResultatTheorie.session_id).filter(
+                ResultatTheorie.session_id.in_(_sa_ids)
+            ).distinct().all()
+        } if _sa_ids else set()
+        statuts_affichage = {
+            s.id: _sas_dash(s, a_tirage=s.id in sessions_avec_tirage,
+                            a_epreuve=s.id in _dash_avec_epreuve,
+                            a_resultat_theorie=s.id in _dash_avec_rt)
+            for s in sessions_actives
+        }
         alertes_testeurs = []
         for t in testeurs_list:
             alertes = []
@@ -689,6 +708,7 @@ def dashboard(request: Request):
                 "sessions_actives": sessions_actives,
                 "sessions_avec_tirage": sessions_avec_tirage,
                 "sessions_avec_nc": sessions_avec_nc,
+                "statuts_affichage": statuts_affichage,
                 "alertes_testeurs": alertes_testeurs,
                 "familles_carto": familles_carto,
                 "lieux_cdt": lieux_cdt,

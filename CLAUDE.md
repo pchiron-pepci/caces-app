@@ -337,6 +337,7 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 - Garde-fou GET : `GET /test/theorie/{session_id}/{jour_id}` et `GET /test/theorie/{jour_test_id}/{stagiaire_id}/start` passent `terrain_gele=True` si `date_cloture_terrain` renseignée ; `test_theorie.html` affiche écran bloquant "Session clôturée terrain" à la place du test
 - Masquage terrain : `querySelectorAll('[data-action]')` restreint à `div.content` (plus `document`) — corrige disparition hamburger + déconnexion en vue mobile
 - Badges détail session : suppression badge "Figée / Libre" (doublon avec "✅ Tirage fait" pour back-office, inutile pour terrain) ; badge statut brut (`planifiee/en_cours…`) remplacé par `statut_affichage_session` calculé dans la route détail (mêmes 4 états et couleurs que la liste : Ouverte/Validée terrain/À réutiliser/Clôturée/Annulée)
+- Dashboard section "À traiter" : libellé "Sessions ouvertes" → "Sessions non clôturées" ; badge statut primitif (planifiee→Ouverte / else→En cours) remplacé par `statut_affichage_session` via préchargement groupé anti-N+1 (`_dash_avec_epreuve`, `_dash_avec_rt`) ; `statuts_affichage` dict passé au template ; filtre `statut.in_([planifiee, en_cours])` confirmé correct (exclut terminee et annulee)
 
 **Décision :** gel LARGE (toutes routes de modification Terrain), PIN formateur pour clôture (tous rôles), PIN admin pour réouverture (back-office uniquement). `rouvrir-terrain` non whitelisté dans le middleware.
 

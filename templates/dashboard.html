@@ -70,9 +70,9 @@
             <h2>⚡ À traiter</h2>
         </div>
 
-        <!-- Section 1 : Sessions ouvertes -->
+        <!-- Section 1 : Sessions non clôturées -->
         <div style="background:#f0f2f7; padding:8px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; border-bottom:1px solid #e8ecf4; display:flex; justify-content:space-between; align-items:center;">
-            <span>Sessions ouvertes ({{ sessions_actives|length }})</span>
+            <span>Sessions non clôturées ({{ sessions_actives|length }})</span>
             <a href="/sessions" style="font-size:11px; font-weight:400; color:#1a237e; text-decoration:none;">Voir tout</a>
         </div>
         {% if sessions_actives %}
@@ -89,11 +89,11 @@
                         {% if date_fin and date_fin != date_debut %} → {{ date_fin.strftime('%d/%m/%Y') }}{% endif %}
                     </td>
                     <td data-label="Statut" style="white-space:nowrap;">
-                        {% if s.statut == 'planifiee' %}
-                            <span class="badge" style="background:#e3f2fd;color:#1565c0;">Ouverte</span>
-                        {% else %}
-                            <span class="badge" style="background:#fff3e0;color:#e65100;">En cours</span>
-                        {% endif %}
+                        {% set sa = statuts_affichage[s.id] %}
+                        {% if sa == 'Clôturée' %}<span class="badge green">Clôturée</span>
+                        {% elif sa == 'Validée terrain' %}<span class="badge violet">Validée terrain</span>
+                        {% elif sa == 'À réutiliser' %}<span class="badge orange">À réutiliser</span>
+                        {% else %}<span class="badge blue">Ouverte</span>{% endif %}
                     </td>
                 </tr>
                 {% endfor %}
