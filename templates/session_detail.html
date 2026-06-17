@@ -903,6 +903,23 @@
                                         <a href="/sessions/{{ session.id }}/theorie/{{ sc.stagiaire_id }}/detail?jour_id={{ j.id }}"
                                             target="_blank"
                                             style="font-size:11px; color:#1a237e; margin-left:6px;">Detail</a>
+                                        <button
+                                            data-action="corriger-theorie"
+                                            data-mode="{{ rt.mode }}"
+                                            data-session-id="{{ session.id }}"
+                                            data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                            data-jour-id="{{ j.id }}"
+                                            style="background:none; border:none; cursor:pointer; font-size:13px; margin-left:4px; padding:0;"
+                                            title="Corriger ce résultat (PIN formateur)">✏️</button>
+                                        {% if user_role != 'terrain' %}
+                                        <button
+                                            data-action="supprimer-theorie"
+                                            data-session-id="{{ session.id }}"
+                                            data-stagiaire-id="{{ sc.stagiaire_id }}"
+                                            data-jour-id="{{ j.id }}"
+                                            style="background:none; border:none; cursor:pointer; font-size:13px; margin-left:2px; padding:0;"
+                                            title="Supprimer ce résultat (PIN formateur)">🗑️</button>
+                                        {% endif %}
                                     </td>
                                 {% else %}
                                     <td colspan="6" class="td-th-result" style="text-align:center; color:#888;">En attente</td>

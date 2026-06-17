@@ -1794,3 +1794,115 @@ document.addEventListener('click', function(e) {
         return;
     }
 });
+
+// ── Correction / suppression résultat théorique ──────────────────────────────
+document.addEventListener('click', function(e) {
+
+    // ── Corriger (tous rôles, PIN formateur) ──────────────────────────────────
+    var btnCorriger = e.target.closest('[data-action="corriger-theorie"]');
+    if (btnCorriger) {
+        var mode      = btnCorriger.dataset.mode;
+        var sessionId = btnCorriger.dataset.sessionId;
+        var stagId    = btnCorriger.dataset.stagiaireId;
+        var jourId    = btnCorriger.dataset.jourId;
+
+        document.getElementById('pin-message').textContent = 'Code PIN formateur — corriger le résultat.';
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('pin-error').textContent = '';
+        document.getElementById('modal-pin').style.display = 'flex';
+
+        document.getElementById('pin-confirm-btn').onclick = async function() {
+            var pin = document.getElementById('pin-input').value;
+
+            if (mode === 'degrade') {
+                // La vérification PIN réelle est au submit dans saisie-dégradée.
+                // On ouvre la page directement ; elle est pré-remplie avec le rt existant.
+                fermerPin();
+                window.open('/sessions/' + sessionId + '/theorie/saisie-degrade/' + jourId, '_blank');
+                return;
+            }
+
+            // mode == 'numerique' : appel reouvrir (JWT + PIN), récupère reponses_json
+            var tok = localStorage.getItem('token');
+            var h   = { 'Content-Type': 'application/json' };
+            if (tok) h['Authorization'] = 'Bearer ' + tok;
+            var resp;
+            try {
+                resp = await fetch(
+                    '/api/sessions/' + sessionId + '/theorie/reouvrir/' + stagId + '/' + jourId,
+                    { method: 'POST', headers: h, credentials: 'same-origin', body: JSON.stringify({ pin: pin }) }
+                );
+            } catch (err) {
+                document.getElementById('pin-error').textContent = 'Erreur réseau.';
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            if (resp.status === 403) {
+                document.getElementById('pin-error').textContent = 'Code PIN incorrect.';
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            if (!resp.ok) {
+                var errData = await resp.json().catch(function() { return {}; });
+                document.getElementById('pin-error').textContent = errData.detail || 'Erreur ' + resp.status;
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            var data = await resp.json();
+            // Stocker les réponses pour pré-remplissage dans la page test (clé consommée une seule fois)
+            var cle = 'corriger_rt_' + sessionId + '_' + jourId + '_' + stagId;
+            localStorage.setItem(cle, JSON.stringify(data.reponses || {}));
+            fermerPin();
+            // Ouvrir le test en mode START_DIRECT pour ce candidat
+            window.open('/test/theorie/' + sessionId + '/' + jourId + '/' + stagId + '/start', '_blank');
+        };
+        return;
+    }
+
+    // ── Supprimer (back-office uniquement, terrain filtré côté template) ──────
+    var btnSupprimer = e.target.closest('[data-action="supprimer-theorie"]');
+    if (btnSupprimer) {
+        var sessionId = btnSupprimer.dataset.sessionId;
+        var stagId    = btnSupprimer.dataset.stagiaireId;
+        var jourId    = btnSupprimer.dataset.jourId;
+
+        document.getElementById('pin-message').textContent = 'Code PIN formateur — supprimer définitivement ce résultat théorique ?';
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('pin-error').textContent = '';
+        document.getElementById('modal-pin').style.display = 'flex';
+
+        document.getElementById('pin-confirm-btn').onclick = async function() {
+            var pin = document.getElementById('pin-input').value;
+            var tok = localStorage.getItem('token');
+            var h   = { 'Content-Type': 'application/json' };
+            if (tok) h['Authorization'] = 'Bearer ' + tok;
+            var resp;
+            try {
+                resp = await fetch(
+                    '/api/sessions/' + sessionId + '/theorie/reponses/' + stagId + '/' + jourId,
+                    { method: 'DELETE', headers: h, credentials: 'same-origin', body: JSON.stringify({ pin: pin }) }
+                );
+            } catch (err) {
+                document.getElementById('pin-error').textContent = 'Erreur réseau.';
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            if (resp.status === 403) {
+                document.getElementById('pin-error').textContent = 'Code PIN incorrect.';
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            if (!resp.ok) {
+                var errData = await resp.json().catch(function() { return {}; });
+                document.getElementById('pin-error').textContent = errData.detail || 'Erreur ' + resp.status;
+                document.getElementById('pin-error').style.display = 'block';
+                return;
+            }
+            fermerPin();
+            location.reload();
+        };
+        return;
+    }
+});

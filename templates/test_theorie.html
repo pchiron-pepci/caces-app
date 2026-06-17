@@ -777,6 +777,25 @@ async function chargerQuestions() {
                 });
             });
         }
+        // Pré-remplissage si correction d'un test numérique existant.
+        // La clé est posée par session_detail.js avant window.open, consommée une seule fois.
+        if (START_DIRECT && START_STAGIAIRE_ID) {
+            const _cle     = 'corriger_rt_' + SESSION_ID + '_' + JOUR_ID + '_' + START_STAGIAIRE_ID;
+            const _stored  = localStorage.getItem(_cle);
+            if (_stored) {
+                try {
+                    const _repServeur = JSON.parse(_stored);
+                    // Serveur : {str(numero_question): bool} → JS : {idx: bool}
+                    // "in" teste la présence de la clé — les réponses FAUX (false) sont préservées.
+                    // q.numero = champ "numero" renvoyé par l'API = numero_question du modèle.
+                    questions.forEach((q, idx) => {
+                        const _k = String(q.numero);
+                        if (_k in _repServeur) { reponses[idx] = _repServeur[_k]; }
+                    });
+                } catch (_e) {}
+                localStorage.removeItem(_cle);
+            }
+        }
     } catch(e) {
         console.error('Erreur chargement grille:', e);
     }
