@@ -473,6 +473,7 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - ⟳ Reset : Q1, 60:00, pause, overlay masqué
 - Fin à 0:00 : arrêt sans boucle, overlay affiché
 - AUCUN fetch, AUCUN enregistrement
+- **Synthèse vocale** : `speak()` config `fr-FR / rate 0.9` identique à `test_theorie.html` ; contournement bug Chrome cancel→speak : `setTimeout(fn, 100)` CSP-safe + `clearTimeout(_speakTimer)` anti-chevauchement sur auto-avances ; `cancelSpeech()` annule aussi le timer pending ; lecture auto sur `play()` + auto-avance + prev/next en mode lecture ; `cancelSpeech()` sur pause / reset / fin chrono ; bouton `🔊 Relire` dans la barre de contrôles (`data-action="relire"`, CSP-safe)
 
 **UX session_detail.html :**
 - Bouton 📽️ dans `{% for j in jours_test %}{% if j.type == 'theorie' %}` — `j` défini, `data-jour-id="{{ j.id }}"`
