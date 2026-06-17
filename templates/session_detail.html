@@ -825,9 +825,13 @@
                             data-candidats="{{ j.candidats_ids | tojson | forceescape }}"
                             title="Ajouter un candidat">👥</button>
                         {% endif %}
+                        {% if session.date_cloture_terrain is none %}
                         <a href="/test/theorie/{{ session.id }}/{{ j.id }}" target="_blank"
                             class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
                             title="Accéder aux tests">🚀</a>
+                        {% else %}
+                        <span class="badge" style="background:#f3e5f5;color:#7b1fa2;font-size:12px;" title="Session clôturée terrain — tests désactivés">🔐 Tests clos</span>
+                        {% endif %}
                         {% if user_role != 'terrain' %}
                         <a href="/sessions/{{ session.id }}/jours/{{ j.id }}/modifier" class="btn btn-secondary" style="padding:6px 12px; font-size:12px; text-decoration:none;">✏️</a>
 <button class="btn-trash"

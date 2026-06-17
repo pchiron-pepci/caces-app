@@ -1793,7 +1793,8 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
                 "jour_id": jour_id,
                 "grille_id": jour.grille_id,
                 "grille_numero": grille.numero if grille else "Phase 2",
-                "session_candidats": session_candidats
+                "session_candidats": session_candidats,
+                "terrain_gele": session.date_cloture_terrain is not None,
             }
         )
     finally:
@@ -1837,6 +1838,7 @@ def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: i
                 "start_nom": stagiaire.nom if stagiaire else "",
                 "start_prenom": stagiaire.prenom if stagiaire else "",
                 "start_ddn": stagiaire.date_naissance.isoformat() if stagiaire and stagiaire.date_naissance else "",
+                "terrain_gele": session.date_cloture_terrain is not None if session else False,
             }
         )
     finally:

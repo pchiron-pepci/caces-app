@@ -23,7 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'fermer-modal-pratique', 'fermer-modal-candidat', 'fermer-modal-equipement',
             'fermer-modal-testeurs', 'fermer-neutralite-overlay'
         ]);
-        document.querySelectorAll('[data-action]').forEach(function(el) {
+        var _content = document.querySelector('.content') || document;
+        _content.querySelectorAll('[data-action]').forEach(function(el) {
             if (!TERRAIN_OK.has(el.dataset.action)) el.style.display = 'none';
         });
         var banner = document.createElement('div');

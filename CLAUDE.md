@@ -333,6 +333,8 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 - Bug : middleware `_verifier_role` bloquait terrain sur `POST /cloturer-terrain` (catch-all sessions) → affichage "Code PIN incorrect" à tort (JS montrait #pin-error pour tout 4xx)
 - Ajout de 3 exceptions dans `_verifier_role` pour rôle terrain : `POST /cloturer-terrain`, `PUT /jours/{j}/candidats/{s}/identite`, `DELETE /epreuves/{eid}`
 - JS `cloturerTerrain()` + `rouvrirTerrain()` : lecture `data.detail` au lieu de texte en dur dans `#pin-error`
+- Trou UX : bouton 🚀 (lancement test théorique) affiché même sur session clôturée terrain → conditionné sur `date_cloture_terrain is none` dans `session_detail.html` (tous rôles), badge "🔐 Tests clos" sinon
+- Garde-fou GET : `GET /test/theorie/{session_id}/{jour_id}` et `GET /test/theorie/{jour_test_id}/{stagiaire_id}/start` passent `terrain_gele=True` si `date_cloture_terrain` renseignée ; `test_theorie.html` affiche écran bloquant "Session clôturée terrain" à la place du test
 
 **Décision :** gel LARGE (toutes routes de modification Terrain), PIN formateur pour clôture (tous rôles), PIN admin pour réouverture (back-office uniquement). `rouvrir-terrain` non whitelisté dans le middleware.
 

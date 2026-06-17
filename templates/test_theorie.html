@@ -448,6 +448,15 @@
     </style>
 </head>
 <body>
+{% if terrain_gele | default(false) %}
+<div style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f5f6fa; padding:32px; text-align:center;">
+    <div style="background:white; border:2px solid #7b1fa2; border-radius:16px; padding:40px 32px; max-width:480px; box-shadow:0 4px 20px rgba(0,0,0,0.10);">
+        <div style="font-size:48px; margin-bottom:16px;">🔐</div>
+        <h2 style="color:#6a1b9a; margin-bottom:16px; font-size:20px;">Session clôturée terrain</h2>
+        <p style="color:#555; font-size:15px; line-height:1.6;">Les tests théoriques de cette session ont été validés et ne peuvent plus être démarrés. Contactez le formateur.</p>
+    </div>
+</div>
+{% else %}
 
 <!-- HEADER -->
 <div class="header">
@@ -1066,5 +1075,6 @@ function afficherResultat(r) {
         <button class="btn-retour" onclick="fermerConfirm()">← Revenir au test</button>
     </div>
 </div>
+{% endif %}
 </body>
 </html>
