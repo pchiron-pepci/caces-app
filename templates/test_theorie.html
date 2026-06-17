@@ -44,6 +44,22 @@
             opacity: 0.75;
         }
 
+        /* Header logo — valeurs alignées avec projection_theorie.html,
+           garder synchronisées si modification (height desktop/mobile, seuil). */
+        #test-logo {
+            height: 40px;
+            width: auto;
+            flex: 0 0 auto;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 600px) {
+            #test-logo        { height: 28px; }
+            .header-title     { font-size: 11px; }
+            .header-candidat  { display: none; }
+        }
+
         .progress-row {
             display: flex;
             align-items: center;
@@ -469,6 +485,8 @@
 <!-- HEADER -->
 <div class="header">
     <div class="header-row1">
+        {% set _logo = logo_organisme() %}
+        {% if _logo %}<img id="test-logo" src="{{ _logo }}" alt="Logo organisme" />{% endif %}
         <div class="header-title">CACES® R.482 - Theorie</div>
         <div style="display:flex; align-items:center; gap:16px;">
             <div id="timer"></div>
