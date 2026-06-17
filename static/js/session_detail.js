@@ -11,6 +11,26 @@ document.addEventListener('DOMContentLoaded', function() {
         try { window.UT_PAR_CAT = JSON.parse(_d.dataset.utParCat); } catch(e) { console.error('UT_PAR_CAT parse error:', e, _d.dataset.utParCat); window.UT_PAR_CAT = {}; }
         try { window.OPTIONS_PAR_CAT = JSON.parse(_d.dataset.optionsParCat || '{}'); } catch(e) { console.error('OPTIONS_PAR_CAT parse error:', e, _d.dataset.optionsParCat); window.OPTIONS_PAR_CAT = {}; }
         try { window.UTILISATEURS_TESTEURS = JSON.parse(_d.dataset.testeurs || '[]'); } catch(e) { window.UTILISATEURS_TESTEURS = []; }
+        window.TERRAIN_GELE = _d.dataset.terrainGele === 'true';
+        window.USER_ROLE = _d.dataset.userRole || '';
+    }
+
+    if (window.TERRAIN_GELE && window.USER_ROLE === 'terrain') {
+        const TERRAIN_OK = new Set([
+            'show-tab', 'fermer-pin', 'fermer-confirm', 'fermer-alerte',
+            'fermer-modal-jour-theorie', 'fermer-modal-jour-pratique',
+            'fermer-modal-candidat-jour', 'fermer-modal-modifier-jour-theorie',
+            'fermer-modal-pratique', 'fermer-modal-candidat', 'fermer-modal-equipement',
+            'fermer-modal-testeurs', 'fermer-neutralite-overlay'
+        ]);
+        document.querySelectorAll('[data-action]').forEach(function(el) {
+            if (!TERRAIN_OK.has(el.dataset.action)) el.style.display = 'none';
+        });
+        var banner = document.createElement('div');
+        banner.style.cssText = 'background:#fff3e0;border:1px solid #ef6c00;color:#bf360c;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;font-weight:600;';
+        banner.textContent = '🔐 Session clôturée côté terrain — modifications désactivées. Contactez le back-office pour réouvrir.';
+        var mainContent = document.querySelector('.content');
+        if (mainContent) mainContent.insertBefore(banner, mainContent.firstChild);
     }
 
     window._CANDIDATS_EPREUVES = {};
@@ -88,6 +108,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="reouvrir-session"]')) reouvrirsession();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="cloturer-terrain"]')) cloturerTerrain();
+    });
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="rouvrir-terrain"]')) rouvrirTerrain();
     });
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="modifier-jour-pratique"]');
@@ -723,6 +749,40 @@ function cloturerSession() {
         const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/cloturer', { method: 'POST' });
         if (resp.ok) location.reload(); else { const d = await resp.json(); afficherErreur(d.detail || 'Erreur !'); }
     });
+}
+
+function cloturerTerrain() {
+    document.getElementById('pin-message').textContent = 'Clôturer la session côté terrain ? Saisir le PIN formateur.';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+    document.getElementById('pin-confirm-btn').onclick = async () => {
+        const pin = document.getElementById('pin-input').value;
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/cloturer-terrain', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin })
+        });
+        if (resp.ok) { fermerPin(); location.reload(); }
+        else { document.getElementById('pin-error').style.display = 'block'; }
+    };
+}
+
+function rouvrirTerrain() {
+    document.getElementById('pin-message').textContent = 'Réouvrir la session côté terrain ? Saisir le PIN administrateur.';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('modal-pin').style.display = 'flex';
+    document.getElementById('pin-confirm-btn').onclick = async () => {
+        const pin = document.getElementById('pin-input').value;
+        const resp = await fetch('/api/sessions/' + window.SESSION_ID + '/rouvrir-terrain', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin })
+        });
+        if (resp.ok) { fermerPin(); location.reload(); }
+        else { document.getElementById('pin-error').style.display = 'block'; }
+    };
 }
 
 function reouvrirsession() {

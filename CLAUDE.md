@@ -231,7 +231,8 @@ python init_questions_r482.py
 | Priorité | Item | Statut |
 |---|---|---|
 | URGENT | Upgrader caces-db Render avant 05/07/2026 | en attente |
-| Haute | Grille statuts sessions 3 états (Ouverte / À réutiliser / Clôturée) | ✅ fait |
+| Haute | Grille statuts sessions 4 états (Ouverte / À réutiliser / Validée terrain / Clôturée) | ✅ fait |
+| Haute | Bouton + route clôture terrain (POST /sessions/{id}/cloturer-terrain, PIN) | ✅ fait |
 | Haute | Harmoniser affichage statut sessions dans dashboard.html (actuellement logique séparée inline) | à faire |
 | Haute | Suppression habilitation testeur — hard delete avec PIN (modal testeurs) | en cours |
 | Haute | Cartes CACES® PDF (format CR80, WeasyPrint) | ✅ fait |
@@ -296,6 +297,24 @@ Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroni
 
 ### Note : doublons date_habilitation / date_expiration_habilitation
 `Testeur.date_habilitation` et `Testeur.date_expiration_habilitation` sont des doublons avec `HabilitationTesteur` — à supprimer dans une passe de nettoyage ultérieure après vérification qu'ils ne sont utilisés nulle part (modèle, routes, templates, migrations).
+
+### ✅ Chantier terminé : clôture terrain (date 2026-06-17)
+
+**Nouveaux éléments :**
+- `Session.date_cloture_terrain` (DateTime nullable) — migration : `migrate_cloture_terrain.py` (idempotent, **à exécuter sur prod via Render Shell**)
+- `get_pin_formateur(db)` dans `app/config_utils.py` — lit `ConfigOrganisme.pin_formateur` (défaut "1234")
+- Helper `assert_modifiable_terrain(session, role)` dans `sessions.py` — bloque role=="terrain" si session gélée terrain (403)
+- Route `POST /api/sessions/{id}/cloturer-terrain` — tous rôles, PIN formateur, idempotent
+- Route `POST /api/sessions/{id}/rouvrir-terrain` — admin/utilisateur uniquement, PIN admin
+- `current_user` ajouté sur 15 routes de modification (candidats ×3, equipements ×3, jours ×3, candidats_jour ×2, toggle_identite, update_session, modifier_jour, epreuves ×2) — **aucune n'était volontairement publique**
+- Route publique `POST /api/sessions/{session_id}/theorie/reponses` : check direct `if session.date_cloture_terrain is not None: 403`
+- UX `session_detail.html` : bouton "🔐 Clôturer terrain" (tous rôles), badge "🔐 Validée terrain" + titre date, bouton "🔓 Rouvrir terrain" (admin/utilisateur seulement)
+- `data-terrain-gele` + `data-user-role` sur `#session-data`
+- `session_detail.js` : fonctions `cloturerTerrain()` + `rouvrirTerrain()`, masquage visuel conditionné à `USER_ROLE === 'terrain'` (admin conserve ses boutons)
+
+**Décision :** gel LARGE (toutes routes de modification Terrain), PIN formateur pour clôture (tous rôles), PIN admin pour réouverture (back-office uniquement).
+
+**À faire** : `python migrate_cloture_terrain.py` dans Render Shell (prod).
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).

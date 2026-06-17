@@ -224,6 +224,7 @@ function ouvrirFormulaire() {
     });
     document.getElementById('f-statut').value = 'interne';
     document.getElementById('f-utilisateur-id').value = '';
+    document.getElementById('section-habs-modal').style.display = 'none';
     document.getElementById('section-documents').style.display = 'none';
     document.getElementById('modal-prev-file').value = '';
     document.getElementById('modal').style.display = 'flex';
@@ -296,6 +297,26 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
         document.getElementById('modal-autorisation-info').textContent = 'Aucune autorisation';
         document.getElementById('modal-autorisation-dl').style.display = 'none';
         document.getElementById('btn-suppr-autorisation').style.display = 'none';
+    }
+
+    // Habilitations CACES®
+    document.getElementById('section-habs-modal').style.display = 'block';
+    const habsList = document.getElementById('habs-modal-list');
+    habsList.innerHTML = '';
+    const habsContainer = document.getElementById('habs-' + id);
+    const habsDivs = habsContainer ? habsContainer.querySelectorAll('[data-hab-id]') : [];
+    if (habsDivs.length === 0) {
+        habsList.innerHTML = '<span style="font-size:12px;color:#888;">Aucune habilitation</span>';
+    } else {
+        habsDivs.forEach(function(h) {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:4px;';
+            row.innerHTML =
+                '<span class="badge blue" style="font-size:12px;">' + h.dataset.habLabel + '</span>' +
+                '<button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"' +
+                ' data-action="supprimer-hab" data-hab-id="' + h.dataset.habId + '" data-hab-label="' + h.dataset.habLabel + '">🗑️</button>';
+            habsList.appendChild(row);
+        });
     }
 
     // Cartes CACES®

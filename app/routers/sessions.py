@@ -24,9 +24,9 @@ from app.services.tirage_grille import (
 from app.services.caces_obtenus import calculer_et_synchroniser
 from app.models.utilisateur import Utilisateur
 from app.routers.auth import get_utilisateur_courant
-from app.config_utils import get_pin_admin
+from app.config_utils import get_pin_admin, get_pin_formateur
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime as dt
 from typing import Optional, List, Dict
 import json
 import math
@@ -117,6 +117,14 @@ class EpreuveCreate(BaseModel):
 def _check_modifiable(session: Session):
     if session and session.statut in ("terminee", "annulee"):
         raise HTTPException(status_code=409, detail="Session verrouillée — réouvrez-la d'abord")
+
+
+def assert_modifiable_terrain(session: Session, role: str):
+    if role == "terrain" and session and session.date_cloture_terrain is not None:
+        raise HTTPException(
+            status_code=403,
+            detail="Session clôturée terrain — modification impossible. Demandez la réouverture au back-office."
+        )
 
 
 def session_a_des_donnees(session_id: int, db: DBSession) -> bool:
@@ -237,8 +245,11 @@ def cloturer_session(id: int, db: DBSession = Depends(get_db),
 
 # CANDIDATS
 @router.post("/{session_id}/candidats")
-def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = Depends(get_db),
+                 current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     existing = db.query(SessionCandidat).filter(
         SessionCandidat.session_id == session_id,
         SessionCandidat.stagiaire_id == data.stagiaire_id,
@@ -253,8 +264,11 @@ def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = D
     return {"message": "Candidat ajoute", "id": sc.id}
 
 @router.put("/{session_id}/candidats/{id}")
-def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: DBSession = Depends(get_db),
+                    current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     sc = db.query(SessionCandidat).filter(SessionCandidat.id == id).first()
     if not sc:
         raise HTTPException(status_code=404, detail="Candidat non trouve")
@@ -264,8 +278,11 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
     return {"message": "Candidat mis a jour"}
 
 @router.delete("/{session_id}/candidats/{id}")
-def remove_candidat(session_id: int, id: int, pin: str = "", db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def remove_candidat(session_id: int, id: int, pin: str = "", db: DBSession = Depends(get_db),
+                    current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN invalide")
     sc = db.query(SessionCandidat).filter(SessionCandidat.id == id).first()
@@ -288,8 +305,11 @@ def remove_candidat(session_id: int, id: int, pin: str = "", db: DBSession = Dep
 
 # EQUIPEMENTS
 @router.post("/{session_id}/equipements")
-def add_equipement(session_id: int, data: EquipementCreate, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def add_equipement(session_id: int, data: EquipementCreate, db: DBSession = Depends(get_db),
+                   current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     e = Equipement(**data.model_dump())
     db.add(e)
     db.commit()
@@ -297,8 +317,11 @@ def add_equipement(session_id: int, data: EquipementCreate, db: DBSession = Depe
     return {"message": "Equipement ajoute", "id": e.id}
 
 @router.put("/{session_id}/equipements/{id}")
-def update_equipement(session_id: int, id: int, data: EquipementCreate, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def update_equipement(session_id: int, id: int, data: EquipementCreate, db: DBSession = Depends(get_db),
+                      current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     e = db.query(Equipement).filter(Equipement.id == id).first()
     if not e:
         raise HTTPException(status_code=404, detail="Equipement non trouve")
@@ -308,9 +331,11 @@ def update_equipement(session_id: int, id: int, data: EquipementCreate, db: DBSe
     return {"message": "Equipement mis a jour"}
 
 @router.delete("/{session_id}/equipements/{id}")
-def delete_equipement(session_id: int, id: int, db: DBSession = Depends(get_db)):
+def delete_equipement(session_id: int, id: int, db: DBSession = Depends(get_db),
+                      current_user: Utilisateur = Depends(get_utilisateur_courant)):
     session = db.query(Session).filter(Session.id == session_id).first()
     _check_modifiable(session)
+    assert_modifiable_terrain(session, current_user.role)
     e = db.query(Equipement).filter(Equipement.id == id, Equipement.session_id == session_id).first()
     if not e:
         raise HTTPException(status_code=404, detail="Equipement non trouve")
@@ -320,11 +345,13 @@ def delete_equipement(session_id: int, id: int, db: DBSession = Depends(get_db))
 
 # JOURS DE TEST
 @router.post("/{session_id}/jours")
-def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends(get_db)):
+def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends(get_db),
+                  current_user: Utilisateur = Depends(get_utilisateur_courant)):
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session non trouvee")
     _check_modifiable(session)
+    assert_modifiable_terrain(session, current_user.role)
 
     jour = JourTest(
         session_id=session_id,
@@ -359,8 +386,11 @@ def add_jour_test(session_id: int, data: JourTestCreate, db: DBSession = Depends
     return {"message": "Jour de test ajoute", "id": jour.id}
 
 @router.post("/{session_id}/jours/{jour_id}/candidats")
-def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, db: DBSession = Depends(get_db),
+                       current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
 
     if jour and jour.type == "pratique":
@@ -407,8 +437,11 @@ def add_candidats_jour(session_id: int, jour_id: int, data: AjoutCandidatsJour, 
     return {"message": "Candidats ajoutes"}
 
 @router.delete("/{session_id}/jours/{id}")
-def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     j = db.query(JourTest).filter(JourTest.id == id).first()
     if not j:
         raise HTTPException(status_code=404, detail="Jour non trouve")
@@ -528,6 +561,8 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
     if not session:
         raise HTTPException(status_code=404, detail="Session non trouvee")
     _check_modifiable(session)
+    if session.date_cloture_terrain is not None:
+        raise HTTPException(status_code=403, detail="Session clôturée terrain — modification impossible.")
     jour = db.query(JourTest).filter(JourTest.id == data.jour_test_id).first()
     if not jour:
         raise HTTPException(status_code=404, detail="Jour non trouve")
@@ -589,8 +624,11 @@ def get_grille_jour(session_id: int, jour_id: int, db: DBSession = Depends(get_d
 
 # EPREUVES PRATIQUES
 @router.post("/{session_id}/epreuves")
-def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(get_db),
+                current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     famille = db.query(Famille).filter(Famille.code == data.famille).first()
     cat = db.query(Categorie).filter(
         Categorie.famille_id == (famille.id if famille else 0),
@@ -643,8 +681,11 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
     return {"message": "Epreuve ajoutee"}
 
 @router.delete("/{session_id}/epreuves/{epreuve_id}")
-def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSession = Depends(get_db),
+                   current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="PIN invalide")
     e = db.query(SessionEpreuve).filter(
@@ -656,6 +697,12 @@ def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSessio
     db.delete(e)
     db.commit()
     return {"message": "Epreuve supprimee"}
+
+class CloturerTerrainBody(BaseModel):
+    pin: str
+
+class RouvrirTerrainBody(BaseModel):
+    pin: str
 
 class ReouvrirBody(BaseModel):
     pin: str = ""
@@ -674,9 +721,43 @@ def reouvrir_session(id: int, body: ReouvrirBody, db: DBSession = Depends(get_db
     db.commit()
     return {"message": "Session reuverte"}
 
+@router.post("/{id}/cloturer-terrain")
+def cloturer_terrain(id: int, body: CloturerTerrainBody, db: DBSession = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    _check_modifiable(s)
+    if body.pin != get_pin_formateur(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if s.date_cloture_terrain is not None:
+        return {"message": "Session déjà clôturée terrain", "date_cloture_terrain": s.date_cloture_terrain.isoformat()}
+    s.date_cloture_terrain = dt.utcnow()
+    db.commit()
+    return {"message": "Session clôturée terrain", "date_cloture_terrain": s.date_cloture_terrain.isoformat()}
+
+@router.post("/{id}/rouvrir-terrain")
+def rouvrir_terrain(id: int, body: RouvrirTerrainBody, db: DBSession = Depends(get_db),
+                    current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    if current_user.role not in ("admin", "utilisateur"):
+        raise HTTPException(status_code=403, detail="Réservé au back-office")
+    s = db.query(Session).filter(Session.id == id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    if body.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if s.date_cloture_terrain is None:
+        return {"message": "Session terrain déjà ouverte"}
+    s.date_cloture_terrain = None
+    db.commit()
+    return {"message": "Session terrain réouverte"}
+
 @router.put("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/identite")
-def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db),
+                    current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     jtc = db.query(JourTestCandidat).filter(
         JourTestCandidat.jour_test_id == jour_id,
         JourTestCandidat.stagiaire_id == stagiaire_id
@@ -741,11 +822,13 @@ def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
 
 
 @router.put("/{id}")
-def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)):
+def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db),
+                   current_user: Utilisateur = Depends(get_utilisateur_courant)):
     s = db.query(Session).filter(Session.id == id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session non trouvee")
     _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     if data.famille != s.famille:
         tirage_existant = db.query(UtilisationTheme).filter(
             UtilisationTheme.session_id == id
@@ -780,8 +863,11 @@ def update_session(id: int, data: SessionCreate, db: DBSession = Depends(get_db)
     return {"message": "Session mise a jour"}
 
 @router.put("/{session_id}/jours/{jour_id}/modifier")
-def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def modifier_jour(session_id: int, jour_id: int, data: JourModifData, db: DBSession = Depends(get_db),
+                  current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     from datetime import date as date_type
     j = db.query(JourTest).filter(JourTest.id == jour_id).first()
     if not j:
@@ -802,8 +888,11 @@ def check_resultat_theorie_candidat(session_id: int, jour_id: int, stagiaire_id:
     return {"has_resultat": has_resultat}
 
 @router.delete("/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}")
-def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
-    _check_modifiable(db.query(Session).filter(Session.id == session_id).first())
+def remove_candidat_jour(session_id: int, jour_id: int, stagiaire_id: int, db: DBSession = Depends(get_db),
+                         current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    s = db.query(Session).filter(Session.id == session_id).first()
+    _check_modifiable(s)
+    assert_modifiable_terrain(s, current_user.role)
     jtc = db.query(JourTestCandidat).filter(
         JourTestCandidat.jour_test_id == jour_id,
         JourTestCandidat.stagiaire_id == stagiaire_id
@@ -1045,6 +1134,7 @@ def put_note_privee_test(
         raise HTTPException(404, "Session introuvable")
     if s.statut == "terminee":
         raise HTTPException(403, "Session clôturée — lecture seule")
+    assert_modifiable_terrain(s, current_user.role)
     j = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
     if not j:
         raise HTTPException(404, "Jour introuvable")
@@ -1079,6 +1169,7 @@ def delete_note_privee_test(
         raise HTTPException(404, "Session introuvable")
     if s.statut == "terminee":
         raise HTTPException(403, "Session clôturée — lecture seule")
+    assert_modifiable_terrain(s, current_user.role)
     j = db.query(JourTest).filter(JourTest.id == jour_id, JourTest.session_id == session_id).first()
     if not j or not j.note_privee:
         raise HTTPException(404, "Aucune note privée sur ce jour")

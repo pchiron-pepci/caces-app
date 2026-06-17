@@ -556,6 +556,24 @@
             <button class="btn btn-secondary" data-action="cloturer-session" title="Verrouiller la session" style="font-size:13px;">🔓<span class="verr-label" style="display:none;">Verrouiller</span></button>
             {% endif %}
         {% endif %}
+        {% if session.statut != 'terminee' %}
+            {% if session.date_cloture_terrain is none %}
+            <button class="btn btn-secondary" data-action="cloturer-terrain"
+                    title="Valider la clôture côté terrain (PIN formateur requis)"
+                    style="font-size:13px; background:#fff3e0; border:1px solid #ef6c00; color:#bf360c;">
+                🔐 Clôturer terrain
+            </button>
+            {% else %}
+            <span class="badge violet" title="Clôturée terrain le {{ session.date_cloture_terrain.strftime('%d/%m/%Y à %H:%M') }}">🔐 Validée terrain</span>
+            {% if user_role in ('admin', 'utilisateur') %}
+            <button class="btn btn-secondary" data-action="rouvrir-terrain"
+                    title="Réouvrir la session côté terrain (PIN admin requis)"
+                    style="font-size:13px;">
+                🔓 Rouvrir terrain
+            </button>
+            {% endif %}
+            {% endif %}
+        {% endif %}
     </div>
 </div>
 
@@ -1943,7 +1961,9 @@
     data-debut="{{ session.date_pratique_debut or '' }}"
     data-fin="{{ session.date_pratique_fin or '' }}"
     data-nb-equipements="{{ equipements|length }}"
-    data-testeurs='{{ utilisateurs_testeurs | tojson }}'>
+    data-testeurs='{{ utilisateurs_testeurs | tojson }}'
+    data-terrain-gele="{{ 'true' if session.date_cloture_terrain is not none else 'false' }}"
+    data-user-role="{{ user_role }}">
 </div>
 <!-- OVERLAY NEUTRALITÉ -->
 <div id="overlay-neutralite" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:3000; align-items:center; justify-content:center;">
