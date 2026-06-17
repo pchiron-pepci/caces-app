@@ -50,7 +50,10 @@
             // id : "t{num}-{stagiaireId}"
             var tNum = inp.id.split('-')[0].slice(1);
             var val  = inp.value.trim();
-            if (val === '' || isNaN(parseInt(val, 10))) {
+            // Rejeter UNIQUEMENT les champs vides ou non numériques.
+            // 0 est une valeur valide (thème entièrement raté) : tester val===''
+            // et Number.isNaN, jamais !val ni !note (0 est falsy en JS).
+            if (val === '' || Number.isNaN(parseInt(val, 10))) {
                 inp.style.borderColor = '#c62828';
                 ok = false;
             } else {

@@ -537,6 +537,12 @@ def _verifier_role(path: str, method: str, role: str):
         # Exception : réouverture résultat théorique — récupération d'une validation accidentelle en salle (PIN formateur requis)
         if method == "POST" and _re.match(r"^/api/sessions/\d+/theorie/reouvrir/\d+/\d+$", base):
             return True
+        # Exception : saisie dégradée (papier) — le testeur corrige le papier et saisit les notes (PIN formateur requis)
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/theorie/reponses-degrade$", base):
+            return True
+        # Exception : upload justificatif PDF — terrain et back-office peuvent attacher le scan (PIN formateur requis)
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/theorie/justificatif/\d+/\d+$", base):
+            return True
         # Toutes les routes d'écriture sur les sessions (création + toutes sous-ressources)
         if method != "GET" and (base == "/api/sessions" or _re.match(r"^/api/sessions/\d+", base)):
             return False
