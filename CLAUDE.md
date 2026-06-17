@@ -465,14 +465,13 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Écran bloquant orange si `tirage_ok=False`
 
 **JS `static/js/projection_theorie.js` :**
-- Timer timestamp-based (`elapsedBeforePause + Date.now() - playStartTs`) — monotone, jamais modifié par prev/next
-- `DUR_MS = 3600000 / N` — tient toujours dans l'heure quel que soit N
-- Démarre en PAUSE sur Q1, chrono 60:00
-- **Chrono et index découplés** : `currentIdx` évolue indépendamment du temps écoulé
-- **Auto-avance** : variable `lastAutoStep` (palier franchi). À chaque tick : `palier = floor(elapsed/DUR_MS)` ; si `palier > lastAutoStep` → avance `currentIdx` de `min(palier-lastAutoStep, N-1-currentIdx)` crans, puis `lastAutoStep = palier`. Jamais de saut brutal à `floor(elapsed/DUR_MS)` — seul un incrément relatif depuis la position courante.
-- **⏮/⏭ manuels** : `currentIdx--/++` (borné 0..N-1). NE modifient NI `elapsed` NI `lastAutoStep`. La prochaine auto-avance fera +1 depuis la position manuelle au franchissement du palier suivant.
-- ⟳ Reset : `currentIdx=0`, `lastAutoStep=0`, `elapsedBeforePause=0`, pause, overlay masqué
-- Fin à 0:00 : arrêt sans boucle, overlay affiché — indépendant de `currentIdx`
+- **Chrono monotone INRS** : `chronoStartTs` (timestamp du 1er Lecture) ; `getElapsedMs() = Date.now() - chronoStartTs` — ne s'arrête JAMAIS une fois démarré (ni en pause). Seul Reset le remet à null.
+- **`playing`** : booléen séparé ; contrôle uniquement le défilement auto et la voix. `pause()` bascule `playing=false` sans toucher au chrono.
+- `interval` (250 ms) : lancé au 1er Lecture, tourne en continu (même en pause). `tick()` appelle `renderTimer()` toujours ; n'avance les questions que si `playing=true`.
+- **Auto-avance** : `lastAutoStep` (palier franchi). `palier = floor(elapsed/DUR_MS)` ; si `palier > lastAutoStep` → `crans = min(palier-lastAutoStep, N-1-currentIdx)`, `currentIdx += crans`, `lastAutoStep = palier`. Rattrapage multi-crans possible si pause longue — `currentIdx` toujours borné [0, N-1].
+- **⏮/⏭ manuels** : `currentIdx--/++` uniquement. NE modifient NI `chronoStartTs` NI `lastAutoStep`.
+- Fin à 0:00 : `clearInterval` dans `tick()` + overlay. Exactement 1h après le 1er Lecture, quelles que soient les pauses.
+- ⟳ Reset : seul point qui remet `chronoStartTs=null`, `lastAutoStep=0`, `currentIdx=0`, `clearInterval`.
 - AUCUN fetch, AUCUN enregistrement
 - **Synthèse vocale** : `speak()` config `fr-FR / rate 0.9` identique à `test_theorie.html` ; contournement bug Chrome cancel→speak : `setTimeout(fn, 100)` CSP-safe + `clearTimeout(_speakTimer)` anti-chevauchement sur auto-avances ; `cancelSpeech()` annule aussi le timer pending ; lecture auto sur `play()` + auto-avance + prev/next en mode lecture ; `cancelSpeech()` sur pause / reset / fin chrono ; bouton `🔊 Relire` dans la barre de contrôles (`data-action="relire"`, CSP-safe)
 
