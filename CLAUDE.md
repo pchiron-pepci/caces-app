@@ -421,6 +421,29 @@ SELECT jour_test_id, stagiaire_id FROM resultats_theorie GROUP BY ... HAVING COU
 - **Couche 3 — JS** : `chargerQuestions()` vérifie `resp.ok`, lit `err.detail` et affiche le message dans `#msg-erreur-grille` (div rouge dans ecran-selection) — plus de crash sur `data.themes[1]`, plus de `alert()`.
 - **Route serveur** : `GET /{session_id}/jours/{jour_id}/grille` — message déjà clair : "Le tirage n'a pas encore été déclenché..." — inchangé (source de vérité).
 
+### ✅ Chantier terminé : génération PDF test théorique — sujet vierge + corrigé (2026-06-17)
+
+**Nouveau service `app/services/pdf_test_theorie.py` :**
+- `_construire_questions(session_id, famille, db)` : requête `UtilisationTheme` → `GrilleTheorie` + `ReponseGrille` directs, retourne `{theme_int: [{numero, points, texte, image, grille_numero, reponse_correcte}]}`
+- `_build_html(session, nom_organisme, logo_data, themes_questions, avec_corrige)` : HTML WeasyPrint complet — en-tête (logo, titre, badge SUJET/CORRIGÉ, date + réf.), une `div.theme-block` par thème (grille n°X), table VRAI/FAUX — sujet : cases vides 16×16px ; corrigé : ✓ sur la bonne colonne, bandeau confidentiel rouge-orange
+- `generer_sujet_vierge(session_id, db)` et `generer_corrige(session_id, db)` → bytes PDF via WeasyPrint
+
+**Deux routes GET dans `main.py` (avant `@app.get("/")`) :**
+| Route | Accès | Mécanisme |
+|---|---|---|
+| `GET /api/sessions/{id}/theorie/pdf/sujet` | Tous rôles connectés | `if not user: raise 401` (fail-closed) |
+| `GET /api/sessions/{id}/theorie/pdf/corrige` | Tous rôles connectés (terrain inclus — le testeur corrige les copies) | `if not user: raise 401` (fail-closed) |
+
+Auth via cookie `access_token` (middleware) — `window.open()` suffit, pas besoin de fetch+blob.
+La route corrigé était initialement bloquée terrain (403) — décision révisée : le testeur a besoin du corrigé pour noter les copies papier.
+Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les routes GET → pas de whitelist nécessaire dans `_verifier_role`.
+
+**UX `session_detail.html` + `session_detail.js` :**
+- Boutons `📄 Sujet PDF` et `📝 Corrigé PDF` dans le `div` flex des boutons session, conditionnés sur `tirage_declenche` uniquement (visibles tous rôles)
+- Listeners `data-action="pdf-sujet-theorie"` et `data-action="pdf-corrige-theorie"` → `window.open(url, '_blank')`
+
+**Principe de sécurité appliqué :** garde fail-closed dans chaque route (`if not user: raise 401`) — protège même si le path se retrouvait accidentellement dans `_PUBLIC_PATTERNS`.
+
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
 
