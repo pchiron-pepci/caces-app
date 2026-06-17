@@ -17,6 +17,32 @@
     var interval            = null;
     var finished            = false;
 
+    // ── Synthèse vocale — config identique à test_theorie.html ────
+    // lang fr-FR, rate 0.9, pas de voix sélectionnée, pas de pitch.
+    // Contournement bug Chrome : cancel() suivi immédiatement de speak()
+    // peut avaler la lecture. On différe speak() de 100 ms via setTimeout
+    // (fonction, pas string — CSP-safe). Le timeout précédent est toujours
+    // annulé pour éviter tout chevauchement lors des auto-avances rapides.
+    var _speakTimer = null;
+
+    function speak(text) {
+        if (!window.speechSynthesis || !text) return;
+        if (_speakTimer) { clearTimeout(_speakTimer); _speakTimer = null; }
+        window.speechSynthesis.cancel();
+        _speakTimer = setTimeout(function () {
+            _speakTimer = null;
+            var u = new SpeechSynthesisUtterance(text);
+            u.lang = 'fr-FR';
+            u.rate = 0.9;
+            window.speechSynthesis.speak(u);
+        }, 100);
+    }
+
+    function cancelSpeech() {
+        if (_speakTimer) { clearTimeout(_speakTimer); _speakTimer = null; }
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
     // ── Utilitaires temps ──────────────────────────────────────────
     function getElapsedMs() {
         return elapsedBeforePause + (playStartTs !== null ? Date.now() - playStartTs : 0);
@@ -42,11 +68,11 @@
     function renderQuestion(idx) {
         var q = questions[idx];
         document.getElementById('proj-q-num').textContent =
-            'Question ' + (idx + 1) + ' / ' + N;
+            'Question ' + (idx + 1) + ' / ' + N;
         document.getElementById('proj-theme-label').textContent =
             'Thème ' + q.theme;
         document.getElementById('proj-q-numero').textContent =
-            'Q ' + q.seq;
+            'Q ' + q.seq;
         document.getElementById('proj-q-texte').textContent = q.texte || '';
 
         var imgZone = document.getElementById('proj-img-zone');
@@ -78,7 +104,7 @@
 
         if (remainingMs() <= 0 && !finished) {
             finished = true;
-            pause(true);
+            pause(true);   // pause() appelle cancelSpeech()
             document.getElementById('proj-overlay-fin').style.display = 'flex';
             return;
         }
@@ -90,6 +116,7 @@
         if (expectedIdx !== currentIdx) {
             currentIdx = expectedIdx;
             renderQuestion(currentIdx);
+            speak(questions[currentIdx].texte); // lecture auto-avance
         }
     }
 
@@ -99,6 +126,7 @@
         playStartTs = Date.now();
         renderEtat(true);
         interval = setInterval(tick, 250);
+        speak(questions[currentIdx].texte); // lecture de la question courante au démarrage
     }
 
     function pause(silent) {
@@ -107,16 +135,17 @@
             playStartTs = null;
         }
         if (interval) { clearInterval(interval); interval = null; }
+        cancelSpeech();                // coupe la voix dans tous les cas
         if (!silent) renderEtat(false);
     }
 
     function reset() {
-        pause(true);
+        pause(true);           // pause() coupe la voix et l'intervalle
         finished              = false;
         elapsedBeforePause    = 0;
         playStartTs           = null;
         currentIdx            = 0;
-        renderQuestion(0);
+        renderQuestion(0);     // affiche sans lire (état pause)
         renderTimer();
         renderEtat(false);
         document.getElementById('proj-overlay-fin').style.display = 'none';
@@ -131,18 +160,31 @@
                 if (playStartTs !== null) pause(false); else play();
                 break;
             case 'prev':
-                if (currentIdx > 0) { currentIdx--; renderQuestion(currentIdx); }
+                if (currentIdx > 0) {
+                    cancelSpeech();             // coupe la question quittée
+                    currentIdx--;
+                    renderQuestion(currentIdx);
+                    if (playStartTs !== null) speak(questions[currentIdx].texte); // lit si en lecture
+                }
                 break;
             case 'next':
-                if (currentIdx < N - 1) { currentIdx++; renderQuestion(currentIdx); }
+                if (currentIdx < N - 1) {
+                    cancelSpeech();             // coupe la question quittée
+                    currentIdx++;
+                    renderQuestion(currentIdx);
+                    if (playStartTs !== null) speak(questions[currentIdx].texte); // lit si en lecture
+                }
                 break;
             case 'reset':
                 reset();
                 break;
+            case 'relire':
+                speak(questions[currentIdx].texte); // relit la question affichée
+                break;
         }
     });
 
-    // ── Init ──────────────────────────────────────────────────────
+    // ── Init — affiche Q1 sans parler (interaction utilisateur requise) ──
     renderQuestion(0);
     renderTimer();
     renderEtat(false);
