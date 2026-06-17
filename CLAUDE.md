@@ -146,8 +146,8 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `/api/sessions/\d+/jours/\d+/candidats/\d+/identite` | PUT | Toggle identité candidat à l'accueil |
 | `/api/sessions/\d+/epreuves/\d+` | DELETE | Annulation résultat erroné |
 | `/api/sessions/\d+/theorie/reponses` | POST | Public (_PUBLIC_PATTERNS), bypass total |
-| `/api/sessions/\d+/theorie/reponses/\d+/\d+` | DELETE | Public, PIN formateur dans body |
-| `/api/sessions/\d+/theorie/reouvrir/\d+/\d+` | POST | Public, PIN formateur dans body |
+| `/api/sessions/\d+/theorie/reponses/\d+/\d+` | DELETE | JWT requis + PIN formateur dans body — admin/utilisateur uniquement (terrain bloqué catch-all) |
+| `/api/sessions/\d+/theorie/reouvrir/\d+/\d+` | POST | JWT requis + PIN formateur dans body — terrain+admin+utilisateur (whitelisté _verifier_role) |
 
 `rouvrir-terrain` n'est PAS whitelisté — réservé admin/utilisateur.
 
@@ -403,8 +403,9 @@ SELECT jour_test_id, stagiaire_id FROM resultats_theorie GROUP BY ... HAVING COU
 - N'existe pas → créer (comportement antérieur)
 
 **Nouvelles routes (socle serveur — UI à câbler ultérieurement) :**
-- `POST /api/sessions/{id}/theorie/reouvrir/{stagiaire_id}/{jour_test_id}` — PIN formateur dans body (`TheoriePinBody`), public (_PUBLIC_PATTERNS) ; retourne `{resultat_id, mode, reponses, note_totale, obtenue}` sans rien supprimer
-- `DELETE /api/sessions/{id}/theorie/reponses/{stagiaire_id}/{jour_test_id}` — PIN formateur dans body, public ; supprime le `ResultatTheorie` (sert à vider une saisie dégradée erronée ou changer de mode)
+- `POST /api/sessions/{id}/theorie/reouvrir/{stagiaire_id}/{jour_test_id}` — **JWT requis** + PIN formateur dans body (`TheoriePinBody`) ; retourne `{resultat_id, mode, reponses, note_totale, obtenue}` sans rien supprimer ; **terrain+admin+utilisateur** (whitelisté dans `_verifier_role` — récupération validation accidentelle en salle)
+- `DELETE /api/sessions/{id}/theorie/reponses/{stagiaire_id}/{jour_test_id}` — **JWT requis** + PIN formateur dans body ; supprime le `ResultatTheorie` ; **admin/utilisateur uniquement** (terrain bloqué catch-all — acte irréversible = back-office)
+- **La soumission `POST /theorie/reponses` reste seule publique** (action candidat sans compte)
 
 **Principes métier validés :**
 - Unicité par jour, pas par session (plusieurs jours = plusieurs lignes légitimes)

@@ -467,8 +467,6 @@ _PUBLIC_EXACT = {"/api/auth/token", "/api/auth/logout", "/health"}
 _PUBLIC_PATTERNS = [
     _re.compile(r"^/api/sessions/\d+/jours/\d+/grille$"),
     _re.compile(r"^/api/sessions/\d+/theorie/reponses$"),
-    _re.compile(r"^/api/sessions/\d+/theorie/reponses/\d+/\d+$"),
-    _re.compile(r"^/api/sessions/\d+/theorie/reouvrir/\d+/\d+$"),
     _re.compile(r"^/admin/config/verifier-pin-formateur$"),
     _re.compile(r"^/api/consentements/"),
     _re.compile(r"^/api/neutralite/"),
@@ -533,6 +531,9 @@ def _verifier_role(path: str, method: str, role: str):
             return True
         # Exception : annulation résultat pratique — testeur corrige une erreur de saisie
         if method == "DELETE" and _re.match(r"^/api/sessions/\d+/epreuves/\d+$", base):
+            return True
+        # Exception : réouverture résultat théorique — récupération d'une validation accidentelle en salle (PIN formateur requis)
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/theorie/reouvrir/\d+/\d+$", base):
             return True
         # Toutes les routes d'écriture sur les sessions (création + toutes sous-ressources)
         if method != "GET" and (base == "/api/sessions" or _re.match(r"^/api/sessions/\d+", base)):

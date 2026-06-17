@@ -642,7 +642,8 @@ class TheoriePinBody(BaseModel):
 
 @router.post("/{session_id}/theorie/reouvrir/{stagiaire_id}/{jour_test_id}")
 def reouvrir_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
-                     body: TheoriePinBody, db: DBSession = Depends(get_db)):
+                     body: TheoriePinBody, db: DBSession = Depends(get_db),
+                     current_user: Utilisateur = Depends(get_utilisateur_courant)):
     if body.pin != get_pin_formateur(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     rt = db.query(ResultatTheorie).filter(
@@ -662,7 +663,8 @@ def reouvrir_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
 
 @router.delete("/{session_id}/theorie/reponses/{stagiaire_id}/{jour_test_id}")
 def supprimer_resultat_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
-                                body: TheoriePinBody, db: DBSession = Depends(get_db)):
+                                body: TheoriePinBody, db: DBSession = Depends(get_db),
+                                current_user: Utilisateur = Depends(get_utilisateur_courant)):
     if body.pin != get_pin_formateur(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     rt = db.query(ResultatTheorie).filter(
