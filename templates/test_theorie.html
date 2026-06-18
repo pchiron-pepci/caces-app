@@ -816,7 +816,11 @@ async function chargerQuestions() {
 let MODE_CORRECTION = false;
 if (START_DIRECT && START_STAGIAIRE_ID) {
     const _cleCheck = 'corriger_rt_' + SESSION_ID + '_' + JOUR_ID + '_' + START_STAGIAIRE_ID;
+    console.log('[CORR] SESSION_ID/JOUR_ID/START_STAGIAIRE_ID =', SESSION_ID, JOUR_ID, START_STAGIAIRE_ID);
+    console.log('[CORR] cle lue =', _cleCheck);
+    console.log('[CORR] valeur localStorage =', localStorage.getItem(_cleCheck));
     MODE_CORRECTION = localStorage.getItem(_cleCheck) !== null;
+    console.log('[CORR] MODE_CORRECTION =', MODE_CORRECTION);
 }
 
 chargerQuestions();
