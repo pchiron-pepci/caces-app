@@ -1,6 +1,9 @@
 ﻿(function () {
     'use strict';
 
+    // [DIAG] détecter si l'IIFE s'exécute plusieurs fois
+    console.log('[DIAG] saisie_degrade.js IIFE loaded', new Date().toISOString());
+
     var dataEl = document.getElementById('sd-data');
     var SESSION_ID = parseInt(dataEl.dataset.sessionId, 10);
     var JOUR_ID    = parseInt(dataEl.dataset.jourId, 10);
@@ -21,6 +24,7 @@
 
     // ── Modal PIN ─────────────────────────────────────────────────
     function ouvrirPin(stagiaireId, nom, notes) {
+        console.log('[DIAG] ouvrirPin() stag=' + stagiaireId);  // [DIAG]
         _pending = { stagiaireId: stagiaireId, nom: nom, notes: notes, action: 'enregistrer' };
         document.getElementById('pin-message').innerHTML = 'Confirmez la saisie pour <strong>' + nom + '</strong>';
         document.getElementById('pin-input').value      = '';
@@ -208,6 +212,7 @@
 
     // ── Appel API ─────────────────────────────────────────────────
     async function soumettre(pin) {
+        console.log('[DIAG] soumettre() called stag=' + (_pending ? _pending.stagiaireId : 'null'), new Date().toISOString());  // [DIAG]
         if (!_pending) return;
         var body = {
             jour_test_id:    JOUR_ID,
@@ -297,6 +302,7 @@
             return;
         }
         if (e.target.closest('[data-action="pin-confirmer"]')) {
+            console.log('[DIAG] pin-confirmer clicked action=' + (_pending ? _pending.action : 'null'));  // [DIAG]
             var pin = document.getElementById('pin-input').value;
             if (_pending && _pending.action === 'supprimer') {
                 supprimerDegrade(pin);
@@ -315,6 +321,7 @@
 
     document.getElementById('pin-input').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
+            console.log('[DIAG] keydown Enter fired');  // [DIAG]
             var pin = this.value;
             if (_pending && _pending.action === 'supprimer') {
                 supprimerDegrade(pin);
