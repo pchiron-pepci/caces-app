@@ -817,34 +817,37 @@ def soumettre_reponses_theorie_degrade(
                 detail=f"Thème {t_str} : valeur {note} hors bornes (0–{nb_q})",
             )
 
-    # e. Reponses synthétiques : N premières questions marquées correctes,
-    #    le reste incorrect — calculer_resultat_theorie_phase2 recompte
-    #    exactement N bonnes pour ce thème.
-    reponses_synthetique: Dict[str, bool] = {}
+    # e+f. Calcul direct — les numéros de questions sont locaux à chaque thème
+    # (1–N par thème). Construire un dict global reponses_synthetique crée des
+    # collisions : T5 écrase T1–T4 sur les clés "1"–"4", etc. On court-circuite
+    # calculer_resultat_theorie_phase2 et on calcule directement depuis n_bonnes.
+    notes_themes_d: Dict[str, float] = {}
+    max_themes_d:   Dict[str, float] = {}
+    themes_ok_d:    Dict[str, bool]  = {}
+    note_totale_d = 0.0
+    max_total_d   = 0.0
     for t_str, qs in questions_par_theme.items():
-        n_bonnes = data.notes_par_theme[t_str]
-        for i, q in enumerate(qs):
-            if i < n_bonnes:
-                reponses_synthetique[str(q.numero_question)] = q.reponse_correcte
-            else:
-                reponses_synthetique[str(q.numero_question)] = not q.reponse_correcte
+        n_bonnes   = data.notes_par_theme[t_str]
+        max_theme  = sum(q.points for q in qs)
+        note_theme = sum(q.points for q in qs[:n_bonnes])
+        max_total_d   += max_theme
+        note_totale_d += note_theme
+        notes_themes_d[t_str] = round(note_theme, 1)
+        max_themes_d[t_str]   = round(max_theme, 1)
+        themes_ok_d[t_str]    = note_theme >= (max_theme / 2)
+    pct_total_d = (note_totale_d / max_total_d * 100) if max_total_d else 0.0
+    resultat = {
+        "note_totale":  round(note_totale_d, 1),
+        "max_total":    round(max_total_d, 1),
+        "pct_total":    round(pct_total_d, 1),
+        "notes_themes": notes_themes_d,
+        "max_themes":   max_themes_d,
+        "themes_ok":    themes_ok_d,
+        "obtenue":      pct_total_d >= 70 and all(themes_ok_d.values()),
+    }
 
     # [DIAG] ── questions par thème (nb questions × points) ─────────────────────
-    for t_str, qs in questions_par_theme.items():
-        nb_q = len(qs)
-        pts_list = [q.points for q in qs]
-        n_bonnes = data.notes_par_theme.get(t_str, 0)
-        pts_bonnes = sum(pts_list[:n_bonnes])
-        print(f"[DIAG DEGRADE] theme={t_str} nb_questions={nb_q} points={pts_list[:6]}... n_bonnes={n_bonnes} => pts_attendus={pts_bonnes}", flush=True)
     # ──────────────────────────────────────────────────────────────────────────
-
-    # f. Calcul résultat via la règle officielle — pas de duplication
-    try:
-        resultat = calculer_resultat_theorie_phase2(
-            reponses_synthetique, session_id, session.famille, db
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
     # [DIAG] ── résultat calculé ──────────────────────────────────────────────
     print(f"[DIAG DEGRADE] resultat: note_totale={resultat['note_totale']} notes_themes={resultat['notes_themes']} obtenue={resultat['obtenue']}", flush=True)
