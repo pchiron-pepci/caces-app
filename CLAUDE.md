@@ -256,6 +256,7 @@ python init_questions_r482.py
 | Priorité | Item | Statut |
 |---|---|---|
 | URGENT | Upgrader caces-db Render avant 05/07/2026 | en attente |
+| Haute | Export ZIP session (récap PDF + justificatifs + consentements/neutralité) — étape 1/3 faite | en cours |
 | Haute | Grille statuts sessions 4 états (Ouverte / À réutiliser / Validée terrain / Clôturée) | ✅ fait |
 | Haute | Bouton + route clôture terrain (POST /sessions/{id}/cloturer-terrain, PIN) | ✅ fait |
 | Haute | Harmoniser affichage statut sessions dans dashboard.html (actuellement logique séparée inline) | ✅ fait |
@@ -599,6 +600,27 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - `dashboard.js` étendu : `SECTIONS` array, `clefSection()`, toggle via `head.nextElementSibling` (body est toujours le frère immédiat).
 - Clés localStorage : `dash_section_replie_sessions`, `_caces`, `_nc`, `_alertes`, `_photos`. Valeur `'false'` = déplié.
 - La carte "À traiter" elle-même reste toujours visible (pas de toggle carte-niveau).
+
+### Chantier en cours : export ZIP session (étape 1/3 terminée — commit 7bfca47)
+
+**Règles d'accès (validées) :**
+- Disponible quel que soit le statut de la session (planifiee / en_cours / terminee)
+- Bouton visible back-office uniquement (admin/utilisateur) — masqué terrain
+- PIN admin 1505 requis, vérifié côté serveur
+
+**Étape 1 — `app/services/pdf_recap_session.py` (✅ fait) :**
+- `generer_recap_resultats(session_id, db) -> bytes` — PDF WeasyPrint A4
+- Candidats actifs (SessionCandidat JOIN Stagiaire, tri nom/prénom)
+- Théorie : dernier RT par candidat (`id DESC`) — **diffère volontairement** de l'affichage ligne candidat qui prend le meilleur réussi
+- Pratique : toutes les SessionEpreuve, triées par catégorie
+- Badge Acquis/Échec/En attente indépendant par partie
+- `page-break-inside: avoid` par bloc candidat
+
+**Étape 2 — À faire :** PDFs consentement RGPD + attestation neutralité (WeasyPrint depuis données stockées — signature base64, booleans, timestamps)
+- `ConsentementRGPD` : lié via `session_id` direct
+- `AttestationNeutralite` : lié via `jour_test_id` → jointure `JourTest.session_id`
+
+**Étape 3 — À faire :** assembleur ZIP (`zipfile` stdlib) + route `GET /sessions/{id}/export-zip?pin=` + bouton dans `session_detail.html`
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
