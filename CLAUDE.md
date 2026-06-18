@@ -565,6 +565,10 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - `session_detail.js` : 1 `console.log('[CORR] cle ecrite ...')` avant `localStorage.setItem` dans le handler loupe-modifier.
 - **À retirer** une fois la cause de MODE_CORRECTION=false confirmée.
 
+*Bug 3 — `btn-voir-recap` invisible hors dernière question (commit 411339b) :*
+- En MODE_CORRECTION, cliquer une question depuis le récap → QCM ; le bouton "Voir le récap" était caché (condition `recapDebloque` = true seulement après la Q100 en passation normale) → impossible de revenir au récap sans tout parcourir.
+- **Fix** : `afficherQuestion()` → `(MODE_CORRECTION || recapDebloque) ? 'block' : 'none'`. En passation normale : comportement inchangé.
+
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
 
