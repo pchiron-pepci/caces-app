@@ -545,6 +545,7 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - `session_detail.js` : listener `justif-voir` → `window.open GET justificatif` ; listener `justif-upload` → stocke contexte, déclenche file input ; handler `change` sur `#justif-file-input` → FileReader → base64 → PIN modal → POST upload → reload.
 - `saisie_degrade.html` : bouton 📎 (voir/upload) dans result-zone dégradé, tous rôles. Input caché `#sd-justif-file-input`.
 - `saisie_degrade.js` : `uploadJustificatif()`, listener `sd-justif-file-input`, dispatch `action === 'justif'` dans `pin-confirmer` et `keydown Enter`.
+- Accordéon cartes candidat (commit 4feb40e) : `cand-body` replié par défaut (`display:none`) ; `cand-head` cliquable (`data-action="toggle-carte-candidat"`, `data-stagiaire-id`) ; flèche `▶`/`▼` (`span.cand-arrow`) dans le premier div de l'en-tête (séparé du div badges pour ne pas être écrasé par `afficherResultat`) ; toggle indépendant par carte ; après enregistrement la carte reste ouverte (pas de reload, `cand-body` inchangé).
 
 **Correctifs post-Section 5/6 (2026-06-18) :**
 
