@@ -999,7 +999,7 @@ function afficherQuestion(idx) {
 
     if (idx === questions.length - 1) recapDebloque = true;
     const btnVR = document.getElementById('btn-voir-recap');
-    if (btnVR) btnVR.style.display = recapDebloque ? 'block' : 'none';
+    if (btnVR) btnVR.style.display = (MODE_CORRECTION || recapDebloque) ? 'block' : 'none';
 
     document.getElementById('q-num').textContent = idx + 1;
     const pct = Math.round((idx + 1) / questions.length * 100);
