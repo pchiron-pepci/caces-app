@@ -9,21 +9,19 @@
     if (!N || N === 0) return;
 
     var TOTAL_MS = 3600 * 1000;
-    var DUR_MS   = TOTAL_MS / N;   // durée par question, recalculée sur N réel
+    var DUR_MS   = TOTAL_MS / N;   // créneau par question (ms)
 
     var currentIdx    = 0;
-    var lastAutoStep  = 0;     // dernier palier d'auto-avance franchi
-    var chronoStartTs = null;  // timestamp du 1er Lecture ; null = pas encore démarré
-    var playing       = false; // défilement actif (distinct du chrono monotone)
+    var chronoStartTs = null;  // 1er Lecture — monotone, plafond 1h absolu
+    var slotStartTs   = null;  // début du créneau courant (play-time seulement)
+    var pauseBeganAt  = null;  // quand la pause a commencé (null = pas en pause)
+    var playing       = false;
     var interval      = null;
     var finished      = false;
 
-    // ── Synthèse vocale — config identique à test_theorie.html ────
-    // lang fr-FR, rate 0.9, pas de voix sélectionnée, pas de pitch.
-    // Contournement bug Chrome : cancel() suivi immédiatement de speak()
-    // peut avaler la lecture. On différe speak() de 100 ms via setTimeout
-    // (fonction, pas string — CSP-safe). Le timeout précédent est toujours
-    // annulé pour éviter tout chevauchement lors des auto-avances rapides.
+    // ── Synthèse vocale ───────────────────────────────────────────
+    // lang fr-FR, rate 0.8 ; contournement bug Chrome cancel→speak :
+    // setTimeout 100 ms CSP-safe + clearTimeout anti-chevauchement.
     var _speakTimer = null;
 
     function speak(text) {
@@ -44,7 +42,7 @@
         if (window.speechSynthesis) window.speechSynthesis.cancel();
     }
 
-    // ── Utilitaires temps ──────────────────────────────────────────
+    // ── Chrono global (monotone, inaltérable) ─────────────────────
     function getElapsedMs() {
         return chronoStartTs !== null ? Date.now() - chronoStartTs : 0;
     }
@@ -53,15 +51,32 @@
         return Math.max(0, TOTAL_MS - getElapsedMs());
     }
 
+    // ── Créneau par question (pause-aware) ────────────────────────
+    // slotElapsedMs() retourne le temps de LECTURE écoulé sur la
+    // question courante — la pause n'est pas comptée.
+    function slotElapsedMs() {
+        if (slotStartTs === null) return 0;
+        if (!playing && pauseBeganAt !== null) {
+            // En pause : geler à l'instant où la pause a commencé
+            return Math.max(0, pauseBeganAt - slotStartTs);
+        }
+        return Math.max(0, Date.now() - slotStartTs);
+    }
+
+    // Repart le créneau à zéro pour la question courante.
+    // Si on est en pause, le créneau part de 0 mais reste gelé.
+    function resetSlot() {
+        slotStartTs  = Date.now();
+        pauseBeganAt = playing ? null : Date.now();
+    }
+
     // ── Affichage ─────────────────────────────────────────────────
     function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
     function renderTimer() {
-        var rem  = Math.ceil(remainingMs() / 1000);
-        var mm   = Math.floor(rem / 60);
-        var ss   = rem % 60;
-        var el   = document.getElementById('proj-timer');
-        el.textContent = pad2(mm) + ':' + pad2(ss);
+        var rem = Math.ceil(remainingMs() / 1000);
+        var el  = document.getElementById('proj-timer');
+        el.textContent = pad2(Math.floor(rem / 60)) + ':' + pad2(rem % 60);
         if (rem <= 60) el.classList.add('urgent');
         else           el.classList.remove('urgent');
     }
@@ -87,10 +102,10 @@
         }
     }
 
-    function renderEtat(playing) {
+    function renderEtat(isPlaying) {
         var btn = document.getElementById('btn-playpause');
         var lbl = document.getElementById('proj-etat');
-        if (playing) {
+        if (isPlaying) {
             btn.textContent = '⏸ Pause';
             lbl.textContent = 'Lecture';
         } else {
@@ -99,10 +114,11 @@
         }
     }
 
-    // ── Tick (250 ms — tourne sans interruption une fois le chrono démarré) ────
+    // ── Tick (250 ms, tourne sans interruption) ───────────────────
     function tick() {
         renderTimer();
 
+        // Chrono global PRIME : fin à 0:00, quoi qu'il arrive
         if (remainingMs() <= 0 && !finished) {
             finished = true;
             playing  = false;
@@ -112,20 +128,14 @@
             return;
         }
 
-        if (!playing) return; // chrono tourne ; défilement gelé en pause
+        if (!playing) return;
 
-        // Auto-avance par crans relatifs depuis la position courante.
-        // Si une pause a duré plusieurs paliers, on les rattrape d'un coup
-        // à la reprise ; currentIdx reste toujours borné [0, N-1].
-        var palier = Math.floor(getElapsedMs() / DUR_MS);
-        if (palier > lastAutoStep) {
-            var crans = Math.min(palier - lastAutoStep, N - 1 - currentIdx);
-            lastAutoStep = palier;
-            if (crans > 0) {
-                currentIdx += crans;
-                renderQuestion(currentIdx);
-                speak(questions[currentIdx].texte);
-            }
+        // Auto-avance : créneau PAR QUESTION — ne dépend plus du chrono global
+        if (slotElapsedMs() >= DUR_MS && currentIdx < N - 1) {
+            currentIdx++;
+            resetSlot();
+            renderQuestion(currentIdx);
+            speak(questions[currentIdx].texte);
         }
     }
 
@@ -133,8 +143,14 @@
     function play() {
         if (finished) return;
         if (chronoStartTs === null) {
-            chronoStartTs = Date.now();         // 1er Lecture : démarre le chrono global
-            interval = setInterval(tick, 250);  // interval continu (tourne même en pause)
+            // 1er Lecture : démarre le chrono global ET le premier créneau
+            chronoStartTs = Date.now();
+            interval = setInterval(tick, 250);
+            resetSlot();
+        } else if (pauseBeganAt !== null) {
+            // Reprise après pause : décaler slotStartTs pour ne pas compter la pause
+            slotStartTs += Date.now() - pauseBeganAt;
+            pauseBeganAt = null;
         }
         playing = true;
         renderEtat(true);
@@ -142,19 +158,22 @@
     }
 
     function pause(silent) {
-        playing = false;
+        if (!playing) return;
+        playing      = false;
+        pauseBeganAt = Date.now();
         cancelSpeech();
         if (!silent) renderEtat(false);
     }
 
     function reset() {
-        playing = false;
+        playing      = false;
+        pauseBeganAt = null;
         if (interval) { clearInterval(interval); interval = null; }
         cancelSpeech();
         finished      = false;
         chronoStartTs = null;
+        slotStartTs   = null;
         currentIdx    = 0;
-        lastAutoStep  = 0;
         renderQuestion(0);
         renderTimer();
         renderEtat(false);
@@ -173,6 +192,7 @@
                 if (!finished && currentIdx > 0) {
                     cancelSpeech();
                     currentIdx--;
+                    resetSlot();        // repart un créneau plein pour cette question
                     renderQuestion(currentIdx);
                     if (playing) speak(questions[currentIdx].texte);
                 }
@@ -181,6 +201,7 @@
                 if (!finished && currentIdx < N - 1) {
                     cancelSpeech();
                     currentIdx++;
+                    resetSlot();        // repart un créneau plein pour cette question
                     renderQuestion(currentIdx);
                     if (playing) speak(questions[currentIdx].texte);
                 }
@@ -189,12 +210,12 @@
                 reset();
                 break;
             case 'relire':
-                speak(questions[currentIdx].texte); // relit la question affichée
+                speak(questions[currentIdx].texte);
                 break;
         }
     });
 
-    // ── Init — affiche Q1 sans parler (interaction utilisateur requise) ──
+    // ── Init ──────────────────────────────────────────────────────
     renderQuestion(0);
     renderTimer();
     renderEtat(false);
