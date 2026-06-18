@@ -522,7 +522,7 @@
                 data-naissance="{{ sc.stagiaire.date_naissance or '' }}"
                 data-a-resultat="{{ 'true' if _rt_mode else 'false' }}"
                 data-mode="{{ _rt_mode or '' }}">
-                {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}{% if _rt_mode == 'degrade' %} — 📄 papier{% elif _rt_mode == 'numerique' %} — ✅ passé{% endif %}
+                {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}{% if _rt_mode == 'degrade' %} — ✍️ manuel{% elif _rt_mode == 'numerique' %} — ✅ passé{% endif %}
             </option>
             {% endif %}{% endfor %}
         </select>
@@ -844,7 +844,7 @@ document.getElementById('select-candidat').addEventListener('change', function()
         section.style.display = 'none';
         const mode = opt.getAttribute('data-mode');
         msgBloque.textContent = mode === 'degrade'
-            ? '📄 Une saisie papier a déjà été enregistrée pour ce candidat. Pour corriger, utilisez "Corriger" depuis la page de session (sous PIN formateur).'
+            ? '✍️ Une saisie manuelle a déjà été enregistrée pour ce candidat. Pour corriger, utilisez "Corriger" depuis la page de session (sous PIN formateur).'
             : '✅ Ce candidat a déjà passé le test numérique. Pour corriger, utilisez "Corriger" depuis la page de session (sous PIN formateur).';
         msgBloque.style.display = '';
         return;
@@ -888,7 +888,7 @@ function allerConfirmation() {
         const mode = opt.getAttribute('data-mode');
         const msgBloque = document.getElementById('msg-bloque-select');
         msgBloque.textContent = mode === 'degrade'
-            ? '📄 Une saisie papier a déjà été enregistrée. Utilisez "Corriger" depuis la page de session.'
+            ? '✍️ Une saisie manuelle a déjà été enregistrée. Utilisez "Corriger" depuis la page de session.'
             : '✅ Ce candidat a déjà passé le test numérique. Utilisez "Corriger" depuis la page de session.';
         msgBloque.style.display = '';
         return;

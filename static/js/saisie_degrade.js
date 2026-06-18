@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     'use strict';
 
     var dataEl = document.getElementById('sd-data');
@@ -109,7 +109,7 @@
         // Mise à jour du badge statut dans l'en-tête de la carte
         var statusEl = document.querySelector('#cand-' + stagiaireId + ' .cand-head div:last-child');
         if (statusEl) {
-            statusEl.innerHTML = '<span class="badge badge-orange">Saisie papier</span> '
+            statusEl.innerHTML = '<span class="badge badge-orange">Saisie manuelle</span> '
                 + '<span class="badge ' + (obtenue ? 'badge-green' : 'badge-red') + '">'
                 + (obtenue ? 'RÉUSSI' : 'ÉCHEC') + '</span>';
         }

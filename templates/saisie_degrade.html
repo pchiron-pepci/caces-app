@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Saisie dégradée — {{ session_ref }}</title>
+<title>Saisie manuelle — {{ session_ref }}</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -277,7 +277,7 @@ body {
 <div id="sd-header">
     {% set _logo = logo_organisme() %}
     {% if _logo %}<img id="sd-logo" src="{{ _logo }}" alt="Logo organisme" />{% endif %}
-    <div id="sd-title">✍️ Saisie papier — {{ session_ref }} · CACES® {{ famille }}</div>
+    <div id="sd-title">✍️ Saisie manuelle — {{ session_ref }} · CACES® {{ famille }}</div>
     {% if jour_date %}<div id="sd-date">📅 {{ jour_date }}</div>{% endif %}
 </div>
 
@@ -286,7 +286,7 @@ body {
 
     <div class="sd-warning">
         <span class="icon">⚠️</span>
-        <span>Mode <strong>saisie dégradée (papier)</strong> — saisissez le nombre de bonnes réponses
+        <span>Mode <strong>saisie manuelle</strong> — saisissez le nombre de bonnes réponses
         obtenu par chaque candidat pour chaque thème, d'après la feuille de correction.</span>
     </div>
 
@@ -312,7 +312,7 @@ body {
                     <span class="badge badge-orange">Dispensé</span>
                 {% elif cand.rt %}
                     {% if cand.rt.mode == 'degrade' %}
-                        <span class="badge badge-orange">Saisie papier</span>
+                        <span class="badge badge-orange">Saisie manuelle</span>
                     {% else %}
                         <span class="badge badge-blue">Numérique</span>
                     {% endif %}
@@ -333,7 +333,7 @@ body {
                 🔒 Un résultat numérique existe pour ce candidat
                 ({{ cand.rt.note_totale|int }}/100 —
                 {% if cand.rt.obtenue %}RÉUSSI{% else %}ÉCHEC{% endif %}).
-                Supprimez-le depuis la page de session pour saisir un résultat papier.
+                Supprimez-le depuis la page de session pour saisir un résultat manuel.
             </div>
 
         {% else %}

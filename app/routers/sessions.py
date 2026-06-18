@@ -591,7 +591,7 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
         if existing.mode == "degrade":
             raise HTTPException(
                 status_code=409,
-                detail="Un résultat manuel (papier) existe pour ce jour — supprimez-le d'abord (Corriger/Supprimer sous PIN).",
+                detail="Un résultat de saisie manuelle existe pour ce jour — supprimez-le d'abord (Corriger/Supprimer sous PIN).",
             )
         # mode == 'numerique' : reprise — écrasement du résultat existant
         existing.reponses_json = json.dumps(data.reponses)
