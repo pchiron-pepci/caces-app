@@ -1,30 +1,59 @@
 {% extends "base.html" %}
 
-{% block title %}Detail test theorique{% endblock %}
+{% block title %}{{ stagiaire.nom }} {{ stagiaire.prenom }} — Détail théorique{% endblock %}
 
 {% block content %}
+<style>
+@media print {
+    /* Masquer sidebar, topbar, bouton imprimer, tout élément no-print */
+    .sidebar, .topbar, .no-print { display: none !important; }
+    /* Supprimer la marge laissée par la sidebar */
+    .main { margin-left: 0 !important; }
+    .content { padding: 16px !important; }
+    body, .content { background: white !important; }
+    /* Cartes : remplacer l'ombre par une bordure fine */
+    .card { box-shadow: none !important; border: 1px solid #ccc !important; margin-bottom: 12px !important; }
+    .card-header { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* Éviter les coupures au milieu d'une ligne de tableau */
+    tr { page-break-inside: avoid; }
+    /* Garder les couleurs des lignes (correct/incorrect) */
+    tr[style] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* Liens : noir sans soulignement */
+    a { color: inherit !important; text-decoration: none !important; }
+    /* Badges : légers en print */
+    .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+<!-- En-tête de page -->
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
     <div>
-        <a href="/sessions/{{ session_id }}" style="color:#666; text-decoration:none; font-size:13px;">← Retour a la session</a>
-        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px; margin-top:4px;">
-            Detail du test theorique
-        </h2>
-        <div style="color:#666; font-size:14px; margin-top:4px;">
-            {{ stagiaire.nom }} {{ stagiaire.prenom }} —
+        <a href="/sessions/{{ session_id }}" class="no-print" style="color:#666; text-decoration:none; font-size:13px;">← Retour à la session</a>
+        <h1 style="font-family:'Barlow Condensed',sans-serif; font-size:32px; font-weight:700; color:#1a237e; margin-top:4px; line-height:1.1;">
+            {{ stagiaire.nom }} {{ stagiaire.prenom }}
+        </h1>
+        <div style="color:#555; font-size:14px; margin-top:4px; display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+            {% if session %}
+            <span>Session {{ session.reference }}{% if session.date_theorie %} · {{ session.date_theorie.strftime('%d/%m/%Y') }}{% endif %}</span>
+            <span style="color:#bbb;">—</span>
+            {% endif %}
             {% if rt.obtenue %}
-                <span class="badge green">REUSSI — {{ rt.note_totale|int }}/100</span>
+                <span class="badge green">RÉUSSI — {{ rt.note_totale|int }}/100</span>
             {% else %}
-                <span class="badge red">ECHEC — {{ rt.note_totale|int }}/100</span>
+                <span class="badge red">ÉCHEC — {{ rt.note_totale|int }}/100</span>
             {% endif %}
         </div>
     </div>
+    <button data-action="imprimer-detail" class="btn btn-secondary no-print"
+            style="font-size:13px; padding:6px 16px; white-space:nowrap; align-self:flex-start; margin-top:4px;">
+        🖨️ Imprimer
+    </button>
 </div>
 
 {% for t, questions in detail_themes.items() %}
 <div class="card" style="margin-bottom:16px;">
     <div class="card-header">
-        <h2>Theme {{ t }} — {{ theme_noms[t] }}</h2>
+        <h2>Thème {{ t }} — {{ theme_noms[t] }}</h2>
         <div>
             {% set note_t = namespace(val=0) %}
             {% for q in questions %}
@@ -53,9 +82,9 @@
             <tr>
                 <th style="width:40px;">N°</th>
                 <th>Question</th>
-                <th style="text-align:center; width:100px;">Bonne reponse</th>
+                <th style="text-align:center; width:100px;">Bonne réponse</th>
                 <th style="text-align:center; width:100px;">Candidat</th>
-                <th style="text-align:center; width:80px;">Resultat</th>
+                <th style="text-align:center; width:80px;">Résultat</th>
             </tr>
         </thead>
         <tbody>
@@ -89,4 +118,5 @@
 </div>
 {% endfor %}
 
+<script src="/static/js/detail_theorie.js"></script>
 {% endblock %}

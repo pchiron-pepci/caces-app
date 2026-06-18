@@ -1925,6 +1925,7 @@ def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jo
             name="detail_theorie.html",
             context={
                 "stagiaire": stagiaire,
+                "session": session_obj,
                 "session_id": session_id,
                 "rt": rt,
                 "detail_themes": detail_themes,
