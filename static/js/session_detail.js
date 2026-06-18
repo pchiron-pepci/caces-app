@@ -1890,7 +1890,6 @@ document.addEventListener('click', function(e) {
             }
             var data = await resp.json();
             var cle = 'corriger_rt_' + sid + '_' + jid + '_' + stag;
-            console.log('[CORR] cle ecrite =', cle, ' valeur =', JSON.stringify(data.reponses || {}));
             localStorage.setItem(cle, JSON.stringify(data.reponses || {}));
             fermerPin();
             // Route : /test/theorie/{jour_test_id}/{stagiaire_id}/start (sans session_id)

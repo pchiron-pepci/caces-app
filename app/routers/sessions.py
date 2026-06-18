@@ -587,13 +587,6 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
         ResultatTheorie.stagiaire_id == data.stagiaire_id,
     ).first()
 
-    # [DIAG] ── lookup existing (numerique) ───────────────────────────────────
-    if existing:
-        print(f"[DIAG NUMERIQUE] existing FOUND id={existing.id} jour_test_id={existing.jour_test_id} mode={existing.mode!r} note_actuelle={existing.note_totale} obtenue_actuelle={existing.obtenue}", flush=True)
-    else:
-        print(f"[DIAG NUMERIQUE] existing NOT FOUND → INSERT path (jour_test_id={data.jour_test_id} stag={data.stagiaire_id})", flush=True)
-    # ──────────────────────────────────────────────────────────────────────────
-
     if existing:
         if existing.mode == "degrade":
             raise HTTPException(
@@ -615,9 +608,6 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
         existing.theme5_ok = resultat["themes_ok"].get("5")
         existing.obtenue = resultat["obtenue"]
         existing.mode = "numerique"
-        # [DIAG] ── après assignments ─────────────────────────────────────────
-        print(f"[DIAG NUMERIQUE] UPDATE assigné: note_totale={existing.note_totale} obtenue={existing.obtenue} dirty={db.is_modified(existing)}", flush=True)
-        # ─────────────────────────────────────────────────────────────────────
     else:
         rt = ResultatTheorie(
             session_id=session_id,
@@ -642,13 +632,9 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
         )
         db.add(rt)
 
-    # [DIAG] ── commit + refresh (numerique) ──────────────────────────────────
     db.commit()
-    print("[DIAG NUMERIQUE] COMMIT OK", flush=True)
     if existing:
         db.refresh(existing)
-        print(f"[DIAG NUMERIQUE] AFTER REFRESH: note_totale={existing.note_totale} obtenue={existing.obtenue}", flush=True)
-    # ──────────────────────────────────────────────────────────────────────────
     return {"resultat": resultat}
 
 
@@ -755,13 +741,6 @@ def soumettre_reponses_theorie_degrade(
     db: DBSession = Depends(get_db),
     current_user: Utilisateur = Depends(get_utilisateur_courant),
 ):
-    # [DIAG] ── début ──────────────────────────────────────────────────────────
-    print(f"[DIAG DEGRADE] HANDLER REACHED session={session_id} stag={data.stagiaire_id} jour={data.jour_test_id}", flush=True)
-    print(f"[RECU] notes_par_theme={dict(data.notes_par_theme)}", flush=True)
-    _pin_db = get_pin_formateur(db)
-    print(f"[DIAG DEGRADE] PIN recu={data.pin!r} PIN_db={_pin_db!r} match={data.pin == _pin_db}", flush=True)
-    # ──────────────────────────────────────────────────────────────────────────
-
     # a. PIN formateur
     if data.pin != get_pin_formateur(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
@@ -846,25 +825,11 @@ def soumettre_reponses_theorie_degrade(
         "obtenue":      pct_total_d >= 70 and all(themes_ok_d.values()),
     }
 
-    # [DIAG] ── questions par thème (nb questions × points) ─────────────────────
-    # ──────────────────────────────────────────────────────────────────────────
-
-    # [DIAG] ── résultat calculé ──────────────────────────────────────────────
-    print(f"[DIAG DEGRADE] resultat: note_totale={resultat['note_totale']} notes_themes={resultat['notes_themes']} obtenue={resultat['obtenue']}", flush=True)
-    # ──────────────────────────────────────────────────────────────────────────
-
     # g. Écriture ResultatTheorie
     existing = db.query(ResultatTheorie).filter(
         ResultatTheorie.jour_test_id == data.jour_test_id,
         ResultatTheorie.stagiaire_id == data.stagiaire_id,
     ).first()
-
-    # [DIAG] ── lookup existing ────────────────────────────────────────────────
-    if existing:
-        print(f"[DIAG DEGRADE] existing FOUND id={existing.id} jour_test_id={existing.jour_test_id} mode={existing.mode!r} note_actuelle={existing.note_totale} obtenue_actuelle={existing.obtenue}", flush=True)
-    else:
-        print(f"[DIAG DEGRADE] existing NOT FOUND → INSERT path (jour_test_id={data.jour_test_id} stag={data.stagiaire_id})", flush=True)
-    # ──────────────────────────────────────────────────────────────────────────
 
     if existing:
         if existing.mode == "numerique":
@@ -886,9 +851,6 @@ def soumettre_reponses_theorie_degrade(
         existing.theme5_ok   = resultat["themes_ok"].get("5")
         existing.obtenue     = resultat["obtenue"]
         # reponses_json et justificatif_* intentionnellement non modifiés
-        # [DIAG] ── après assignments ─────────────────────────────────────────
-        print(f"[DIAG DEGRADE] UPDATE assigné: note_totale={existing.note_totale} obtenue={existing.obtenue} dirty={db.is_modified(existing)}", flush=True)
-        # ─────────────────────────────────────────────────────────────────────
     else:
         rt = ResultatTheorie(
             session_id=session_id,
@@ -913,13 +875,9 @@ def soumettre_reponses_theorie_degrade(
         )
         db.add(rt)
 
-    # [DIAG] ── commit + refresh ───────────────────────────────────────────────
     db.commit()
-    print("[DIAG DEGRADE] COMMIT OK", flush=True)
     if existing:
         db.refresh(existing)
-        print(f"[DIAG DEGRADE] AFTER REFRESH: note_totale={existing.note_totale} obtenue={existing.obtenue}", flush=True)
-    # ──────────────────────────────────────────────────────────────────────────
     return {"resultat": resultat}
 
 
