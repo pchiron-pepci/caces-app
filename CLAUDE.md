@@ -565,6 +565,11 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - `session_detail.js` : 1 `console.log('[CORR] cle ecrite ...')` avant `localStorage.setItem` dans le handler loupe-modifier.
 - **À retirer** une fois la cause de MODE_CORRECTION=false confirmée.
 
+*Bug 4 — badge RÉUSSI/ÉCHEC absent en mode numérique dans saisie_degrade.html (commit 6afb730) :*
+- En-tête carte candidat : dégradé affichait "Saisie papier" + RÉUSSI/ÉCHEC, numérique affichait "Numérique" seul (pas de badge pass/fail).
+- `rt.obtenue` est renseigné identiquement pour les deux modes (même `calculer_resultat_theorie_phase2`).
+- **Fix** : bloc RÉUSSI/ÉCHEC sorti du `if degrade` → s'applique aux deux modes. "En attente" et "Dispensé" inchangés.
+
 *Bug 3 — `btn-voir-recap` invisible hors dernière question (commit 411339b) :*
 - En MODE_CORRECTION, cliquer une question depuis le récap → QCM ; le bouton "Voir le récap" était caché (condition `recapDebloque` = true seulement après la Q100 en passation normale) → impossible de revenir au récap sans tout parcourir.
 - **Fix** : `afficherQuestion()` → `(MODE_CORRECTION || recapDebloque) ? 'block' : 'none'`. En passation normale : comportement inchangé.
