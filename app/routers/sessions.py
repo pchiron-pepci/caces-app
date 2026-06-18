@@ -757,6 +757,7 @@ def soumettre_reponses_theorie_degrade(
 ):
     # [DIAG] ── début ──────────────────────────────────────────────────────────
     print(f"[DIAG DEGRADE] HANDLER REACHED session={session_id} stag={data.stagiaire_id} jour={data.jour_test_id}", flush=True)
+    print(f"[RECU] notes_par_theme={dict(data.notes_par_theme)}", flush=True)
     _pin_db = get_pin_formateur(db)
     print(f"[DIAG DEGRADE] PIN recu={data.pin!r} PIN_db={_pin_db!r} match={data.pin == _pin_db}", flush=True)
     # ──────────────────────────────────────────────────────────────────────────
@@ -828,6 +829,15 @@ def soumettre_reponses_theorie_degrade(
             else:
                 reponses_synthetique[str(q.numero_question)] = not q.reponse_correcte
 
+    # [DIAG] ── questions par thème (nb questions × points) ─────────────────────
+    for t_str, qs in questions_par_theme.items():
+        nb_q = len(qs)
+        pts_list = [q.points for q in qs]
+        n_bonnes = data.notes_par_theme.get(t_str, 0)
+        pts_bonnes = sum(pts_list[:n_bonnes])
+        print(f"[DIAG DEGRADE] theme={t_str} nb_questions={nb_q} points={pts_list[:6]}... n_bonnes={n_bonnes} => pts_attendus={pts_bonnes}", flush=True)
+    # ──────────────────────────────────────────────────────────────────────────
+
     # f. Calcul résultat via la règle officielle — pas de duplication
     try:
         resultat = calculer_resultat_theorie_phase2(
@@ -835,6 +845,10 @@ def soumettre_reponses_theorie_degrade(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    # [DIAG] ── résultat calculé ──────────────────────────────────────────────
+    print(f"[DIAG DEGRADE] resultat: note_totale={resultat['note_totale']} notes_themes={resultat['notes_themes']} obtenue={resultat['obtenue']}", flush=True)
+    # ──────────────────────────────────────────────────────────────────────────
 
     # g. Écriture ResultatTheorie
     existing = db.query(ResultatTheorie).filter(

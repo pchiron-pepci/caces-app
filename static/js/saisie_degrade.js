@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     'use strict';
 
     // [DIAG] détecter si l'IIFE s'exécute plusieurs fois
@@ -101,7 +101,7 @@
         var obtenue = resultat.obtenue;
         var total   = Math.round(resultat.note_totale);
         html += '<div class="result-row" style="margin-top:6px; border-top:1px solid #eee; padding-top:8px;">'
-            + '<span class="result-total">Total : ' + total + '/100</span>'
+            + '<span class="result-total">Total : ' + total + '/100</span>'
             + '<span style="margin-left:8px;">'
             + '<span class="badge ' + (obtenue ? 'badge-green' : 'badge-red') + '">'
             + (obtenue ? 'RÉUSSI' : 'ÉCHEC') + '</span>'
@@ -113,7 +113,7 @@
         // Mise à jour du badge statut dans l'en-tête de la carte
         var statusEl = document.querySelector('#cand-' + stagiaireId + ' .cand-head div:last-child');
         if (statusEl) {
-            statusEl.innerHTML = '<span class="badge badge-orange">Saisie manuelle</span> '
+            statusEl.innerHTML = '<span class="badge badge-orange">Saisie manuelle</span> '
                 + '<span class="badge ' + (obtenue ? 'badge-green' : 'badge-red') + '">'
                 + (obtenue ? 'RÉUSSI' : 'ÉCHEC') + '</span>';
         }
@@ -211,48 +211,60 @@
     }
 
     // ── Appel API ─────────────────────────────────────────────────
+    var _soumettreEnCours = false;  // anti-double-soumission
+
     async function soumettre(pin) {
         console.log('[DIAG] soumettre() called stag=' + (_pending ? _pending.stagiaireId : 'null'), new Date().toISOString());  // [DIAG]
         if (!_pending) return;
-        var body = {
-            jour_test_id:    JOUR_ID,
-            stagiaire_id:    _pending.stagiaireId,
-            pin:             pin,
-            notes_par_theme: _pending.notes,
-        };
-        var resp;
+        if (_soumettreEnCours) {
+            console.log('[DIAG] soumettre() BLOQUE — soumission deja en cours');  // [DIAG]
+            return;
+        }
+        _soumettreEnCours = true;
         try {
-            resp = await fetch(
-                '/api/sessions/' + SESSION_ID + '/theorie/reponses-degrade',
-                {
-                    method:      'POST',
-                    headers:     authHeaders(),
-                    body:        JSON.stringify(body),
-                    credentials: 'same-origin',
-                }
-            );
-        } catch (err) {
-            afficherErreurPin('Erreur réseau — vérifiez votre connexion.');
-            return;
-        }
+            var body = {
+                jour_test_id:    JOUR_ID,
+                stagiaire_id:    _pending.stagiaireId,
+                pin:             pin,
+                notes_par_theme: _pending.notes,
+            };
+            console.log('[ENVOI] notes_par_theme=' + JSON.stringify(body.notes_par_theme));  // [ENVOI]
+            var resp;
+            try {
+                resp = await fetch(
+                    '/api/sessions/' + SESSION_ID + '/theorie/reponses-degrade',
+                    {
+                        method:      'POST',
+                        headers:     authHeaders(),
+                        body:        JSON.stringify(body),
+                        credentials: 'same-origin',
+                    }
+                );
+            } catch (err) {
+                afficherErreurPin('Erreur réseau — vérifiez votre connexion.');
+                return;
+            }
 
-        if (resp.status === 403) {
-            // PIN incorrect ou session clôturée — la modal reste ouverte
-            var err403 = await resp.json().catch(function () { return {}; });
-            afficherErreurPin(err403.detail || 'Code PIN incorrect.');
-            return;
-        }
+            if (resp.status === 403) {
+                // PIN incorrect ou session clôturée — la modal reste ouverte
+                var err403 = await resp.json().catch(function () { return {}; });
+                afficherErreurPin(err403.detail || 'Code PIN incorrect.');
+                return;
+            }
 
-        if (!resp.ok) {
-            var errData = await resp.json().catch(function () { return {}; });
-            afficherErreurPin('Erreur ' + resp.status + ' : ' + (errData.detail || 'Erreur serveur.'));
-            return;
-        }
+            if (!resp.ok) {
+                var errData = await resp.json().catch(function () { return {}; });
+                afficherErreurPin('Erreur ' + resp.status + ' : ' + (errData.detail || 'Erreur serveur.'));
+                return;
+            }
 
-        var data   = await resp.json();
-        var stagId = _pending.stagiaireId;
-        fermerPin();
-        afficherResultat(stagId, data.resultat);
+            var data   = await resp.json();
+            var stagId = _pending.stagiaireId;
+            fermerPin();
+            afficherResultat(stagId, data.resultat);
+        } finally {
+            _soumettreEnCours = false;
+        }
     }
 
     // ── Listeners ─────────────────────────────────────────────────
