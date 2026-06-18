@@ -3,15 +3,17 @@ app/services/pdf_recap_session.py
 Génération PDF du récapitulatif des résultats d'une session.
 """
 
+import json
 from io import BytesIO
 from html import escape as _esc
 from sqlalchemy.orm import Session as DBSession
 
 from app.models.session import Session
 from app.models.session_candidat import SessionCandidat
-from app.models.jour_test import ResultatTheorie
+from app.models.jour_test import JourTest, ResultatTheorie
 from app.models.session_epreuve import SessionEpreuve
 from app.models.stagiaire import Stagiaire
+from app.models.testeur import Testeur
 from app.models.config_organisme import ConfigOrganisme
 
 
@@ -41,8 +43,10 @@ def _collecter_donnees(session_id: int, db: DBSession) -> list[dict]:
     Retourne une liste de dicts par candidat actif, triés NOM prénom :
     {
       "nom": str, "prenom": str,
-      "theorie": None | {"obtenue": bool|None, "note": float|None, "mode": str},
-      "epreuves": [{"categorie": str, "obtenue": bool|None, "options": str}]
+      "theorie": None | {"obtenue": bool|None, "note": float|None, "mode": str,
+                         "date": str|None, "testeur": str|None},
+      "epreuves": [{"categorie": str, "obtenue": bool|None, "options": str,
+                    "date": str|None, "testeur": str|None}]
     }
     """
     # Candidats actifs de la session
@@ -83,6 +87,45 @@ def _collecter_donnees(session_id: int, db: DBSession) -> list[dict]:
     for se in all_se:
         epreuves_par_candidat.setdefault(se.stagiaire_id, []).append(se)
 
+    # ── Requêtes groupées anti-N+1 : JourTest + Testeur ────────────────────
+    jt_ids = {rt.jour_test_id for rt in all_rt if rt.jour_test_id}
+    jours: dict[int, JourTest] = {}
+    if jt_ids:
+        jours = {
+            jt.id: jt
+            for jt in db.query(JourTest).filter(JourTest.id.in_(jt_ids)).all()
+        }
+
+    testeur_ids: set[int] = set()
+    for jt in jours.values():
+        if jt.testeur_id:
+            testeur_ids.add(jt.testeur_id)
+    for se in all_se:
+        if se.testeur_id:
+            testeur_ids.add(se.testeur_id)
+    testeurs: dict[int, str] = {}
+    if testeur_ids:
+        testeurs = {
+            t.id: f"{t.nom} {t.prenom}"
+            for t in db.query(Testeur).filter(Testeur.id.in_(testeur_ids)).all()
+        }
+
+    def _testeur_label(jt: JourTest | None) -> str | None:
+        """Construit le label testeur(s) d'un JourTest (principal + sup éventuels)."""
+        if jt is None:
+            return None
+        parts = []
+        if jt.testeur_id and jt.testeur_id in testeurs:
+            parts.append(testeurs[jt.testeur_id])
+        if jt.testeurs_sup:
+            try:
+                sup = json.loads(jt.testeurs_sup)
+                if isinstance(sup, list):
+                    parts.extend(str(s) for s in sup if s)
+            except (ValueError, TypeError):
+                pass
+        return " + ".join(parts) if parts else None
+
     # Assemblage
     result = []
     for stagiaire, _ in candidats:
@@ -92,10 +135,13 @@ def _collecter_donnees(session_id: int, db: DBSession) -> list[dict]:
         rt = theorie_par_candidat.get(sid)
         if rt is not None:
             mode_label = "Saisie manuelle" if rt.mode == "degrade" else "Numérique"
+            jt = jours.get(rt.jour_test_id) if rt.jour_test_id else None
             theorie_data = {
                 "obtenue": rt.obtenue,
                 "note": rt.note_totale,
                 "mode": mode_label,
+                "date": jt.date.strftime("%d/%m/%Y") if jt and jt.date else None,
+                "testeur": _testeur_label(jt),
             }
 
         epreuves_data = []
@@ -107,6 +153,8 @@ def _collecter_donnees(session_id: int, db: DBSession) -> list[dict]:
                 "categorie": se.categorie,
                 "obtenue": se.obtenue,
                 "options": opts,
+                "date": se.date.strftime("%d/%m/%Y") if se.date else None,
+                "testeur": testeurs.get(se.testeur_id) if se.testeur_id else None,
             })
 
         result.append({
@@ -136,6 +184,24 @@ def _badge(obtenue, label_ok="Acquis", label_ko="Échec", label_att="En attente"
     return (
         f'<span style="display:inline-block; padding:1px 8px; border-radius:3px; '
         f'font-size:9px; font-weight:bold; {style}">{label}</span>'
+    )
+
+
+def _meta_str(date: str | None, testeur: str | None) -> str:
+    """Fragment HTML grisé 'jj/mm/aaaa · Nom Prénom' à insérer après le détail principal."""
+    parts = []
+    if date:
+        parts.append(_esc(date))
+    if testeur:
+        parts.append(_esc(testeur))
+    elif date:
+        parts.append("—")
+    if not parts:
+        return ""
+    return (
+        f" &nbsp;<span style='color:#888; font-size:9px;'>"
+        f"{'&nbsp;·&nbsp;'.join(parts)}"
+        f"</span>"
     )
 
 
@@ -176,7 +242,8 @@ def _build_html(
         else:
             th_badge  = _badge(th["obtenue"])
             note_str  = f"{int(th['note'])}/100" if th["note"] is not None else "—/100"
-            th_detail = f"{note_str} &nbsp;·&nbsp; {_esc(th['mode'])}"
+            th_meta   = _meta_str(th.get("date"), th.get("testeur"))
+            th_detail = f"{note_str} &nbsp;·&nbsp; {_esc(th['mode'])}{th_meta}"
 
         theorie_row = (
             f"<tr>"
@@ -192,12 +259,13 @@ def _build_html(
             for i, ep in enumerate(c["epreuves"]):
                 ep_badge = _badge(ep["obtenue"])
                 opts_str = f"&nbsp;·&nbsp; <em>{_esc(ep['options'])}</em>" if ep["options"] else ""
+                ep_meta  = _meta_str(ep.get("date"), ep.get("testeur"))
                 label = "Pratique" if i == 0 else ""
                 pratique_rows += (
                     f"<tr>"
                     f"<td class='ep-label'>{label}</td>"
                     f"<td>{ep_badge}</td>"
-                    f"<td class='ep-detail'><strong>{_esc(ep['categorie'])}</strong>{opts_str}</td>"
+                    f"<td class='ep-detail'><strong>{_esc(ep['categorie'])}</strong>{opts_str}{ep_meta}</td>"
                     f"</tr>"
                 )
         else:

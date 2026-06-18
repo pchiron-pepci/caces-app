@@ -256,7 +256,7 @@ python init_questions_r482.py
 | Priorité | Item | Statut |
 |---|---|---|
 | URGENT | Upgrader caces-db Render avant 05/07/2026 | en attente |
-| Haute | Export ZIP session (récap PDF + justificatifs + consentements/neutralité) — étape 1/3 faite | en cours |
+| Haute | Export ZIP session (récap PDF + justificatifs + consentements/neutralité) — étape 1/3 + récap date/testeur faits | en cours |
 | Haute | Grille statuts sessions 4 états (Ouverte / À réutiliser / Validée terrain / Clôturée) | ✅ fait |
 | Haute | Bouton + route clôture terrain (POST /sessions/{id}/cloturer-terrain, PIN) | ✅ fait |
 | Haute | Harmoniser affichage statut sessions dans dashboard.html (actuellement logique séparée inline) | ✅ fait |
@@ -696,3 +696,26 @@ Occurrences modifiées :
 - Dégradé : 1/1/1/1/1 → total 5.
 
 **Logs temporaires à retirer** (commits 06f7641 + 7d5fc0f + 627b2ca) : `[DIAG DEGRADE]`, `[DIAG NUMERIQUE]`, `[DIAG CALC]` dans `sessions.py` et `tirage_grille.py`. Et `[CORR]` de commit `ebf871f` dans `test_theorie.html` + `session_detail.js`.
+
+### ✅ Chantier terminé : enrichissement récap résultats — date + testeur par épreuve
+
+**Fichier modifié :** `app/services/pdf_recap_session.py`
+
+**`_collecter_donnees` — requêtes groupées anti-N+1 :**
+- 1 requête groupée `JourTest.id.in_([rt.jour_test_id …])` pour tous les RT de la session → dict `{jt.id: JourTest}`.
+- 1 requête groupée `Testeur.id.in_(ids)` pour l'union des testeur_id théorie (via JourTest) + pratique (via SessionEpreuve) → dict `{t.id: "Nom Prénom"}`.
+- Aucun N+1, aucune jointure ORM implicite.
+
+**Champs ajoutés par épreuve :**
+| Épreuve | date | testeur |
+|---|---|---|
+| Théorie | `JourTest.date` via `rt.jour_test_id` | `JourTest.testeur_id → Testeur.nom+prenom` (nullable → `None`) |
+| Pratique | `SessionEpreuve.date` (direct, NOT NULL) | `SessionEpreuve.testeur_id → Testeur.nom+prenom` (NOT NULL) |
+
+**`testeurs_sup` (`JourTest.testeurs_sup TEXT`) :** parsé via `json.loads` → liste de strings → concaténé avec `" + "` après le testeur principal. Champ jamais écrit (NULL partout en prod) — gestion défensive uniquement.
+
+**Rendu PDF :**
+- Helper `_meta_str(date, testeur)` → `<span style='color:#888; font-size:9px;'>jj/mm/aaaa · Nom Prénom</span>` (ou `"—"` si testeur_id NULL côté théorie).
+- Inséré à la fin de `ep-detail` pour la ligne théorie ET chaque ligne pratique.
+
+**Imports ajoutés :** `import json`, `from app.models.jour_test import JourTest`, `from app.models.testeur import Testeur`.
