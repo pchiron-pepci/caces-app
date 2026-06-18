@@ -575,6 +575,13 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - En MODE_CORRECTION, cliquer une question depuis le récap → QCM ; le bouton "Voir le récap" était caché (condition `recapDebloque` = true seulement après la Q100 en passation normale) → impossible de revenir au récap sans tout parcourir.
 - **Fix** : `afficherQuestion()` → `(MODE_CORRECTION || recapDebloque) ? 'block' : 'none'`. En passation normale : comportement inchangé.
 
+### ✅ Chantier terminé : accordéon dashboard 4 cartes (commit c2ef021)
+
+- `templates/dashboard.html` : 4 en-têtes de carte rendus cliquables (`data-action="toggle-dash-carte"`, `data-carte="{nom}"`, `cursor:pointer`), flèche `▶/▼` (`<span class="dash-arrow">`), corps wrappé dans `<div class="dash-card-body" style="display:none;">`.
+- `static/js/dashboard.js` : nouveau fichier IIFE. `appliquerEtat()` au DOMContentLoaded lit localStorage, toggle au clic écrit localStorage. Clés : `dash_replie_cartographie`, `dash_replie_organisation`, `dash_replie_testeurs`, `dash_replie_documents`. Valeur `'false'` = déplié (défaut = replié).
+- **Cartes NON touchées** : `⚡ À traiter`, `📊 Statistiques`.
+- Clic sur `<a>` ou `<button>` dans l'en-tête (ex. "Voir tout" Testeurs) ne déclenche PAS le toggle.
+
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
 
