@@ -117,7 +117,7 @@ app/
 - **Un seul `ResultatTheorie` par couple `(jour_test_id, stagiaire_id)`** — contrainte UNIQUE en base `uq_resultat_theorie_jour_stagiaire`
 - Un candidat peut repasser sur un **autre jour** (même session) → nouvelle ligne (couple différent)
 - Mode `numerique` : test numérique `test_theorie.html` → reprise par écrasement si déjà existant (guard dans `soumettre_reponses_theorie`)
-- Mode `degrade` : saisie manuelle par thème (à implémenter) → 409 si un résultat numérique existe déjà pour ce jour
+- Mode `degrade` : saisie manuelle par thème → 409 si un résultat numérique existe déjà pour ce jour
 - Correction = écrasement assumé, toujours sous PIN formateur
 - Affichage : meilleur résultat réussi en priorité, sinon le plus récent
 
@@ -487,9 +487,9 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Visible tous rôles, disponible même si session terrain clôturée
 - Listener `window.open('/sessions/'+sid+'/projection/'+jourId, '_blank')` dans `session_detail.js`
 
-### Chantier en cours : saisie dégradée test théorique — Sections 5 + 6 restantes
+### ✅ Chantier terminé : saisie dégradée test théorique (toutes sections)
 
-**Principe directeur :** ne jamais réimplémenter la règle de réussite — toujours via `calculer_resultat_theorie_phase2(reponses_synthetique, session_id, famille, db)` avec reponses synthétiques (N premières questions correctes).
+**Principe directeur (révisé — voir chantier scoring ci-dessous) :** le mode dégradé court-circuite `calculer_resultat_theorie_phase2` (collision de clés) et calcule directement `note_theme = sum(q.points for q in qs[:n_bonnes])`. Le mode numérique passe bien par `calculer_resultat_theorie_phase2` mais avec clé composite `"{theme}_{numero}"` désormais.
 
 **Sections terminées (commits 53fc22c + 81a38d1) :**
 
@@ -654,3 +654,35 @@ Occurrences modifiées :
 - `session_detail.html` : label bouton "Saisie manuelle (papier)" → "Saisie manuelle", sous-titre.
 - `test_theorie.html` : option dropdown (`— ✍️ manuel`), deux messages blocage (`Une saisie manuelle a déjà été enregistrée`).
 - `sessions.py` (HTTP 409) : "Un résultat de saisie manuelle existe pour ce jour — supprimez-le d'abord (Corriger/Supprimer sous PIN)."
+
+### ✅ Chantier terminé : double bug de scoring théorique numérique + dégradé (commits 930583d + 627b2ca)
+
+**Symptôme :** totaux faux dans les deux modes — +1 bonne réponse = +4 points en numérique ; 4/4/4/4/4 donnait 39 au lieu de 20 en dégradé.
+
+**Bug 1 — collision de clés (×4) :**
+- `q.numero_question` est LOCAL au thème (T1 : 1–12, T2 : 1–28, T3 : 1–44…). Le dict de réponses `{"1": bool, …}` avait au maximum 44 clés pour 100 questions — les thèmes s'écrasaient mutuellement. Au scoring, chaque thème interrogeait la même clé "1" → une réponse comptée dans plusieurs thèmes → ×4.
+- **Fix :** clé composite **`"{theme}_{numero}"`** (ex. `"2_7"`), globalement unique sur tout le test. Appliqué en 4 endroits synchronisés :
+  - `templates/test_theorie.html` — `valider()` : `reponsesFinales[String(q.theme)+'_'+String(q.numero)]`
+  - `templates/test_theorie.html` — pre-fill mode correction : même format
+  - `app/services/tirage_grille.py` — `calculer_resultat_theorie_phase2` : `str(ut.theme)+"_"+str(q.numero_question)`
+  - `app/main.py` — `page_detail_theorie` : `str(ut.theme)+"_"+str(r.numero_question)`
+
+**Bug 2 — calcul dégradé via comparaison synthétique :**
+- `calculer_resultat_theorie_phase2` était appelée en mode dégradé avec un dict synthétique (`reponses_synthetique`) construit thème par thème. Même avec `not q.reponse_correcte` pour les mauvaises réponses, les collisions de clés (T5 écrasait T1–T4 sur les clés "1"–"4") produisaient des coïncidences parasites (+15 sur T2 avec n_bonnes=4).
+- **Fix :** court-circuit complet — le dégradé ne passe plus par `calculer_resultat_theorie_phase2`. Calcul direct dans le handler `soumettre_reponses_theorie_degrade` : `note_theme = sum(q.points for q in qs[:n_bonnes])` pour chaque thème.
+
+**⚠️ Principes à ne jamais casser :**
+1. La clé d'une réponse est composite `{theme}_{numero}`, unique sur tout le test. JS (construction) et Python (scoring + detail_theorie) utilisent le MÊME format.
+2. Une question NON RÉPONDUE (absente du dict) = 0 point sans comparaison. Ne jamais mettre une valeur par défaut (false) à une non-réponse → coïncidences.
+3. "Répondu FAUX" (présent, valeur false) ≠ "Non répondu" (absent). Un candidat qui coche FAUX sur une question dont la bonne réponse est FAUX obtient +1 légitime.
+4. Numérique et dégradé partagent `calculer_resultat_theorie_phase2` pour le numérique seulement. Toute modif du scoring doit être testée dans les deux modes.
+
+**Tests de non-régression :**
+- Numérique : 1 seule bonne réponse → total 1 (1 seule ligne `[DIAG CALC] ... => CORRECT`).
+- Numérique : +1 bonne réponse → +1 point (PAS +4 : sinon collision revenue).
+- Numérique : répondre FAUX à une question dont la bonne réponse est FAUX → +1.
+- Numérique : ne rien répondre → total 0.
+- Dégradé : 4/4/4/4/4 → total 20, notes_themes={4,4,4,4,4}.
+- Dégradé : 1/1/1/1/1 → total 5.
+
+**Logs temporaires à retirer** (commits 06f7641 + 7d5fc0f + 627b2ca) : `[DIAG DEGRADE]`, `[DIAG NUMERIQUE]`, `[DIAG CALC]` dans `sessions.py` et `tirage_grille.py`. Et `[CORR]` de commit `ebf871f` dans `test_theorie.html` + `session_detail.js`.
