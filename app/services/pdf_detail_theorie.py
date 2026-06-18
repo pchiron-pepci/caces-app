@@ -190,7 +190,11 @@ def _build_html(
                     'border-radius:3px; padding:1px 6px; font-size:9px; font-weight:bold;">FAUX</span>'
                 )
 
-            res_html = "✅" if q["correcte"] else "❌"
+            res_html = (
+                '<span style="font-weight:bold; color:#1b5e20;">1</span>'
+                if q["correcte"] else
+                '<span style="font-weight:bold; color:#b71c1c;">0</span>'
+            )
             pts_fmt  = f"{q['points']:.1f}" if q['points'] != int(q['points']) else str(int(q['points']))
 
             rows += (
@@ -255,7 +259,7 @@ def _build_html(
   td.num, th.num {{ width: 28px; text-align: center; }}
   td.pts, th.pts {{ width: 32px; text-align: center; }}
   td.rep, th.rep {{ width: 72px; text-align: center; }}
-  td.res, th.res {{ width: 48px; text-align: center; font-size: 13px; }}
+  td.res, th.res {{ width: 38px; text-align: center; }}
   td.enonce {{ text-align: left; }}
   td.num {{ font-weight: bold; color: #555; }}
 
