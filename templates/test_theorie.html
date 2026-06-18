@@ -414,8 +414,7 @@
             font-size: 11px; font-weight: 700; cursor: pointer;
         }
 
-        .recap-q.vrai { background: #c8e6c9; color: #2e7d32; }
-        .recap-q.faux { background: #ffcdd2; color: #c62828; }
+        .recap-q.repondue { background: #bbdefb; color: #0d47a1; }
         .recap-q.vide { background: #fff9c4; color: #f57f17; border: 2px dashed #ffd54f; }
 
         .btn-valider {
@@ -799,7 +798,7 @@ async function chargerQuestions() {
                     questions.forEach((q, idx) => {
                         const el = document.getElementById('rq-' + q.theme + '-' + q.idx_theme);
                         if (el && idx in reponses) {
-                            el.className = 'recap-q ' + (reponses[idx] ? 'vrai' : 'faux');
+                            el.className = 'recap-q repondue';
                         }
                     });
                     afficherRecap();
@@ -1051,7 +1050,7 @@ function repondre(valeur) {
 
     const q = questions[questionActuelle];
     const el = document.getElementById('rq-' + q.theme + '-' + q.idx_theme);
-    if (el) el.className = 'recap-q ' + (valeur ? 'vrai' : 'faux');
+    if (el) el.className = 'recap-q repondue';
 }
 
 function suivant() {
