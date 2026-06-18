@@ -644,11 +644,21 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
   Rejoint session via `AttestationNeutralite.jour_test_id → JourTest.session_id` ; vérificateur ; horodatage ; img signature
 - `signature_base64` : data URI canvas JS (`data:image/...;base64,...`) → utilisée directement comme src ; fallback PNG si base64 brut
 - Nullables : horodatage null → "Non signé" ; signature absente → texte "Non signé"
-- Non encore branchés au ZIP (prochaine étape)
 
-**À faire (ZIP) :**
-- Brancher `generer_pdf_consentement` + `generer_pdf_neutralite` dans `generer_zip_session` :
-  `consentements/{NOM_Prenom}.pdf` (1 par candidat signé) + `neutralites/{NOM_Prenom}.pdf`
+**ZIP — contenu FINAL (export_zip_session.py — ✅ COMPLET) :**
+```
+session-REF.zip
+├── corrige.pdf
+├── recap_resultats.pdf
+├── justificatifs/{nom_upload}.pdf              ← mode dégradé avec justificatif scanné
+├── tests_numeriques/{NOM_Prenom}.pdf           ← mode numérique avec reponses_json
+├── consentements/consentement_{NOM_Prenom}.pdf ← ConsentementRGPD par candidat
+└── neutralite/neutralite_{NOM_Prenom}.pdf      ← AttestationNeutralite par candidat
+```
+- Batch-load unique stagiaires : union des stag_ids depuis RT + ConsentementRGPD + AttestationNeutralite
+- JourTest batch : `JourTest.id` WHERE `session_id == session_id` → jt_ids → AttestationNeutralite.jour_test_id.in_(jt_ids)
+- try/except indépendant par pièce ; `_sanitize()` remplace `/\:*?"<>| ` dans les noms de fichiers
+- Helper `_nom_candidat(stagiaire_id, stagiaires)` → `NOM_Prenom` ou `stagXXX`
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
