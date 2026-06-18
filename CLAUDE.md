@@ -582,6 +582,14 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - **Cartes NON touchées** : `⚡ À traiter`, `📊 Statistiques`.
 - Clic sur `<a>` ou `<button>` dans l'en-tête (ex. "Voir tout" Testeurs) ne déclenche PAS le toggle.
 
+### ✅ Chantier terminé : accordéon sous-sections "À traiter" (commit 49a174b)
+
+- 5 sous-sections de la carte `⚡ À traiter` repliées par défaut : Sessions non clôturées, CACES® à valider, Non-conformités ouvertes, Alertes testeurs, Candidats sans photo.
+- `data-action="toggle-dash-section"` + `data-section="{nom}"` sur chaque en-tête de section ; `dash-section-body` wrappant le `{% if %}...{% else %}✅ Aucun{% endif %}` complet.
+- `dashboard.js` étendu : `SECTIONS` array, `clefSection()`, toggle via `head.nextElementSibling` (body est toujours le frère immédiat).
+- Clés localStorage : `dash_section_replie_sessions`, `_caces`, `_nc`, `_alertes`, `_photos`. Valeur `'false'` = déplié.
+- La carte "À traiter" elle-même reste toujours visible (pas de toggle carte-niveau).
+
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
 
