@@ -208,12 +208,16 @@
         </div>
     </div>
 
-    <!-- Ligne 4 : Cartographie PEPCI -->
+    <!-- Cartographie PEPCI -->
     <div class="card">
-        <div class="card-header">
-            <h2>🗺️ Cartographie de l'organisme</h2>
+        <div class="card-header" data-action="toggle-dash-carte" data-carte="cartographie" style="cursor:pointer;">
+            <span style="display:flex; align-items:center; gap:6px;">
+                <span class="dash-arrow" style="font-size:11px; color:#555; flex-shrink:0;">▶</span>
+                <h2>🗺️ Cartographie de l'organisme</h2>
+            </span>
             <span class="badge green">Valide jusqu'au 13/06/2028</span>
         </div>
+        <div class="dash-card-body" style="display:none;">
         <table class="table">
             <thead>
                 <tr>
@@ -252,14 +256,19 @@
                 {% endif %}
             </tbody>
         </table>
+        </div>
     </div>
 
-    <!-- Ligne 4 : Testeurs opérationnels -->
+    <!-- Testeurs opérationnels -->
     <div class="card">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>👨‍🏫 Testeurs opérationnels</h2>
+        <div class="card-header" data-action="toggle-dash-carte" data-carte="testeurs" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+            <span style="display:flex; align-items:center; gap:6px;">
+                <span class="dash-arrow" style="font-size:11px; color:#555; flex-shrink:0;">▶</span>
+                <h2>👨‍🏫 Testeurs opérationnels</h2>
+            </span>
             <a href="/testeurs" class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Voir tout</a>
         </div>
+        <div class="dash-card-body" style="display:none;">
         <table class="table">
             <thead>
                 <tr>
@@ -297,13 +306,18 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 
-    <!-- Ligne 4 : Organisation -->
+    <!-- Organisation -->
     <div class="card">
-        <div class="card-header">
-            <h2>🏢 Organisation</h2>
+        <div class="card-header" data-action="toggle-dash-carte" data-carte="organisation" style="cursor:pointer;">
+            <span style="display:flex; align-items:center; gap:6px;">
+                <span class="dash-arrow" style="font-size:11px; color:#555; flex-shrink:0;">▶</span>
+                <h2>🏢 Organisation</h2>
+            </span>
         </div>
+        <div class="dash-card-body" style="display:none;">
         <div style="background:#f0f2f7; padding:8px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; border-bottom:1px solid #e8ecf4;">Référent(s)</div>
         <div style="padding:0 16px 8px;">
             {% if referents %}
@@ -355,13 +369,18 @@
                 </tbody>
             </table>
         </div>
+        </div>
     </div>
 
-    <!-- Ligne 5 : Documents officiels -->
+    <!-- Documents officiels -->
     <div class="card">
-        <div class="card-header">
-            <h2>📄 Documents officiels</h2>
+        <div class="card-header" data-action="toggle-dash-carte" data-carte="documents" style="cursor:pointer;">
+            <span style="display:flex; align-items:center; gap:6px;">
+                <span class="dash-arrow" style="font-size:11px; color:#555; flex-shrink:0;">▶</span>
+                <h2>📄 Documents officiels</h2>
+            </span>
         </div>
+        <div class="dash-card-body" style="display:none;">
         <table class="table">
             <thead>
                 <tr>
@@ -410,8 +429,10 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 
 
 </div>
+<script src="/static/js/dashboard.js"></script>
 {% endblock %}
