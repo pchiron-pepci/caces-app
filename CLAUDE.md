@@ -637,9 +637,18 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Score par thème dans le header bleu (note/max + ✅/❌) ; `break-inside: avoid` par thème
 - Non encore branché au ZIP (prochaine étape)
 
-**À faire (consentements + neutralité) :**
-- `ConsentementRGPD` (lié via `session_id`) → PDF par candidat → dans le ZIP sous `consentements/`
-- `AttestationNeutralite` (liée via `jour_test_id` → `JourTest.session_id`) → PDF par testeur/jour
+**`app/services/pdf_consentement_neutralite.py` (créé) :**
+- `generer_pdf_consentement(consentement_id, db) -> bytes` — PDF WeasyPrint A4
+  En-tête session + logo ; 3 cases OUI/NON (rgpd_accepte, photo_accepte, plaintes_atteste) ; vérificateur ; horodatage ; img signature
+- `generer_pdf_neutralite(attestation_id, db) -> bytes` — PDF WeasyPrint A4
+  Rejoint session via `AttestationNeutralite.jour_test_id → JourTest.session_id` ; vérificateur ; horodatage ; img signature
+- `signature_base64` : data URI canvas JS (`data:image/...;base64,...`) → utilisée directement comme src ; fallback PNG si base64 brut
+- Nullables : horodatage null → "Non signé" ; signature absente → texte "Non signé"
+- Non encore branchés au ZIP (prochaine étape)
+
+**À faire (ZIP) :**
+- Brancher `generer_pdf_consentement` + `generer_pdf_neutralite` dans `generer_zip_session` :
+  `consentements/{NOM_Prenom}.pdf` (1 par candidat signé) + `neutralites/{NOM_Prenom}.pdf`
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
