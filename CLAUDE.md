@@ -601,26 +601,36 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Clés localStorage : `dash_section_replie_sessions`, `_caces`, `_nc`, `_alertes`, `_photos`. Valeur `'false'` = déplié.
 - La carte "À traiter" elle-même reste toujours visible (pas de toggle carte-niveau).
 
-### Chantier en cours : export ZIP session (étape 1/3 terminée — commit 7bfca47)
+### ✅ Chantier terminé (partiel) : export ZIP session — corrigé + récap + justificatifs (commit 73251cf)
 
-**Règles d'accès (validées) :**
-- Disponible quel que soit le statut de la session (planifiee / en_cours / terminee)
+**Règles d'accès :**
+- Disponible quel que soit le statut de la session
 - Bouton visible back-office uniquement (admin/utilisateur) — masqué terrain
 - PIN admin 1505 requis, vérifié côté serveur
 
-**Étape 1 — `app/services/pdf_recap_session.py` (✅ fait) :**
+**`app/services/export_zip_session.py` :**
+- `generer_zip_session(session_id, db) -> bytes` — BytesIO + zipfile.ZIP_DEFLATED, aucun fichier disque
+- `corrige.pdf` : `generer_corrige()`, `recap_resultats.pdf` : `generer_recap_resultats()`
+- `justificatifs/{nom}` : tous les `ResultatTheorie` ayant `justificatif_pdf is not None`, décodés base64
+- Chaque pièce dans un `try/except` indépendant : un échec partiel n'annule pas le reste
+
+**Route `GET /sessions/{session_id}/export-zip?pin=` (main.py) :**
+- Auth cookie, terrain → 403, PIN `!= "1505"` → 403, session introuvable → 404
+- `StreamingResponse` `application/zip` ; `Content-Disposition: attachment; filename=session-{ref}.zip`
+
+**UX :**
+- Bouton violet 📦 "Exporter le dossier (ZIP)" dans les actions session (back-office uniquement)
+- Listener `data-action="export-zip"` → modal PIN admin existante → `window.open GET export-zip?pin=` → téléchargement direct
+
+**`app/services/pdf_recap_session.py` (étape 1/3 — commit 7bfca47) :**
 - `generer_recap_resultats(session_id, db) -> bytes` — PDF WeasyPrint A4
 - Candidats actifs (SessionCandidat JOIN Stagiaire, tri nom/prénom)
-- Théorie : dernier RT par candidat (`id DESC`) — **diffère volontairement** de l'affichage ligne candidat qui prend le meilleur réussi
-- Pratique : toutes les SessionEpreuve, triées par catégorie
-- Badge Acquis/Échec/En attente indépendant par partie
-- `page-break-inside: avoid` par bloc candidat
+- Théorie : dernier RT par candidat (`id DESC`) — diffère volontairement de l'affichage (qui prend le meilleur réussi)
+- Badge Acquis/Échec/En attente indépendant par partie ; `page-break-inside: avoid` par bloc
 
-**Étape 2 — À faire :** PDFs consentement RGPD + attestation neutralité (WeasyPrint depuis données stockées — signature base64, booleans, timestamps)
-- `ConsentementRGPD` : lié via `session_id` direct
-- `AttestationNeutralite` : lié via `jour_test_id` → jointure `JourTest.session_id`
-
-**Étape 3 — À faire :** assembleur ZIP (`zipfile` stdlib) + route `GET /sessions/{id}/export-zip?pin=` + bouton dans `session_detail.html`
+**À faire (consentements + neutralité) :**
+- `ConsentementRGPD` (lié via `session_id`) → PDF par candidat → dans le ZIP sous `consentements/`
+- `AttestationNeutralite` (liée via `jour_test_id` → `JourTest.session_id`) → PDF par testeur/jour
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
