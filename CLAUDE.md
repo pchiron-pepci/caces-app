@@ -583,3 +583,16 @@ Fichiers à modifier :
 - `templates/admin.html` — `demanderPin()` : passer `pin` au callback ; `desactiverHabTesteur()` : transmettre `?pin=` à l'API
 - `templates/testeurs.html` — ajouter divs cachés `#habs-{id}` + section `#section-habs-modal` dans la modal
 - `static/js/testeurs.js` — `editer()` : peupler la liste habilitations ; ajouter `supprimerHab()` + handler `supprimer-hab`
+
+### ✅ Chantier terminé : renommage UX 'dégradé'/'papier' → 'manuelle' (commit 6b56584)
+
+**Règle permanente (NE PAS revenir en arrière) :**
+- La valeur `mode='degrade'` en base, les noms de routes (`/reponses-degrade`), les noms de fichiers (`saisie_degrade.html`, `saisie_degrade.js`) et les noms de variables/fonctions sont **inchangés**.
+- Seul le **texte visible par l'utilisateur** utilise "manuelle" / "manuel" à la place de "dégradé" / "papier".
+
+Occurrences modifiées :
+- `saisie_degrade.html` : `<title>`, en-tête `sd-title`, avertissement `sd-warning`, badge `Saisie papier` → `Saisie manuelle`, message blocage numérique.
+- `saisie_degrade.js` : badge dynamique dans `afficherResultat()` après enregistrement.
+- `session_detail.html` : label bouton "Saisie manuelle (papier)" → "Saisie manuelle", sous-titre.
+- `test_theorie.html` : option dropdown (`— ✍️ manuel`), deux messages blocage (`Une saisie manuelle a déjà été enregistrée`).
+- `sessions.py` (HTTP 409) : "Un résultat de saisie manuelle existe pour ce jour — supprimez-le d'abord (Corriger/Supprimer sous PIN)."
