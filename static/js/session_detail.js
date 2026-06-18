@@ -69,6 +69,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="export-zip"]');
+        if (!btn) return;
+        var sid = btn.dataset.sessionId;
+        document.getElementById('pin-message').textContent = 'Saisir le code PIN administrateur pour télécharger le dossier ZIP.';
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').style.display = 'none';
+        document.getElementById('modal-pin').style.display = 'flex';
+        document.getElementById('pin-confirm-btn').onclick = function() {
+            var pin = document.getElementById('pin-input').value;
+            fermerPin();
+            window.open('/sessions/' + sid + '/export-zip?pin=' + encodeURIComponent(pin), '_blank');
+        };
+    });
+    document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="declencher-tirage"]');
         if (!btn) return;
         var sessionId = btn.dataset.sessionId;

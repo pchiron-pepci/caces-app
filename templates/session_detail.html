@@ -569,6 +569,13 @@
             {% endif %}
             {% endif %}
         {% endif %}
+        {% if user_role in ('admin', 'utilisateur') %}
+        <button class="btn btn-secondary" data-action="export-zip" data-session-id="{{ session.id }}"
+                title="Télécharger le dossier complet (corrigé + récap + justificatifs)"
+                style="font-size:13px; background:#ede7f6; border:1px solid #7b1fa2; color:#4a148c;">
+            📦 Exporter le dossier (ZIP)
+        </button>
+        {% endif %}
     </div>
 </div>
 

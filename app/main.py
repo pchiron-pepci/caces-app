@@ -723,6 +723,33 @@ def pdf_corrige(session_id: int, request: Request, db: DBSession = Depends(get_d
     )
 
 
+@app.get("/sessions/{session_id}/export-zip")
+def export_zip_session(session_id: int, request: Request, pin: str = "", db: DBSession = Depends(get_db)):
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO as _BIO
+    from app.services.export_zip_session import generer_zip_session
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    if getattr(user, "role", None) == "terrain":
+        raise HTTPException(status_code=403, detail="Réservé au back-office.")
+    if pin != "1505":
+        raise HTTPException(status_code=403, detail="Code PIN incorrect.")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    try:
+        zip_bytes = generer_zip_session(session_id, db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur génération ZIP : {e}")
+    ref = (session.reference or str(session_id)).replace("/", "-").replace(" ", "_")
+    return StreamingResponse(
+        _BIO(zip_bytes),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=session-{ref}.zip"},
+    )
+
+
 @app.get("/")
 def dashboard(request: Request):
     from datetime import date, timedelta
