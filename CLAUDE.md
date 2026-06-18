@@ -582,6 +582,13 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - **Cartes NON touchées** : `⚡ À traiter`, `📊 Statistiques`.
 - Clic sur `<a>` ou `<button>` dans l'en-tête (ex. "Voir tout" Testeurs) ne déclenche PAS le toggle.
 
+### ✅ Chantier terminé : dashboard responsive — 4 cartes réaffichées mobile (commit eaff678)
+
+- Suppression de `.dash-grid > .card:not(.dash-a-traiter) { display: none; }` dans la `@media (max-width: 1023px)` de `dashboard.html`.
+- Les 4 cartes accordéon s'affichent sur tablette/mobile repliées par défaut → compact.
+- Effet de bord accepté : la carte Statistiques (placeholder "Indicateurs à venir") réapparaît aussi sur mobile.
+- **Blocage terrain intact** : middleware `_verifier_role` dans `main.py` ligne 514 redirige `GET /` vers `/sessions` côté serveur — non modifié.
+
 ### ✅ Chantier terminé : accordéon sous-sections "À traiter" (commit 49a174b)
 
 - 5 sous-sections de la carte `⚡ À traiter` repliées par défaut : Sessions non clôturées, CACES® à valider, Non-conformités ouvertes, Alertes testeurs, Candidats sans photo.
