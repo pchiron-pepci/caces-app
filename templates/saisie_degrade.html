@@ -310,11 +310,11 @@ body {
                 {% elif cand.rt %}
                     {% if cand.rt.mode == 'degrade' %}
                         <span class="badge badge-orange">Saisie papier</span>
-                        {% if cand.rt.obtenue %}<span class="badge badge-green">RÉUSSI</span>
-                        {% else %}<span class="badge badge-red">ÉCHEC</span>{% endif %}
                     {% else %}
                         <span class="badge badge-blue">Numérique</span>
                     {% endif %}
+                    {% if cand.rt.obtenue %}<span class="badge badge-green">RÉUSSI</span>
+                    {% else %}<span class="badge badge-red">ÉCHEC</span>{% endif %}
                 {% else %}
                     <span class="badge badge-blue">En attente</span>
                 {% endif %}
