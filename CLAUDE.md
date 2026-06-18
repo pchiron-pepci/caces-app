@@ -628,6 +628,15 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Théorie : dernier RT par candidat (`id DESC`) — diffère volontairement de l'affichage (qui prend le meilleur réussi)
 - Badge Acquis/Échec/En attente indépendant par partie ; `page-break-inside: avoid` par bloc
 
+**`app/services/pdf_detail_theorie.py` (créé) :**
+- `generer_pdf_detail_theorie(rt_id, db) -> bytes` — PDF WeasyPrint A4, mode='numerique' uniquement
+- `_collecter_donnees(rt, db)` : même logique que `page_detail_theorie` (main.py:1910–1948), pas de N+1 ; clé composite `{theme}_{numero}` (comme le scoring)
+- Colonnes : N° · Question · Pts · Réponse candidat (VRAI/FAUX/—) · Résultat (✅/❌)
+- **SANS** colonne "Bonne réponse" — le corrigé est un fichier séparé du ZIP
+- En-tête : nom candidat, badge RÉUSSI/ÉCHEC + note totale, session + date + famille + logo
+- Score par thème dans le header bleu (note/max + ✅/❌) ; `break-inside: avoid` par thème
+- Non encore branché au ZIP (prochaine étape)
+
 **À faire (consentements + neutralité) :**
 - `ConsentementRGPD` (lié via `session_id`) → PDF par candidat → dans le ZIP sous `consentements/`
 - `AttestationNeutralite` (liée via `jour_test_id` → `JourTest.session_id`) → PDF par testeur/jour
