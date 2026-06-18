@@ -170,7 +170,7 @@
                 if (playing) pause(false); else play();
                 break;
             case 'prev':
-                if (currentIdx > 0) {
+                if (!finished && currentIdx > 0) {
                     cancelSpeech();
                     currentIdx--;
                     renderQuestion(currentIdx);
@@ -178,7 +178,7 @@
                 }
                 break;
             case 'next':
-                if (currentIdx < N - 1) {
+                if (!finished && currentIdx < N - 1) {
                     cancelSpeech();
                     currentIdx++;
                     renderQuestion(currentIdx);
