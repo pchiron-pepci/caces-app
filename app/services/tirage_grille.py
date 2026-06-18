@@ -186,9 +186,11 @@ def calculer_resultat_theorie_phase2(reponses: dict, session_id: int, famille: s
         max_theme = sum(q.points for q in questions)
 
         for q in questions:
-            rep = reponses.get(str(q.numero_question), None)
+            key = str(ut.theme) + "_" + str(q.numero_question)
+            rep = reponses.get(key, None)
             if rep is not None and rep == q.reponse_correcte:
                 note_theme += q.points
+                print(f"[DIAG CALC] theme={ut.theme} cle={key!r} rep={rep} rc={q.reponse_correcte} => CORRECT (+{q.points}pt)", flush=True)
 
         max_total += max_theme
         note_totale += note_theme

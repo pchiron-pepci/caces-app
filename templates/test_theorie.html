@@ -789,7 +789,7 @@ async function chargerQuestions() {
                     // "in" teste la présence de la clé — les réponses FAUX (false) sont préservées.
                     // q.numero = champ "numero" renvoyé par l'API = numero_question du modèle.
                     questions.forEach((q, idx) => {
-                        const _k = String(q.numero);
+                        const _k = String(q.theme) + '_' + String(q.numero);
                         if (_k in _repServeur) { reponses[idx] = _repServeur[_k]; }
                     });
                 } catch (_e) {}
@@ -1116,7 +1116,7 @@ async function valider(force = false) {
     const reponsesFinales = {};
     questions.forEach((q, idx) => {
     if (reponses[idx] !== undefined) {
-        reponsesFinales[String(q.numero)] = reponses[idx];
+        reponsesFinales[String(q.theme) + '_' + String(q.numero)] = reponses[idx];
     }
 });
 

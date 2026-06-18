@@ -1909,7 +1909,7 @@ def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jo
             t = str(ut.theme)
             detail_themes[t] = []
             for r in questions:
-                reponse_candidat = reponses_candidat.get(str(r.numero_question))
+                reponse_candidat = reponses_candidat.get(str(ut.theme) + "_" + str(r.numero_question))
                 correcte = reponse_candidat is not None and reponse_candidat == r.reponse_correcte
                 detail_themes[t].append({
                     "numero": r.numero_question,
