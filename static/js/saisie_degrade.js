@@ -252,6 +252,20 @@
 
     // ── Listeners ─────────────────────────────────────────────────
     document.addEventListener('click', function (e) {
+        // Accordéon carte candidat (clic sur cand-head)
+        var head = e.target.closest('[data-action="toggle-carte-candidat"]');
+        if (head) {
+            var stagId = head.dataset.stagiaireId;
+            var card   = document.getElementById('cand-' + stagId);
+            if (!card) return;
+            var body  = card.querySelector('.cand-body');
+            var arrow = card.querySelector('.cand-arrow');
+            var open  = body.style.display !== 'none';
+            body.style.display = open ? 'none' : '';
+            if (arrow) arrow.textContent = open ? '▶' : '▼';
+            return;
+        }
+
         var btn = e.target.closest('[data-action="enregistrer-degrade"]');
         if (btn) {
             var stagId = parseInt(btn.dataset.stagiaireId, 10);

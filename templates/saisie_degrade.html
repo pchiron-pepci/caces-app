@@ -299,10 +299,13 @@ body {
 
     {% for cand in candidats %}
     <div class="cand-card" id="cand-{{ cand.stagiaire_id }}">
-        <div class="cand-head">
-            <div>
-                <div class="cand-nom">{{ cand.nom }} {{ cand.prenom }}</div>
-                {% if cand.ddn %}<div class="cand-ddn">Né(e) le {{ cand.ddn }}</div>{% endif %}
+        <div class="cand-head" data-action="toggle-carte-candidat" data-stagiaire-id="{{ cand.stagiaire_id }}" style="cursor:pointer;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="cand-arrow" style="font-size:11px; color:#555; flex-shrink:0;">▶</span>
+                <div>
+                    <div class="cand-nom">{{ cand.nom }} {{ cand.prenom }}</div>
+                    {% if cand.ddn %}<div class="cand-ddn">Né(e) le {{ cand.ddn }}</div>{% endif %}
+                </div>
             </div>
             <div>
                 {% if cand.dispensee %}
@@ -321,7 +324,7 @@ body {
             </div>
         </div>
 
-        <div class="cand-body">
+        <div class="cand-body" style="display:none;">
         {% if cand.dispensee %}
             <p style="color:#888; font-size:13px;">Ce candidat est dispensé de l'épreuve théorique.</p>
 
