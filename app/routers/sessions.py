@@ -649,8 +649,7 @@ class NotesParThemeCreate(BaseModel):
 
 @router.post("/{session_id}/theorie/reouvrir/{stagiaire_id}/{jour_test_id}")
 def reouvrir_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
-                     body: TheoriePinBody, db: DBSession = Depends(get_db),
-                     current_user: Utilisateur = Depends(get_utilisateur_courant)):
+                     body: TheoriePinBody, db: DBSession = Depends(get_db)):
     if body.pin != get_pin_formateur(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     rt = db.query(ResultatTheorie).filter(
@@ -670,8 +669,7 @@ def reouvrir_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
 
 @router.delete("/{session_id}/theorie/reponses/{stagiaire_id}/{jour_test_id}")
 def supprimer_resultat_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
-                                body: TheoriePinBody, db: DBSession = Depends(get_db),
-                                current_user: Utilisateur = Depends(get_utilisateur_courant)):
+                                body: TheoriePinBody, db: DBSession = Depends(get_db)):
     if body.pin != get_pin_formateur(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     rt = db.query(ResultatTheorie).filter(
@@ -693,8 +691,7 @@ class JustificatifBody(BaseModel):
 
 @router.post("/{session_id}/theorie/justificatif/{stagiaire_id}/{jour_test_id}")
 def upload_justificatif_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
-                                 body: JustificatifBody, db: DBSession = Depends(get_db),
-                                 current_user: Utilisateur = Depends(get_utilisateur_courant)):
+                                 body: JustificatifBody, db: DBSession = Depends(get_db)):
     if body.pin != get_pin_formateur(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     rt = db.query(ResultatTheorie).filter(
