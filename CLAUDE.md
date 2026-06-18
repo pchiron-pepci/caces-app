@@ -609,6 +609,17 @@ Fichiers à modifier :
 - `templates/testeurs.html` — ajouter divs cachés `#habs-{id}` + section `#section-habs-modal` dans la modal
 - `static/js/testeurs.js` — `editer()` : peupler la liste habilitations ; ajouter `supprimerHab()` + handler `supprimer-hab`
 
+### ✅ Chantier terminé : page detail_theorie.html — header redesigné + bouton impression (commit 5927e82)
+
+**Objectif :** supprimer le titre répété, mettre en avant le candidat, ajouter les infos de session, ajouter l'impression navigateur.
+
+**Modifications :**
+- `app/main.py` (route `page_detail_theorie`) : ajout de `"session": session_obj` dans le contexte template — expose `session.reference` et `session.date_theorie`.
+- `templates/detail_theorie.html` : titre "Détail du test théorique" supprimé ; nom candidat promu en `h1` (Barlow Condensed 32px, bleu marine `#1a237e`) ; ligne meta "Session {ref} · {date}" + badge RÉUSSI/ÉCHEC ; bouton `🖨️ Imprimer` (`data-action="imprimer-detail"`, `.no-print`, `.btn.btn-secondary`, `align-self:flex-start`) ; `<style>@media print>` masque `.sidebar`, `.topbar`, `.no-print`, met `.main {margin-left:0}`, `tr {page-break-inside:avoid}`, `print-color-adjust:exact` sur lignes colorées et badges.
+- `static/js/detail_theorie.js` : créé — IIFE, listener `data-action="imprimer-detail"` → `window.print()`. CSP-safe.
+
+**Règle print :** `.no-print` masque le lien retour et le bouton imprimer. `.main {margin-left:0}` supprime le décalage sidebar en impression.
+
 ### ✅ Chantier terminé : renommage UX 'dégradé'/'papier' → 'manuelle' (commit 6b56584)
 
 **Règle permanente (NE PAS revenir en arrière) :**
