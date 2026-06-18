@@ -146,10 +146,10 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `/api/sessions/\d+/jours/\d+/candidats/\d+/identite` | PUT | Toggle identité candidat à l'accueil |
 | `/api/sessions/\d+/epreuves/\d+` | DELETE | Annulation résultat erroné |
 | `/api/sessions/\d+/theorie/reponses` | POST | Public (_PUBLIC_PATTERNS), bypass total |
-| `/api/sessions/\d+/theorie/reponses/\d+/\d+` | DELETE | JWT requis + PIN formateur dans body — admin/utilisateur uniquement (terrain bloqué catch-all) |
-| `/api/sessions/\d+/theorie/reouvrir/\d+/\d+` | POST | JWT requis + PIN formateur dans body — terrain+admin+utilisateur (whitelisté _verifier_role) |
-| `/api/sessions/\d+/theorie/reponses-degrade` | POST | JWT requis + PIN formateur dans body — testeur corrige papier et saisit les notes (whitelisté _verifier_role) |
-| `/api/sessions/\d+/theorie/justificatif/\d+/\d+` | POST | JWT requis + PIN formateur dans body — upload justificatif PDF (terrain + back-office, whitelisté _verifier_role) |
+| `/api/sessions/\d+/theorie/reponses/\d+/\d+` | DELETE | middleware cookie + PIN formateur dans body — tous rôles (terrain whitelisté _verifier_role) |
+| `/api/sessions/\d+/theorie/reouvrir/\d+/\d+` | POST | middleware cookie + PIN formateur dans body — terrain+admin+utilisateur (whitelisté _verifier_role) |
+| `/api/sessions/\d+/theorie/reponses-degrade` | POST | middleware cookie + PIN formateur dans body — testeur corrige papier et saisit les notes (whitelisté _verifier_role) |
+| `/api/sessions/\d+/theorie/justificatif/\d+/\d+` | POST | middleware cookie + PIN formateur dans body — upload justificatif PDF (terrain + back-office, whitelisté _verifier_role) |
 
 `rouvrir-terrain` n'est PAS whitelisté — réservé admin/utilisateur.
 
@@ -529,10 +529,10 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 *Loupe numérique + correction qui atterrit sur le récap + suppression dégradée :*
 - `td-th-result` dans `session_detail.html` : remplace Detail + ✏️ + 🗑️ par **🔍 loupe** (`data-action="loupe-theorie"`) uniquement si `rt.mode == 'numerique'` ; dégradé n'a pas de loupe (correction/suppression via saisie_degrade)
 - `data-cloture="{{ '1' if session.statut == 'terminee' else '0' }}"` sur la loupe
-- Modal `#modal-loupe-theorie` dans `session_detail.html` : 3 boutons (👁️ Visualiser / ✏️ Modifier / 🗑️ Supprimer) — Modifier masqué si `cloture=='1'`, Supprimer masqué si `USER_ROLE=='terrain'`
+- Modal `#modal-loupe-theorie` dans `session_detail.html` : 3 boutons (👁️ Visualiser / ✏️ Modifier / 🗑️ Supprimer) — Modifier masqué si `cloture=='1'`, Supprimer visible **tous rôles** (PIN formateur requis côté serveur)
 - `session_detail.js` : nouveau bloc listener `loupe-theorie` (remplace les anciens `corriger-theorie`/`supprimer-theorie`) ; Visualiser → `window.open Detail` ; Modifier → PIN → POST reouvrir → localStorage `corriger_rt_*` → `window.open /start` ; Supprimer → PIN → DELETE reponses → reload
 - `test_theorie.html` : `MODE_CORRECTION` (bool synchrone, lu avant `chargerQuestions()`) → si true, ne pas afficher `#ecran-identite` au démarrage ; en fin de pré-remplissage dans `chargerQuestions()` : met à jour la grille récap + appelle `afficherRecap()` → atterrit directement sur `#ecran-recap` pré-rempli, pas de timer
-- `saisie_degrade.html` : bouton 🗑️ "Supprimer ce résultat" (`data-action="supprimer-degrade"`) visible seulement si `cand.rt.mode == 'degrade' and user_role != 'terrain'`
+- `saisie_degrade.html` : bouton 🗑️ "Supprimer ce résultat" (`data-action="supprimer-degrade"`) visible si `cand.rt.mode == 'degrade'` — **tous rôles** (PIN formateur requis)
 - `saisie_degrade.js` : `ouvrirPinSupprimer()`, `supprimerDegrade()`, dispatch action dans listener PIN (`_pending.action`) et dans keydown Enter
 
 **Section 6 terminée (2026-06-18) :**
@@ -545,6 +545,25 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - `session_detail.js` : listener `justif-voir` → `window.open GET justificatif` ; listener `justif-upload` → stocke contexte, déclenche file input ; handler `change` sur `#justif-file-input` → FileReader → base64 → PIN modal → POST upload → reload.
 - `saisie_degrade.html` : bouton 📎 (voir/upload) dans result-zone dégradé, tous rôles. Input caché `#sd-justif-file-input`.
 - `saisie_degrade.js` : `uploadJustificatif()`, listener `sd-justif-file-input`, dispatch `action === 'justif'` dans `pin-confirmer` et `keydown Enter`.
+
+**Correctifs post-Section 5/6 (2026-06-18) :**
+
+*Bug 1 — `Depends(get_utilisateur_courant)` → 403 "Not authenticated" (commit 62050fd) :*
+- `OAuth2PasswordBearer` (utilisé par `get_utilisateur_courant`) lève `HTTPException(403, "Not authenticated")` si aucun header `Authorization: Bearer` — même si le cookie httponly est valide.
+- `session_detail.js` envoie le Bearer depuis `localStorage.getItem('token')` — absent si localStorage vidé (nettoyage navigateur, données de navigation effacées, token expiré + reconnexion partielle).
+- Résultat : `POST reouvrir`, `DELETE reponses`, `POST justificatif` renvoyaient 403 même PIN correct — `current_user` était déclaré mais jamais utilisé dans le body de ces 3 handlers.
+- **Fix** : suppression de `current_user: Utilisateur = Depends(get_utilisateur_courant)` dans `reouvrir_theorie`, `supprimer_resultat_theorie`, `upload_justificatif_theorie`. Le middleware cookie assure l'auth ; le PIN assure l'autorisation.
+- **Pattern désormais actif** : tous les handlers PIN (reouvrir/supprimer/justificatif) n'ont **plus** besoin de Bearer — identique au pattern GET justificatif corrigé précédemment.
+
+*Bug 2 — SyntaxError `const opt` dupliqué (commit 2bdf712) :*
+- `allerConfirmation()` dans `test_theorie.html` déclarait `const opt` deux fois dans le même scope (ligne 885 pour le check `data-a-resultat`, ligne 910 pour lire nom/prenom — même valeur, même sélecteur).
+- `SyntaxError: Identifier 'opt' has already been declared` → **tout le script s'arrêtait au parse** : MODE_CORRECTION jamais évalué, aucun log [CORR], atterrissage cassé.
+- **Fix** : suppression de la deuxième déclaration (ligne 910). `opt` déclaré ligne 885 reste valide sur tout le scope de la fonction.
+
+*Logs de diagnostic temporaires (commit ebf871f — à supprimer après vérification) :*
+- `test_theorie.html` : 4 `console.log('[CORR] ...')` après détection MODE_CORRECTION (SESSION_ID, JOUR_ID, START_STAGIAIRE_ID, clé lue, valeur localStorage, MODE_CORRECTION).
+- `session_detail.js` : 1 `console.log('[CORR] cle ecrite ...')` avant `localStorage.setItem` dans le handler loupe-modifier.
+- **À retirer** une fois la cause de MODE_CORRECTION=false confirmée.
 
 ### Chantier en cours : suppression habilitation (hard delete)
 Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
