@@ -1920,6 +1920,7 @@ document.addEventListener('click', function(e) {
             var data = await resp.json();
             var cle = 'corriger_rt_' + sid + '_' + jid + '_' + stag;
             localStorage.setItem(cle, JSON.stringify(data.reponses || {}));
+            localStorage.setItem('testeur_corr_' + sid + '_' + jid + '_' + stag, data.testeur_id != null ? String(data.testeur_id) : '');
             fermerPin();
             // Route : /test/theorie/{jour_test_id}/{stagiaire_id}/start (sans session_id)
             // La clé localStorage corriger_rt_{sid}_{jid}_{stag} garde bien sid — c'est le SESSION_ID

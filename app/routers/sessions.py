@@ -671,6 +671,7 @@ def reouvrir_theorie(session_id: int, stagiaire_id: int, jour_test_id: int,
         "reponses": json.loads(rt.reponses_json) if rt.reponses_json else {},
         "note_totale": rt.note_totale,
         "obtenue": rt.obtenue,
+        "testeur_id": rt.testeur_id,
     }
 
 

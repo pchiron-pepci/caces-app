@@ -662,6 +662,13 @@
     </div>
     {% endfor %}
 
+    <div id="bloc-testeur-corr" style="display:none; margin-bottom:14px;">
+        <label class="field-label">Testeur</label>
+        <select id="select-testeur-corr" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:14px;">
+            <option value="">— Sélectionner le testeur —</option>
+        </select>
+    </div>
+
     <button class="btn-valider" onclick="valider()">✅ Valider mes reponses</button>
     <button class="btn-retour" onclick="retourQcm()">← Continuer a repondre</button>
     <div id="msg-erreur-submit" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
@@ -704,6 +711,7 @@ const START_PRENOM = "{{ start_prenom if start_prenom is defined else '' }}";
 const START_DDN = "{{ start_ddn if start_ddn is defined else '' }}";
 const FAMILLE = "{{ famille or '' }}";
 const TESTEUR_ID_JOUR = {{ testeur_id_jour if testeur_id_jour is not none else 'null' }};
+console.log('[DIAG QR] TESTEUR_ID_JOUR =', TESTEUR_ID_JOUR);
 
 let questions = [];
 let reponses = {};
@@ -803,6 +811,32 @@ async function chargerQuestions() {
                         }
                     });
                     afficherRecap();
+                    // Bloc testeur correction
+                    const blocCorr = document.getElementById('bloc-testeur-corr');
+                    const selCorr  = document.getElementById('select-testeur-corr');
+                    if (blocCorr && selCorr && FAMILLE) {
+                        blocCorr.style.display = '';
+                        const cleTesteur = 'testeur_corr_' + SESSION_ID + '_' + JOUR_ID + '_' + START_STAGIAIRE_ID;
+                        const testeurPreId = parseInt(localStorage.getItem(cleTesteur), 10) || null;
+                        fetch('/api/testeurs/habilites?famille=' + encodeURIComponent(FAMILLE))
+                            .then(r => r.ok ? r.json() : [])
+                            .then(testeurs => {
+                                testeurs.forEach(t => {
+                                    const opt = document.createElement('option');
+                                    opt.value = t.id;
+                                    opt.textContent = t.nom + ' ' + t.prenom;
+                                    selCorr.appendChild(opt);
+                                });
+                                if (testeurPreId && testeurs.some(t => t.id === testeurPreId)) {
+                                    selCorr.value = testeurPreId;
+                                    testeurId = testeurPreId;
+                                }
+                            })
+                            .catch(() => {});
+                        selCorr.addEventListener('change', function() {
+                            testeurId = parseInt(this.value, 10) || null;
+                        });
+                    }
                 }
             }
         }
@@ -835,10 +869,8 @@ document.getElementById('select-candidat').addEventListener('change', function()
     if (!val) { section.style.display = 'none'; return; }
 
     if (!TESTEUR_ID_JOUR) {
-        section.style.display = 'none';
-        msgBloque.textContent = '⚠️ Aucun testeur n\'est désigné pour ce jour. Désignez un testeur sur le jour avant de permettre l\'accès par QR code.';
+        msgBloque.textContent = 'ℹ️ Vous n\'avez pas indiqué de testeur pour ce jour.';
         msgBloque.style.display = '';
-        return;
     }
 
     const opt  = this.options[this.selectedIndex];
