@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.config_utils import get_pin_admin
@@ -53,6 +53,28 @@ class TesteurResponse(BaseModel):
 @router.get("/", response_model=list[TesteurResponse])
 def liste_testeurs(db: Session = Depends(get_db)):
     return db.query(Testeur).filter(Testeur.actif == True).all()
+
+@router.get("/habilites")
+def testeurs_habilites(famille: str, request: Request, db: Session = Depends(get_db)):
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    if not famille:
+        raise HTTPException(status_code=422, detail="Paramètre famille requis")
+    testeurs = (
+        db.query(Testeur)
+        .join(HabilitationTesteur, HabilitationTesteur.testeur_id == Testeur.id)
+        .filter(
+            HabilitationTesteur.famille == famille,
+            HabilitationTesteur.actif == True,
+            Testeur.actif == True,
+            Testeur.etat == "actif",
+        )
+        .distinct()
+        .order_by(Testeur.nom, Testeur.prenom)
+        .all()
+    )
+    return [{"id": t.id, "nom": t.nom, "prenom": t.prenom} for t in testeurs]
 
 @router.get("/{id}", response_model=TesteurResponse)
 def get_testeur(id: int, db: Session = Depends(get_db)):
