@@ -651,6 +651,7 @@ class NotesParThemeCreate(BaseModel):
     stagiaire_id: int
     pin: str
     notes_par_theme: Dict[str, int]  # {"1": 8, "2": 20, …} — nb bonnes réponses saisies
+    testeur_id: Optional[int] = None
 
 
 @router.post("/{session_id}/theorie/reouvrir/{stagiaire_id}/{jour_test_id}")
@@ -854,6 +855,8 @@ def soumettre_reponses_theorie_degrade(
         existing.theme4_ok   = resultat["themes_ok"].get("4")
         existing.theme5_ok   = resultat["themes_ok"].get("5")
         existing.obtenue     = resultat["obtenue"]
+        if data.testeur_id is not None:
+            existing.testeur_id = data.testeur_id
         # reponses_json et justificatif_* intentionnellement non modifiés
     else:
         rt = ResultatTheorie(
@@ -876,6 +879,7 @@ def soumettre_reponses_theorie_degrade(
             obtenue=resultat["obtenue"],
             dispense=False,
             mode="degrade",
+            testeur_id=data.testeur_id,
         )
         db.add(rt)
 

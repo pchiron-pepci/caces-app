@@ -2051,6 +2051,7 @@ def page_saisie_degrade(session_id: int, jour_id: int, request: Request, db: DBS
                     "4": rt.theme4_ok, "5": rt.theme5_ok,
                 },
                 "justificatif_nom": rt.justificatif_nom or "",
+                "testeur_id": rt.testeur_id,
             }
         cands.append({
             "stagiaire_id": sc.stagiaire_id,
@@ -2070,6 +2071,7 @@ def page_saisie_degrade(session_id: int, jour_id: int, request: Request, db: DBS
             "famille": session.famille,
             "jour_id": jour_id,
             "jour_date": jour.date.strftime('%d/%m/%Y') if jour.date else "",
+            "testeur_id_jour": jour.testeur_id,
             "candidats": cands,
             "themes": themes,
             "user_role": user.get("role", "") if isinstance(user, dict) else getattr(user, "role", ""),

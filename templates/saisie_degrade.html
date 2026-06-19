@@ -271,7 +271,9 @@ body {
 <!-- Données injectées pour le JS -->
 <div id="sd-data"
      data-session-id="{{ session_id }}"
-     data-jour-id="{{ jour_id }}"></div>
+     data-jour-id="{{ jour_id }}"
+     data-famille="{{ famille or '' }}"
+     data-testeur-id-jour="{{ testeur_id_jour or '' }}"></div>
 
 <!-- ── En-tête ─────────────────────────────────────────────── -->
 <div id="sd-header">
@@ -395,6 +397,18 @@ body {
                 🗑️ Supprimer ce résultat
             </button>
             {% endif %}
+
+            <!-- Testeur -->
+            <div style="margin-bottom:14px;">
+                <label style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:#555; display:block; margin-bottom:4px;">Testeur</label>
+                <select class="sd-select-testeur theme-input"
+                        id="testeur-{{ cand.stagiaire_id }}"
+                        data-testeur-id="{{ cand.rt.testeur_id if cand.rt and cand.rt.testeur_id else '' }}"
+                        style="width:100%; font-size:14px;">
+                    <option value="">— Sélectionner le testeur —</option>
+                </select>
+                <div id="testeur-err-{{ cand.stagiaire_id }}" style="display:none; color:#c62828; font-size:12px; margin-top:4px;">⚠️ Sélectionnez un testeur avant d'enregistrer.</div>
+            </div>
 
             <!-- Formulaire de saisie -->
             <div class="themes-grid" id="form-{{ cand.stagiaire_id }}">

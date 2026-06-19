@@ -5,11 +5,37 @@
     console.log('[DIAG] saisie_degrade.js IIFE loaded', new Date().toISOString());
 
     var dataEl = document.getElementById('sd-data');
-    var SESSION_ID = parseInt(dataEl.dataset.sessionId, 10);
-    var JOUR_ID    = parseInt(dataEl.dataset.jourId, 10);
+    var SESSION_ID      = parseInt(dataEl.dataset.sessionId, 10);
+    var JOUR_ID         = parseInt(dataEl.dataset.jourId, 10);
+    var FAMILLE         = dataEl.dataset.famille || '';
+    var TESTEUR_ID_JOUR = parseInt(dataEl.dataset.testeurIdJour, 10) || null;
+
+    // Charge une fois tous les testeurs habilités et peuple tous les selects.
+    // Pré-sélectionne : 1) testeur_id du RT existant (data-testeur-id), sinon
+    // 2) testeur du jour (TESTEUR_ID_JOUR), sinon 3) auto si un seul habilité.
+    if (FAMILLE) {
+        fetch('/api/testeurs/habilites?famille=' + encodeURIComponent(FAMILLE))
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(testeurs) {
+                document.querySelectorAll('.sd-select-testeur').forEach(function(sel) {
+                    testeurs.forEach(function(t) {
+                        var opt = document.createElement('option');
+                        opt.value = t.id;
+                        opt.textContent = t.nom + ' ' + t.prenom;
+                        sel.appendChild(opt);
+                    });
+                    var preId = parseInt(sel.dataset.testeurId, 10) || TESTEUR_ID_JOUR;
+                    if (preId && testeurs.some(function(t) { return t.id === preId; })) {
+                        sel.value = preId;
+                    } else if (testeurs.length === 1) {
+                        sel.value = testeurs[0].id;
+                    }
+                });
+            });
+    }
 
     // Candidat en attente de confirmation PIN
-    var _pending = null;  // { stagiaireId, nom, notes }
+    var _pending = null;  // { stagiaireId, nom, notes, testeurId }
 
     // ── Utilitaire auth ───────────────────────────────────────────
     // Renvoie les headers pour fetch : Bearer depuis localStorage (comme
@@ -23,9 +49,9 @@
     }
 
     // ── Modal PIN ─────────────────────────────────────────────────
-    function ouvrirPin(stagiaireId, nom, notes) {
+    function ouvrirPin(stagiaireId, nom, notes, testeurId) {
         console.log('[DIAG] ouvrirPin() stag=' + stagiaireId);  // [DIAG]
-        _pending = { stagiaireId: stagiaireId, nom: nom, notes: notes, action: 'enregistrer' };
+        _pending = { stagiaireId: stagiaireId, nom: nom, notes: notes, action: 'enregistrer', testeurId: testeurId || null };
         document.getElementById('pin-message').innerHTML = 'Confirmez la saisie pour <strong>' + nom + '</strong>';
         document.getElementById('pin-input').value      = '';
         document.getElementById('pin-error').style.display = 'none';
@@ -227,6 +253,7 @@
                 stagiaire_id:    _pending.stagiaireId,
                 pin:             pin,
                 notes_par_theme: _pending.notes,
+                testeur_id:      _pending.testeurId || null,
             };
             console.log('[ENVOI] notes_par_theme=' + JSON.stringify(body.notes_par_theme));  // [ENVOI]
             var resp;
@@ -289,7 +316,18 @@
             var nom    = btn.dataset.nom;
             var notes  = collecterNotes(stagId);
             if (!notes) return;
-            ouvrirPin(stagId, nom, notes);
+            var testeurSel = document.getElementById('testeur-' + stagId);
+            var testeurId  = testeurSel ? (parseInt(testeurSel.value, 10) || null) : null;
+            if (!testeurId) {
+                if (testeurSel) testeurSel.style.borderColor = '#c62828';
+                var errEl = document.getElementById('testeur-err-' + stagId);
+                if (errEl) errEl.style.display = '';
+                return;
+            }
+            if (testeurSel) testeurSel.style.borderColor = '';
+            var errEl = document.getElementById('testeur-err-' + stagId);
+            if (errEl) errEl.style.display = 'none';
+            ouvrirPin(stagId, nom, notes, testeurId);
             return;
         }
         var btnSupp = e.target.closest('[data-action="supprimer-degrade"]');
