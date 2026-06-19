@@ -770,3 +770,83 @@ Requêtes groupées anti-N+1 ajoutées :
 **`generer_recap_resultats`** : dépaquette le tuple → `candidats, formation = _collecter_donnees(...)` → `_build_html(..., formation)`.
 
 **Modèles utilisés (tables) :** `jours_formation`, `affectations_formation`, `planning_apprenants`, `utilisateurs`.
+
+### ✅ Chantier terminé : récap PDF — formateurs rôles agrégés TH/PRAT (commit 49bc8f4)
+
+**Contexte :** l'en-tête du récap affichait "(principal)" pour les formateurs — remplacé par les rôles réels agrégés sur toute la session.
+
+**Règle affichage :** pour chaque `Utilisateur` formateur de la session, on OR les booléens `AffectationFormation.theorie` et `.pratique` sur TOUS ses jours. Label :
+- `(TH + PRAT)` si les deux
+- `(TH)` si théorie seule
+- `(PRAT)` si pratique seule
+- rien si aucun booléen vrai
+
+**Fichier :** `app/services/pdf_recap_session.py` — section `_collecter_donnees`. Remplacement des dicts `principal_ids/autre_ids` par `user_theorie/user_pratique` (dict `{uid: bool}`) agrégés par `or`. Tri alphabétique par nom. `formateurs_label` rejoint les labels avec `", "`.
+
+**Champ supprimé :** colonne `principal` d'`AffectationFormation` — plus jamais utilisée dans ce service (son usage UX dans d'autres vues est inchangé).
+
+### ✅ Chantier terminé : export ZIP — UX fond-de-tâche + toast (commits 49bc8f4 + 1f624e7)
+
+**Comportement :** au clic "Confirmer" (PIN saisi), la modal se ferme immédiatement, un toast "Téléchargement en cours…" apparaît 2 s, le fetch tourne en arrière-plan, le fichier se télécharge sans bloquer l'UI.
+
+**Pattern JS (`session_detail.js`) :**
+1. `fermerPin()` immédiat
+2. `afficherSuccesToast('Téléchargement en cours…')`
+3. `fetch('/sessions/{sid}/export-zip?pin=…', {credentials:'same-origin'})` — pas de `Bearer` (cookie suffit)
+4. Succès : blob → `URL.createObjectURL` → `<a download>` → click → `removeChild` → `setTimeout(revokeObjectURL, 100)`
+5. Erreur HTTP : `resp.json()` → `afficherErreur(data.detail || 'Erreur N')` (modal-alerte)
+6. Erreur réseau : `console.error` + `afficherErreur('Erreur réseau…')`
+
+**Contrainte auth :** `credentials:'same-origin'` envoie le cookie `access_token`. Ne pas ajouter `Authorization: Bearer` (absent de localStorage si session renouvelée → 403 `get_utilisateur_courant`).
+
+### ✅ Chantier terminé : PDF détail test numérique — date via JourTest (commit c5c4c80)
+
+**Bug :** la date en haut à droite du PDF n'était pas affichée — `_build_html` utilisait `session.date_theorie` qui est souvent `None`.
+
+**Cause racine :** `ResultatTheorie` n'a pas de champ `date`. La date vit sur `JourTest.date` via `rt.jour_test_id`.
+
+**Fix (`app/services/pdf_detail_theorie.py`) :**
+1. Import : ajout `JourTest` dans `from app.models.jour_test import ResultatTheorie, JourTest`
+2. `_collecter_donnees` : requête `JourTest.id == rt.jour_test_id` ; `date_str = jour.date.strftime("%d/%m/%Y") if jour and jour.date else "—"` ; inclus dans le dict retourné
+3. `_build_html` : `date_str = donnees["date_str"]` (remplace le calcul via `session.date_theorie`)
+4. Template (ligne 291) : `{date_str}` inchangé — déjà correct
+
+**Règle :** ne jamais utiliser `session.date_theorie` pour la date du test théorique — utiliser `JourTest.date` via FK.
+
+### ✅ Chantier terminé : testeur théorique par candidat — étapes 1-5 (commits 7168ae5, 3f937bf, c5716c1, 7e1af14 + étape 5 sans commit distinct)
+
+**Objectif :** stocker et afficher le testeur **par candidat** sur le test théorique (numérique + manuel), distinct du testeur du jour.
+
+**Étape 1 — Migration `ResultatTheorie.testeur_id` :**
+- `ResultatTheorie` : +`testeur_id INTEGER REFERENCES testeurs(id)` (nullable)
+- `migrate_testeur_theorie.py` (idempotent) + migration startup (`ALTER TABLE … ADD COLUMN IF NOT EXISTS`)
+- **À exécuter sur prod :** `python migrate_testeur_theorie.py` dans Render Shell
+
+**Étape 2 — Endpoint `GET /api/testeurs/habilites?famille=` :**
+- Route dans `app/routers/testeurs.py` — déclarée AVANT `GET /{id}` (sinon FastAPI tente de caster "habilites" en int → 422)
+- Filtre : `HabilitationTesteur.famille == famille, actif==True, Testeur.actif==True, Testeur.etat=="actif"` — distinct, tri nom/prenom
+- Auth : middleware cookie (`request.state.user`)
+
+**Étape 3 — Saisie numérique (`test_theorie.html`) :**
+- Voie tablette : select `#card-testeur-select` (habilités pour la famille), obligatoire dans `allerConfirmation()`
+- Voie QR (`START_DIRECT`) : `testeurId = TESTEUR_ID_JOUR` hérité du JourTest (pas de select)
+- Pré-sélection : RT existant > testeur du jour > unique habilité
+- `POST /api/sessions/{id}/theorie/reponses` : `testeur_id` dans le body et dans le `ResultatTheorie`
+
+**Étape 4 — Saisie manuelle (`saisie_degrade.html` + `saisie_degrade.js`) :**
+- Select `sd-select-testeur` par candidat, obligatoire avant enregistrement
+- Pré-sélection : RT existant > testeur du jour > unique habilité
+- `POST /api/sessions/{id}/theorie/reponses-degrade` : `testeur_id` dans le body et dans le `ResultatTheorie`
+
+**Étape 5 — Report dans les PDF :**
+- `pdf_recap_session.py` : `rt.testeur_id` des tous les RT ajoutés au batch `testeur_ids` (anti-N+1) ; ligne théorie : `testeurs.get(rt.testeur_id) if rt.testeur_id else _testeur_label(jt)` (fallback testeur du jour — anciens résultats)
+- `pdf_detail_theorie.py` : `_collecter_donnees` résout `rt.testeur_id` ou fallback `jour.testeur_id` → `testeur_str` ; `_build_html` affiche `<div><strong>Testeur :</strong> {_esc(testeur_str or '—')}</div>` dans `.doc-meta`
+
+**Règle de fallback :** si `rt.testeur_id` est NULL (résultats antérieurs au chantier), on retombe sur le testeur du jour (`JourTest.testeur_id`). Un candidat saisi après le déploiement aura toujours son testeur propre.
+
+**Migrations prod à exécuter (dans Render Shell) :**
+```
+python migrate_justificatif_theorie.py
+python migrate_cloture_terrain.py
+python migrate_testeur_theorie.py
+```

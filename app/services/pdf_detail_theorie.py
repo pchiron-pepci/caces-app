@@ -123,7 +123,21 @@ def _collecter_donnees(rt: ResultatTheorie, db: DBSession) -> dict:
     )
     date_str = jour.date.strftime("%d/%m/%Y") if jour and jour.date else "—"
 
-    return {"stagiaire": stagiaire, "session": session, "themes": themes, "date_str": date_str}
+    from app.models.testeur import Testeur
+    testeur_str = None
+    testeur_id = rt.testeur_id or (jour.testeur_id if jour else None)
+    if testeur_id:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if t:
+            testeur_str = f"{t.nom} {t.prenom}"
+
+    return {
+        "stagiaire": stagiaire,
+        "session": session,
+        "themes": themes,
+        "date_str": date_str,
+        "testeur_str": testeur_str,
+    }
 
 
 # ── Construction HTML ───────────────────────────────────────────────────────
@@ -142,6 +156,7 @@ def _build_html(
     ref_str      = (session.reference or f"Session {session.id}") if session else "—"
     date_str     = donnees["date_str"]
     famille      = session.famille if session else "—"
+    testeur_str  = donnees.get("testeur_str")
 
     note_label   = f"{int(rt.note_totale)}/100" if rt.note_totale is not None else "—/100"
     if rt.obtenue:
@@ -290,6 +305,7 @@ def _build_html(
     <div><strong>Session :</strong> {_esc(ref_str)}</div>
     <div><strong>Date :</strong> {date_str}</div>
     <div><strong>Famille :</strong> {_esc(famille)}</div>
+    <div><strong>Testeur :</strong> {_esc(testeur_str or '—')}</div>
   </div>
 </div>
 

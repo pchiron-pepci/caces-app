@@ -111,6 +111,9 @@ def _collecter_donnees(
     for se in all_se:
         if se.testeur_id:
             testeur_ids.add(se.testeur_id)
+    for rt in all_rt:
+        if rt.testeur_id:
+            testeur_ids.add(rt.testeur_id)
     testeurs: dict[int, str] = {}
     if testeur_ids:
         testeurs = {
@@ -226,7 +229,7 @@ def _collecter_donnees(
                 "note": rt.note_totale,
                 "mode": mode_label,
                 "date": jt.date.strftime("%d/%m/%Y") if jt and jt.date else None,
-                "testeur": _testeur_label(jt),
+                "testeur": testeurs.get(rt.testeur_id) if rt.testeur_id else _testeur_label(jt),
             }
 
         epreuves_data = []
