@@ -433,26 +433,8 @@
             font-size: 14px; font-weight: 700; cursor: pointer;
         }
 
-        /* RESULTAT */
-        .resultat-header { text-align: center; padding: 28px 20px 20px; }
-        .resultat-emoji { font-size: 60px; margin-bottom: 8px; }
-        .resultat-score { font-size: 68px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
-        .resultat-score.reussi { color: #2e7d32; }
-        .resultat-score.echec { color: #c62828; }
-        .resultat-label { font-size: 20px; font-weight: 800; }
-        .resultat-label.reussi { color: #2e7d32; }
-        .resultat-label.echec { color: #c62828; }
-
-        .theme-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px;
-        }
-
-        .theme-row:last-child { border: none; }
-        .theme-ok { color: #2e7d32; font-weight: 700; }
-        .theme-ko { color: #c62828; font-weight: 700; }
-
-        .fin-msg { text-align: center; color: #aaa; font-size: 13px; padding: 20px; }
+        /* ECRAN FIN */
+        .merci-card { text-align: center; padding: 40px 28px; }
 
         #timer {
             display: none;
@@ -677,17 +659,25 @@
     <div id="msg-erreur-submit" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
 </div>
 
-<!-- ECRAN 6 : RESULTAT -->
+<!-- ECRAN 6 : FIN -->
 <div class="screen" id="ecran-resultat" style="display:none;">
-    <div class="card">
-        <div class="resultat-header">
-            <div class="resultat-emoji" id="res-emoji">🎉</div>
-            <div class="resultat-score" id="res-score">--</div>
-            <div class="resultat-label" id="res-label">--</div>
-        </div>
-        <div id="res-themes"></div>
+    <div class="card merci-card">
+        <div style="font-size:52px; margin-bottom:16px;">🙏</div>
+        <h2 style="font-size:22px; font-weight:800; color:#1a237e; margin:0 0 20px 0;">
+            Bravo et merci pour votre participation à ce test théorique !
+        </h2>
+        <p style="font-size:15px; color:#333; line-height:1.7; margin:0 0 14px 0;">
+            Vous avez terminé votre épreuve.
+        </p>
+        <p style="font-size:15px; color:#333; line-height:1.7; margin:0 0 14px 0;">
+            Merci de signaler au testeur présent que vous avez fini ;<br>
+            il vous guidera pour la prochaine étape.
+        </p>
+        <p style="font-size:14px; color:#666; line-height:1.6; margin:0;">
+            Vos résultats vous seront communiqués une fois l'ensemble<br>
+            de vos épreuves réalisées.
+        </p>
     </div>
-    <div class="fin-msg" id="fin-msg"></div>
     <div style="text-align:center; margin-top:32px; padding:24px;">
         <p style="font-size:2.4rem; font-weight:900; color:#1a237e; letter-spacing:0.04em; line-height:1.2; text-transform:uppercase;">
             REMETTEZ LA TABLETTE<br>AU TESTEUR
@@ -1127,7 +1117,7 @@ async function valider(force = false) {
 
     if (resp.ok) {
         const data = await resp.json();
-        afficherResultat(data.resultat);
+        afficherResultat();
     } else {
         const errData = await resp.json().catch(() => ({}));
         const el = document.getElementById('msg-erreur-submit');
@@ -1136,7 +1126,7 @@ async function valider(force = false) {
     }
 }
 
-function afficherResultat(r) {
+function afficherResultat() {
     document.getElementById('ecran-accueil') && (document.getElementById('ecran-accueil').style.display = 'none');
     document.getElementById('ecran-selection').style.display = 'none';
     document.getElementById('ecran-identite').style.display = 'none';
@@ -1147,37 +1137,6 @@ function afficherResultat(r) {
     document.getElementById('ecran-resultat').style.display = 'block';
     if (timerInterval) clearInterval(timerInterval);
     document.getElementById('timer').style.display = 'none';
-
-    const reussi = r.obtenue;
-    document.getElementById('res-emoji').textContent = reussi ? '🎉' : '😔';
-    document.getElementById('res-score').textContent = r.note_totale + '/100';
-    document.getElementById('res-score').className = 'resultat-score ' + (reussi ? 'reussi' : 'echec');
-    document.getElementById('res-label').textContent = reussi ? 'REUSSI !' : 'ECHEC';
-    document.getElementById('res-label').className = 'resultat-label ' + (reussi ? 'reussi' : 'echec');
-
-    const themesNoms = {
-        '1': 'Connaissances generales (/12)',
-        '2': 'Technologie et stabilite (/28)',
-        '3': 'Exploitation (/44)',
-        '4': 'Circulation (/12)',
-        '5': 'Fin de poste (/4)'
-    };
-
-    let html = '';
-    for (let t = 1; t <= 5; t++) {
-        const note = Math.round(r.notes_themes[t.toString()] || 0);
-        const ok = r.themes_ok[t.toString()];
-        html += '<div class="theme-row">' +
-            '<span>' + themesNoms[t.toString()] + '</span>' +
-            '<span class="' + (ok ? 'theme-ok' : 'theme-ko') + '">' +
-            note + ' ' + (ok ? '✅' : '❌') +
-            '</span></div>';
-    }
-    document.getElementById('res-themes').innerHTML = html;
-
-    const nom = document.getElementById('header-candidat').textContent;
-    document.getElementById('fin-msg').innerHTML =
-        '<strong>' + nom + '</strong><br>Montrez votre résultat au testeur.';
 }
 </script>
 
