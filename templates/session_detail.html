@@ -557,7 +557,7 @@
             <button class="btn btn-secondary" data-action="cloturer-terrain"
                     title="Valider la clôture côté terrain (PIN formateur requis)"
                     style="font-size:13px; background:#fff3e0; border:1px solid #ef6c00; color:#bf360c;">
-                🔐 Clôturer terrain
+                🔐 Clôture terrain
             </button>
             {% else %}
             {% if user_role in ('admin', 'utilisateur') %}
@@ -573,7 +573,7 @@
         <button class="btn btn-secondary" data-action="export-zip" data-session-id="{{ session.id }}"
                 title="Télécharger le dossier complet (corrigé + récap + justificatifs)"
                 style="font-size:13px; background:#ede7f6; border:1px solid #7b1fa2; color:#4a148c;">
-            📦 Exporter le dossier (ZIP)
+            📦 Export
         </button>
         {% endif %}
     </div>
@@ -835,7 +835,7 @@
                         {% if _np %}{% if _np.est_admin_only and _np.note %}<button class="btn-note-privee btn-note-admin" data-action="ouvrir-note-privee" data-jour-id="{{ j.id }}" data-jour-type="test" data-note="{{ _np.note | e }}" data-peut-modifier="0" data-session-modifiable="{{ '1' if _np.session_modifiable else '0' }}" title="Note confidentielle du testeur">⚠️</button>{% elif _np.est_principal %}<button class="btn-note-privee {% if _np.note %}btn-note-principal{% else %}btn-note-principal-vide{% endif %}" data-action="ouvrir-note-privee" data-jour-id="{{ j.id }}" data-jour-type="test" data-note="{{ _np.note | e if _np.note else '' }}" data-peut-modifier="1" data-session-modifiable="{{ '1' if _np.session_modifiable else '0' }}" title="Ma note confidentielle">📝</button>{% endif %}{% endif %}
                         {% if session.statut != 'terminee' and user_role != 'terrain' %}
                             {% if j.testeurs_affectes %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}</span>
-                            {% else %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 10px; font-size:12px; margin-left:4px; cursor:pointer;">📋 Ajouter</span>
+                            {% else %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 10px; font-size:12px; margin-left:4px; cursor:pointer;">📋 Testeur(s)</span>
                             {% endif %}
                         {% else %}
                             {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#e3f2fd; color:#1565c0; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}
@@ -976,7 +976,7 @@
                     {% if _np %}{% if _np.est_admin_only and _np.note %}<button class="btn-note-privee btn-note-admin" data-action="ouvrir-note-privee" data-jour-id="{{ j.id }}" data-jour-type="test" data-note="{{ _np.note | e }}" data-peut-modifier="0" data-session-modifiable="{{ '1' if _np.session_modifiable else '0' }}" title="Note confidentielle du testeur">⚠️</button>{% elif _np.est_principal %}<button class="btn-note-privee {% if _np.note %}btn-note-principal{% else %}btn-note-principal-vide{% endif %}" data-action="ouvrir-note-privee" data-jour-id="{{ j.id }}" data-jour-type="test" data-note="{{ _np.note | e if _np.note else '' }}" data-peut-modifier="1" data-session-modifiable="{{ '1' if _np.session_modifiable else '0' }}" title="Ma note confidentielle">📝</button>{% endif %}{% endif %}
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                         {% if j.testeurs_affectes %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; cursor:pointer; border-radius:6px; padding:2px 4px; margin-left:4px;">{% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}</span>
-                        {% else %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 10px; font-size:12px; margin-left:4px; cursor:pointer;">📋 Ajouter</span>
+                        {% else %}<span data-action="gerer-testeurs" data-jour-id="{{ j.id }}" data-jour-type="{{ j.type }}" title="Gérer les testeurs" style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 10px; font-size:12px; margin-left:4px; cursor:pointer;">📋 Testeur(s)</span>
                         {% endif %}
                     {% else %}
                         {% for ta in j.testeurs_affectes %}<span style="display:inline-block; background:#fff3e0; color:#e65100; border-radius:4px; padding:1px 7px; font-size:12px; margin-left:4px;">📋 {{ ta.nom_abr }}{% if ta.principal %}<span title="Principal" style="cursor:help;">*</span>{% endif %}</span>{% endfor %}
