@@ -15,6 +15,8 @@ from app.models.session_epreuve import SessionEpreuve
 from app.models.stagiaire import Stagiaire
 from app.models.testeur import Testeur
 from app.models.config_organisme import ConfigOrganisme
+from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant
+from app.models.utilisateur import Utilisateur
 
 
 # ── Helpers config ──────────────────────────────────────────────────────────
@@ -38,16 +40,21 @@ def _get_nom_organisme(db: DBSession) -> str:
 
 # ── Collecte des données ────────────────────────────────────────────────────
 
-def _collecter_donnees(session_id: int, db: DBSession) -> list[dict]:
+def _collecter_donnees(
+    session_id: int, db: DBSession
+) -> tuple[list[dict], dict]:
     """
-    Retourne une liste de dicts par candidat actif, triés NOM prénom :
-    {
-      "nom": str, "prenom": str,
-      "theorie": None | {"obtenue": bool|None, "note": float|None, "mode": str,
-                         "date": str|None, "testeur": str|None},
-      "epreuves": [{"categorie": str, "obtenue": bool|None, "options": str,
-                    "date": str|None, "testeur": str|None}]
-    }
+    Retourne (candidats, formation_meta).
+
+    candidats : liste de dicts par candidat actif, triés NOM prénom :
+      { "nom", "prenom",
+        "theorie": None | {"obtenue", "note", "mode", "date", "testeur"},
+        "epreuves": [{"categorie", "obtenue", "options", "date", "testeur"}],
+        "heures_formation": float | None }
+
+    formation_meta : { "has_formation": bool, "formateurs": str }
+      has_formation = True si la session a au moins un JourFormation actif.
+      formateurs    = "Nom Prénom (principal), Nom Prénom" (peut être "").
     """
     # Candidats actifs de la session
     rows = (
@@ -110,6 +117,66 @@ def _collecter_donnees(session_id: int, db: DBSession) -> list[dict]:
             for t in db.query(Testeur).filter(Testeur.id.in_(testeur_ids)).all()
         }
 
+    # ── Requêtes groupées : Formation ────────────────────────────────────────
+    jours_formation = (
+        db.query(JourFormation)
+        .filter(JourFormation.session_id == session_id, JourFormation.actif == True)
+        .all()
+    )
+    jf_ids = {jf.id for jf in jours_formation}
+    has_formation = bool(jf_ids)
+    formateurs_label = ""
+    heures_par_candidat: dict[int, float] = {}
+
+    if jf_ids:
+        affectations = (
+            db.query(AffectationFormation)
+            .filter(AffectationFormation.jour_formation_id.in_(jf_ids))
+            .all()
+        )
+        user_ids = {af.user_id for af in affectations}
+        utilisateurs: dict[int, str] = {}
+        if user_ids:
+            utilisateurs = {
+                u.id: f"{u.nom} {u.prenom}"
+                for u in db.query(Utilisateur).filter(Utilisateur.id.in_(user_ids)).all()
+            }
+        # Un user peut être principal sur plusieurs jours : s'il l'est sur au moins un, il est "principal"
+        principal_ids: set[int] = set()
+        autre_ids: set[int] = set()
+        for af in affectations:
+            if af.principal:
+                principal_ids.add(af.user_id)
+            else:
+                autre_ids.add(af.user_id)
+        autre_ids -= principal_ids
+        parts = [f"{utilisateurs.get(uid, f'Formateur {uid}')} (principal)" for uid in sorted(principal_ids)]
+        parts += [utilisateurs.get(uid, f"Formateur {uid}") for uid in sorted(autre_ids)]
+        formateurs_label = ", ".join(parts)
+
+        plannings = (
+            db.query(PlanningApprenant)
+            .filter(
+                PlanningApprenant.jour_formation_id.in_(jf_ids),
+                PlanningApprenant.actif == True,
+            )
+            .all()
+        )
+        for pa in plannings:
+            h = (pa.heures_theorie or 0.0) + (pa.heures_libre or 0.0)
+            if pa.heures_par_cat:
+                try:
+                    cat_h = json.loads(pa.heures_par_cat)
+                    if isinstance(cat_h, dict):
+                        h += sum(float(v) for v in cat_h.values() if v)
+                except (ValueError, TypeError):
+                    pass
+            heures_par_candidat[pa.stagiaire_id] = (
+                heures_par_candidat.get(pa.stagiaire_id, 0.0) + h
+            )
+
+    formation_meta = {"has_formation": has_formation, "formateurs": formateurs_label}
+
     def _testeur_label(jt: JourTest | None) -> str | None:
         """Construit le label testeur(s) d'un JourTest (principal + sup éventuels)."""
         if jt is None:
@@ -162,9 +229,10 @@ def _collecter_donnees(session_id: int, db: DBSession) -> list[dict]:
             "prenom": stagiaire.prenom,
             "theorie": theorie_data,
             "epreuves": epreuves_data,
+            "heures_formation": heures_par_candidat.get(sid),
         })
 
-    return result
+    return result, formation_meta
 
 
 # ── Construction HTML ───────────────────────────────────────────────────────
@@ -210,7 +278,11 @@ def _build_html(
     nom_organisme: str,
     logo_data: str,
     candidats: list[dict],
+    formation_meta: dict,
 ) -> str:
+    has_formation   = formation_meta.get("has_formation", False)
+    formateurs_str  = formation_meta.get("formateurs", "")
+
     ref_str  = session.reference or f"Session {session.id}"
     famille  = session.famille
 
@@ -253,6 +325,24 @@ def _build_html(
             f"</tr>"
         )
 
+        # ── Ligne formation ──
+        formation_row = ""
+        if has_formation:
+            h = c.get("heures_formation")
+            if h is not None and h > 0:
+                h_str = f"{h:.1f} h".replace(".0 h", " h")
+            elif h is not None:
+                h_str = "0 h"
+            else:
+                h_str = "—"
+            formation_row = (
+                f"<tr>"
+                f"<td class='ep-label'>Formation</td>"
+                f"<td></td>"
+                f"<td class='ep-detail'>{h_str}</td>"
+                f"</tr>"
+            )
+
         # ── Lignes pratique ──
         if c["epreuves"]:
             pratique_rows = ""
@@ -282,6 +372,7 @@ def _build_html(
   <div class="candidat-nom">{nom_complet}</div>
   <table class="ep-table">
     <tbody>
+      {formation_row}
       {theorie_row}
       {pratique_rows}
     </tbody>
@@ -370,6 +461,7 @@ def _build_html(
     <div><strong>Réf. :</strong> {_esc(ref_str)}</div>
     <div><strong>Famille :</strong> {_esc(famille)}</div>
     <div>{dates_str}</div>
+    {f'<div><strong>Formateurs :</strong> {_esc(formateurs_str)}</div>' if has_formation and formateurs_str else ''}
   </div>
 </div>
 
@@ -390,11 +482,11 @@ def generer_recap_resultats(session_id: int, db: DBSession) -> bytes:
     if not session:
         raise ValueError(f"Session {session_id} introuvable")
 
-    nom_organisme = _get_nom_organisme(db)
-    logo_data     = _get_logo_data(db)
-    candidats     = _collecter_donnees(session_id, db)
+    nom_organisme           = _get_nom_organisme(db)
+    logo_data               = _get_logo_data(db)
+    candidats, formation    = _collecter_donnees(session_id, db)
 
-    html = _build_html(session, nom_organisme, logo_data, candidats)
+    html = _build_html(session, nom_organisme, logo_data, candidats, formation)
 
     from weasyprint import HTML
     buf = BytesIO()
