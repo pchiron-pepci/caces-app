@@ -146,8 +146,9 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
     jour_theo = db.query(JourTest).filter(JourTest.id == rt.jour_test_id).first() if rt else None
     date_theorie = jour_theo.date.isoformat() if jour_theo and jour_theo.date else None
     testeur_nom_theorie = ""
-    if jour_theo and jour_theo.testeur_id:
-        t_theo = db.query(Testeur).filter(Testeur.id == jour_theo.testeur_id).first()
+    testeur_theo_id = (rt.testeur_id if rt else None) or (jour_theo.testeur_id if jour_theo else None)
+    if testeur_theo_id:
+        t_theo = db.query(Testeur).filter(Testeur.id == testeur_theo_id).first()
         testeur_nom_theorie = f"{t_theo.nom} {t_theo.prenom}" if t_theo else ""
 
     sess_theorie = sessions.get(sess_theorie_id)
