@@ -395,11 +395,11 @@ function renderCarteAValider(co) {
     const footerHtml = co.statut === 'annule'
         ? `<span style="background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;">↩ En révision</span>`
         : `<button data-action="revision-caces" data-id="${co.id}" data-nom="${nomComplet}"
-                style="flex:1;background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
-                ↩ Révision
+                style="min-width:130px;background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;">
+                ↩ À réviser
             </button>
             <button data-action="valider-caces" data-id="${co.id}" data-nom="${nomComplet}"
-                style="flex:2;background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                style="min-width:130px;background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;">
                 📜 Émettre
             </button>`;
 
@@ -437,9 +437,11 @@ function renderCarteAValider(co) {
             <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span style="width:64px;flex-shrink:0;color:#666;font-weight:600;white-space:nowrap;">🎓 Théorie</span>
-                    <a href="/sessions/${co.session_id_theorie}" target="_blank"
-                       style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_theorie || '—'}</a>
-                    <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
+                    <div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap;">
+                        <a href="/sessions/${co.session_id_theorie}" target="_blank"
+                           style="color:#1a237e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_theorie || '—'}</a>
+                        <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
+                    </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;padding-left:72px;">
                     <span style="color:#2e7d32;font-weight:700;">✅</span>
@@ -451,9 +453,11 @@ function renderCarteAValider(co) {
             <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span style="width:64px;flex-shrink:0;color:#666;font-weight:600;white-space:nowrap;">🔧 Pratique</span>
-                    <a href="/sessions/${co.session_id_pratique}" target="_blank"
-                       style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_pratique || '—'}</a>
-                    <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
+                    <div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap;">
+                        <a href="/sessions/${co.session_id_pratique}" target="_blank"
+                           style="color:#1a237e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_pratique || '—'}</a>
+                        <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
+                    </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;padding-left:72px;flex-wrap:wrap;">
                     <span style="color:#2e7d32;font-weight:700;">✅</span>
