@@ -834,6 +834,13 @@ document.getElementById('select-candidat').addEventListener('change', function()
 
     if (!val) { section.style.display = 'none'; return; }
 
+    if (!TESTEUR_ID_JOUR) {
+        section.style.display = 'none';
+        msgBloque.textContent = '⚠️ Aucun testeur n\'est désigné pour ce jour. Désignez un testeur sur le jour avant de permettre l\'accès par QR code.';
+        msgBloque.style.display = '';
+        return;
+    }
+
     const opt  = this.options[this.selectedIndex];
     const aRes = opt.getAttribute('data-a-resultat') === 'true';
     if (aRes) {
