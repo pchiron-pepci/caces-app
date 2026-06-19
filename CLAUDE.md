@@ -850,3 +850,15 @@ python migrate_justificatif_theorie.py
 python migrate_cloture_terrain.py
 python migrate_testeur_theorie.py
 ```
+
+**Compléments post-étapes 1-5 (commits a2f1967, 6e6cbaa) :**
+
+- **QR test théorique sans testeur du jour** : dans le listener `select-candidat` de `test_theorie.html`, si `TESTEUR_ID_JOUR` est null → avertissement non bloquant dans `#msg-bloque-select` ("Vous n'avez pas indiqué de testeur pour ce jour."), QR généré quand même. La voie QR hérite du testeur du jour (`TESTEUR_ID_JOUR`) ; si absent, le RT est enregistré sans testeur (le testeur est désigné par candidat sur la voie tablette, pas sur la voie QR).
+
+- **Testeur modifiable en correction numérique** (loupe → Modifier → récap) :
+  - `reouvrir_theorie` (sessions.py) : ajoute `"testeur_id": rt.testeur_id` dans la réponse JSON
+  - `session_detail.js` (handler `loupe-modifier`) : stocke `localStorage['testeur_corr_{sid}_{jid}_{stag}'] = data.testeur_id ?? ''`
+  - `test_theorie.html` `#ecran-recap` : bloc `#bloc-testeur-corr` masqué (select + label), affiché en `MODE_CORRECTION` uniquement
+  - En `MODE_CORRECTION` (après `afficherRecap()`) : fetch habilités, peuplement select, pré-sélection sur testeur actuel, listener `change` → `testeurId`
+  - `valider()` envoie déjà `testeur_id: testeurId || null` — inchangé
+  - **Non bloquant** : laisser vide → `null` envoyé → `if data.testeur_id is not None` échoue → ancien testeur conservé en base
