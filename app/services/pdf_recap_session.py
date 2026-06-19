@@ -50,7 +50,8 @@ def _collecter_donnees(
       { "nom", "prenom",
         "theorie": None | {"obtenue", "note", "mode", "date", "testeur"},
         "epreuves": [{"categorie", "obtenue", "options", "date", "testeur"}],
-        "heures_formation": float | None }
+        "uf_formation": None | {"theorie": float, "par_cat": {cat: float}} }
+      uf_formation = None si le candidat n'a aucun PlanningApprenant.
 
     formation_meta : { "has_formation": bool, "formateurs": str }
       has_formation = True si la session a au moins un JourFormation actif.
@@ -126,7 +127,9 @@ def _collecter_donnees(
     jf_ids = {jf.id for jf in jours_formation}
     has_formation = bool(jf_ids)
     formateurs_label = ""
-    heures_par_candidat: dict[int, float] = {}
+    uf_theorie_par_cand: dict[int, float] = {}
+    uf_cat_par_cand: dict[int, dict[str, float]] = {}
+    uf_stag_ids: set[int] = set()
 
     if jf_ids:
         affectations = (
@@ -141,7 +144,7 @@ def _collecter_donnees(
                 u.id: f"{u.nom} {u.prenom}"
                 for u in db.query(Utilisateur).filter(Utilisateur.id.in_(user_ids)).all()
             }
-        # Un user peut être principal sur plusieurs jours : s'il l'est sur au moins un, il est "principal"
+        # Un user principal sur au moins un jour = classé "principal" globalement
         principal_ids: set[int] = set()
         autre_ids: set[int] = set()
         for af in affectations:
@@ -163,17 +166,22 @@ def _collecter_donnees(
             .all()
         )
         for pa in plannings:
-            h = (pa.heures_theorie or 0.0) + (pa.heures_libre or 0.0)
+            sid_pa = pa.stagiaire_id
+            uf_stag_ids.add(sid_pa)
+            # UF théorie
+            uf_theorie_par_cand[sid_pa] = (
+                uf_theorie_par_cand.get(sid_pa, 0.0) + (pa.heures_theorie or 0.0)
+            )
+            # UF par catégorie (heures_par_cat JSON {"A": 2.0, "B1": 1.5})
             if pa.heures_par_cat:
                 try:
                     cat_h = json.loads(pa.heures_par_cat)
                     if isinstance(cat_h, dict):
-                        h += sum(float(v) for v in cat_h.values() if v)
+                        d = uf_cat_par_cand.setdefault(sid_pa, {})
+                        for cat, val in cat_h.items():
+                            d[cat] = d.get(cat, 0.0) + float(val or 0)
                 except (ValueError, TypeError):
                     pass
-            heures_par_candidat[pa.stagiaire_id] = (
-                heures_par_candidat.get(pa.stagiaire_id, 0.0) + h
-            )
 
     formation_meta = {"has_formation": has_formation, "formateurs": formateurs_label}
 
@@ -229,7 +237,10 @@ def _collecter_donnees(
             "prenom": stagiaire.prenom,
             "theorie": theorie_data,
             "epreuves": epreuves_data,
-            "heures_formation": heures_par_candidat.get(sid),
+            "uf_formation": {
+                "theorie": uf_theorie_par_cand.get(sid, 0.0),
+                "par_cat": uf_cat_par_cand.get(sid, {}),
+            } if sid in uf_stag_ids else None,
         })
 
     return result, formation_meta
@@ -253,6 +264,11 @@ def _badge(obtenue, label_ok="Acquis", label_ko="Échec", label_att="En attente"
         f'<span style="display:inline-block; padding:1px 8px; border-radius:3px; '
         f'font-size:9px; font-weight:bold; {style}">{label}</span>'
     )
+
+
+def _fmt_uf(val: float) -> str:
+    """Formate un nombre d'UF : entier si .0, sinon 1 décimale."""
+    return str(int(val)) if val == int(val) else f"{val:.1f}"
 
 
 def _meta_str(date: str | None, testeur: str | None) -> str:
@@ -328,18 +344,24 @@ def _build_html(
         # ── Ligne formation ──
         formation_row = ""
         if has_formation:
-            h = c.get("heures_formation")
-            if h is not None and h > 0:
-                h_str = f"{h:.1f} h".replace(".0 h", " h")
-            elif h is not None:
-                h_str = "0 h"
+            uf = c.get("uf_formation")
+            if uf is None:
+                uf_detail = "—"
             else:
-                h_str = "—"
+                uf_parts = []
+                theo = uf.get("theorie", 0.0)
+                if theo:
+                    uf_parts.append(f"Théorie&nbsp;: {_fmt_uf(theo)}&nbsp;UF")
+                for cat in sorted(uf.get("par_cat", {})):
+                    val = uf["par_cat"][cat]
+                    if val:
+                        uf_parts.append(f"{_esc(cat)}&nbsp;: {_fmt_uf(val)}&nbsp;UF")
+                uf_detail = " &nbsp;·&nbsp; ".join(uf_parts) if uf_parts else "—"
             formation_row = (
                 f"<tr>"
                 f"<td class='ep-label'>Formation</td>"
                 f"<td></td>"
-                f"<td class='ep-detail'>{h_str}</td>"
+                f"<td class='ep-detail'>{uf_detail}</td>"
                 f"</tr>"
             )
 
