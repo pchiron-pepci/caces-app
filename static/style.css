@@ -314,6 +314,12 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* Lignes théorie/pratique — se plient si le contenu déborde */
+.co-source-row {
+    flex-wrap: wrap;
+    row-gap: 2px;
+}
+
 /* BADGES */
 .badge {
     padding: 3px 10px;
