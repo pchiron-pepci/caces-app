@@ -1,0 +1,386 @@
+/* ================================================
+   PAGE AIDE — NORYX
+   Identité : anthracite #2d2d2d, rouge #cc0000
+   ================================================ */
+
+/* ---- En-tête ---- */
+.aide-header {
+    background: #2d2d2d;
+    color: #fff;
+    padding: 32px 28px 24px;
+    border-radius: 12px;
+    margin-bottom: 28px;
+}
+
+.aide-header-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.aide-header-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+}
+
+.aide-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+}
+
+.aide-header p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: #aaa;
+}
+
+/* ---- Barre de recherche ---- */
+.aide-search-wrap {
+    position: relative;
+}
+
+.aide-search-wrap input {
+    width: 100%;
+    padding: 10px 14px 10px 40px;
+    border-radius: 8px;
+    border: none;
+    background: #3d3d3d;
+    color: #fff;
+    font-size: 14px;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.aide-search-wrap input::placeholder {
+    color: #888;
+}
+
+.aide-search-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    pointer-events: none;
+    font-size: 15px;
+}
+
+/* ---- Grille 10 cartes ---- */
+.aide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+    margin-bottom: 36px;
+}
+
+.aide-card {
+    background: #fff;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 18px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    outline: none;
+}
+
+.aide-card:hover,
+.aide-card:focus {
+    border-color: #cc0000;
+    box-shadow: 0 2px 12px rgba(204, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.aide-card.active {
+    border-color: #cc0000;
+    background: #fff5f5;
+}
+
+.aide-card-icon {
+    font-size: 26px;
+}
+
+.aide-card-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2d2d2d;
+    line-height: 1.3;
+}
+
+/* ---- Sections accordéon ---- */
+.aide-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.aide-section {
+    border: 1.5px solid #e8e8e8;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    transition: border-color 0.15s;
+}
+
+.aide-section.highlight {
+    border-color: #cc0000;
+}
+
+.aide-section-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2d2d2d;
+    transition: background 0.1s;
+}
+
+.aide-section-header:hover {
+    background: #fafafa;
+}
+
+.aide-section-header-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    color: #cc0000;
+}
+
+.aide-section-header-title {
+    flex: 1;
+}
+
+.aide-section-header-chevron {
+    font-size: 13px;
+    color: #999;
+    transition: transform 0.2s;
+}
+
+.aide-section.open .aide-section-header-chevron {
+    transform: rotate(180deg);
+}
+
+.aide-section-body {
+    display: none;
+    padding: 0 20px 20px;
+    border-top: 1px solid #f0f0f0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.aide-section.open .aide-section-body {
+    display: block;
+}
+
+/* ---- Contenu dans les sections ---- */
+.aide-section-body h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #cc0000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 18px 0 8px;
+}
+
+.aide-section-body h4:first-child {
+    margin-top: 16px;
+}
+
+.aide-section-body p {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.6;
+    margin: 0 0 10px;
+}
+
+.aide-section-body ul {
+    margin: 0 0 10px;
+    padding-left: 20px;
+}
+
+.aide-section-body ul li {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.6;
+    margin-bottom: 4px;
+}
+
+.aide-section-body ul li strong {
+    color: #2d2d2d;
+}
+
+.aide-tip {
+    background: #fff8e6;
+    border-left: 3px solid #f5a623;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #6b4f1a;
+    margin: 10px 0;
+}
+
+.aide-note {
+    background: #f0f5ff;
+    border-left: 3px solid #4a7cdc;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #1a3a6b;
+    margin: 10px 0;
+}
+
+.aide-warn {
+    background: #fff5f5;
+    border-left: 3px solid #cc0000;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #7a0000;
+    margin: 10px 0;
+}
+
+/* ---- Aucun résultat recherche ---- */
+.aide-no-result {
+    display: none;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+    padding: 32px 0;
+}
+
+/* ================================================
+   RESPONSIVE
+   ================================================ */
+
+/* Tablette ~768px */
+@media (max-width: 768px) {
+    .aide-header {
+        padding: 22px 18px 18px;
+        border-radius: 8px;
+    }
+
+    .aide-header h2 {
+        font-size: 20px;
+    }
+
+    .aide-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+}
+
+/* Mobile ~480px — 1 colonne pleine largeur */
+@media (max-width: 480px) {
+    /* Grille : 1 seule colonne */
+    .aide-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    /* Cartes en ligne (icône + label horizontaux) pour réduire la hauteur */
+    .aide-card {
+        flex-direction: row;
+        text-align: left;
+        padding: 12px 16px;
+        gap: 12px;
+        border-radius: 8px;
+    }
+
+    .aide-card-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .aide-card-label {
+        font-size: 14px;
+    }
+
+    /* Recherche : font-size 16px évite le zoom automatique iOS */
+    .aide-search-wrap input {
+        font-size: 16px;
+        padding: 12px 14px 12px 40px;
+    }
+
+    /* Accordéons : zone de clic large, texte lisible */
+    .aide-section-header {
+        font-size: 14px;
+        padding: 14px 16px;
+        min-height: 48px; /* tap target confortable */
+    }
+
+    .aide-section-header-icon {
+        font-size: 18px;
+    }
+
+    .aide-section-body {
+        padding: 0 16px 16px;
+    }
+
+    .aide-section-body p,
+    .aide-section-body ul li {
+        font-size: 14px;
+        line-height: 1.65;
+    }
+
+    .aide-tip,
+    .aide-note,
+    .aide-warn {
+        font-size: 13px;
+        padding: 9px 12px;
+    }
+}
+
+/* Mobile étroit ~375px */
+@media (max-width: 400px) {
+    .aide-header {
+        padding: 16px 14px 14px;
+        border-radius: 6px;
+        margin-bottom: 18px;
+    }
+
+    /* Picto + titre passent en colonne si l'écran est trop serré */
+    .aide-header-top {
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .aide-header-icon {
+        font-size: 26px;
+    }
+
+    .aide-header h2 {
+        font-size: 17px;
+        letter-spacing: 0;
+    }
+
+    .aide-header p {
+        font-size: 12px;
+    }
+
+    .aide-section-header {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .aide-section-body {
+        padding: 0 14px 14px;
+    }
+}

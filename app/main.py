@@ -2253,6 +2253,17 @@ def page_cartes_caces(request: Request):
         context={"page": "cartes_caces"}
     )
 
+@app.get("/aide")
+def page_aide(request: Request):
+    user = getattr(request.state, "user", None)
+    if not user:
+        return _RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse(
+        request=request,
+        name="aide.html",
+        context={"page": "aide"}
+    )
+
 @app.get("/profil")
 def page_profil(request: Request):
     return templates.TemplateResponse(

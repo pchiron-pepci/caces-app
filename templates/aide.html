@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Aide{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/aide.css">
+
+<div class="aide-header">
+    <div class="aide-header-top">
+        <div class="aide-header-icon">❓</div>
+        <div>
+            <h2>Centre d'aide NORYX</h2>
+            <p>Pilotage CACES® &amp; Autorisation de conduite — guide utilisateur</p>
+        </div>
+    </div>
+    <div class="aide-search-wrap">
+        <span class="aide-search-icon">🔍</span>
+        <input type="text" id="aide-search" placeholder="Rechercher dans l'aide…" autocomplete="off">
+    </div>
+</div>
+
+<!-- Grille 10 rubriques -->
+<div class="aide-grid">
+    <div class="aide-card" data-target="sec-demarrage" tabindex="0">
+        <span class="aide-card-icon">🚀</span>
+        <span class="aide-card-label">Démarrage</span>
+    </div>
+    <div class="aide-card" data-target="sec-sessions" tabindex="0">
+        <span class="aide-card-icon">📋</span>
+        <span class="aide-card-label">Sessions</span>
+    </div>
+    <div class="aide-card" data-target="sec-tirage" tabindex="0">
+        <span class="aide-card-icon">🎲</span>
+        <span class="aide-card-label">Tirage INRS</span>
+    </div>
+    <div class="aide-card" data-target="sec-theorie" tabindex="0">
+        <span class="aide-card-icon">📝</span>
+        <span class="aide-card-label">Épreuve théorique</span>
+    </div>
+    <div class="aide-card" data-target="sec-pratique" tabindex="0">
+        <span class="aide-card-icon">🏗️</span>
+        <span class="aide-card-label">Épreuve pratique</span>
+    </div>
+    <div class="aide-card" data-target="sec-caces" tabindex="0">
+        <span class="aide-card-icon">🏆</span>
+        <span class="aide-card-label">CACES® &amp; cartes</span>
+    </div>
+    <div class="aide-card" data-target="sec-testeurs" tabindex="0">
+        <span class="aide-card-icon">👨‍🏫</span>
+        <span class="aide-card-label">Testeurs</span>
+    </div>
+    <div class="aide-card" data-target="sec-nc" tabindex="0">
+        <span class="aide-card-icon">⚠️</span>
+        <span class="aide-card-label">Non-conformités</span>
+    </div>
+    <div class="aide-card" data-target="sec-admin" tabindex="0">
+        <span class="aide-card-icon">⚙️</span>
+        <span class="aide-card-label">Administration</span>
+    </div>
+    <div class="aide-card" data-target="sec-faq" tabindex="0">
+        <span class="aide-card-icon">💡</span>
+        <span class="aide-card-label">FAQ &amp; dépannage</span>
+    </div>
+</div>
+
+<p id="aide-no-result" class="aide-no-result">Aucun résultat pour votre recherche.</p>
+
+<!-- Sections accordéon -->
+<div class="aide-sections">
+
+    <!-- 1. Démarrage -->
+    <div class="aide-section" id="sec-demarrage">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">🚀</span>
+            <span class="aide-section-header-title">Démarrage</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <h4>Qu'est-ce que NORYX ?</h4>
+            <p>NORYX est une application de pilotage des formations CACES® (Certificat d'Aptitude à la Conduite En Sécurité) et des autorisations de conduite. Elle permet de gérer l'ensemble du cycle : de la création des sessions jusqu'à l'édition des cartes CACES®.</p>
+
+            <h4>Connexion</h4>
+            <p>Rendez-vous sur la page de connexion et saisissez votre identifiant et mot de passe fournis par votre administrateur. Une fois connecté, vous êtes redirigé vers le Dashboard.</p>
+            <div class="aide-tip">💡 Si vous oubliez votre mot de passe, contactez votre administrateur NORYX.</div>
+
+            <h4>Les trois rôles</h4>
+            <ul>
+                <li><strong>Admin :</strong> accès complet — gestion des stagiaires, sessions, CACES®, cartes, testeurs, statistiques, non-conformités et administration.</li>
+                <li><strong>Formateur :</strong> accès aux sessions, à la saisie des résultats théoriques et pratiques, aux CACES® obtenus et aux cartes.</li>
+                <li><strong>Terrain :</strong> accès limité aux sessions en cours et aux testeurs. Idéal pour les évaluateurs sur site.</li>
+            </ul>
+
+            <h4>Navigation</h4>
+            <p>Le menu latéral gauche donne accès à toutes les rubriques autorisées selon votre rôle. Cliquez sur ☰ pour réduire ou déplier le menu. Sur mobile, le menu s'ouvre en superposition.</p>
+        </div>
+    </div>
+
+    <!-- 2. Sessions -->
+    <div class="aide-section" id="sec-sessions">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">📋</span>
+            <span class="aide-section-header-title">Sessions</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <h4>Créer une session</h4>
+            <p>Dans la rubrique <strong>Sessions</strong>, cliquez sur <em>Nouvelle session</em>. Renseignez la famille CACES® (ex. R489), la référence, les dates et le lieu. La session est créée avec le statut <em>En cours</em>.</p>
+
+            <h4>Organiser une session</h4>
+            <ul>
+                <li><strong>Stagiaires :</strong> ajoutez les participants depuis le fichier de stagiaires ou créez-les directement.</li>
+                <li><strong>Jours de test :</strong> définissez les jours théoriques et pratiques, et désignez un testeur pour chaque jour.</li>
+                <li><strong>Catégories :</strong> affectez chaque stagiaire aux catégories CACES® qu'il doit passer.</li>
+            </ul>
+
+            <h4>Suivre une session</h4>
+            <p>La vue détaillée de la session affiche l'avancement : résultats théoriques (QR code ou saisie dégradée), résultats pratiques, et statut de chaque stagiaire.</p>
+            <div class="aide-note">ℹ️ Un stagiaire peut passer la théorie dans une session et la pratique dans une autre, dans un délai de ±365 jours.</div>
+
+            <h4>Exporter</h4>
+            <p>Depuis la fiche session, générez les PDF récapitulatifs (liste des résultats, détail par stagiaire) via les boutons en haut de page.</p>
+
+            <h4>Clôturer une session</h4>
+            <p>Une fois toutes les épreuves saisies, cliquez sur <em>Clôturer</em>. Les CACES® éligibles passent automatiquement en statut <em>À valider</em>.</p>
+        </div>
+    </div>
+
+    <!-- 3. Tirage INRS -->
+    <div class="aide-section" id="sec-tirage">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">🎲</span>
+            <span class="aide-section-header-title">Tirage INRS</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <h4>La règle 10-30 %</h4>
+            <p>La recommandation INRS impose qu'entre 10 % et 30 % des questions de l'épreuve théorique soient issues d'un tirage aléatoire parmi un référentiel de questions complémentaires. Ce tirage garantit l'équité et la robustesse de l'évaluation.</p>
+            <div class="aide-warn">⚠️ Si le taux de tirage sort de la fourchette 10-30 %, la session n'est pas conforme INRS.</div>
+
+            <h4>Déclencher le tirage</h4>
+            <p>Dans la grille de test théorique, le tirage INRS est effectué automatiquement lors de la génération du QR code. Le nombre de questions INRS est calculé en fonction du nombre total de questions du test pour atteindre un taux dans la fourchette cible.</p>
+
+            <h4>Figement du tirage</h4>
+            <p>Une fois le QR code scanné et le test commencé, le tirage est figé pour ce candidat. Il ne peut pas être modifié rétroactivement.</p>
+
+            <h4>Suivi des taux</h4>
+            <p>Dans la vue session, un indicateur de taux INRS est affiché pour chaque jour de test théorique. Il indique le taux moyen observé sur les tests déjà saisis et signale visuellement si la fourchette 10-30 % est respectée.</p>
+        </div>
+    </div>
+
+    <!-- 4. Épreuve théorique -->
+    <div class="aide-section" id="sec-theorie">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">📝</span>
+            <span class="aide-section-header-title">Épreuve théorique</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <p><em>Documentation à venir — rubrique en cours de rédaction.</em></p>
+        </div>
+    </div>
+
+    <!-- 5. Épreuve pratique -->
+    <div class="aide-section" id="sec-pratique">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">🏗️</span>
+            <span class="aide-section-header-title">Épreuve pratique</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <p><em>Documentation à venir — rubrique en cours de rédaction.</em></p>
+        </div>
+    </div>
+
+    <!-- 6. CACES® & cartes -->
+    <div class="aide-section" id="sec-caces">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">🏆</span>
+            <span class="aide-section-header-title">CACES® &amp; cartes</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <p><em>Documentation à venir — rubrique en cours de rédaction.</em></p>
+        </div>
+    </div>
+
+    <!-- 7. Testeurs -->
+    <div class="aide-section" id="sec-testeurs">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">👨‍🏫</span>
+            <span class="aide-section-header-title">Testeurs</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <p><em>Documentation à venir — rubrique en cours de rédaction.</em></p>
+        </div>
+    </div>
+
+    <!-- 8. Non-conformités -->
+    <div class="aide-section" id="sec-nc">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">⚠️</span>
+            <span class="aide-section-header-title">Non-conformités</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <p><em>Documentation à venir — rubrique en cours de rédaction.</em></p>
+        </div>
+    </div>
+
+    <!-- 9. Administration -->
+    <div class="aide-section" id="sec-admin">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">⚙️</span>
+            <span class="aide-section-header-title">Administration</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <p><em>Documentation à venir — rubrique en cours de rédaction.</em></p>
+        </div>
+    </div>
+
+    <!-- 10. FAQ & dépannage -->
+    <div class="aide-section" id="sec-faq">
+        <button class="aide-section-header">
+            <span class="aide-section-header-icon">💡</span>
+            <span class="aide-section-header-title">FAQ &amp; dépannage</span>
+            <span class="aide-section-header-chevron">▼</span>
+        </button>
+        <div class="aide-section-body">
+            <p><em>Documentation à venir — rubrique en cours de rédaction.</em></p>
+        </div>
+    </div>
+
+</div>
+
+<script src="/static/js/aide.js"></script>
+{% endblock %}
