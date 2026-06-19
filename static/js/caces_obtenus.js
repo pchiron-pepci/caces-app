@@ -346,9 +346,11 @@ function _renderValides() {
 
     const sorted = _sortValides(_validesArray);
     listEl.innerHTML =
-        '<div style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;">'
+        '<div class="co-scroll-wrap">'
+        + '<div style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;min-width:910px;">'
         + _renderHeaderValides()
         + sorted.map(function (co, i) { return _renderLigne(co, i); }).join('')
+        + '</div>'
         + '</div>';
 }
 
@@ -388,7 +390,8 @@ function renderCarteAValider(co) {
         </div>
 
         <!-- Body 3 colonnes : dates | sources | actions -->
-        <div style="display:flex;align-items:stretch;">
+        <div class="co-scroll-wrap">
+        <div style="display:flex;align-items:stretch;min-width:520px;">
 
             <!-- Col 1 : dates -->
             <div style="width:170px;min-width:170px;padding:14px 16px;border-right:1px solid #e8eef8;background:#fafbff;display:flex;flex-direction:column;gap:10px;justify-content:center;">
@@ -429,6 +432,7 @@ function renderCarteAValider(co) {
                 ${boutonsHtml}
             </div>
 
+        </div>
         </div>
 
     </div>`;

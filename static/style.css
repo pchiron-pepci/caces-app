@@ -308,6 +308,12 @@ body {
 .table tr:last-child td { border-bottom: none; }
 .table tr:hover td { background: var(--gray); }
 
+/* Scroll horizontal confiné — cartes CACES® obtenus */
+.co-scroll-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* BADGES */
 .badge {
     padding: 3px 10px;
