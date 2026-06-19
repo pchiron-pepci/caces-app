@@ -379,15 +379,15 @@ function renderCarteAValider(co) {
         ? co.options_pratique.split(',').map(o => `<span style="background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:1px 5px;font-size:11px;">${o.trim()}</span>`).join(' ')
         : '';
 
-    const boutonsHtml = co.statut === 'annule'
-        ? `<span style="background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;text-align:center;">↩ En révision</span>`
+    const footerHtml = co.statut === 'annule'
+        ? `<span style="background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;">↩ En révision</span>`
         : `<button data-action="revision-caces" data-id="${co.id}" data-nom="${nomComplet}"
-                style="background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">
+                style="flex:1;background:#fff;border:2px solid #e65100;color:#e65100;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                 ↩ Révision
             </button>
             <button data-action="valider-caces" data-id="${co.id}" data-nom="${nomComplet}"
-                style="background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">
-                📜 Émettre le CACES®
+                style="flex:2;background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                📜 Émettre
             </button>`;
 
     return `
@@ -404,15 +404,14 @@ function renderCarteAValider(co) {
             <span class="co-card-chevron" style="margin-left:auto;font-size:12px;color:#aaa;flex-shrink:0;">▼</span>
         </div>
 
-        <!-- Body 3 colonnes : dates | sources | actions -->
-        <div id="caces-card-body-${co.id}" class="co-scroll-wrap">
-        <div style="display:flex;align-items:stretch;width:100%;min-width:520px;">
+        <!-- Body vertical -->
+        <div id="caces-card-body-${co.id}" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
 
-            <!-- Col 1 : dates -->
-            <div style="width:170px;min-width:170px;padding:14px 16px;border-right:1px solid #e8eef8;background:#fafbff;display:flex;flex-direction:column;gap:10px;justify-content:center;">
+            <!-- Dates en ligne -->
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
                 <div>
                     <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px;">📅 Obtention</div>
-                    <div style="font-size:16px;font-weight:800;color:#1a237e;">${fmtDate(co.date_obtention)}</div>
+                    <div style="font-size:15px;font-weight:800;color:#1a237e;">${fmtDate(co.date_obtention)}</div>
                 </div>
                 <div>
                     <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px;">⏳ Échéance</div>
@@ -420,34 +419,32 @@ function renderCarteAValider(co) {
                 </div>
             </div>
 
-            <!-- Col 2 : sources -->
-            <div style="flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:7px;justify-content:center;">
-                <div class="co-source-row" style="display:flex;align-items:center;gap:8px;font-size:12px;">
-                    <span style="width:64px;color:#666;font-weight:600;white-space:nowrap;">🎓 Théorie</span>
-                    <a href="/sessions/${co.session_id_theorie}" target="_blank"
-                       style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_theorie || '—'}</a>
-                    <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
-                    <span style="color:#2e7d32;font-weight:700;">✅</span>
-                    ${co.testeur_nom_theorie ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${co.testeur_nom_theorie}</span>` : ''}
-                </div>
-                <div class="co-source-row" style="display:flex;align-items:center;gap:8px;font-size:12px;">
-                    <span style="width:64px;color:#666;font-weight:600;white-space:nowrap;">🔧 Pratique</span>
-                    <a href="/sessions/${co.session_id_pratique}" target="_blank"
-                       style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_pratique || '—'}</a>
-                    <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
-                    <span style="color:#2e7d32;font-weight:700;">✅</span>
-                    ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
-                    ${co.testeur_nom ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${co.testeur_nom}</span>` : ''}
-                </div>
+            <!-- Théorie -->
+            <div class="co-source-row" style="display:flex;align-items:center;gap:8px;font-size:12px;">
+                <span style="width:64px;color:#666;font-weight:600;white-space:nowrap;">🎓 Théorie</span>
+                <a href="/sessions/${co.session_id_theorie}" target="_blank"
+                   style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_theorie || '—'}</a>
+                <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
+                <span style="color:#2e7d32;font-weight:700;">✅</span>
+                ${co.testeur_nom_theorie ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${co.testeur_nom_theorie}</span>` : ''}
             </div>
 
-            <!-- Col 3 : actions -->
-            <div id="caces-card-${co.id}-actions"
-                 style="min-width:160px;padding:14px 16px;border-left:1px solid #e8eef8;background:#fafbff;display:flex;flex-direction:column;gap:8px;justify-content:center;align-items:stretch;">
-                ${boutonsHtml}
+            <!-- Pratique -->
+            <div class="co-source-row" style="display:flex;align-items:center;gap:8px;font-size:12px;">
+                <span style="width:64px;color:#666;font-weight:600;white-space:nowrap;">🔧 Pratique</span>
+                <a href="/sessions/${co.session_id_pratique}" target="_blank"
+                   style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_pratique || '—'}</a>
+                <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
+                <span style="color:#2e7d32;font-weight:700;">✅</span>
+                ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
+                ${co.testeur_nom ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${co.testeur_nom}</span>` : ''}
             </div>
 
-        </div>
+            <!-- Pied : boutons action -->
+            <div id="caces-card-footer-${co.id}" style="display:flex;gap:8px;border-top:1px solid #e8eef8;padding-top:12px;margin-top:2px;flex-wrap:wrap;">
+                ${footerHtml}
+            </div>
+
         </div>
 
     </div>`;
@@ -518,9 +515,9 @@ function _apresValider(id, numeroOrdre) {
 }
 
 function _apresRevisionCarte(id) {
-    const actionsEl = document.getElementById('caces-card-' + id + '-actions');
-    if (actionsEl) {
-        actionsEl.innerHTML = '<span style="background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;">↩ En révision — actualisez pour recalculer</span>';
+    const footerEl = document.getElementById('caces-card-footer-' + id);
+    if (footerEl) {
+        footerEl.innerHTML = '<span style="background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;">↩ En révision — actualisez pour recalculer</span>';
     }
 }
 
