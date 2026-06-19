@@ -372,6 +372,12 @@ function renderCarteAValider(co) {
     _carteData[co.id] = co;
     const nomComplet = _nomDdn(co);
 
+    let ddnHtml = '';
+    if (co.stagiaire_ddn) {
+        const p = co.stagiaire_ddn.split('-');
+        ddnHtml = `<span class="co-card-ddn">(${p[2]}/${p[1]}/${p[0]})</span>`;
+    }
+
     const options = co.options_obtenues
         ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">${o.trim()}</span>`).join(' ')
         : '';
@@ -391,13 +397,14 @@ function renderCarteAValider(co) {
             </button>`;
 
     return `
-    <div id="caces-card-${co.id}" style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;margin-bottom:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div id="caces-card-${co.id}" class="co-valider-card" style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;margin-bottom:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
 
         <!-- Header (clic pour plier/déplier) -->
         <div data-action="toggle-caces-card" data-id="${co.id}"
              style="background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer;user-select:none;">
             <a href="/stagiaires#${co.stagiaire_id}" target="_blank"
-               style="font-size:15px;font-weight:700;color:#1a237e;text-decoration:none;">${nomComplet}</a>
+               style="font-size:15px;font-weight:700;color:#1a237e;text-decoration:none;">${co.stagiaire_nom} ${co.stagiaire_prenom}</a>
+            ${ddnHtml}
             <span style="font-weight:700;color:#555;font-size:13px;background:#e8eaf6;padding:2px 8px;border-radius:4px;">${co.famille}</span>
             <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 10px;font-size:13px;font-weight:800;">${co.categorie}</span>
             ${options}

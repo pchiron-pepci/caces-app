@@ -320,6 +320,43 @@ body {
     row-gap: 2px;
 }
 
+/* Conteneur liste cartes CACES® obtenus */
+.co-list-wrap {
+    padding: 20px;
+}
+
+/* Date de naissance candidat dans header carte à valider */
+.co-card-ddn {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .co-card-ddn {
+        font-size: 11px;
+        color: #aaa;
+    }
+}
+
+@media (max-width: 480px) {
+    .co-card-ddn {
+        display: none;
+    }
+    /* Padding réduit pour que les cartes candidat utilisent toute la largeur disponible */
+    .co-list-wrap {
+        padding: 8px 4px;
+    }
+    /* Cartes : coins carrés, pleine largeur, séparées par 1px */
+    .co-valider-card {
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        margin-bottom: 1px !important;
+        box-shadow: none !important;
+    }
+}
+
 /* BADGES */
 .badge {
     padding: 3px 10px;
