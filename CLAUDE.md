@@ -862,3 +862,22 @@ python migrate_testeur_theorie.py
   - En `MODE_CORRECTION` (après `afficherRecap()`) : fetch habilités, peuplement select, pré-sélection sur testeur actuel, listener `change` → `testeurId`
   - `valider()` envoie déjà `testeur_id: testeurId || null` — inchangé
   - **Non bloquant** : laisser vide → `null` envoyé → `if data.testeur_id is not None` échoue → ancien testeur conservé en base
+
+- **Fix `_get_theorie_pratique` (`caces_obtenus.py`)** (commit 730d641) : le testeur théorie affiché dans CACES® Obtenus lisait `jour_theo.testeur_id` en priorité, ignorant `rt.testeur_id`. Corrigé : `testeur_theo_id = (rt.testeur_id if rt else None) or (jour_theo.testeur_id if jour_theo else None)`.
+
+### ✅ Chantier terminé : page d'aide /aide V1 (commit 2285595)
+
+**Fichiers créés :**
+- `templates/aide.html` — étend `base.html` ; bandeau anthracite `#2d2d2d`, barre de recherche, grille 10 cartes, 10 sections accordéon (3 avec contenu : Démarrage, Sessions, Tirage INRS ; 7 avec placeholder)
+- `static/css/aide.css` — identité NORYX `#2d2d2d`/`#cc0000`, responsive 3 breakpoints (768px / 480px / 400px)
+- `static/js/aide.js` — accordéons (data-action, addEventListener), clic carte → scroll + déplie section, recherche client filtre sections + cartes ; CSP-safe (aucun onclick inline)
+
+**`app/main.py`** : route `GET /aide` (auth guard `_RedirectResponse("/login")` si non connecté), avant `/profil`.
+
+**`templates/base.html`** : lien ❓ Aide ajouté dans la sidebar avant Administration, visible tous rôles.
+
+**Responsive :**
+- ≤768px : grille `minmax(140px,1fr)`, padding header réduit
+- ≤480px : grille `1fr` (1 colonne), cartes en ligne (icône + label horizontal), `font-size:16px` sur input recherche (anti-zoom iOS), `min-height:48px` sur section-header
+- ≤400px : `.aide-header-top` passe en `flex-wrap:wrap` (picto + titre en colonne si trop serré), padding/typo réduits
+- `overflow-wrap:break-word` sur `.aide-section-body` (anti-débordement horizontal)
