@@ -55,7 +55,7 @@ def _collecter_donnees(
 
     formation_meta : { "has_formation": bool, "formateurs": str }
       has_formation = True si la session a au moins un JourFormation actif.
-      formateurs    = "Nom Prénom (principal), Nom Prénom" (peut être "").
+      formateurs    = "NOM Prénom (TH + PRAT), NOM Prénom (TH)" (peut être "").
     """
     # Candidats actifs de la session
     rows = (
@@ -144,17 +144,27 @@ def _collecter_donnees(
                 u.id: f"{u.nom} {u.prenom}"
                 for u in db.query(Utilisateur).filter(Utilisateur.id.in_(user_ids)).all()
             }
-        # Un user principal sur au moins un jour = classé "principal" globalement
-        principal_ids: set[int] = set()
-        autre_ids: set[int] = set()
+        # Agréger theorie/pratique par formateur sur tous ses jours
+        user_theorie: dict[int, bool] = {}
+        user_pratique: dict[int, bool] = {}
         for af in affectations:
-            if af.principal:
-                principal_ids.add(af.user_id)
+            uid = af.user_id
+            user_theorie[uid] = user_theorie.get(uid, False) or bool(af.theorie)
+            user_pratique[uid] = user_pratique.get(uid, False) or bool(af.pratique)
+        parts = []
+        for uid in sorted(user_ids, key=lambda u: utilisateurs.get(u, "")):
+            nom = utilisateurs.get(uid, f"Formateur {uid}")
+            a_th = user_theorie.get(uid, False)
+            a_pr = user_pratique.get(uid, False)
+            if a_th and a_pr:
+                role = " (TH + PRAT)"
+            elif a_th:
+                role = " (TH)"
+            elif a_pr:
+                role = " (PRAT)"
             else:
-                autre_ids.add(af.user_id)
-        autre_ids -= principal_ids
-        parts = [f"{utilisateurs.get(uid, f'Formateur {uid}')} (principal)" for uid in sorted(principal_ids)]
-        parts += [utilisateurs.get(uid, f"Formateur {uid}") for uid in sorted(autre_ids)]
+                role = ""
+            parts.append(f"{nom}{role}")
         formateurs_label = ", ".join(parts)
 
         plannings = (

@@ -77,9 +77,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('pin-error').style.display = 'none';
         document.getElementById('modal-pin').style.display = 'flex';
         document.getElementById('pin-confirm-btn').onclick = async function() {
+            var confirmBtn = document.getElementById('pin-confirm-btn');
             var pin = document.getElementById('pin-input').value;
             var pinErrEl = document.getElementById('pin-error');
             pinErrEl.style.display = 'none';
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Téléchargement…';
             try {
                 var resp = await fetch(
                     '/sessions/' + sid + '/export-zip?pin=' + encodeURIComponent(pin),
@@ -95,18 +98,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     var blob = await resp.blob();
                     var url = URL.createObjectURL(blob);
                     var a = document.createElement('a');
-                    a.href = url; a.download = filename;
-                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(function() { URL.revokeObjectURL(url); }, 100);
                     fermerPin();
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirmer';
                 } else {
                     var errData = await resp.json().catch(function() { return {}; });
                     pinErrEl.textContent = errData.detail || 'Erreur ' + resp.status + ', réessayez.';
                     pinErrEl.style.display = 'block';
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirmer';
                 }
             } catch (err) {
+                console.error('[export-zip]', err);
                 pinErrEl.textContent = 'Erreur réseau, réessayez.';
                 pinErrEl.style.display = 'block';
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirmer';
             }
         };
     });
