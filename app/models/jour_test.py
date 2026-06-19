@@ -54,3 +54,4 @@ class ResultatTheorie(Base):
     mode = Column(String(12), nullable=False, default="numerique")
     justificatif_pdf = Column(Text, nullable=True)
     justificatif_nom = Column(String(255), nullable=True)
+    testeur_id = Column(Integer, ForeignKey("testeurs.id"), nullable=True)

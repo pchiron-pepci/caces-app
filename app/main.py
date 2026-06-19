@@ -126,6 +126,7 @@ def _run_startup_migrations():
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS mode VARCHAR(12) NOT NULL DEFAULT 'numerique'",
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS justificatif_pdf TEXT",
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS justificatif_nom VARCHAR(255)",
+        "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS testeur_id INTEGER REFERENCES testeurs(id)",
         # caces_obtenus
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT",
         # carte_caces
