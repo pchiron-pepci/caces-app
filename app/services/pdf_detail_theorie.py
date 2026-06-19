@@ -9,7 +9,7 @@ from io import BytesIO
 from html import escape as _esc
 from sqlalchemy.orm import Session as DBSession
 
-from app.models.jour_test import ResultatTheorie
+from app.models.jour_test import ResultatTheorie, JourTest
 from app.models.session import Session
 from app.models.stagiaire import Stagiaire
 from app.models.grille_theorie import ReponseGrille
@@ -117,7 +117,13 @@ def _collecter_donnees(rt: ResultatTheorie, db: DBSession) -> dict:
             "ok":        note >= (max_theme / 2),
         }
 
-    return {"stagiaire": stagiaire, "session": session, "themes": themes}
+    jour = (
+        db.query(JourTest).filter(JourTest.id == rt.jour_test_id).first()
+        if rt.jour_test_id else None
+    )
+    date_str = jour.date.strftime("%d/%m/%Y") if jour and jour.date else "—"
+
+    return {"stagiaire": stagiaire, "session": session, "themes": themes, "date_str": date_str}
 
 
 # ── Construction HTML ───────────────────────────────────────────────────────
@@ -134,7 +140,7 @@ def _build_html(
 
     nom_candidat = f"{stagiaire.nom} {stagiaire.prenom}" if stagiaire else "Candidat inconnu"
     ref_str      = (session.reference or f"Session {session.id}") if session else "—"
-    date_str     = session.date_theorie.strftime("%d/%m/%Y") if session and session.date_theorie else "—"
+    date_str     = donnees["date_str"]
     famille      = session.famille if session else "—"
 
     note_label   = f"{int(rt.note_totale)}/100" if rt.note_totale is not None else "—/100"
