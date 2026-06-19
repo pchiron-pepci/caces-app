@@ -278,6 +278,13 @@ function _confirmerMotif() {
 }
 
 // ===== UTILITAIRES =====
+function _abrevTesteur(nom) {
+    if (!nom) return '';
+    const p = nom.trim().split(/\s+/);
+    if (p.length < 2) return p[0].slice(0, 4).toUpperCase();
+    return p[1][0].toUpperCase() + '. ' + p[0].slice(0, 3).toUpperCase();
+}
+
 function _nomDdn(co) {
     let label = co.stagiaire_nom + ' ' + co.stagiaire_prenom;
     if (co.stagiaire_ddn) {
@@ -427,24 +434,32 @@ function renderCarteAValider(co) {
             </div>
 
             <!-- Théorie -->
-            <div class="co-source-row" style="display:flex;align-items:center;gap:8px;font-size:12px;">
-                <span style="width:64px;color:#666;font-weight:600;white-space:nowrap;">🎓 Théorie</span>
-                <a href="/sessions/${co.session_id_theorie}" target="_blank"
-                   style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_theorie || '—'}</a>
-                <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
-                <span style="color:#2e7d32;font-weight:700;">✅</span>
-                ${co.testeur_nom_theorie ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${co.testeur_nom_theorie}</span>` : ''}
+            <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="width:64px;flex-shrink:0;color:#666;font-weight:600;white-space:nowrap;">🎓 Théorie</span>
+                    <a href="/sessions/${co.session_id_theorie}" target="_blank"
+                       style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_theorie || '—'}</a>
+                    <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_theorie)}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding-left:72px;">
+                    <span style="color:#2e7d32;font-weight:700;">✅</span>
+                    ${co.testeur_nom_theorie ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${_abrevTesteur(co.testeur_nom_theorie)}</span>` : ''}
+                </div>
             </div>
 
             <!-- Pratique -->
-            <div class="co-source-row" style="display:flex;align-items:center;gap:8px;font-size:12px;">
-                <span style="width:64px;color:#666;font-weight:600;white-space:nowrap;">🔧 Pratique</span>
-                <a href="/sessions/${co.session_id_pratique}" target="_blank"
-                   style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_pratique || '—'}</a>
-                <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
-                <span style="color:#2e7d32;font-weight:700;">✅</span>
-                ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
-                ${co.testeur_nom ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${co.testeur_nom}</span>` : ''}
+            <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="width:64px;flex-shrink:0;color:#666;font-weight:600;white-space:nowrap;">🔧 Pratique</span>
+                    <a href="/sessions/${co.session_id_pratique}" target="_blank"
+                       style="color:#1a237e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;">${co.session_ref_pratique || '—'}</a>
+                    <span style="color:#555;white-space:nowrap;">${fmtDate(co.date_pratique)}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding-left:72px;flex-wrap:wrap;">
+                    <span style="color:#2e7d32;font-weight:700;">✅</span>
+                    ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
+                    ${co.testeur_nom ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${_abrevTesteur(co.testeur_nom)}</span>` : ''}
+                </div>
             </div>
 
             <!-- Pied : boutons action -->
