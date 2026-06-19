@@ -391,7 +391,7 @@ function renderCarteAValider(co) {
 
         <!-- Body 3 colonnes : dates | sources | actions -->
         <div class="co-scroll-wrap">
-        <div style="display:flex;align-items:stretch;min-width:520px;">
+        <div style="display:flex;align-items:stretch;width:100%;min-width:520px;">
 
             <!-- Col 1 : dates -->
             <div style="width:170px;min-width:170px;padding:14px 16px;border-right:1px solid #e8eef8;background:#fafbff;display:flex;flex-direction:column;gap:10px;justify-content:center;">
