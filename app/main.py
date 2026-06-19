@@ -2124,6 +2124,8 @@ def page_test_theorie(request: Request, session_id: int, jour_id: int):
                 "tirage_declenche": _tirage is not None,
                 "rt_par_stagiaire": rt_par_stagiaire,
                 "tous_notes": tous_notes,
+                "famille": session.famille,
+                "testeur_id_jour": jour.testeur_id,
             }
         )
     finally:
@@ -2183,6 +2185,8 @@ def page_test_theorie_start(request: Request, jour_test_id: int, stagiaire_id: i
                 "tirage_declenche": _tirage2 is not None,
                 "rt_par_stagiaire": rt_par_stagiaire,
                 "tous_notes": tous_notes,
+                "famille": session.famille if session else "",
+                "testeur_id_jour": jour.testeur_id,
             }
         )
     finally:

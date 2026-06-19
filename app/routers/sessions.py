@@ -102,6 +102,7 @@ class ReponsesCandidatCreate(BaseModel):
     jour_test_id: int
     stagiaire_id: int
     reponses: dict
+    testeur_id: Optional[int] = None
 
 class EpreuveCreate(BaseModel):
     session_id: int
@@ -608,6 +609,8 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
         existing.theme5_ok = resultat["themes_ok"].get("5")
         existing.obtenue = resultat["obtenue"]
         existing.mode = "numerique"
+        if data.testeur_id is not None:
+            existing.testeur_id = data.testeur_id
     else:
         rt = ResultatTheorie(
             session_id=session_id,
@@ -629,6 +632,7 @@ def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db
             obtenue=resultat["obtenue"],
             dispense=False,
             mode="numerique",
+            testeur_id=data.testeur_id,
         )
         db.add(rt)
 

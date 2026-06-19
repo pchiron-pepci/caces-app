@@ -513,6 +513,14 @@
         </div>
     </div>
 
+    <div class="card" id="card-testeur-select">
+        <label class="field-label">Testeur</label>
+        <select id="select-testeur">
+            <option value="">— Sélectionner le testeur —</option>
+        </select>
+        <div id="msg-testeur-chargement" style="font-size:12px; color:#888; margin-top:6px;">Chargement…</div>
+    </div>
+
     <div id="qr-section" style="display:none; text-align:center; margin-top:20px; padding:20px; background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(26,35,126,0.10);">
         <div style="font-size:12px; font-weight:700; color:#1a237e; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px;">📱 Le candidat peut scanner ce QR</div>
         <div id="qr-box" style="display:inline-block;"></div>
@@ -694,11 +702,14 @@ const START_STAGIAIRE_ID = {{ start_stagiaire_id if start_stagiaire_id is define
 const START_NOM = "{{ start_nom if start_nom is defined else '' }}";
 const START_PRENOM = "{{ start_prenom if start_prenom is defined else '' }}";
 const START_DDN = "{{ start_ddn if start_ddn is defined else '' }}";
+const FAMILLE = "{{ famille or '' }}";
+const TESTEUR_ID_JOUR = {{ testeur_id_jour if testeur_id_jour is not none else 'null' }};
 
 let questions = [];
 let reponses = {};
 let questionActuelle = 0;
 let stagiaireId = null;
+let testeurId = null;
 let timerInterval = null;
 let tempsRestant = 60 * 60;
 let recapDebloque = false;
@@ -848,6 +859,7 @@ document.getElementById('select-candidat').addEventListener('change', function()
 
 if (START_DIRECT && START_STAGIAIRE_ID) {
     stagiaireId = START_STAGIAIRE_ID;
+    testeurId = TESTEUR_ID_JOUR;
     const nomComplet = START_NOM + ' ' + START_PRENOM;
     document.getElementById('identite-nom').textContent = nomComplet;
     document.getElementById('identite-info').textContent = START_DDN ? 'Date de naissance le ' + START_DDN : '';
@@ -859,6 +871,34 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
         document.getElementById('ecran-identite').style.display = 'block';
     }
     // En mode correction : aucun écran affiché ici — chargerQuestions() atterrit directement sur le récap pré-rempli
+} else {
+    // Voie tablette : charger les testeurs habilités et peupler le select
+    if (FAMILLE) {
+        fetch('/api/testeurs/habilites?famille=' + encodeURIComponent(FAMILLE))
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(testeurs) {
+                var sel = document.getElementById('select-testeur');
+                var msg = document.getElementById('msg-testeur-chargement');
+                testeurs.forEach(function(t) {
+                    var opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.nom + ' ' + t.prenom;
+                    sel.appendChild(opt);
+                });
+                msg.style.display = 'none';
+                // Pré-sélectionner le testeur du jour si habilité, sinon auto si unique
+                if (TESTEUR_ID_JOUR && testeurs.some(function(t) { return t.id === TESTEUR_ID_JOUR; })) {
+                    sel.value = TESTEUR_ID_JOUR;
+                } else if (testeurs.length === 1) {
+                    sel.value = testeurs[0].id;
+                }
+            })
+            .catch(function() {
+                document.getElementById('msg-testeur-chargement').textContent = 'Erreur de chargement des testeurs.';
+            });
+    } else {
+        document.getElementById('msg-testeur-chargement').textContent = '';
+    }
 }
 
 // ECRAN 1 → 2
@@ -878,6 +918,15 @@ function allerConfirmation() {
         msgBloque.style.display = '';
         return;
     }
+
+    testeurId = parseInt(document.getElementById('select-testeur').value) || null;
+    if (!testeurId) {
+        const msgBloque = document.getElementById('msg-bloque-select');
+        msgBloque.textContent = '⚠️ Veuillez sélectionner le testeur avant de continuer.';
+        msgBloque.style.display = '';
+        return;
+    }
+    document.getElementById('msg-bloque-select').style.display = 'none';
 
     // RESET complet pour le nouveau candidat
     reponses = {};
@@ -1111,7 +1160,8 @@ async function valider(force = false) {
         body: JSON.stringify({
             jour_test_id: JOUR_ID,
             stagiaire_id: parseInt(stagiaireId),
-            reponses: reponsesFinales
+            reponses: reponsesFinales,
+            testeur_id: testeurId || null
         })
     });
 
