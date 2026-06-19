@@ -76,10 +76,38 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('pin-input').value = '';
         document.getElementById('pin-error').style.display = 'none';
         document.getElementById('modal-pin').style.display = 'flex';
-        document.getElementById('pin-confirm-btn').onclick = function() {
+        document.getElementById('pin-confirm-btn').onclick = async function() {
             var pin = document.getElementById('pin-input').value;
-            fermerPin();
-            window.open('/sessions/' + sid + '/export-zip?pin=' + encodeURIComponent(pin), '_blank');
+            var pinErrEl = document.getElementById('pin-error');
+            pinErrEl.style.display = 'none';
+            try {
+                var resp = await fetch(
+                    '/sessions/' + sid + '/export-zip?pin=' + encodeURIComponent(pin),
+                    { credentials: 'same-origin' }
+                );
+                if (resp.ok) {
+                    var filename = 'export-session.zip';
+                    var cd = resp.headers.get('Content-Disposition');
+                    if (cd) {
+                        var m = cd.match(/filename[^;=\n]*=([^;\n]*)/);
+                        if (m && m[1]) filename = m[1].trim().replace(/['"]/g, '');
+                    }
+                    var blob = await resp.blob();
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url; a.download = filename;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    fermerPin();
+                } else {
+                    var errData = await resp.json().catch(function() { return {}; });
+                    pinErrEl.textContent = errData.detail || 'Erreur ' + resp.status + ', réessayez.';
+                    pinErrEl.style.display = 'block';
+                }
+            } catch (err) {
+                pinErrEl.textContent = 'Erreur réseau, réessayez.';
+                pinErrEl.style.display = 'block';
+            }
         };
     });
     document.addEventListener('click', function(e) {
