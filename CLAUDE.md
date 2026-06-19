@@ -747,3 +747,26 @@ Occurrences modifiées :
 - Inséré à la fin de `ep-detail` pour la ligne théorie ET chaque ligne pratique.
 
 **Imports ajoutés :** `import json`, `from app.models.jour_test import JourTest`, `from app.models.testeur import Testeur`.
+
+### ✅ Chantier terminé : récap PDF — enrichissement Formation (commit f673bde)
+
+**`_collecter_donnees` → retourne maintenant `(candidats, formation_meta)` (tuple).**
+
+Requêtes groupées anti-N+1 ajoutées :
+1. `JourFormation.session_id == session_id, actif=True` → `jf_ids`
+2. `AffectationFormation.jour_formation_id.in_(jf_ids)` + `Utilisateur.id.in_(user_ids)` → formateurs (Utilisateur, PAS Testeur)
+3. `PlanningApprenant.jour_formation_id.in_(jf_ids), actif=True` → heures par stagiaire_id
+
+**`formation_meta = {"has_formation": bool, "formateurs": str}` :**
+- `has_formation` = True si au moins un JourFormation actif → contrôle l'affichage (section omise si False)
+- `formateurs` = "Nom Prénom (principal), Nom Prénom" — dédupliqué : si un Utilisateur est principal sur AU MOINS un jour, classé "principal"
+
+**`heures_formation` par candidat :** `heures_theorie + sum(heures_par_cat.values()) + heures_libre` sur tous ses PlanningApprenant de la session. `None` si absent (affiché "—").
+
+**Affichage dans `_build_html` :**
+- En-tête session (`.doc-meta`) : ligne `Formateurs :` si `has_formation and formateurs_str`
+- Bloc candidat : ligne `Formation | | X h` AVANT Théorie et Pratique, uniquement si `has_formation`
+
+**`generer_recap_resultats`** : dépaquette le tuple → `candidats, formation = _collecter_donnees(...)` → `_build_html(..., formation)`.
+
+**Modèles utilisés (tables) :** `jours_formation`, `affectations_formation`, `planning_apprenants`, `utilisateurs`.
