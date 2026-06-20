@@ -430,17 +430,18 @@
             font-size: 11px; font-weight: 700; cursor: pointer;
         }
 
-        .recap-q.repondue { background: #bbdefb; color: #0d47a1; }
-        .recap-q.vide { background: #fff9c4; color: #f57f17; border: 2px dashed #ffd54f; }
-
-        .btn-valider {
-            width: 100%; padding: 16px;
-            background: #1a237e; color: white;
-            border: none; border-radius: 12px;
-            font-size: 16px; font-weight: 800;
-            cursor: pointer; text-transform: uppercase;
-            letter-spacing: 1px; margin-top: 4px; margin-bottom: 10px;
+        .recap-q.repondue {
+            background: #FAC775;
+            color: #854F0B;
+            border: 1px solid #FAC775;
         }
+        .recap-q.vide {
+            background: #eceff1;
+            color: #90a4ae;
+            border: 1px solid #cfd8dc;
+        }
+
+        /* .btn-valider défini plus bas avec les règles recap */
 
         .btn-retour {
             width: 100%; padding: 13px;
@@ -507,6 +508,97 @@
             font-family: inherit;
         }
         .btn-recap-ico { font-size: 15px; }
+
+        .recap-cadres {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .recap-cadre {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            border-radius: 11px;
+            padding: 12px 13px;
+        }
+        .recap-cadre-gris {
+            background: #f4f5f6;
+            border: 1px solid #e0e3e6;
+        }
+        .recap-cadre-jaune {
+            background: #FAEEDA;
+            border: 1px solid #FAC775;
+        }
+        .recap-cadre-pastille {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+        .rcp-gris { background: #eceff1; border: 1px solid #cfd8dc; }
+        .rcp-jaune { background: #FAC775; }
+        .recap-cadre-txt { font-size: 14px; color: #5f6b76; }
+        .recap-cadre-jaune .recap-cadre-txt { color: #854F0B; }
+        .recap-nb-sans { font-size: 19px; font-weight: 700; color: #E24B4A; }
+        .recap-nb-rep { font-size: 19px; font-weight: 700; color: #854F0B; }
+
+        .recap-complet {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            background: #E1F5EE;
+            border: 1px solid #5DCAA5;
+            border-radius: 11px;
+            padding: 13px 15px;
+            margin-bottom: 14px;
+        }
+        .recap-complet-check {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #1D9E75;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 17px;
+            font-weight: 700;
+        }
+        .recap-complet-titre { font-size: 15px; font-weight: 700; color: #0F6E56; }
+        .recap-complet-sous { font-size: 12px; color: #0F6E56; }
+
+        .recap-aide {
+            border-left: 3px solid #4a5568;
+            background: #f4f5f6;
+            border-radius: 0 8px 8px 0;
+            padding: 10px 14px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            color: #4a5568;
+            line-height: 1.4;
+        }
+
+        .btn-valider {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 30px;
+            background: #4a5568;
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .recap-valider-wrap {
+            display: flex;
+            justify-content: center;
+            margin-top: 6px;
+        }
 
         .reponse-grid.a-repondu .btn-vrai:not(.selected),
         .reponse-grid.a-repondu .btn-faux:not(.selected) {
@@ -733,8 +825,26 @@
 <!-- ECRAN 5 : RECAP -->
 <div class="screen" id="ecran-recap" style="display:none;">
     <div class="recap-header">
-        <div class="recap-score-big" id="recap-nb">0</div>
-        <div class="recap-score-label">questions repondues sur 100</div>
+        <div id="recap-etat-incomplet" class="recap-cadres">
+            <div class="recap-cadre recap-cadre-gris">
+                <span class="recap-cadre-pastille rcp-gris"></span>
+                <span class="recap-cadre-txt"><span class="recap-nb-sans" id="recap-nb-sans">0</span> sans réponse</span>
+            </div>
+            <div class="recap-cadre recap-cadre-jaune">
+                <span class="recap-cadre-pastille rcp-jaune"></span>
+                <span class="recap-cadre-txt"><span class="recap-nb-rep" id="recap-nb">0</span> répondu</span>
+            </div>
+        </div>
+        <div id="recap-etat-complet" class="recap-complet" style="display:none;">
+            <span class="recap-complet-check">&#10003;</span>
+            <div>
+                <div class="recap-complet-titre">Toutes les questions sont répondues</div>
+                <div class="recap-complet-sous">100 / 100 — vous pouvez valider</div>
+            </div>
+        </div>
+        <div class="recap-aide">
+            <span>Cliquez sur une question pour y revenir et compléter ou modifier votre réponse.</span>
+        </div>
     </div>
 
     {% set theme_noms = {1: 'Connaissances generales', 2: 'Technologie et stabilite', 3: 'Exploitation', 4: 'Circulation', 5: 'Fin de poste'} %}
@@ -744,7 +854,7 @@
         <div class="recap-theme-title">Theme {{ t }} · {{ theme_noms[t] }}</div>
         <div class="recap-questions" id="recap-t{{ t }}">
             {% for i in range(theme_nb[t]) %}
-            <div class="recap-q vide" id="rq-{{ t }}-{{ i }}" onclick="allerQuestion({{ t }}, {{ i }})">{{ i+1 }}</div>
+            <div class="recap-q vide" id="rq-{{ t }}-{{ i }}" data-action="aller-question" data-theme="{{ t }}" data-idx="{{ i }}">{{ i+1 }}</div>
             {% endfor %}
         </div>
     </div>
@@ -757,7 +867,9 @@
         </select>
     </div>
 
-    <button class="btn-valider" onclick="valider()">✅ Valider mes reponses</button>
+    <div class="recap-valider-wrap">
+        <button class="btn-valider" data-action="valider-test" type="button"><span style="font-size:16px;">&#10003;</span> Valider mes réponses</button>
+    </div>
     <button class="btn-retour" onclick="retourQcm()">← Continuer a repondre</button>
     <div id="msg-erreur-submit" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
 </div>
@@ -1245,7 +1357,21 @@ function precedent() {
 function afficherRecap() {
     document.getElementById('ecran-qcm').style.display = 'none';
     document.getElementById('ecran-recap').style.display = 'block';
-    document.getElementById('recap-nb').textContent = Object.keys(reponses).length;
+    var nbRep = Object.keys(reponses).length;
+    var total = questions.length;
+    var nbSans = total - nbRep;
+    document.getElementById('recap-nb').textContent = nbRep;
+    var elSans = document.getElementById('recap-nb-sans');
+    if (elSans) elSans.textContent = nbSans;
+    var blocIncomplet = document.getElementById('recap-etat-incomplet');
+    var blocComplet = document.getElementById('recap-etat-complet');
+    if (nbSans <= 0) {
+        if (blocIncomplet) blocIncomplet.style.display = 'none';
+        if (blocComplet) blocComplet.style.display = 'flex';
+    } else {
+        if (blocIncomplet) blocIncomplet.style.display = 'flex';
+        if (blocComplet) blocComplet.style.display = 'none';
+    }
 }
 
 function allerQuestion(theme, idx) {
@@ -1335,6 +1461,17 @@ document.getElementById('ecran-qcm').addEventListener('click', function(e) {
         relireQuestion();
     } else if (action === 'voir-recap') {
         afficherRecap();
+    }
+});
+
+document.getElementById('ecran-recap').addEventListener('click', function(e) {
+    const cible = e.target.closest('[data-action]');
+    if (!cible) return;
+    const action = cible.dataset.action;
+    if (action === 'aller-question') {
+        allerQuestion(parseInt(cible.dataset.theme, 10), parseInt(cible.dataset.idx, 10));
+    } else if (action === 'valider-test') {
+        valider();
     }
 });
 </script>
