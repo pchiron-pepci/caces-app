@@ -492,6 +492,22 @@
         }
         .btn-reecouter-ico { font-size: 18px; }
 
+        .btn-recap-mini {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            background: transparent;
+            border: 1px solid #c5cae9;
+            color: #1a237e;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-recap-ico { font-size: 15px; }
+
         .reponse-grid.a-repondu .btn-vrai:not(.selected),
         .reponse-grid.a-repondu .btn-faux:not(.selected) {
             border-color: #e0e0e0;
@@ -706,12 +722,11 @@
 
         <div class="navigation">
             <button class="btn-nav btn-prev" id="btn-precedent" data-action="precedent" type="button" disabled>&#8592; Précédente</button>
+            <button class="btn-recap-mini" id="btn-voir-recap" data-action="voir-recap" type="button" style="display:none;" aria-label="Voir le récapitulatif">
+                <span class="btn-recap-ico">&#128203;</span> Récap
+            </button>
             <button class="btn-nav btn-suiv" id="btn-suivant" data-action="suivant" type="button">Suivante &#8594;</button>
         </div>
-
-        <button id="btn-voir-recap" data-action="voir-recap" type="button" style="display:none;">
-            Voir le récap
-        </button>
     </div>
 </div>
 
@@ -1144,7 +1159,7 @@ function afficherQuestion(idx) {
 
     if (idx === questions.length - 1) recapDebloque = true;
     const btnVR = document.getElementById('btn-voir-recap');
-    if (btnVR) btnVR.style.display = (MODE_CORRECTION || recapDebloque) ? 'block' : 'none';
+    if (btnVR) btnVR.style.display = (MODE_CORRECTION || recapDebloque) ? 'inline-flex' : 'none';
 
     document.getElementById('q-num').textContent = idx + 1;
     const pct = Math.round((idx + 1) / questions.length * 100);
