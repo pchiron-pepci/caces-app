@@ -316,12 +316,12 @@
 
         .question-image {
             width: 100%;
-            max-height: 200px;
+            height: auto;
             object-fit: contain;
-            border-radius: 10px;
-            margin-bottom: 16px;
-            background: #f0f2f7;
+            border-radius: 12px;
+            margin-bottom: 14px;
             display: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
         }
 
         .question-image.visible { display: block; }
@@ -457,6 +457,16 @@
             font-size: 18px;
             font-weight: 800;
             color: #64b5f6;
+        }
+
+        .qcm-card {
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 110px);
+        }
+
+        .reponse-grid {
+            margin-top: auto;
         }
     </style>
 </head>
