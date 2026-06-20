@@ -359,9 +359,21 @@
         }
 
         .btn-vrai { background: #f1f8e9; color: #33691e; border-color: #c5e1a5; }
-        .btn-vrai.selected { background: #33691e; color: white; border-color: #33691e; }
         .btn-faux { background: #fce4ec; color: #b71c1c; border-color: #f48fb1; }
-        .btn-faux.selected { background: #b71c1c; color: white; border-color: #b71c1c; }
+
+        .btn-vrai.selected,
+        .btn-faux.selected {
+            border-color: #EF9F27;
+            background: #FAEEDA;
+            color: #854F0B;
+            opacity: 1;
+        }
+        .btn-vrai.selected .rep-ico,
+        .btn-vrai.selected .rep-mot,
+        .btn-faux.selected .rep-ico,
+        .btn-faux.selected .rep-mot {
+            color: #854F0B;
+        }
 
         .navigation {
             display: grid;
