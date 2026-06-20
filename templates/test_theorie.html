@@ -474,6 +474,23 @@
         #ecran-qcm {
             padding-bottom: 12px;
         }
+
+        .btn-reecouter {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            border: none;
+            color: #1a237e;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 4px 0;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            align-self: flex-start;
+        }
+        .btn-reecouter-ico { font-size: 18px; }
     </style>
 </head>
 <body>
@@ -656,8 +673,8 @@
 
         <img id="q-image" class="question-image" src="" alt="">
 
-        <button class="btn-ecouter" data-action="relire-question" type="button">
-            <span class="btn-ecouter-ico">&#9658;</span> Écouter la question
+        <button class="btn-reecouter" data-action="relire-question" type="button" aria-label="Réécouter la question">
+            <span class="btn-reecouter-ico">&#128266;</span> Réécouter
         </button>
 
         <div class="question-text" id="q-texte">Chargement...</div>
