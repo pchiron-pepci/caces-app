@@ -619,25 +619,35 @@
 
 <!-- ECRAN 4 : QCM -->
 <div class="screen" id="ecran-qcm" style="display:none;">
-    <div class="card">
+    <div class="card qcm-card">
         <div class="theme-badge" id="q-theme-label">Theme 1</div>
+
         <img id="q-image" class="question-image" src="" alt="">
-        <button onclick="relireQuestion()"
-            style="background:#e8eaf6; border:none; border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; margin-bottom:12px; color:#1a237e; font-weight:700;">
-            🔊 Relire la question
+
+        <button class="btn-ecouter" data-action="relire-question" type="button">
+            <span class="btn-ecouter-ico">&#9658;</span> Écouter la question
         </button>
+
         <div class="question-text" id="q-texte">Chargement...</div>
+
         <div class="reponse-grid">
-            <button class="btn-reponse btn-vrai" id="btn-vrai" onclick="repondre(true)">✅ VRAI</button>
-            <button class="btn-reponse btn-faux" id="btn-faux" onclick="repondre(false)">❌ FAUX</button>
+            <button class="btn-reponse btn-vrai" id="btn-vrai" data-action="repondre" data-valeur="true" type="button">
+                <span class="rep-ico">&#128077;</span>
+                <span class="rep-mot">VRAI</span>
+            </button>
+            <button class="btn-reponse btn-faux" id="btn-faux" data-action="repondre" data-valeur="false" type="button">
+                <span class="rep-ico">&#128078;</span>
+                <span class="rep-mot">FAUX</span>
+            </button>
         </div>
+
         <div class="navigation">
-            <button class="btn-nav btn-precedent" id="btn-precedent" onclick="precedent()" disabled>← Precedente</button>
-            <button class="btn-nav btn-suivant" id="btn-suivant" onclick="suivant()">Suivante →</button>
+            <button class="btn-nav btn-prev" id="btn-precedent" data-action="precedent" type="button" disabled>&#8592; Précédente</button>
+            <button class="btn-nav btn-suiv" id="btn-suivant" data-action="suivant" type="button">Suivante &#8594;</button>
         </div>
-        <button id="btn-voir-recap" onclick="afficherRecap()"
-            style="display:none; margin-top:10px; width:100%; padding:12px; background:#1a237e; color:white; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer;">
-            📋 Voir le récap
+
+        <button id="btn-voir-recap" data-action="voir-recap" type="button" style="display:none;">
+            Voir le récap
         </button>
     </div>
 </div>
@@ -1105,19 +1115,24 @@ if (window.speechSynthesis) {
     if (reponses[idx] === true) btnV.classList.add('selected');
     else if (reponses[idx] === false) btnF.classList.add('selected');
 
+    const grid = document.querySelector('.reponse-grid');
+    if (reponses[idx] === true || reponses[idx] === false) grid.classList.add('a-repondu');
+    else grid.classList.remove('a-repondu');
+
     document.getElementById('btn-precedent').disabled = idx === 0;
     const btnS = document.getElementById('btn-suivant');
     if (idx === questions.length - 1) {
         btnS.textContent = 'Voir recap →';
-        btnS.onclick = afficherRecap;
+        btnS.dataset.dernier = '1';
     } else {
         btnS.textContent = 'Suivante →';
-        btnS.onclick = suivant;
+        btnS.dataset.dernier = '0';
     }
 }
 
 function repondre(valeur) {
     reponses[questionActuelle] = valeur;
+    document.querySelector('.reponse-grid').classList.add('a-repondu');
     const btnV = document.getElementById('btn-vrai');
     const btnF = document.getElementById('btn-faux');
     btnV.classList.remove('selected');
@@ -1226,6 +1241,24 @@ function afficherResultat() {
     if (timerInterval) clearInterval(timerInterval);
     document.getElementById('timer').style.display = 'none';
 }
+
+document.getElementById('ecran-qcm').addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'repondre') {
+        repondre(btn.dataset.valeur === 'true');
+    } else if (action === 'precedent') {
+        precedent();
+    } else if (action === 'suivant') {
+        if (btn.dataset.dernier === '1') afficherRecap();
+        else suivant();
+    } else if (action === 'relire-question') {
+        relireQuestion();
+    } else if (action === 'voir-recap') {
+        afficherRecap();
+    }
+});
 </script>
 
 <!-- MODAL CONFIRM -->

@@ -865,6 +865,47 @@ python migrate_testeur_theorie.py
 
 - **Fix `_get_theorie_pratique` (`caces_obtenus.py`)** (commit 730d641) : le testeur théorie affiché dans CACES® Obtenus lisait `jour_theo.testeur_id` en priorité, ignorant `rt.testeur_id`. Corrigé : `testeur_theo_id = (rt.testeur_id if rt else None) or (jour_theo.testeur_id if jour_theo else None)`.
 
+### ✅ Chantier terminé : refonte layout cartes CACES® à valider (commit 7c9e67d)
+
+**Fichier modifié :** `static/js/caces_obtenus.js`
+
+**`renderCarteAValider` — abandon du layout 3 colonnes (dates | sources | actions) au profit d'un layout vertical :**
+- `flex-direction:column` sur le corps de carte (supprime `co-scroll-wrap` du body, le layout vertical est nativement responsive)
+- Ligne dates : obtention + échéance côte à côte (`display:flex;gap:24px;flex-wrap:wrap`)
+- Ligne théorie : `🎓 Théorie` + lien session + date + ✅ + testeur
+- Ligne pratique : `🔧 Pratique` + lien session + date + ✅ + options + testeur
+- Pied de carte `id="caces-card-footer-{id}"` : bouton "↩ Révision" (`flex:1`, bordure orange) + bouton "📜 Émettre" (`flex:2`, fond vert) côte à côte ; si `statut==='annule'` → badge orange "En révision"
+
+**`_apresRevisionCarte` — mise à jour du sélecteur DOM :**
+- Avant : `document.getElementById('caces-card-' + id + '-actions')`
+- Après : `document.getElementById('caces-card-footer-' + id)`
+
+### ✅ Chantier terminé : refonte visuelle bloc question test théorique (écran QCM)
+
+**Périmètre :** intérieur de `#ecran-qcm` uniquement dans `templates/test_theorie.html`. Header (logo, titre, chrono, barre progression), écrans 1/2/3, récap et logique de scoring : NON touchés. Bascule identité anthracite NORYX + restyle des autres écrans = chantier ultérieur (faire tout d'un bloc, pas d'état hybride).
+
+**HTML (`#ecran-qcm`) :**
+- Migration des 5 boutons `onclick` inline → `data-action` (CSP-safe, listener délégué) : `relire-question`, `repondre` (`data-valeur` true/false), `precedent`, `suivant`, `voir-recap`
+- Image `#q-image` : suppression du fond gris (retrait `max-height:200px` + `background:#f0f2f7` + `object-fit:contain` figé) → `width:100%`, `height:auto`, `object-fit:contain`, photo plein largeur au ratio réel (1:1 majoritaire), zéro bande grise
+- Bouton "🔊 Relire" → "▶ Écouter la question" (`.btn-ecouter`, pilule)
+- Énoncé `.question-text` agrandi à 21px
+- VRAI/FAUX en `.btn-reponse` avec pictos pouce (👍 VRAI / 👎 FAUX), 104px de haut
+
+**Règle ergonomique VRAI/FAUX (public lisant difficilement) — NE PAS revenir en arrière sans raison :**
+- Au repos : VRAI vert (`#1D9E75`/`#E1F5EE`), FAUX rouge (`#E24B4A`/`#FCEBEB`) — sert UNIQUEMENT à distinguer les deux boutons avant réponse
+- Au clic : le bouton choisi passe au **JAUNE** (`#EF9F27`/`#FAEEDA`/`#854F0B`), IDENTIQUE pour VRAI et FAUX ; l'autre s'estompe (`opacity 0.45`). Le jaune ne signifie jamais "bon/mauvais" — juste "voici ton choix". Évite que le candidat lise vert=correct / rouge=erreur.
+- Mécanique : classe `.selected` sur `#btn-vrai`/`#btn-faux` (inchangée) + classe `.a-repondu` sur `.reponse-grid` (nouvelle) qui déclenche l'estompage de l'autre via `.reponse-grid.a-repondu .btn-reponse:not(.selected)`
+- Décision : possibilité de tester avec candidats réels et basculer vers neutre (jaune/anthracite au repos) si réflexe "cliquer le vert" observé — la règle de couleur est isolée dans le CSS, modifiable en un point
+
+**JS :**
+- `repondre(valeur)` : ajout de `classList.add('a-repondu')` sur `.reponse-grid`
+- `afficherQuestion(idx)` : reset/réapplication de `a-repondu` selon état coché ; suppression des `btnS.onclick` dynamiques (`afficherRecap`/`suivant`) remplacés par `btnS.dataset.dernier` (`'1'` sur dernière question, `'0'` sinon)
+- Listener délégué sur `#ecran-qcm` : route `data-action` → `repondre`/`precedent`/`suivant`/`relire-question`/`voir-recap` ; double rôle Suivante géré via `data-dernier` (`='1'` → `afficherRecap`, sinon `suivant`)
+
+**Navigation :** Précédente discrète (lien), Suivante pilule bleu marine `#1a237e` (cohérent avec l'existant — pas d'anthracite cette passe).
+
+**Note CSP corrigée dans les faits :** la CSP réellement posée (`app/main.py`) est `script-src * 'unsafe-inline' 'unsafe-eval'` — les `onclick` inline étaient autorisés, contrairement à la note "Render bloque les `onclick` inline". Migration `data-action` faite quand même sur ce bloc (conformité à la règle projet + anticipation d'un durcissement CSP futur). Chantier à prévoir : durcir la CSP + migrer tout le inline restant (`admin.html`, autres écrans `test_theorie.html`).
+
 ### ✅ Chantier terminé : page d'aide /aide V1 (commit 2285595)
 
 **Fichiers créés :**
