@@ -493,6 +493,73 @@
         }
         .btn-reecouter-ico { font-size: 18px; }
 
+        .cons-duree-wrap { text-align: center; margin-bottom: 16px; }
+        .cons-duree-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9a9a9a;
+        }
+        .cons-timer {
+            font-size: 44px;
+            font-weight: 800;
+            color: #2d2d2d;
+            line-height: 1.1;
+            margin-top: 2px;
+        }
+        .cons-titre-box {
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .cons-titre-test { font-size: 14px; font-weight: 800; color: #fff; }
+        .cons-titre-sous { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+        .cons-regles-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9a9a9a;
+            margin-bottom: 6px;
+        }
+        .cons-item {
+            display: flex;
+            gap: 11px;
+            padding: 11px 0;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: flex-start;
+        }
+        .cons-item:last-of-type { border-bottom: none; }
+        .cons-ico {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: #f0efef;
+            color: #2d2d2d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+        .cons-ico-num { font-size: 14px; font-weight: 700; }
+        .cons-ico-rouge { color: #cc0000; }
+        .cons-txt { font-size: 13px; color: #4a5568; line-height: 1.4; }
+        .cons-txt strong { color: #2d2d2d; }
+        .cons-btn {
+            margin-top: 16px;
+            background: #2d2d2d;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .cons-btn:hover { background: #1f1f1f; }
+        .cons-btn-ico { font-size: 13px; }
+
         .btn-recap-mini {
             display: none;
             align-items: center;
@@ -751,41 +818,41 @@
 <!-- ECRAN 3 : CONSIGNES -->
 <div class="screen" id="ecran-consignes" style="display:none;">
     <div class="card">
-        <div style="text-align:center; margin-bottom:8px;">
-            <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#888;">Duree du test</div>
-            <div class="timer-display">⏱ 60:00</div>
+        <div class="cons-duree-wrap">
+            <div class="cons-duree-label">Durée du test</div>
+            <div class="cons-timer">60:00</div>
         </div>
 
-        <div style="background:#e8eaf6; border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
-            <div style="font-size:14px; font-weight:800; color:#1a237e; margin-bottom:4px;">TEST THEORIQUE CACES® R.482</div>
-            <div style="font-size:13px; color:#3949ab;">100 questions VRAI / FAUX</div>
+        <div class="cons-titre-box">
+            <div class="cons-titre-test">Test théorique CACES® R.482</div>
+            <div class="cons-titre-sous">100 questions VRAI / FAUX</div>
         </div>
 
-        <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:12px;">Regles de l'epreuve</div>
+        <div class="cons-regles-label">Règles de l'épreuve</div>
 
-        <div class="consigne-item">
-            <span class="consigne-icon">📝</span>
-            <div><strong>100 questions</strong> a repondre par VRAI ou FAUX. Vous pouvez revenir en arriere a tout moment.</div>
+        <div class="cons-item">
+            <span class="cons-ico cons-ico-num">100</span>
+            <div class="cons-txt"><strong>100 questions</strong> VRAI ou FAUX. Retour en arrière possible à tout moment.</div>
         </div>
-        <div class="consigne-item">
-            <span class="consigne-icon">⏱</span>
-            <div><strong>60 minutes maximum.</strong> Le test se soumet automatiquement a la fin du temps.</div>
+        <div class="cons-item">
+            <span class="cons-ico">&#9201;</span>
+            <div class="cons-txt"><strong>60 minutes</strong> — le test se termine automatiquement à la fin du temps.</div>
         </div>
-        <div class="consigne-item">
-            <span class="consigne-icon">📊</span>
-            <div><strong>5 themes notes independamment.</strong> Vous devez obtenir au moins <strong>50% dans chaque theme.</strong></div>
+        <div class="cons-item">
+            <span class="cons-ico cons-ico-num">5</span>
+            <div class="cons-txt"><strong>5 thèmes</strong> notés — au moins <strong>50% dans chaque thème</strong>.</div>
         </div>
-        <div class="consigne-item">
-            <span class="consigne-icon">🎯</span>
-            <div>Note globale minimum : <strong>70 points sur 100</strong> pour obtenir la certification.</div>
+        <div class="cons-item">
+            <span class="cons-ico">&#9678;</span>
+            <div class="cons-txt"><strong>Note globale minimum</strong> requise pour la certification.</div>
         </div>
-        <div class="consigne-item">
-            <span class="consigne-icon">🚫</span>
-            <div>Aucune aide exterieure autorisee. Travaillez <strong>seul et sans support de cours.</strong></div>
+        <div class="cons-item">
+            <span class="cons-ico cons-ico-rouge">&#10005;</span>
+            <div class="cons-txt">Aucune aide extérieure — <strong>seul et sans support de cours</strong>.</div>
         </div>
+
+        <button class="btn-action cons-btn" data-action="demarrer-test" type="button"><span class="cons-btn-ico">&#9658;</span> Commencer le test</button>
     </div>
-
-    <button class="btn-action" onclick="demarrerTest()">▶ Commencer le test</button>
 </div>
 
 <!-- ECRAN 4 : QCM -->
@@ -1474,6 +1541,11 @@ document.getElementById('ecran-recap').addEventListener('click', function(e) {
     } else if (action === 'valider-test') {
         valider();
     }
+});
+
+document.getElementById('ecran-consignes').addEventListener('click', function(e) {
+    const c = e.target.closest('[data-action="demarrer-test"]');
+    if (c) demarrerTest();
 });
 </script>
 
