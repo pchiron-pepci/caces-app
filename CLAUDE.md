@@ -34,6 +34,35 @@ JS         : Fichiers statiques dans static/js/ (contrainte CSP)
 
 ---
 
+## Charte graphique NORYX (référence — appliquer à tous les nouveaux écrans)
+
+**Principe directeur :** anthracite pour la structure, blanc dominant pour respirer, ardoise pour le secondaire, rouge en accent RARE. Identité "soft, pro, moderne" — l'anthracite ne doit jamais être en aplat partout (austère), le rouge jamais disséminé (agressif).
+
+**Palette :**
+- Anthracite `#2d2d2d` : structure — en-têtes/bandeaux, boutons d'action principaux, titres forts. C'est la signature visuelle.
+- Blanc `#fff` : fond dominant du contenu, respiration.
+- Ardoise `#4a5568` : textes secondaires, libellés discrets, boutons secondaires (contour), liens type "Voir tout".
+- Rouge NORYX `#cc0000` : accent RARE uniquement — bouton d'action le plus important d'une page (ex. "+ Nouvelle session"), ou chiffre/élément qui doit alerter (ex. "3 à clôturer"). Jamais en aplat de fond, jamais disséminé.
+- Gris clair `#f4f5f6` / `#f0efef` : fonds de pastilles, surfaces secondaires.
+- Bordures : `0.5px solid #e0e3e6`.
+
+**Boutons :**
+- Principal : fond anthracite `#2d2d2d`, texte blanc, pilule (border-radius 999px).
+- Action critique/CTA : fond rouge `#cc0000` (usage rare, 1 par écran max).
+- Secondaire : contour ardoise (`border:1px solid #d0d4d8`, texte `#4a5568`), fond transparent.
+
+**Badges de statut (réutiliser les codes existants) :** teal `#E1F5EE`/`#0F6E56` (validé), jaune/amber `#FAEEDA`/`#854F0B` (en cours/ouvert), rouge `#FCEBEB`/`#A32D2D` (à traiter/alerte).
+
+**Règle d'accessibilité (public à faible littératie) maintenue :** dans les contextes où une couleur pourrait être lue comme "bon/mauvais" (réponses de test), ne jamais utiliser vert/rouge comme jugement — voir chantier refonte test théorique. La charte couleur ci-dessus s'applique à la structure/navigation, pas aux signaux de réponse candidat.
+
+**Pictos :** privilégier CSS pur (caractères Unicode sobres, chiffres dans pastilles) plutôt que des emojis ou une police d'icônes externe — fiabilité en salle (connexion non garantie). Pas d'emoji sur les écrans certifiants.
+
+**Logo :** non figé définitivement à ce jour — sur pastille blanche dans les bandeaux anthracite. Tagline : "Pilotage CACES® & Autorisation de conduite".
+
+**État de déploiement :** charte validée. Module test théorique = encore en bleu marine (#1a237e) / ardoise sur QCM+récap. Bascule anthracite à dérouler écran par écran (ordre suggéré : header commun → écran consignes → QCM/récap → écrans sélection/identité → écran résultat). Reste du site (dashboard, listes, etc.) à aligner progressivement sur cette charte.
+
+---
+
 ## Contrainte critique : CSP
 
 Render bloque les `onclick=` inline et les scripts inline. Toute la logique JS doit être dans `static/js/`.
