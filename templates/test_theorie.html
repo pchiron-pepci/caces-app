@@ -678,6 +678,105 @@
         .reponse-grid.a-repondu .btn-faux:not(.selected) .rep-mot {
             color: #9e9e9e;
         }
+
+        /* ===== ÉCRAN 1 — sélection candidat (charte anthracite) ===== */
+        .sel1-header { text-align: center; margin-bottom: 16px; }
+        .sel1-logo {
+            width: 54px; height: 54px;
+            border-radius: 14px;
+            background: #383b40;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .sel1-logo img { height: 38px; width: auto; object-fit: contain; }
+        .sel1-titre { font-size: 17px; font-weight: 700; color: #383b40; }
+        .sel1-sous { font-size: 13px; color: #888; margin-top: 2px; }
+
+        .sel1-select-wrap { position: relative; }
+        .sel1-select {
+            width: 100%;
+            padding: 12px 36px 12px 12px;
+            border: 1.5px solid #d0d4d8;
+            border-radius: 10px;
+            font-size: 15px;
+            color: #383b40;
+            background: #fff;
+            appearance: none;
+            -webkit-appearance: none;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .sel1-select-fleche {
+            position: absolute;
+            right: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #888;
+            font-size: 11px;
+        }
+
+        .sel1-grille-info { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        .sel1-grille-badge {
+            background: #f0efef;
+            color: #383b40;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+        .sel1-grille-texte { font-size: 12px; color: #888; }
+
+        .sel1-msg-chargement { font-size: 12px; color: #888; margin-top: 8px; }
+
+        .sel1-qr {
+            background: #fff;
+            border: 0.5px solid #e0e3e6;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .sel1-qr-ico {
+            width: 34px; height: 34px;
+            border-radius: 9px;
+            background: #f0efef;
+            color: #383b40;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            margin-bottom: 8px;
+        }
+        .sel1-qr-texte { font-size: 13px; color: #4a5568; line-height: 1.4; }
+        .sel1-qr-texte strong { color: #383b40; }
+        .sel1-qr-box { margin: 12px auto 0; }
+
+        .sel1-msg-erreur {
+            background: #FCEBEB;
+            border: 1px solid #E59A9A;
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #A32D2D;
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+        .sel1-msg-warning {
+            background: #FFF4E0;
+            border: 1px solid #F0C775;
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #7A5600;
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
     </style>
 </head>
 <body>
@@ -721,56 +820,65 @@
 
 <!-- ECRAN 1 : SELECTION CANDIDAT (TESTEUR) -->
 <div class="screen" id="ecran-selection">
-    <div class="selection-logo">
-        <div class="selection-logo-circle">📋</div>
-        <div class="selection-titre">Test theorique</div>
-        <div class="selection-sous-titre">CACES® R.482 — Engins de chantier</div>
+    <div class="sel1-header">
+        <div class="sel1-logo">
+            {% if _logo %}<img src="{{ _logo }}" alt="Logo organisme" />{% else %}<span style="color:#fff;font-size:22px;font-weight:700;">N</span>{% endif %}
+        </div>
+        <div class="sel1-titre">Sélection du candidat</div>
+        <div class="sel1-sous">Test théorique CACES® R.482</div>
     </div>
 
     <div class="card">
-        <label class="field-label">Selectionnez le candidat</label>
-        <select id="select-candidat">
-            <option value="">-- Choisir le candidat --</option>
-            {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
-            {% set _rt_mode = rt_par_stagiaire.get(sc.stagiaire_id) %}
-            <option value="{{ sc.stagiaire_id }}"
-                data-nom="{{ sc.stagiaire.nom }}"
-                data-prenom="{{ sc.stagiaire.prenom }}"
-                data-naissance="{{ sc.stagiaire.date_naissance or '' }}"
-                data-a-resultat="{{ 'true' if _rt_mode else 'false' }}"
-                data-mode="{{ _rt_mode or '' }}">
-                {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}{% if _rt_mode == 'degrade' %} — ✍️ manuel{% elif _rt_mode == 'numerique' %} — ✅ passé{% endif %}
-            </option>
-            {% endif %}{% endfor %}
-        </select>
-        <div class="grille-info">
-            <span class="grille-badge">Phase 2 — Tirage par thème</span>
-            <span class="grille-texte">100 questions · VRAI ou FAUX · 60 minutes</span>
+        <div class="field-label">Candidat</div>
+        <div class="sel1-select-wrap">
+            <select id="select-candidat" class="sel1-select">
+                <option value="">-- Choisir le candidat --</option>
+                {% for sc in session_candidats %}{% if not sc.theorie_dispensee %}
+                {% set _rt_mode = rt_par_stagiaire.get(sc.stagiaire_id) %}
+                <option value="{{ sc.stagiaire_id }}"
+                    data-nom="{{ sc.stagiaire.nom }}"
+                    data-prenom="{{ sc.stagiaire.prenom }}"
+                    data-naissance="{{ sc.stagiaire.date_naissance or '' }}"
+                    data-a-resultat="{{ 'true' if _rt_mode else 'false' }}"
+                    data-mode="{{ _rt_mode or '' }}">
+                    {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}{% if _rt_mode == 'degrade' %} — ✍️ manuel{% elif _rt_mode == 'numerique' %} — ✅ passé{% endif %}
+                </option>
+                {% endif %}{% endfor %}
+            </select>
+            <span class="sel1-select-fleche">&#9660;</span>
+        </div>
+        <div class="sel1-grille-info">
+            <span class="sel1-grille-badge">Phase 2 — Tirage par thème</span>
+            <span class="sel1-grille-texte">100 questions · VRAI ou FAUX · 60 minutes</span>
         </div>
     </div>
 
     <div class="card" id="card-testeur-select">
-        <label class="field-label">Testeur</label>
-        <select id="select-testeur">
-            <option value="">— Sélectionner le testeur —</option>
-        </select>
-        <div id="msg-testeur-chargement" style="font-size:12px; color:#888; margin-top:6px;">Chargement…</div>
+        <div class="field-label">Testeur</div>
+        <div class="sel1-select-wrap">
+            <select id="select-testeur" class="sel1-select">
+                <option value="">— Sélectionner le testeur —</option>
+            </select>
+            <span class="sel1-select-fleche">&#9660;</span>
+        </div>
+        <div class="sel1-msg-chargement" id="msg-testeur-chargement">Chargement…</div>
     </div>
 
-    <div id="qr-section" style="display:none; text-align:center; margin-top:20px; padding:20px; background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(26,35,126,0.10);">
-        <div style="font-size:12px; font-weight:700; color:#1a237e; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px;">📱 Le candidat peut scanner ce QR</div>
-        <div id="qr-box" style="display:inline-block;"></div>
-        <div style="font-size:11px; color:#888; margin-top:10px;">Scannez pour passer le test sur votre téléphone</div>
+    <div id="qr-section" class="sel1-qr" style="display:none;">
+        <div class="sel1-qr-ico">&#9636;</div>
+        <div class="sel1-qr-texte">Le candidat peut scanner ce <strong>QR code</strong> pour passer le test sur son téléphone.</div>
+        <div id="qr-box" class="sel1-qr-box" style="display:inline-block;"></div>
     </div>
 
-    <div id="msg-erreur-grille" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
+    <div id="msg-erreur-grille" class="sel1-msg-erreur" style="display:none;"></div>
     {% if tous_notes %}
-    <div style="background:#fff3e0; border:1.5px solid #fb8c00; border-radius:10px; padding:14px 16px; color:#e65100; font-size:13px; margin-top:12px;">
-        ⚠️ Tous les candidats ont déjà un résultat enregistré pour ce jour — aucun nouveau test ne peut être lancé depuis cet écran.
+    <div class="sel1-msg-warning">
+        <span>&#9888;</span>
+        <span>Tous les candidats ont déjà un résultat — aucun nouveau test ne peut être lancé depuis cet écran.</span>
     </div>
     {% endif %}
-    <div id="msg-bloque-select" style="display:none; margin-top:12px; background:#fff3e0; border:1.5px solid #fb8c00; border-radius:10px; padding:14px 16px; color:#e65100; font-size:14px; line-height:1.5;"></div>
-    <button class="btn-action" onclick="allerConfirmation()">Preparer le test →</button>
+    <div id="msg-bloque-select" class="sel1-msg-warning" style="display:none;"></div>
+    <button class="btn-action" data-action="preparer-test" type="button">Preparer le test →</button>
 </div>
 
 <!-- ECRAN 2 : CONFIRMATION IDENTITE (CANDIDAT) -->
@@ -1545,6 +1653,10 @@ document.getElementById('ecran-recap').addEventListener('click', function(e) {
 document.getElementById('ecran-consignes').addEventListener('click', function(e) {
     const c = e.target.closest('[data-action="demarrer-test"]');
     if (c) demarrerTest();
+});
+document.getElementById('ecran-selection').addEventListener('click', function(e) {
+    const b = e.target.closest('[data-action="preparer-test"]');
+    if (b) allerConfirmation();
 });
 </script>
 
