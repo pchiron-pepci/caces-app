@@ -718,7 +718,7 @@
             font-size: 11px;
         }
 
-        .sel1-grille-info { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        .sel1-grille-info { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .sel1-grille-badge {
             background: #f0efef;
             color: #383b40;
@@ -821,9 +821,6 @@
 <!-- ECRAN 1 : SELECTION CANDIDAT (TESTEUR) -->
 <div class="screen" id="ecran-selection">
     <div class="sel1-header">
-        <div class="sel1-logo">
-            {% if _logo %}<img src="{{ _logo }}" alt="Logo organisme" />{% else %}<span style="color:#fff;font-size:22px;font-weight:700;">N</span>{% endif %}
-        </div>
         <div class="sel1-titre">Sélection du candidat</div>
         <div class="sel1-sous">Test théorique CACES® R.482</div>
     </div>
