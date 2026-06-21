@@ -906,6 +906,46 @@ python migrate_testeur_theorie.py
 
 **Note CSP corrigée dans les faits :** la CSP réellement posée (`app/main.py`) est `script-src * 'unsafe-inline' 'unsafe-eval'` — les `onclick` inline étaient autorisés, contrairement à la note "Render bloque les `onclick` inline". Migration `data-action` faite quand même sur ce bloc (conformité à la règle projet + anticipation d'un durcissement CSP futur). Chantier à prévoir : durcir la CSP + migrer tout le inline restant (`admin.html`, autres écrans `test_theorie.html`).
 
+### ✅ Chantier terminé : refonte visuelle bloc question test théorique (écran QCM)
+
+**Périmètre :** intérieur de #ecran-qcm dans templates/test_theorie.html uniquement. Header (logo, titre, chrono, barre progression), écrans 1/2/3, récap et logique de scoring : NON touchés. Bascule identité anthracite NORYX du header + refonte des autres écrans = chantier ultérieur, à faire d'un seul bloc (pas d'état hybride).
+
+**CORRECTIONS D'ÉCARTS DOC/CODE découverts pendant ce chantier (la doc affirmait des choses non implémentées) :**
+- .question-image avait TOUJOURS max-height:200px + background:#f0f2f7 → le fond gris n'avait jamais été supprimé malgré la doc. CORRIGÉ : width:100%, height:auto, object-fit:contain, border-radius:12px, box-shadow léger, plus aucun fond. Photo plein largeur au ratio réel (1:1 majoritaire, 167 caractères max sur les énoncés).
+- La règle CSS d'estompage du bouton non sélectionné (.reponse-grid.a-repondu) était documentée mais N'EXISTAIT PAS dans le fichier. Le JS posait bien la classe a-repondu, sans effet. CORRIGÉ : règle ajoutée (ci-dessous).
+- Note CSP rectifiée : la CSP réellement posée dans app/main.py est "script-src * 'unsafe-inline' 'unsafe-eval'" — les onclick inline étaient AUTORISÉS, contrairement à la note "Render bloque les onclick inline". Migration data-action faite quand même sur ce bloc (conformité règle projet + anticipation durcissement CSP futur). Chantier futur à prévoir : durcir la CSP + migrer tout le inline restant (admin.html, autres écrans de test_theorie.html).
+
+**HTML #ecran-qcm :**
+- 5 boutons migrés onclick inline → data-action (listener délégué sur #ecran-qcm) : relire-question, repondre (data-valeur true/false), precedent, suivant, voir-recap
+- Bouton réécouter : icône haut-parleur 🔊 + texte "Réécouter", discret aligné à gauche (.btn-reecouter, sans fond ni bordure) — plus de bouton pleine largeur. data-action="relire-question" inchangé.
+- VRAI/FAUX : .btn-reponse avec pictos pouce (👍 VRAI / 👎 FAUX), structure <span class="rep-ico"> + <span class="rep-mot">, hauteur 104px
+- Bouton récap déplacé DANS .navigation entre Précédente et Suivante (id="btn-voir-recap" + data-action="voir-recap" conservés). Pilule gris ardoise #4a5568 texte blanc, même forme que Suivante (.btn-recap-mini).
+
+**Règle ergonomique VRAI/FAUX (public lisant difficilement) — NE PAS revenir en arrière sans test terrain :**
+- Au repos : VRAI vert (#1D9E75/#E1F5EE), FAUX rouge (#E24B4A/#FCEBEB) — sert UNIQUEMENT à distinguer les deux boutons avant réponse.
+- Au clic : le bouton choisi passe au JAUNE (#EF9F27/#FAEEDA/#854F0B), IDENTIQUE pour VRAI et FAUX ; l'autre passe en GRIS estompé (#f5f5f5/#9e9e9e, opacity 0.5). Le jaune ne signifie jamais "bon/mauvais", juste "voici ton choix" — évite que le candidat lise vert=correct / rouge=erreur.
+- Mécanique CSS : .btn-vrai.selected / .btn-faux.selected = jaune (règles spécifiques car elles doivent battre le vert/rouge du repos) ; .reponse-grid.a-repondu .btn-vrai:not(.selected) / .btn-faux:not(.selected) = gris (idem, spécificité nécessaire). Les anciennes règles .selected vert foncé #33691e / rouge foncé #b71c1c ont été SUPPRIMÉES (elles écrasaient le jaune).
+- Mécanique JS : classe .selected sur #btn-vrai/#btn-faux (inchangée) + classe .a-repondu sur .reponse-grid posée dans repondre() et gérée dans afficherQuestion() selon état coché.
+- Décision : couleur isolée dans le CSS, modifiable en un point si le réflexe "cliquer le vert" est observé en test réel → bascule vers version neutre.
+
+**Énoncé .question-text :** font-size 21px, hauteur fixe min-height:130px (≈4 lignes, marge pour évolution des textes), display:flex align-items:center justify-content:flex-start text-align:left (aligné à gauche, centré verticalement) → VRAI/FAUX ne se déplacent plus entre questions courtes et longues. Couleur passée en gris ardoise #4a5568 (était #1a237e — choix assumé malgré contraste plus faible, réversible en une ligne).
+
+**Ancrage zone réponse en bas (option B mobile) :** .qcm-card en display:flex flex-direction:column min-height:calc(100vh - 150px) box-sizing:border-box ; .reponse-grid margin-top:auto pousse VRAI/FAUX + navigation vers le bas. #ecran-qcm padding-bottom:12px (anti-scroll questions courtes). Les questions à grande photo peuvent encore scroller (volontaire, min-height pas height).
+
+**Couleurs ardoise #4a5568 appliquées :** énoncé, bouton réécouter, badge thème (.theme-badge fond clair #edf0f3 + texte #4a5568, était #e8eaf6/#3949ab). Header non touché.
+
+**JS :**
+- repondre(valeur) : ajout classList.add('a-repondu') sur .reponse-grid
+- afficherQuestion(idx) : reset/réapplication de a-repondu selon état coché ; suppression des btnS.onclick dynamiques (remplacés par btnS.dataset.dernier = '1' sur dernière question, '0' sinon)
+- Listener délégué sur #ecran-qcm : route data-action → repondre/precedent/suivant/relire-question/voir-recap ; double rôle Suivante via data-dernier ('1' → afficherRecap, sinon suivant)
+- Ligne d'affichage du bouton récap : 'block' remplacé par 'inline-flex' (pour que align-items de la pilule s'applique)
+
+**Navigation :** Précédente discrète (lien), Suivante pilule bleu marine #1a237e (inchangé cette passe), Récap pilule ardoise au centre.
+
+**Reste en suspens (non bloquant) :** le "titre Thème 1 - xxxx" n'a pas été identifié/tranché (badge déjà en ardoise ; vérifier s'il s'agissait d'un autre élément récap/consignes). Les alert() du chrono (10 min / 5 min) restent en place — à traiter avec le header.
+
+---
+
 ### ✅ Chantier terminé : page d'aide /aide V1 (commit 2285595)
 
 **Fichiers créés :**
@@ -922,3 +962,33 @@ python migrate_testeur_theorie.py
 - ≤480px : grille `1fr` (1 colonne), cartes en ligne (icône + label horizontal), `font-size:16px` sur input recherche (anti-zoom iOS), `min-height:48px` sur section-header
 - ≤400px : `.aide-header-top` passe en `flex-wrap:wrap` (picto + titre en colonne si trop serré), padding/typo réduits
 - `overflow-wrap:break-word` sur `.aide-section-body` (anti-débordement horizontal)
+
+---
+
+### ✅ Chantier terminé : refonte écran récap test théorique + ergonomie fin de test
+
+**Périmètre :** #ecran-recap dans templates/test_theorie.html + bloc navigation de fin dans afficherQuestion(). Header non touché (réservé bascule anthracite). Logique de scoring/correction inchangée.
+
+**En-tête récap — deux états (remplace l'ancien #recap-nb + label "questions repondues sur 100") :**
+- État incomplet (#recap-etat-incomplet, .recap-cadres) : deux cadres sur une ligne — cadre gris "X sans réponse" (#recap-nb-sans, chiffre rouge #E24B4A) + cadre jaune "Y répondu" (#recap-nb, chiffre #854F0B). Pastilles carrées rappelant le code couleur.
+- État complet (#recap-etat-complet, .recap-complet) : bandeau teal pâle #E1F5EE/#0F6E56 + check ✓ (CSS pur, U+2713 dans pastille ronde verte #1D9E75) "Toutes les questions sont répondues — 100/100". Affiché quand nbSans <= 0.
+- Bascule gérée dans afficherRecap() : calcule nbRep/total/nbSans, affiche l'un OU l'autre (display flex/none).
+
+**Bandeau aide (.recap-aide) :** "Cliquez sur une question pour y revenir et compléter ou modifier votre réponse." — texte ardoise #4a5568, fond gris clair #f4f5f6, accent border-left 3px ardoise (pas d'icône, CSS pur, zéro dépendance externe).
+
+**Pastilles de question (.recap-q) :** jaune = répondu (.repondue : #FAC775/#854F0B, même jaune que la sélection QCM), gris = à répondre (.vide : #eceff1/#90a4ae). Le jaune garde un sens unique sur les deux écrans ("il y a une réponse"). Anciennes couleurs (#bbdefb bleu / #fff9c4 jaune pâle) remplacées.
+
+**Bouton Valider (.btn-valider) :** pilule gris ardoise #4a5568, courte et centrée (wrap .recap-valider-wrap), check ✓ CSS pur, "Valider mes réponses". Ancien style pleine largeur bleu #1a237e supprimé (commentaire inerte laissé ligne ~444). Migré onclick → data-action="valider-test".
+
+**Migration data-action (CSP) :**
+- Pastilles : onclick="allerQuestion(t,i)" → data-action="aller-question" data-theme/data-idx (rendu Jinja).
+- Bouton valider : data-action="valider-test".
+- Listener délégué sur #ecran-recap : route aller-question (parseInt theme/idx → allerQuestion) et valider-test (→ valider).
+
+**Ergonomie fin de test (anti-redondance Q100) :**
+- Avant : sur la dernière question, DEUX déclencheurs vers le récap (pilule centrale "Récap" + bouton Suivante devenu "Voir recap →"). Confus pour primo-arrivant.
+- Maintenant : sur la dernière question, bouton Suivante = "Mes réponses →" (seul déclencheur), pilule centrale masquée. Sur les autres questions, pilule réapparaît si MODE_CORRECTION || recapDebloque.
+- Vocabulaire harmonisé : "Récap" → "Mes réponses" partout (plus parlant que le jargon "récap"). Choix : "Mes réponses" plutôt que "Terminer"/"J'ai fini" car le bouton mène à la vérification, pas à la validation définitive (qui se fait sur Valider du récap).
+- Pilotage du bouton récap unifié : suppression de l'ancienne ligne btnVR dans afficherQuestion() (qui contredisait le bloc navigation). Le bloc navigation (btnRecapMini) est désormais la SEULE source de vérité. recapDebloque préservé.
+
+**Note dépendances :** tout le récap est en CSS pur (pas de Tabler ni police externe) — choix délibéré pour fiabilité en salle d'examen (connexion non garantie sur tablettes).
