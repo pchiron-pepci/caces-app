@@ -1040,3 +1040,27 @@ python migrate_testeur_theorie.py
 **JS :** listener délégué sur #ecran-consignes route data-action="demarrer-test" → demarrerTest(). demarrerTest() inchangé (charge questions si besoin, cache consignes, affiche QCM, lance le chrono).
 
 **Note à traiter plus tard :** le titre "Test théorique CACES® R.482" est codé EN DUR dans le HTML. À rendre dynamique (passer la famille depuis le serveur) si les tests portent sur d'autres familles (R.489, R.490…). Comportement inchangé dans ce chantier (déjà en dur avant).
+
+---
+
+### ✅ Chantier terminé : header commun + QCM en charte anthracite
+
+**Header commun (.header, partagé par tous les écrans de test_theorie.html) :**
+- Fond #1a237e → #383b40 (anthracite de charte). Le header étant commun, la bascule unifie le haut de TOUS les écrans d'un coup.
+- Titre corrigé : "CACES® R.482 - Theorie" → "Théorie R.482" (accent ajouté, libellé court). Toujours codé EN DUR — à rendre dynamique (famille) plus tard, comme l'écran 3.
+- Chrono #timer : couleur de repos #64b5f6 → #fff (blanc sur anthracite). Reset (changement de candidat, ligne ~1247) aussi passé #64b5f6 → #fff.
+- Barre de progression (.progress-fill) : #64b5f6 → #fff. (.progress-bar-wrap rgba(255,255,255,0.2) inchangé, marche sur anthracite.)
+- Emoji ⏱ du chrono CONSERVÉ (choix utilisateur) devant l'heure.
+
+**Chrono — suppression des alert() bloquants :**
+- Les 2 alert() de tickTimer() (à 600s "10 minutes" et 300s "5 minutes") SUPPRIMÉS. En plein test chronométré, une popup système bloque le candidat — la couleur du chrono suffit comme alerte.
+- Transitions de couleur CONSERVÉES : #ff9800 (orange) à 600s, #f44336 (rouge) à 300s, #f44336 + valider(true) (soumission auto) à 0s. Mécanique du chrono intacte.
+- 3 alert() restants AILLEURS (non touchés, à traiter avec écrans 1/2) : ligne ~1211 sélection candidat manquante (allerConfirmation), ~1309 identité non confirmée (allerConsignes), ~1322 erreur chargement questions (demarrerTest).
+
+**QCM — bascule anthracite :**
+- Bouton Suivante (.btn-suiv) : #1a237e → #383b40, hover #283593 → #2a2c30. Seule occurrence de bleu dans l'écran QCM (le reste déjà en ardoise/jaune depuis la refonte précédente).
+- Nettoyage dette : règles CSS orphelines .recap-score-big et .recap-score-label (ancien en-tête récap, plus référencées depuis la refonte) SUPPRIMÉES.
+
+**État charte anthracite (déploiement) :**
+- ✅ FAIT : header commun, écran 3 (consignes), QCM, récap. Tout le parcours PENDANT le test est unifié en anthracite #383b40.
+- RESTE : écrans 1 (sélection candidat) et 2 (identité) — lourds, tout en inline, 3 alert() + bouton "Lire à voix haute" bleu ; écran 6 (résultat, non diagnostiqué) ; modale de confirmation (1 bouton bleu ligne ~1552). 12 occurrences de #1a237e restantes, toutes hors parcours de test (écrans 1/2/6 + QR config + modale).
