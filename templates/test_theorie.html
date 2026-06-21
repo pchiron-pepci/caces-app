@@ -236,47 +236,6 @@
             margin-top: 8px;
         }
 
-        /* ECRAN CONFIRMATION IDENTITE */
-        .identite-nom {
-            font-size: 28px;
-            font-weight: 800;
-            color: #1a237e;
-            text-align: center;
-            margin: 20px 0 8px;
-        }
-
-        .identite-info {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-
-        .checkbox-confirm {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 16px;
-            background: #f0f2f7;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            cursor: pointer;
-        }
-
-        .checkbox-confirm input {
-            width: 20px;
-            height: 20px;
-            margin-top: 2px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-
-        .checkbox-confirm span {
-            font-size: 14px;
-            line-height: 1.5;
-            color: #333;
-        }
-
         /* ECRAN CONSIGNES */
         .timer-display {
             text-align: center;
@@ -779,6 +738,79 @@
             gap: 8px;
             align-items: flex-start;
         }
+
+        /* ===== ÉCRAN 2 — identité candidat (charte anthracite) ===== */
+        .sel2-tete { text-align: center; margin-bottom: 12px; }
+        .sel2-emoji { font-size: 48px; line-height: 1; }
+        .sel2-question { font-size: 13px; color: #888; margin-top: 8px; }
+        .identite-nom { text-align: center; font-size: 24px; font-weight: 800; color: #383b40; line-height: 1.2; }
+        .identite-info { text-align: center; font-size: 14px; color: #888; margin-top: 2px; }
+        .sel2-voix-wrap { text-align: center; margin: 16px 0 4px; }
+        .sel2-voix-btn {
+            background: #f0efef;
+            border: none;
+            border-radius: 999px;
+            padding: 10px 22px;
+            font-size: 15px;
+            color: #383b40;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .checkbox-confirm {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin-top: 14px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .checkbox-confirm input[type="checkbox"] {
+            margin-top: 2px;
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            accent-color: #383b40;
+        }
+        .checkbox-confirm span { font-size: 13px; color: #4a5568; line-height: 1.4; }
+
+        .sel2-pin {
+            margin-top: 14px;
+            background: #FFF4E0;
+            border: 1.5px solid #F0C775;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .sel2-pin-titre { font-size: 15px; font-weight: 700; color: #7A5600; margin-bottom: 4px; }
+        .sel2-pin-texte { font-size: 13px; color: #7A5600; margin-bottom: 14px; line-height: 1.4; }
+        .sel2-pin-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #9A6A00;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .sel2-pin-input {
+            width: 100%;
+            padding: 12px;
+            border: 1.5px solid #F0C775;
+            border-radius: 10px;
+            font-size: 20px;
+            letter-spacing: 8px;
+            text-align: center;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+            background: #fff;
+            color: #383b40;
+            outline: none;
+        }
+        .sel2-pin-error { color: #c62828; font-size: 13px; margin-bottom: 10px; }
+        .sel2-pin-actions { display: flex; gap: 8px; }
+        .sel2-pin-actions .btn-action,
+        .sel2-pin-actions .btn-action-secondary { margin-top: 0; flex: 1; }
     </style>
 </head>
 <body>
@@ -883,18 +915,15 @@
 <!-- ECRAN 2 : CONFIRMATION IDENTITE (CANDIDAT) -->
 <div class="screen" id="ecran-identite" style="display:none;">
     <div class="card">
-        <div style="text-align:center; margin-bottom:16px;">
-            <div style="font-size:48px;">👤</div>
-            <div style="font-size:14px; color:#666; margin-top:8px;">Etes-vous bien :</div>
+        <div class="sel2-tete">
+            <div class="sel2-emoji">👤</div>
+            <div class="sel2-question">Etes-vous bien :</div>
         </div>
         <div class="identite-nom" id="identite-nom">—</div>
         <div class="identite-info" id="identite-info">—</div>
 
-        <div style="text-align:center; margin:16px 0 8px;">
-            <button onclick="lireIdentiteVoixHaute()"
-                style="background:#e8eaf6; border:none; border-radius:10px; padding:10px 22px; font-size:15px; cursor:pointer; color:#1a237e; font-weight:700;">
-                🔊 Lire à voix haute
-            </button>
+        <div class="sel2-voix-wrap">
+            <button class="sel2-voix-btn" data-action="lire-voix" type="button">🔊 Lire à voix haute</button>
         </div>
 
         <label class="checkbox-confirm">
@@ -903,19 +932,18 @@
         </label>
     </div>
 
-    <button class="btn-action" onclick="allerConsignes()">Confirmer mon identite →</button>
-    <button class="btn-action-secondary" onclick="demanderPinFormateur()">← Ce n'est pas moi</button>
+    <button class="btn-action" data-action="confirmer-identite" type="button">Confirmer mon identite →</button>
+    <button class="btn-action-secondary" data-action="pas-moi" type="button">← Ce n'est pas moi</button>
 
-    <div id="zone-pas-moi" style="display:none; margin-top:16px; background:#fff3e0; border-radius:14px; padding:20px; border:2px solid #ffb74d;">
-        <div style="font-size:15px; font-weight:700; color:#e65100; margin-bottom:6px;">🔒 Action réservée au formateur</div>
-        <div style="font-size:14px; color:#555; margin-bottom:16px;">Veuillez contacter votre testeur/formateur pour débloquer.</div>
-        <label style="display:block; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#888; margin-bottom:8px;">Code PIN formateur</label>
-        <input type="password" id="pin-formateur-input" placeholder="••••"
-            style="width:100%; padding:12px; border:2px solid #ffb74d; border-radius:10px; font-size:20px; letter-spacing:8px; text-align:center; margin-bottom:8px; outline:none;">
-        <div id="pin-formateur-error" style="display:none; color:#c62828; font-size:13px; margin-bottom:8px;">❌ Code PIN incorrect</div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-action" style="margin-top:0; flex:1;" onclick="verifierPinFormateur()">Débloquer</button>
-            <button class="btn-action-secondary" style="margin-top:0; flex:1;" onclick="annulerPinFormateur()">Annuler</button>
+    <div id="zone-pas-moi" class="sel2-pin" style="display:none;">
+        <div class="sel2-pin-titre">🔒 Action réservée au formateur</div>
+        <div class="sel2-pin-texte">Veuillez contacter votre testeur/formateur pour débloquer.</div>
+        <label class="sel2-pin-label">Code formateur</label>
+        <input type="password" id="pin-formateur-input" class="sel2-pin-input" placeholder="••••" />
+        <div id="pin-formateur-error" class="sel2-pin-error" style="display:none;">❌ Code PIN incorrect</div>
+        <div class="sel2-pin-actions">
+            <button class="btn-action" data-action="pin-debloquer" type="button">Débloquer</button>
+            <button class="btn-action-secondary" data-action="pin-annuler" type="button">Annuler</button>
         </div>
     </div>
 </div>
@@ -1656,6 +1684,13 @@ document.getElementById('ecran-consignes').addEventListener('click', function(e)
 document.getElementById('ecran-selection').addEventListener('click', function(e) {
     const b = e.target.closest('[data-action="preparer-test"]');
     if (b) allerConfirmation();
+});
+document.getElementById('ecran-identite').addEventListener('click', function(e) {
+    if (e.target.closest('[data-action="lire-voix"]')) { lireIdentiteVoixHaute(); return; }
+    if (e.target.closest('[data-action="confirmer-identite"]')) { allerConsignes(); return; }
+    if (e.target.closest('[data-action="pas-moi"]')) { demanderPinFormateur(); return; }
+    if (e.target.closest('[data-action="pin-debloquer"]')) { verifierPinFormateur(); return; }
+    if (e.target.closest('[data-action="pin-annuler"]')) { annulerPinFormateur(); return; }
 });
 </script>
 
