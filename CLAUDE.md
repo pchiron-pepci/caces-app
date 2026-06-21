@@ -1064,3 +1064,32 @@ python migrate_testeur_theorie.py
 **État charte anthracite (déploiement) :**
 - ✅ FAIT : header commun, écran 3 (consignes), QCM, récap. Tout le parcours PENDANT le test est unifié en anthracite #383b40.
 - RESTE : écrans 1 (sélection candidat) et 2 (identité) — lourds, tout en inline, 3 alert() + bouton "Lire à voix haute" bleu ; écran 6 (résultat, non diagnostiqué) ; modale de confirmation (1 bouton bleu ligne ~1552). 12 occurrences de #1a237e restantes, toutes hors parcours de test (écrans 1/2/6 + QR config + modale).
+
+### ✅ Chantier terminé : écran 1 (sélection candidat) — fixes logique QR + restyle anthracite + header centré
+
+**Deux corrections de LOGIQUE (comportement métier) :**
+
+1. QR conditionné aux DEUX selects : avant, le QR s'affichait dès la sélection du candidat, sans testeur. Le select testeur n'avait aucun handler 'change'. Refonte : fonction evaluerQR() centralise l'affichage avec 4 cas — (0) pas de candidat → QR masqué ; (1) candidat déjà un résultat → QR masqué + message "déjà passé / saisie manuelle" ; (2) candidat OK mais PAS de testeur → QR masqué + message "⚠️ Sélectionnez aussi le testeur" ; (3) candidat ET testeur → génère + affiche le QR. evaluerQR() appelée par : change select-candidat, change select-testeur (nouveau listener), et fin du .then() de pré-sélection testeur. Le select testeur peut être vide (erreur réseau, ou plusieurs habilités sans testeur du jour).
+
+2. Fix affichage #msg-bloque-select : div avec fond orange + display:none par défaut. evaluerQR() ne pilotait que textContent, jamais display → fond orange restait collé après sélection du testeur. Corrigé : display='' quand message posé (cas 1, 2), display='none' quand effacé (cas 0, 3).
+
+Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-resultat → dataset.aResultat. URL QR = origin + '/test/theorie/' + JOUR_ID + '/' + val + '/start'. colorDark QR #1a237e → #383b40.
+
+**Restyle anthracite (classes .sel1-*) :**
+- Tout l'inline de l'écran 1 → 13 classes CSS .sel1-* (sel1-header, sel1-titre, sel1-sous, sel1-select-wrap, sel1-select, sel1-select-fleche, sel1-grille-info/badge/texte, sel1-msg-chargement, sel1-qr/-ico/-texte/-box, sel1-msg-erreur, sel1-msg-warning).
+- En-tête écran 1 : titre "Sélection du candidat" + sous-titre "Test théorique CACES® R.482" (EN DUR). LOGO RETIRÉ de l'en-tête écran 1 (était redondant — déjà présent dans le header commun). La classe .sel1-logo existe encore mais n'est plus utilisée (inerte).
+- Selects natifs HABILLÉS (pas custom) : bordure #d0d4d8, appearance:none + flèche custom ▼. Choix : natifs habillés = simple + fiable mobile.
+- Badge grille : .sel1-grille-info a flex-wrap:wrap (sur mobile, le badge "Phase 2 — Tirage par thème" + "100 questions · VRAI ou FAUX · 60 minutes" s'empilent au lieu de déborder).
+- Section QR : box-shadow bleu + texte #1a237e + emoji 📱 → habillage charte (picto CSS, texte ardoise). #qr-section garde style="display:none;" inline (piloté par evaluerQR).
+- Messages : erreur grille (rouge charte), warning tous_notes + msg-bloque-select (ambre charte). Emojis → picto Unicode. display:none inline conservé sur les 2 messages pilotés JS.
+- Bouton "Préparer le test" : onclick="allerConfirmation()" → data-action="preparer-test" + listener délégué sur #ecran-selection.
+
+**Header commun — centrage du titre :**
+- Le titre "THÉORIE R.482" était décalé (flex justify-content:space-between → titre centré dans l'espace restant après le logo, pas au centre de la page).
+- Corrigé : .header-row1 passé de flex à grid (grid-template-columns: 1fr auto 1fr). Titre en grid-column:2 + text-align:center → centre absolu de la page. Bloc chrono (wrapper timer+candidat) reçoit justify-self:end. Logo en colonne 1 (gauche). Le titre est désormais centré quelle que soit la largeur du logo, sur tous les écrans.
+
+**IDs préservés (JS) :** select-candidat (+ data-nom/prenom/naissance/a-resultat/mode), select-testeur, card-testeur-select, msg-testeur-chargement, qr-section, qr-box, msg-erreur-grille, msg-bloque-select.
+
+**État charte anthracite :** ✅ header (+ titre centré), écran 3 (consignes), QCM, récap, écran 1 (sélection). RESTE : écran 2 (identité — 3 alert(), bouton "Lire à voix haute" bleu, zone PIN formateur), écran 6 (résultat), modale de confirmation (~ligne 1552).
+
+**Leçon méthode :** tester sur mobile au fur et à mesure (pas à la fin) — l'écran 1 a demandé plusieurs allers-retours (logo dédoublé, badge débordant, titre décalé) qui auraient été vus plus tôt avec une vérif mobile immédiate.
