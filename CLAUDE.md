@@ -1021,3 +1021,22 @@ python migrate_testeur_theorie.py
 - Pilotage du bouton récap unifié : suppression de l'ancienne ligne btnVR dans afficherQuestion() (qui contredisait le bloc navigation). Le bloc navigation (btnRecapMini) est désormais la SEULE source de vérité. recapDebloque préservé.
 
 **Note dépendances :** tout le récap est en CSS pur (pas de Tabler ni police externe) — choix délibéré pour fiabilité en salle d'examen (connexion non garantie sur tablettes).
+
+---
+
+### ✅ Chantier terminé : écran 3 (consignes) refonte charte anthracite
+
+**Périmètre :** #ecran-consignes dans templates/test_theorie.html. Premier écran basculé en charte anthracite NORYX (#383b40). Les écrans 1, 2 et le QCM/récap restent en bleu/ardoise pour l'instant — effet "îlot" anthracite assumé temporairement, le temps de basculer le reste (header en priorité ensuite).
+
+**HTML (réécrit, était tout en inline) :**
+- Classes CSS dédiées créées : .cons-duree-wrap, .cons-duree-label, .cons-timer, .cons-titre-box, .cons-titre-test, .cons-titre-sous, .cons-regles-label, .cons-item, .cons-ico, .cons-ico-num, .cons-ico-rouge, .cons-txt, .cons-btn
+- Emojis remplacés par pictos CSS pur : chiffres dans pastilles (100, 5), symboles Unicode sobres (⏱ U+9201, ◎ U+9678, ✕ U+10005). Zéro emoji, zéro police externe (fiabilité salle).
+- Les 5 consignes : 100 questions / 60 minutes / 5 thèmes 50% / note globale min / aucune aide extérieure.
+- ✕ "aucune aide extérieure" en rouge NORYX #cc0000 (.cons-ico-rouge) — seule touche rouge, accent sur la consigne interdictive.
+- Bouton "Commencer le test" : onclick="demarrerTest()" → data-action="demarrer-test" (CSP), pilule anthracite #383b40.
+
+**Couleur :** anthracite #383b40 (valeur de charte adoucie depuis #2d2d2d, voir section Charte). Distinct de l'ardoise #4a5568 pour préserver la hiérarchie structure/secondaire.
+
+**JS :** listener délégué sur #ecran-consignes route data-action="demarrer-test" → demarrerTest(). demarrerTest() inchangé (charge questions si besoin, cache consignes, affiche QCM, lance le chrono).
+
+**Note à traiter plus tard :** le titre "Test théorique CACES® R.482" est codé EN DUR dans le HTML. À rendre dynamique (passer la famille depuis le serveur) si les tests portent sur d'autres familles (R.489, R.490…). Comportement inchangé dans ce chantier (déjà en dur avant).
