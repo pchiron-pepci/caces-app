@@ -1127,7 +1127,7 @@ function evaluerQR() {
     const testeurVal = selTest ? selTest.value : '';
 
     // Cas 0 : pas de candidat → cache QR
-    if (!val) { section.style.display = 'none'; if (msgBloque) msgBloque.textContent = ''; return; }
+    if (!val) { section.style.display = 'none'; if (msgBloque) { msgBloque.textContent = ''; msgBloque.style.display = 'none'; } return; }
 
     // Cas 1 : candidat a déjà un résultat → cache QR + message bloquant
     const optCand = selCand.options[selCand.selectedIndex];
@@ -1136,6 +1136,7 @@ function evaluerQR() {
         section.style.display = 'none';
         const mode = optCand.dataset.mode;
         if (msgBloque) msgBloque.textContent = mode === 'degrade' ? '✍️ Une saisie manuelle a déjà été enregistrée pour ce candidat.' : '✅ Ce candidat a déjà passé le test.';
+        if (msgBloque) msgBloque.style.display = '';
         return;
     }
 
@@ -1143,11 +1144,12 @@ function evaluerQR() {
     if (!testeurVal) {
         section.style.display = 'none';
         if (msgBloque) msgBloque.textContent = '⚠️ Sélectionnez aussi le testeur pour afficher le QR code.';
+        if (msgBloque) msgBloque.style.display = '';
         return;
     }
 
     // Cas 3 : candidat ET testeur OK → génère et affiche le QR
-    if (msgBloque) msgBloque.textContent = '';
+    if (msgBloque) { msgBloque.textContent = ''; msgBloque.style.display = 'none'; }
     const box = document.getElementById('qr-box');
     if (box) box.innerHTML = '';
     const url = window.location.origin + '/test/theorie/' + JOUR_ID + '/' + val + '/start';
