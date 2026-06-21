@@ -26,8 +26,8 @@
         }
 
         .header-row1 {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
             margin-bottom: 10px;
         }
@@ -37,6 +37,8 @@
             font-weight: 800;
             letter-spacing: 1.5px;
             text-transform: uppercase;
+            text-align: center;
+            grid-column: 2;
         }
 
         .header-candidat {
@@ -804,7 +806,7 @@
         {% set _logo = logo_organisme() %}
         {% if _logo %}<img id="test-logo" src="{{ _logo }}" alt="Logo organisme" />{% endif %}
         <div class="header-title">Théorie R.482</div>
-        <div style="display:flex; align-items:center; gap:16px;">
+        <div style="display:flex; align-items:center; gap:16px; justify-self:end;">
             <div id="timer"></div>
             <div class="header-candidat" id="header-candidat"></div>
         </div>
