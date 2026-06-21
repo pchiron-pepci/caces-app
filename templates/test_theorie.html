@@ -815,7 +815,7 @@
         <div class="navigation">
             <button class="btn-nav btn-prev" id="btn-precedent" data-action="precedent" type="button" disabled>&#8592; Précédente</button>
             <button class="btn-recap-mini" id="btn-voir-recap" data-action="voir-recap" type="button" style="display:none;" aria-label="Voir le récapitulatif">
-                <span class="btn-recap-ico">&#128203;</span> Récap
+                <span class="btn-recap-ico">&#128203;</span> Mes réponses
             </button>
             <button class="btn-nav btn-suiv" id="btn-suivant" data-action="suivant" type="button">Suivante &#8594;</button>
         </div>
@@ -1270,8 +1270,6 @@ function afficherQuestion(idx) {
     if (!q) return;
 
     if (idx === questions.length - 1) recapDebloque = true;
-    const btnVR = document.getElementById('btn-voir-recap');
-    if (btnVR) btnVR.style.display = (MODE_CORRECTION || recapDebloque) ? 'inline-flex' : 'none';
 
     document.getElementById('q-num').textContent = idx + 1;
     const pct = Math.round((idx + 1) / questions.length * 100);
@@ -1311,12 +1309,15 @@ if (window.speechSynthesis) {
 
     document.getElementById('btn-precedent').disabled = idx === 0;
     const btnS = document.getElementById('btn-suivant');
+    const btnRecapMini = document.getElementById('btn-voir-recap');
     if (idx === questions.length - 1) {
-        btnS.textContent = 'Voir recap →';
+        btnS.textContent = 'Mes réponses →';
         btnS.dataset.dernier = '1';
+        if (btnRecapMini) btnRecapMini.style.display = 'none';
     } else {
         btnS.textContent = 'Suivante →';
         btnS.dataset.dernier = '0';
+        if (btnRecapMini && (MODE_CORRECTION || recapDebloque)) btnRecapMini.style.display = 'inline-flex';
     }
 }
 
