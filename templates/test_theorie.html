@@ -1118,45 +1118,45 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
 chargerQuestions();
 
 let _qrInstance = null;
-document.getElementById('select-candidat').addEventListener('change', function() {
-    const val       = this.value;
-    const section   = document.getElementById('qr-section');
-    const box       = document.getElementById('qr-box');
+function evaluerQR() {
+    const selCand = document.getElementById('select-candidat');
+    const selTest = document.getElementById('select-testeur');
+    const section = document.getElementById('qr-section');
     const msgBloque = document.getElementById('msg-bloque-select');
+    const val = selCand.value;
+    const testeurVal = selTest ? selTest.value : '';
 
-    msgBloque.style.display = 'none';
-    msgBloque.textContent   = '';
-    box.innerHTML = '';
+    // Cas 0 : pas de candidat → cache QR
+    if (!val) { section.style.display = 'none'; if (msgBloque) msgBloque.textContent = ''; return; }
 
-    if (!val) { section.style.display = 'none'; return; }
-
-    if (!TESTEUR_ID_JOUR) {
-        msgBloque.textContent = 'ℹ️ Vous n\'avez pas indiqué de testeur pour ce jour.';
-        msgBloque.style.display = '';
-    }
-
-    const opt  = this.options[this.selectedIndex];
-    const aRes = opt.getAttribute('data-a-resultat') === 'true';
+    // Cas 1 : candidat a déjà un résultat → cache QR + message bloquant
+    const optCand = selCand.options[selCand.selectedIndex];
+    const aRes = optCand && optCand.dataset.aResultat === 'true';
     if (aRes) {
         section.style.display = 'none';
-        const mode = opt.getAttribute('data-mode');
-        msgBloque.textContent = mode === 'degrade'
-            ? '✍️ Une saisie manuelle a déjà été enregistrée pour ce candidat. Pour corriger, utilisez "Corriger" depuis la page de session (sous PIN formateur).'
-            : '✅ Ce candidat a déjà passé le test numérique. Pour corriger, utilisez "Corriger" depuis la page de session (sous PIN formateur).';
-        msgBloque.style.display = '';
+        const mode = optCand.dataset.mode;
+        if (msgBloque) msgBloque.textContent = mode === 'degrade' ? '✍️ Une saisie manuelle a déjà été enregistrée pour ce candidat.' : '✅ Ce candidat a déjà passé le test.';
         return;
     }
 
-    _qrInstance = new QRCode(box, {
-        text: window.location.origin + '/test/theorie/' + JOUR_ID + '/' + val + '/start',
-        width: 150,
-        height: 150,
-        colorDark: '#1a237e',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-    });
+    // Cas 2 : candidat OK mais PAS de testeur sélectionné → cache QR + invite à choisir le testeur
+    if (!testeurVal) {
+        section.style.display = 'none';
+        if (msgBloque) msgBloque.textContent = '⚠️ Sélectionnez aussi le testeur pour afficher le QR code.';
+        return;
+    }
+
+    // Cas 3 : candidat ET testeur OK → génère et affiche le QR
+    if (msgBloque) msgBloque.textContent = '';
+    const box = document.getElementById('qr-box');
+    if (box) box.innerHTML = '';
+    const url = window.location.origin + '/test/theorie/' + JOUR_ID + '/' + val + '/start';
+    new QRCode(box, { text: url, width: 120, height: 120, colorDark: '#383b40', colorLight: '#ffffff' });
     section.style.display = 'block';
-});
+}
+
+document.getElementById('select-candidat').addEventListener('change', evaluerQR);
+document.getElementById('select-testeur').addEventListener('change', evaluerQR);
 
 if (START_DIRECT && START_STAGIAIRE_ID) {
     stagiaireId = START_STAGIAIRE_ID;
@@ -1193,6 +1193,7 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
                 } else if (testeurs.length === 1) {
                     sel.value = testeurs[0].id;
                 }
+                evaluerQR();
             })
             .catch(function() {
                 document.getElementById('msg-testeur-chargement').textContent = 'Erreur de chargement des testeurs.';
