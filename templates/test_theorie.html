@@ -16,7 +16,7 @@
         }
 
         .header {
-            background: #1a237e;
+            background: #383b40;
             color: white;
             padding: 12px 20px;
             position: sticky;
@@ -88,7 +88,7 @@
         }
 
         .progress-fill {
-            background: #64b5f6;
+            background: #fff;
             height: 100%;
             border-radius: 10px;
             transition: width 0.3s;
@@ -457,7 +457,7 @@
             display: none;
             font-size: 18px;
             font-weight: 800;
-            color: #64b5f6;
+            color: #fff;
         }
 
         .qcm-card {
@@ -706,7 +706,7 @@
     <div class="header-row1">
         {% set _logo = logo_organisme() %}
         {% if _logo %}<img id="test-logo" src="{{ _logo }}" alt="Logo organisme" />{% endif %}
-        <div class="header-title">CACES® R.482 - Theorie</div>
+        <div class="header-title">Théorie R.482</div>
         <div style="display:flex; align-items:center; gap:16px;">
             <div id="timer"></div>
             <div class="header-candidat" id="header-candidat"></div>
@@ -1003,11 +1003,9 @@ function tickTimer() {
 
     if (tempsRestant === 600) {
         timerEl.style.color = '#ff9800';
-        alert('⚠️ Il vous reste 10 minutes !');
     }
     if (tempsRestant === 300) {
         timerEl.style.color = '#f44336';
-        alert('⚠️ Il vous reste 5 minutes !');
     }
     if (tempsRestant <= 0) {
         clearInterval(timerInterval);
@@ -1244,7 +1242,7 @@ function allerConfirmation() {
     tempsRestant = 60 * 60;
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
     document.getElementById('timer').style.display = 'none';
-    document.getElementById('timer').style.color = '#64b5f6';
+    document.getElementById('timer').style.color = '#fff';
 
     const nom = opt.getAttribute('data-nom') + ' ' + opt.getAttribute('data-prenom');
     const naissance = opt.getAttribute('data-naissance');
