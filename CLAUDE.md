@@ -1349,4 +1349,9 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Étape 1/2 terminée (commit d1b94a9) :** colonne `dispense_date DATE` ajoutée sur `session_candidats` (nullable, après `dispense_fichier_type`). Migration startup idempotente ajoutée dans `main.py`. Représente la date d'obtention de la théorie/CACES justifiant la dispense (utile pour futur calcul de validité CACES).
 
-**Étape restante :** 2/2 UI — champ date dans la modale candidat (à côté de dispense_note), pré-remplissage à l'ouverture, envoi dans le PUT/POST `sauvegarderCandidat`.
+**Étape 2/2 terminée (commit 2957dcf) :** champ date dans la modale candidat + persistance.
+- `sessions.py` : `dispense_date: Optional[date] = None` dans `SessionCandidatCreate` ; `sc.dispense_date = data.dispense_date if data.theorie_dispensee else None` dans `update_candidat` ; `add_candidat` inchangé (model_dump propage automatiquement).
+- `session_detail.html` : bloc `#field-dispense-date` inséré avant `#field-dispense-note` (input[type=date] id=sc-dispense-date) ; `data-dispense-date` ajouté sur pastille Disp. et bouton ✏️.
+- `session_detail.js` : 5 modifications — `_syncDispenseNote` (affiche/masque field-dispense-date), `ouvrirAjoutCandidat` (vide sc-dispense-date), `editerCandidat` (6e param dispenseDate + display + pré-remplissage), listener (6e arg btn.dataset.dispenseDate), `sauvegarderCandidat` (dispense_date dans data{}).
+
+**Chantier date de dispense — COMPLET** (commits d1b94a9 → 2957dcf).
