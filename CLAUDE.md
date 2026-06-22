@@ -1303,3 +1303,17 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - `sauvegarderPratique` inchangé : `querySelectorAll('[name="pratique-option"]:checked')` inclut nativement les `disabled` cochés → les incluses cochées (RÉUSSI) sont bien envoyées ; les décochées (ÉCHEC) sont absentes.
 
 **Radio résultat :** name=`pratique-resultat`, valeurs `"true"` (RÉUSSI) / `"false"` (ÉCHEC).
+
+### 🔧 Chantier en cours : justificatif dispense théorie sur R2 (chantier pilote R2)
+
+**Contexte :** la dispense de théorie existe (`SessionCandidat.theorie_dispensee` + `dispense_note`). On ajoute un fichier justificatif stocké sur Cloudflare R2 — la BDD ne stocke que la clé + métadonnées, jamais le binaire.
+
+**Étape 2/5 terminée (commit c43c4f1) :** 3 colonnes ajoutées sur `session_candidats` :
+- `dispense_fichier_cle VARCHAR(500)` — clé objet R2, ex: `pepci/dispenses/{uuid}.pdf`
+- `dispense_fichier_nom VARCHAR(255)` — nom original du fichier uploadé
+- `dispense_fichier_type VARCHAR(100)` — type MIME, ex: `application/pdf`
+- Migration startup idempotente ajoutée dans `main.py` (pattern `ADD COLUMN IF NOT EXISTS`)
+
+**Étapes restantes :** 3/5 routes R2 (upload signé + delete), 4/5 UI modale candidat, 5/5 affichage/téléchargement.
+
+**Infra R2 :** boto3 absent de requirements.txt — à ajouter. Variables env à câbler : `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`. Cloudinary (images/audio) reste intact, R2 est pour les PDF dispenses uniquement.
