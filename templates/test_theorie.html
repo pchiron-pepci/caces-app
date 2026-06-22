@@ -1,11 +1,28 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CACES® Test Theorique</title>
+    <title>CACESÂ® Test Theorique</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        :root {
+            --noryx-anthracite: #383b40;
+            --noryx-anthracite-fonce: #2a2c30;
+            --noryx-ardoise: #4a5568;
+            --noryx-gris: #888;
+            --noryx-gris-clair: #f0efef;
+            --noryx-surface: #f4f5f6;
+            --noryx-blanc: #fff;
+            --noryx-rouge: #cc0000;
+            --noryx-rouge-erreur: #c62828;
+            --noryx-ambre-fond: #FFF4E0;
+            --noryx-ambre-bordure: #F0C775;
+            --noryx-ambre-texte: #854F0B;
+            --noryx-ambre-texte-pin: #7A5600;
+            --noryx-ambre-pastille: #FAC775;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -16,7 +33,7 @@
         }
 
         .header {
-            background: #383b40;
+            background: var(--noryx-anthracite);
             color: white;
             padding: 12px 20px;
             position: sticky;
@@ -46,8 +63,8 @@
             opacity: 0.75;
         }
 
-        /* Header logo — valeurs alignées avec projection_theorie.html,
-           garder synchronisées si modification (height desktop/mobile, seuil). */
+        /* Header logo â€” valeurs alignÃ©es avec projection_theorie.html,
+           garder synchronisÃ©es si modification (height desktop/mobile, seuil). */
         #test-logo {
             height: 40px;
             width: auto;
@@ -207,7 +224,7 @@
         .btn-action {
             width: 100%;
             padding: 16px;
-            background: #383b40;
+            background: var(--noryx-anthracite);
             color: white;
             border: none;
             border-radius: 12px;
@@ -357,7 +374,7 @@
         }
 
         .btn-precedent { background: #f0f2f7; color: #555; }
-        .btn-suivant { background: #383b40; color: white; }
+        .btn-suivant { background: var(--noryx-anthracite); color: white; }
         .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
 
         /* RECAP */
@@ -400,7 +417,7 @@
             border: 1px solid #cfd8dc;
         }
 
-        /* .btn-valider défini plus bas avec les règles recap */
+        /* .btn-valider dÃ©fini plus bas avec les rÃ¨gles recap */
 
         .btn-retour {
             width: 100%; padding: 13px;
@@ -463,12 +480,12 @@
         .cons-timer {
             font-size: 44px;
             font-weight: 800;
-            color: #383b40;
+            color: var(--noryx-anthracite);
             line-height: 1.1;
             margin-top: 2px;
         }
         .cons-titre-box {
-            background: #383b40;
+            background: var(--noryx-anthracite);
             border-radius: 12px;
             padding: 14px;
             margin-bottom: 18px;
@@ -497,7 +514,7 @@
             height: 30px;
             border-radius: 8px;
             background: #f0efef;
-            color: #383b40;
+            color: var(--noryx-anthracite);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -507,10 +524,10 @@
         .cons-ico-num { font-size: 14px; font-weight: 700; }
         .cons-ico-rouge { color: #cc0000; }
         .cons-txt { font-size: 13px; color: #4a5568; line-height: 1.4; }
-        .cons-txt strong { color: #383b40; }
+        .cons-txt strong { color: var(--noryx-anthracite); }
         .cons-btn {
             margin-top: 16px;
-            background: #383b40;
+            background: var(--noryx-anthracite);
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -640,19 +657,19 @@
             color: #9e9e9e;
         }
 
-        /* ===== ÉCRAN 1 — sélection candidat (charte anthracite) ===== */
+        /* ===== Ã‰CRAN 1 â€” sÃ©lection candidat (charte anthracite) ===== */
         .sel1-header { text-align: center; margin-bottom: 16px; }
         .sel1-logo {
             width: 54px; height: 54px;
             border-radius: 14px;
-            background: #383b40;
+            background: var(--noryx-anthracite);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 8px;
         }
         .sel1-logo img { height: 38px; width: auto; object-fit: contain; }
-        .sel1-titre { font-size: 17px; font-weight: 700; color: #383b40; }
+        .sel1-titre { font-size: 17px; font-weight: 700; color: var(--noryx-anthracite); }
         .sel1-sous { font-size: 13px; color: #888; margin-top: 2px; }
 
         .sel1-select-wrap { position: relative; }
@@ -662,7 +679,7 @@
             border: 1.5px solid #d0d4d8;
             border-radius: 10px;
             font-size: 15px;
-            color: #383b40;
+            color: var(--noryx-anthracite);
             background: #fff;
             appearance: none;
             -webkit-appearance: none;
@@ -682,7 +699,7 @@
         .sel1-grille-info { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .sel1-grille-badge {
             background: #f0efef;
-            color: #383b40;
+            color: var(--noryx-anthracite);
             font-size: 11px;
             font-weight: 700;
             padding: 3px 9px;
@@ -704,7 +721,7 @@
             width: 34px; height: 34px;
             border-radius: 9px;
             background: #f0efef;
-            color: #383b40;
+            color: var(--noryx-anthracite);
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -712,7 +729,7 @@
             margin-bottom: 8px;
         }
         .sel1-qr-texte { font-size: 13px; color: #4a5568; line-height: 1.4; }
-        .sel1-qr-texte strong { color: #383b40; }
+        .sel1-qr-texte strong { color: var(--noryx-anthracite); }
         .sel1-qr-box { margin: 12px auto 0; }
 
         .sel1-msg-erreur {
@@ -739,11 +756,11 @@
             align-items: flex-start;
         }
 
-        /* ===== ÉCRAN 2 — identité candidat (charte anthracite) ===== */
+        /* ===== Ã‰CRAN 2 â€” identitÃ© candidat (charte anthracite) ===== */
         .sel2-tete { text-align: center; margin-bottom: 12px; }
         .sel2-emoji { font-size: 48px; line-height: 1; }
         .sel2-question { font-size: 13px; color: #888; margin-top: 8px; }
-        .identite-nom { text-align: center; font-size: 24px; font-weight: 800; color: #383b40; line-height: 1.2; }
+        .identite-nom { text-align: center; font-size: 24px; font-weight: 800; color: var(--noryx-anthracite); line-height: 1.2; }
         .identite-info { text-align: center; font-size: 14px; color: #888; margin-top: 2px; }
         .sel2-voix-wrap { text-align: center; margin: 16px 0 4px; }
         .sel2-voix-btn {
@@ -752,7 +769,7 @@
             border-radius: 999px;
             padding: 10px 22px;
             font-size: 15px;
-            color: #383b40;
+            color: var(--noryx-anthracite);
             cursor: pointer;
             font-family: inherit;
         }
@@ -771,7 +788,7 @@
             flex-shrink: 0;
             width: 18px;
             height: 18px;
-            accent-color: #383b40;
+            accent-color: var(--noryx-anthracite);
         }
         .checkbox-confirm span { font-size: 13px; color: #4a5568; line-height: 1.4; }
 
@@ -804,7 +821,7 @@
             margin-bottom: 8px;
             box-sizing: border-box;
             background: #fff;
-            color: #383b40;
+            color: var(--noryx-anthracite);
             outline: none;
         }
         .sel2-pin-error { color: #c62828; font-size: 13px; margin-bottom: 10px; }
@@ -817,17 +834,17 @@
 {% if terrain_gele | default(false) %}
 <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f5f6fa; padding:32px; text-align:center;">
     <div style="background:white; border:2px solid #7b1fa2; border-radius:16px; padding:40px 32px; max-width:480px; box-shadow:0 4px 20px rgba(0,0,0,0.10);">
-        <div style="font-size:48px; margin-bottom:16px;">🔐</div>
-        <h2 style="color:#6a1b9a; margin-bottom:16px; font-size:20px;">Session clôturée terrain</h2>
-        <p style="color:#555; font-size:15px; line-height:1.6;">Les tests théoriques de cette session ont été validés et ne peuvent plus être démarrés. Contactez le formateur.</p>
+        <div style="font-size:48px; margin-bottom:16px;">ðŸ”</div>
+        <h2 style="color:#6a1b9a; margin-bottom:16px; font-size:20px;">Session clÃ´turÃ©e terrain</h2>
+        <p style="color:#555; font-size:15px; line-height:1.6;">Les tests thÃ©oriques de cette session ont Ã©tÃ© validÃ©s et ne peuvent plus Ãªtre dÃ©marrÃ©s. Contactez le formateur.</p>
     </div>
 </div>
 {% elif not (tirage_declenche | default(false)) %}
 <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f5f6fa; padding:32px; text-align:center;">
     <div style="background:white; border:2px solid #e65100; border-radius:16px; padding:40px 32px; max-width:480px; box-shadow:0 4px 20px rgba(0,0,0,0.10);">
-        <div style="font-size:48px; margin-bottom:16px;">🎲</div>
-        <h2 style="color:#bf360c; margin-bottom:16px; font-size:20px;">Tirage non déclenché</h2>
-        <p style="color:#555; font-size:15px; line-height:1.6;">Aucun tirage de grille n'a été effectué pour cette session. Revenez dans l'application et déclenchez le tirage avant de lancer le test théorique.</p>
+        <div style="font-size:48px; margin-bottom:16px;">ðŸŽ²</div>
+        <h2 style="color:#bf360c; margin-bottom:16px; font-size:20px;">Tirage non dÃ©clenchÃ©</h2>
+        <p style="color:#555; font-size:15px; line-height:1.6;">Aucun tirage de grille n'a Ã©tÃ© effectuÃ© pour cette session. Revenez dans l'application et dÃ©clenchez le tirage avant de lancer le test thÃ©orique.</p>
     </div>
 </div>
 {% else %}
@@ -837,7 +854,7 @@
     <div class="header-row1">
         {% set _logo = logo_organisme() %}
         {% if _logo %}<img id="test-logo" src="{{ _logo }}" alt="Logo organisme" />{% endif %}
-        <div class="header-title">Théorie R.482</div>
+        <div class="header-title">ThÃ©orie R.482</div>
         <div style="display:flex; align-items:center; gap:16px; justify-self:end;">
             <div id="timer"></div>
             <div class="header-candidat" id="header-candidat"></div>
@@ -855,8 +872,8 @@
 <!-- ECRAN 1 : SELECTION CANDIDAT (TESTEUR) -->
 <div class="screen" id="ecran-selection">
     <div class="sel1-header">
-        <div class="sel1-titre">Sélection du candidat</div>
-        <div class="sel1-sous">Test théorique CACES® R.482</div>
+        <div class="sel1-titre">SÃ©lection du candidat</div>
+        <div class="sel1-sous">Test thÃ©orique CACESÂ® R.482</div>
     </div>
 
     <div class="card">
@@ -872,15 +889,15 @@
                     data-naissance="{{ sc.stagiaire.date_naissance or '' }}"
                     data-a-resultat="{{ 'true' if _rt_mode else 'false' }}"
                     data-mode="{{ _rt_mode or '' }}">
-                    {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}{% if _rt_mode == 'degrade' %} — ✍️ manuel{% elif _rt_mode == 'numerique' %} — ✅ passé{% endif %}
+                    {{ sc.stagiaire.nom }} {{ sc.stagiaire.prenom }}{% if _rt_mode == 'degrade' %} â€” âœï¸ manuel{% elif _rt_mode == 'numerique' %} â€” âœ… passÃ©{% endif %}
                 </option>
                 {% endif %}{% endfor %}
             </select>
             <span class="sel1-select-fleche">&#9660;</span>
         </div>
         <div class="sel1-grille-info">
-            <span class="sel1-grille-badge">Phase 2 — Tirage par thème</span>
-            <span class="sel1-grille-texte">100 questions · VRAI ou FAUX · 60 minutes</span>
+            <span class="sel1-grille-badge">Phase 2 â€” Tirage par thÃ¨me</span>
+            <span class="sel1-grille-texte">100 questions Â· VRAI ou FAUX Â· 60 minutes</span>
         </div>
     </div>
 
@@ -888,16 +905,16 @@
         <div class="field-label">Testeur</div>
         <div class="sel1-select-wrap">
             <select id="select-testeur" class="sel1-select">
-                <option value="">— Sélectionner le testeur —</option>
+                <option value="">â€” SÃ©lectionner le testeur â€”</option>
             </select>
             <span class="sel1-select-fleche">&#9660;</span>
         </div>
-        <div class="sel1-msg-chargement" id="msg-testeur-chargement">Chargement…</div>
+        <div class="sel1-msg-chargement" id="msg-testeur-chargement">Chargementâ€¦</div>
     </div>
 
     <div id="qr-section" class="sel1-qr" style="display:none;">
         <div class="sel1-qr-ico">&#9636;</div>
-        <div class="sel1-qr-texte">Le candidat peut scanner ce <strong>QR code</strong> pour passer le test sur son téléphone.</div>
+        <div class="sel1-qr-texte">Le candidat peut scanner ce <strong>QR code</strong> pour passer le test sur son tÃ©lÃ©phone.</div>
         <div id="qr-box" class="sel1-qr-box" style="display:inline-block;"></div>
     </div>
 
@@ -905,25 +922,25 @@
     {% if tous_notes %}
     <div class="sel1-msg-warning">
         <span>&#9888;</span>
-        <span>Tous les candidats ont déjà un résultat — aucun nouveau test ne peut être lancé depuis cet écran.</span>
+        <span>Tous les candidats ont dÃ©jÃ  un rÃ©sultat â€” aucun nouveau test ne peut Ãªtre lancÃ© depuis cet Ã©cran.</span>
     </div>
     {% endif %}
     <div id="msg-bloque-select" class="sel1-msg-warning" style="display:none;"></div>
-    <button class="btn-action" data-action="preparer-test" type="button">Preparer le test →</button>
+    <button class="btn-action" data-action="preparer-test" type="button">Preparer le test â†’</button>
 </div>
 
 <!-- ECRAN 2 : CONFIRMATION IDENTITE (CANDIDAT) -->
 <div class="screen" id="ecran-identite" style="display:none;">
     <div class="card">
         <div class="sel2-tete">
-            <div class="sel2-emoji">👤</div>
+            <div class="sel2-emoji">ðŸ‘¤</div>
             <div class="sel2-question">Etes-vous bien :</div>
         </div>
-        <div class="identite-nom" id="identite-nom">—</div>
-        <div class="identite-info" id="identite-info">—</div>
+        <div class="identite-nom" id="identite-nom">â€”</div>
+        <div class="identite-info" id="identite-info">â€”</div>
 
         <div class="sel2-voix-wrap">
-            <button class="sel2-voix-btn" data-action="lire-voix" type="button">🔊 Lire à voix haute</button>
+            <button class="sel2-voix-btn" data-action="lire-voix" type="button">ðŸ”Š Lire Ã  voix haute</button>
         </div>
 
         <label class="checkbox-confirm">
@@ -932,17 +949,17 @@
         </label>
     </div>
 
-    <button class="btn-action" data-action="confirmer-identite" type="button">Confirmer mon identite →</button>
-    <button class="btn-action-secondary" data-action="pas-moi" type="button">← Ce n'est pas moi</button>
+    <button class="btn-action" data-action="confirmer-identite" type="button">Confirmer mon identite â†’</button>
+    <button class="btn-action-secondary" data-action="pas-moi" type="button">â† Ce n'est pas moi</button>
 
     <div id="zone-pas-moi" class="sel2-pin" style="display:none;">
-        <div class="sel2-pin-titre">🔒 Action réservée au formateur</div>
-        <div class="sel2-pin-texte">Veuillez contacter votre testeur/formateur pour débloquer.</div>
+        <div class="sel2-pin-titre">ðŸ”’ Action rÃ©servÃ©e au formateur</div>
+        <div class="sel2-pin-texte">Veuillez contacter votre testeur/formateur pour dÃ©bloquer.</div>
         <label class="sel2-pin-label">Code formateur</label>
-        <input type="password" id="pin-formateur-input" class="sel2-pin-input" placeholder="••••" />
-        <div id="pin-formateur-error" class="sel2-pin-error" style="display:none;">❌ Code PIN incorrect</div>
+        <input type="password" id="pin-formateur-input" class="sel2-pin-input" placeholder="â€¢â€¢â€¢â€¢" />
+        <div id="pin-formateur-error" class="sel2-pin-error" style="display:none;">âŒ Code PIN incorrect</div>
         <div class="sel2-pin-actions">
-            <button class="btn-action" data-action="pin-debloquer" type="button">Débloquer</button>
+            <button class="btn-action" data-action="pin-debloquer" type="button">DÃ©bloquer</button>
             <button class="btn-action-secondary" data-action="pin-annuler" type="button">Annuler</button>
         </div>
     </div>
@@ -952,28 +969,28 @@
 <div class="screen" id="ecran-consignes" style="display:none;">
     <div class="card">
         <div class="cons-duree-wrap">
-            <div class="cons-duree-label">Durée du test</div>
+            <div class="cons-duree-label">DurÃ©e du test</div>
             <div class="cons-timer">60:00</div>
         </div>
 
         <div class="cons-titre-box">
-            <div class="cons-titre-test">Test théorique CACES® R.482</div>
+            <div class="cons-titre-test">Test thÃ©orique CACESÂ® R.482</div>
             <div class="cons-titre-sous">100 questions VRAI / FAUX</div>
         </div>
 
-        <div class="cons-regles-label">Règles de l'épreuve</div>
+        <div class="cons-regles-label">RÃ¨gles de l'Ã©preuve</div>
 
         <div class="cons-item">
             <span class="cons-ico cons-ico-num">100</span>
-            <div class="cons-txt"><strong>100 questions</strong> VRAI ou FAUX. Retour en arrière possible à tout moment.</div>
+            <div class="cons-txt"><strong>100 questions</strong> VRAI ou FAUX. Retour en arriÃ¨re possible Ã  tout moment.</div>
         </div>
         <div class="cons-item">
             <span class="cons-ico">&#9201;</span>
-            <div class="cons-txt"><strong>60 minutes</strong> — le test se termine automatiquement à la fin du temps.</div>
+            <div class="cons-txt"><strong>60 minutes</strong> â€” le test se termine automatiquement Ã  la fin du temps.</div>
         </div>
         <div class="cons-item">
             <span class="cons-ico cons-ico-num">5</span>
-            <div class="cons-txt"><strong>5 thèmes</strong> notés — au moins <strong>50% dans chaque thème</strong>.</div>
+            <div class="cons-txt"><strong>5 thÃ¨mes</strong> notÃ©s â€” au moins <strong>50% dans chaque thÃ¨me</strong>.</div>
         </div>
         <div class="cons-item">
             <span class="cons-ico">&#9678;</span>
@@ -981,7 +998,7 @@
         </div>
         <div class="cons-item">
             <span class="cons-ico cons-ico-rouge">&#10005;</span>
-            <div class="cons-txt">Aucune aide extérieure — <strong>seul et sans support de cours</strong>.</div>
+            <div class="cons-txt">Aucune aide extÃ©rieure â€” <strong>seul et sans support de cours</strong>.</div>
         </div>
 
         <button class="btn-action cons-btn" data-action="demarrer-test" type="button"><span class="cons-btn-ico">&#9658;</span> Commencer le test</button>
@@ -995,8 +1012,8 @@
 
         <img id="q-image" class="question-image" src="" alt="">
 
-        <button class="btn-reecouter" data-action="relire-question" type="button" aria-label="Réécouter la question">
-            <span class="btn-reecouter-ico">&#128266;</span> Réécouter
+        <button class="btn-reecouter" data-action="relire-question" type="button" aria-label="RÃ©Ã©couter la question">
+            <span class="btn-reecouter-ico">&#128266;</span> RÃ©Ã©couter
         </button>
 
         <div class="question-text" id="q-texte">Chargement...</div>
@@ -1013,9 +1030,9 @@
         </div>
 
         <div class="navigation">
-            <button class="btn-nav btn-prev" id="btn-precedent" data-action="precedent" type="button" disabled>&#8592; Précédente</button>
-            <button class="btn-recap-mini" id="btn-voir-recap" data-action="voir-recap" type="button" style="display:none;" aria-label="Voir le récapitulatif">
-                <span class="btn-recap-ico">&#128203;</span> Mes réponses
+            <button class="btn-nav btn-prev" id="btn-precedent" data-action="precedent" type="button" disabled>&#8592; PrÃ©cÃ©dente</button>
+            <button class="btn-recap-mini" id="btn-voir-recap" data-action="voir-recap" type="button" style="display:none;" aria-label="Voir le rÃ©capitulatif">
+                <span class="btn-recap-ico">&#128203;</span> Mes rÃ©ponses
             </button>
             <button class="btn-nav btn-suiv" id="btn-suivant" data-action="suivant" type="button">Suivante &#8594;</button>
         </div>
@@ -1028,22 +1045,22 @@
         <div id="recap-etat-incomplet" class="recap-cadres">
             <div class="recap-cadre recap-cadre-gris">
                 <span class="recap-cadre-pastille rcp-gris"></span>
-                <span class="recap-cadre-txt"><span class="recap-nb-sans" id="recap-nb-sans">0</span> sans réponse</span>
+                <span class="recap-cadre-txt"><span class="recap-nb-sans" id="recap-nb-sans">0</span> sans rÃ©ponse</span>
             </div>
             <div class="recap-cadre recap-cadre-jaune">
                 <span class="recap-cadre-pastille rcp-jaune"></span>
-                <span class="recap-cadre-txt"><span class="recap-nb-rep" id="recap-nb">0</span> répondu</span>
+                <span class="recap-cadre-txt"><span class="recap-nb-rep" id="recap-nb">0</span> rÃ©pondu</span>
             </div>
         </div>
         <div id="recap-etat-complet" class="recap-complet" style="display:none;">
             <span class="recap-complet-check">&#10003;</span>
             <div>
-                <div class="recap-complet-titre">Toutes les questions sont répondues</div>
-                <div class="recap-complet-sous">100 / 100 — vous pouvez valider</div>
+                <div class="recap-complet-titre">Toutes les questions sont rÃ©pondues</div>
+                <div class="recap-complet-sous">100 / 100 â€” vous pouvez valider</div>
             </div>
         </div>
         <div class="recap-aide">
-            <span>Cliquez sur une question pour y revenir et compléter ou modifier votre réponse.</span>
+            <span>Cliquez sur une question pour y revenir et complÃ©ter ou modifier votre rÃ©ponse.</span>
         </div>
     </div>
 
@@ -1051,7 +1068,7 @@
     {% set theme_nb = {1: 12, 2: 28, 3: 44, 4: 12, 5: 4} %}
     {% for t in [1,2,3,4,5] %}
     <div class="recap-theme">
-        <div class="recap-theme-title">Theme {{ t }} · {{ theme_noms[t] }}</div>
+        <div class="recap-theme-title">Theme {{ t }} Â· {{ theme_noms[t] }}</div>
         <div class="recap-questions" id="recap-t{{ t }}">
             {% for i in range(theme_nb[t]) %}
             <div class="recap-q vide" id="rq-{{ t }}-{{ i }}" data-action="aller-question" data-theme="{{ t }}" data-idx="{{ i }}">{{ i+1 }}</div>
@@ -1063,34 +1080,34 @@
     <div id="bloc-testeur-corr" style="display:none; margin-bottom:14px;">
         <label class="field-label">Testeur</label>
         <select id="select-testeur-corr" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-size:14px;">
-            <option value="">— Sélectionner le testeur —</option>
+            <option value="">â€” SÃ©lectionner le testeur â€”</option>
         </select>
     </div>
 
     <div class="recap-valider-wrap">
-        <button class="btn-valider" data-action="valider-test" type="button"><span style="font-size:16px;">&#10003;</span> Valider mes réponses</button>
+        <button class="btn-valider" data-action="valider-test" type="button"><span style="font-size:16px;">&#10003;</span> Valider mes rÃ©ponses</button>
     </div>
-    <button class="btn-retour" onclick="retourQcm()">← Continuer a repondre</button>
+    <button class="btn-retour" onclick="retourQcm()">â† Continuer a repondre</button>
     <div id="msg-erreur-submit" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
 </div>
 
 <!-- ECRAN 6 : FIN -->
 <div class="screen" id="ecran-resultat" style="display:none;">
     <div class="card merci-card">
-        <div style="font-size:52px; margin-bottom:16px;">🙏</div>
+        <div style="font-size:52px; margin-bottom:16px;">ðŸ™</div>
         <h2 style="font-size:22px; font-weight:800; color:#1a237e; margin:0 0 20px 0;">
-            Bravo et merci pour votre participation à ce test théorique !
+            Bravo et merci pour votre participation Ã  ce test thÃ©orique !
         </h2>
         <p style="font-size:15px; color:#333; line-height:1.7; margin:0 0 14px 0;">
-            Vous avez terminé votre épreuve.
+            Vous avez terminÃ© votre Ã©preuve.
         </p>
         <p style="font-size:15px; color:#333; line-height:1.7; margin:0 0 14px 0;">
-            Merci de signaler au testeur présent que vous avez fini ;<br>
-            il vous guidera pour la prochaine étape.
+            Merci de signaler au testeur prÃ©sent que vous avez fini ;<br>
+            il vous guidera pour la prochaine Ã©tape.
         </p>
         <p style="font-size:14px; color:#666; line-height:1.6; margin:0;">
-            Vos résultats vous seront communiqués une fois l'ensemble<br>
-            de vos épreuves réalisées.
+            Vos rÃ©sultats vous seront communiquÃ©s une fois l'ensemble<br>
+            de vos Ã©preuves rÃ©alisÃ©es.
         </p>
     </div>
     <div style="text-align:center; margin-top:32px; padding:24px;">
@@ -1132,7 +1149,7 @@ function tickTimer() {
     const secondes = tempsRestant % 60;
     const affichage = String(minutes).padStart(2, '0') + ':' + String(secondes).padStart(2, '0');
     const timerEl = document.getElementById('timer');
-    timerEl.textContent = '⏱ ' + affichage;
+    timerEl.textContent = 'â± ' + affichage;
 
     if (tempsRestant === 600) {
         timerEl.style.color = '#ff9800';
@@ -1142,18 +1159,18 @@ function tickTimer() {
     }
     if (tempsRestant <= 0) {
         clearInterval(timerInterval);
-        timerEl.textContent = '⏱ 00:00';
+        timerEl.textContent = 'â± 00:00';
         timerEl.style.color = '#f44336';
         valider(true);
     }
 }
 
 const THEME_NOMS = {
-    1: 'Theme 1 · Connaissances generales',
-    2: 'Theme 2 · Technologie et stabilite',
-    3: 'Theme 3 · Exploitation',
-    4: 'Theme 4 · Circulation',
-    5: 'Theme 5 · Fin de poste'
+    1: 'Theme 1 Â· Connaissances generales',
+    2: 'Theme 2 Â· Technologie et stabilite',
+    3: 'Theme 3 Â· Exploitation',
+    4: 'Theme 4 Â· Circulation',
+    5: 'Theme 5 Â· Fin de poste'
 };
 
 async function chargerQuestions() {
@@ -1182,24 +1199,24 @@ async function chargerQuestions() {
                 });
             });
         }
-        // Pré-remplissage si correction d'un test numérique existant.
-        // La clé est posée par session_detail.js avant window.open, consommée une seule fois.
+        // PrÃ©-remplissage si correction d'un test numÃ©rique existant.
+        // La clÃ© est posÃ©e par session_detail.js avant window.open, consommÃ©e une seule fois.
         if (START_DIRECT && START_STAGIAIRE_ID) {
             const _cle     = 'corriger_rt_' + SESSION_ID + '_' + JOUR_ID + '_' + START_STAGIAIRE_ID;
             const _stored  = localStorage.getItem(_cle);
             if (_stored) {
                 try {
                     const _repServeur = JSON.parse(_stored);
-                    // Serveur : {str(numero_question): bool} → JS : {idx: bool}
-                    // "in" teste la présence de la clé — les réponses FAUX (false) sont préservées.
-                    // q.numero = champ "numero" renvoyé par l'API = numero_question du modèle.
+                    // Serveur : {str(numero_question): bool} â†’ JS : {idx: bool}
+                    // "in" teste la prÃ©sence de la clÃ© â€” les rÃ©ponses FAUX (false) sont prÃ©servÃ©es.
+                    // q.numero = champ "numero" renvoyÃ© par l'API = numero_question du modÃ¨le.
                     questions.forEach((q, idx) => {
                         const _k = String(q.theme) + '_' + String(q.numero);
                         if (_k in _repServeur) { reponses[idx] = _repServeur[_k]; }
                     });
                 } catch (_e) {}
                 localStorage.removeItem(_cle);
-                // Mode correction : mise à jour visuelle de la grille récap + atterrissage direct sur #ecran-recap
+                // Mode correction : mise Ã  jour visuelle de la grille rÃ©cap + atterrissage direct sur #ecran-recap
                 if (MODE_CORRECTION) {
                     questions.forEach((q, idx) => {
                         const el = document.getElementById('rq-' + q.theme + '-' + q.idx_theme);
@@ -1242,8 +1259,8 @@ async function chargerQuestions() {
     }
 }
 
-// Détection synchrone : correction d'un test numérique existant (clé posée par session_detail.js).
-// Doit être lu AVANT chargerQuestions() pour pouvoir conditionner l'écran initial.
+// DÃ©tection synchrone : correction d'un test numÃ©rique existant (clÃ© posÃ©e par session_detail.js).
+// Doit Ãªtre lu AVANT chargerQuestions() pour pouvoir conditionner l'Ã©cran initial.
 let MODE_CORRECTION = false;
 if (START_DIRECT && START_STAGIAIRE_ID) {
     const _cleCheck = 'corriger_rt_' + SESSION_ID + '_' + JOUR_ID + '_' + START_STAGIAIRE_ID;
@@ -1261,29 +1278,29 @@ function evaluerQR() {
     const val = selCand.value;
     const testeurVal = selTest ? selTest.value : '';
 
-    // Cas 0 : pas de candidat → cache QR
+    // Cas 0 : pas de candidat â†’ cache QR
     if (!val) { section.style.display = 'none'; if (msgBloque) { msgBloque.textContent = ''; msgBloque.style.display = 'none'; } return; }
 
-    // Cas 1 : candidat a déjà un résultat → cache QR + message bloquant
+    // Cas 1 : candidat a dÃ©jÃ  un rÃ©sultat â†’ cache QR + message bloquant
     const optCand = selCand.options[selCand.selectedIndex];
     const aRes = optCand && optCand.dataset.aResultat === 'true';
     if (aRes) {
         section.style.display = 'none';
         const mode = optCand.dataset.mode;
-        if (msgBloque) msgBloque.textContent = mode === 'degrade' ? '✍️ Une saisie manuelle a déjà été enregistrée pour ce candidat.' : '✅ Ce candidat a déjà passé le test.';
+        if (msgBloque) msgBloque.textContent = mode === 'degrade' ? 'âœï¸ Une saisie manuelle a dÃ©jÃ  Ã©tÃ© enregistrÃ©e pour ce candidat.' : 'âœ… Ce candidat a dÃ©jÃ  passÃ© le test.';
         if (msgBloque) msgBloque.style.display = '';
         return;
     }
 
-    // Cas 2 : candidat OK mais PAS de testeur sélectionné → cache QR + invite à choisir le testeur
+    // Cas 2 : candidat OK mais PAS de testeur sÃ©lectionnÃ© â†’ cache QR + invite Ã  choisir le testeur
     if (!testeurVal) {
         section.style.display = 'none';
-        if (msgBloque) msgBloque.textContent = '⚠️ Sélectionnez aussi le testeur pour afficher le QR code.';
+        if (msgBloque) msgBloque.textContent = 'âš ï¸ SÃ©lectionnez aussi le testeur pour afficher le QR code.';
         if (msgBloque) msgBloque.style.display = '';
         return;
     }
 
-    // Cas 3 : candidat ET testeur OK → génère et affiche le QR
+    // Cas 3 : candidat ET testeur OK â†’ gÃ©nÃ¨re et affiche le QR
     if (msgBloque) { msgBloque.textContent = ''; msgBloque.style.display = 'none'; }
     const box = document.getElementById('qr-box');
     if (box) box.innerHTML = '';
@@ -1305,12 +1322,12 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
     document.getElementById('confirm-identite').checked = false;
     document.getElementById('ecran-selection').style.display = 'none';
     if (!MODE_CORRECTION) {
-        // Flux normal : candidat confirme son identité avant de démarrer
+        // Flux normal : candidat confirme son identitÃ© avant de dÃ©marrer
         document.getElementById('ecran-identite').style.display = 'block';
     }
-    // En mode correction : aucun écran affiché ici — chargerQuestions() atterrit directement sur le récap pré-rempli
+    // En mode correction : aucun Ã©cran affichÃ© ici â€” chargerQuestions() atterrit directement sur le rÃ©cap prÃ©-rempli
 } else {
-    // Voie tablette : charger les testeurs habilités et peupler le select
+    // Voie tablette : charger les testeurs habilitÃ©s et peupler le select
     if (FAMILLE) {
         fetch('/api/testeurs/habilites?famille=' + encodeURIComponent(FAMILLE))
             .then(function(r) { return r.ok ? r.json() : []; })
@@ -1324,7 +1341,7 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
                     sel.appendChild(opt);
                 });
                 msg.style.display = 'none';
-                // Pré-sélectionner le testeur du jour si habilité, sinon auto si unique
+                // PrÃ©-sÃ©lectionner le testeur du jour si habilitÃ©, sinon auto si unique
                 if (TESTEUR_ID_JOUR && testeurs.some(function(t) { return t.id === TESTEUR_ID_JOUR; })) {
                     sel.value = TESTEUR_ID_JOUR;
                 } else if (testeurs.length === 1) {
@@ -1340,7 +1357,7 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
     }
 }
 
-// ECRAN 1 → 2
+// ECRAN 1 â†’ 2
 function allerConfirmation() {
     const sel = document.getElementById('select-candidat');
     stagiaireId = sel.value;
@@ -1352,8 +1369,8 @@ function allerConfirmation() {
         const mode = opt.getAttribute('data-mode');
         const msgBloque = document.getElementById('msg-bloque-select');
         msgBloque.textContent = mode === 'degrade'
-            ? '✍️ Une saisie manuelle a déjà été enregistrée. Utilisez "Corriger" depuis la page de session.'
-            : '✅ Ce candidat a déjà passé le test numérique. Utilisez "Corriger" depuis la page de session.';
+            ? 'âœï¸ Une saisie manuelle a dÃ©jÃ  Ã©tÃ© enregistrÃ©e. Utilisez "Corriger" depuis la page de session.'
+            : 'âœ… Ce candidat a dÃ©jÃ  passÃ© le test numÃ©rique. Utilisez "Corriger" depuis la page de session.';
         msgBloque.style.display = '';
         return;
     }
@@ -1361,7 +1378,7 @@ function allerConfirmation() {
     testeurId = parseInt(document.getElementById('select-testeur').value) || null;
     if (!testeurId) {
         const msgBloque = document.getElementById('msg-bloque-select');
-        msgBloque.textContent = '⚠️ Veuillez sélectionner le testeur avant de continuer.';
+        msgBloque.textContent = 'âš ï¸ Veuillez sÃ©lectionner le testeur avant de continuer.';
         msgBloque.style.display = '';
         return;
     }
@@ -1392,7 +1409,7 @@ function allerConfirmation() {
     document.getElementById('ecran-identite').style.display = 'block';
 }
 
-// ECRAN 2 → retour
+// ECRAN 2 â†’ retour
 function retourSelection() {
     document.getElementById('ecran-identite').style.display = 'none';
     document.getElementById('ecran-selection').style.display = 'block';
@@ -1414,7 +1431,7 @@ function formaterDateFr(str) {
     // Format ISO YYYY-MM-DD attendu
     const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (m) return m[3] + '/' + m[2] + '/' + m[1];
-    return str; // déjà formatée ou format inattendu → on n'altère pas
+    return str; // dÃ©jÃ  formatÃ©e ou format inattendu â†’ on n'altÃ¨re pas
 }
 
 function lireIdentiteVoixHaute() {
@@ -1422,7 +1439,7 @@ function lireIdentiteVoixHaute() {
     const nom = document.getElementById('identite-nom').textContent.trim();
     const info = document.getElementById('identite-info').textContent.trim();
     const naissance = info ? '. ' + info : '';
-    const texte = 'Êtes-vous bien ' + nom + naissance + ' ? Je certifie être la personne désignée ci-dessus et m\'engage à répondre seul aux questions, sans aide extérieure ni support de cours.';
+    const texte = 'ÃŠtes-vous bien ' + nom + naissance + ' ? Je certifie Ãªtre la personne dÃ©signÃ©e ci-dessus et m\'engage Ã  rÃ©pondre seul aux questions, sans aide extÃ©rieure ni support de cours.';
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(texte);
     utterance.lang = 'fr-FR';
@@ -1447,7 +1464,7 @@ async function verifierPinFormateur() {
     }
 }
 
-// ECRAN 2 → 3
+// ECRAN 2 â†’ 3
 function allerConsignes() {
     if (!document.getElementById('confirm-identite').checked) {
         alert('Vous devez confirmer votre identite avant de continuer !');
@@ -1457,7 +1474,7 @@ function allerConsignes() {
     document.getElementById('ecran-consignes').style.display = 'block';
 }
 
-// ECRAN 3 → 4 (timer démarre ici)
+// ECRAN 3 â†’ 4 (timer dÃ©marre ici)
 async function demarrerTest() {
     if (questions.length === 0) {
         await chargerQuestions();
@@ -1498,7 +1515,7 @@ function afficherQuestion(idx) {
 
 // Lecture vocale automatique de la question
 if (window.speechSynthesis) {
-    window.speechSynthesis.cancel(); // Arrête la lecture précédente
+    window.speechSynthesis.cancel(); // ArrÃªte la lecture prÃ©cÃ©dente
     const utterance = new SpeechSynthesisUtterance(q.texte);
     utterance.lang = 'fr-FR';
     utterance.rate = 0.8;
@@ -1520,11 +1537,11 @@ if (window.speechSynthesis) {
     const btnS = document.getElementById('btn-suivant');
     const btnRecapMini = document.getElementById('btn-voir-recap');
     if (idx === questions.length - 1) {
-        btnS.textContent = 'Mes réponses →';
+        btnS.textContent = 'Mes rÃ©ponses â†’';
         btnS.dataset.dernier = '1';
         if (btnRecapMini) btnRecapMini.style.display = 'none';
     } else {
-        btnS.textContent = 'Suivante →';
+        btnS.textContent = 'Suivante â†’';
         btnS.dataset.dernier = '0';
         if (btnRecapMini && (MODE_CORRECTION || recapDebloque)) btnRecapMini.style.display = 'inline-flex';
     }
@@ -1608,7 +1625,7 @@ async function valider(force = false) {
     const nb = Object.keys(reponses).length;
     if (!force && nb < questions.length) {
         demanderConfirmation(
-            (questions.length - nb) + ' question(s) sans réponse. Valider quand même ?',
+            (questions.length - nb) + ' question(s) sans rÃ©ponse. Valider quand mÃªme ?',
             () => valider(true)
         );
         return;
@@ -1705,11 +1722,11 @@ document.getElementById('ecran-identite').addEventListener('click', function(e) 
 <!-- MODAL CONFIRM -->
 <div id="modal-confirm" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:20px; padding:32px 28px 24px; width:360px; max-width:92vw; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.18);">
-        <div style="font-size:44px; margin-bottom:12px;">⚠️</div>
+        <div style="font-size:44px; margin-bottom:12px;">âš ï¸</div>
         <p style="font-size:16px; font-weight:700; color:#1a237e; margin-bottom:8px;" id="confirm-message"></p>
-        <p style="font-size:13px; color:#888; margin-bottom:24px;">Cette action est irréversible.</p>
-        <button class="btn-valider" id="confirm-ok-btn" style="margin-bottom:10px;">Valider quand même</button>
-        <button class="btn-retour" onclick="fermerConfirm()">← Revenir au test</button>
+        <p style="font-size:13px; color:#888; margin-bottom:24px;">Cette action est irrÃ©versible.</p>
+        <button class="btn-valider" id="confirm-ok-btn" style="margin-bottom:10px;">Valider quand mÃªme</button>
+        <button class="btn-retour" onclick="fermerConfirm()">â† Revenir au test</button>
     </div>
 </div>
 {% endif %}
