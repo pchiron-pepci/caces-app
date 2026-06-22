@@ -73,7 +73,7 @@ async def associer_images(pin: str):
             filename = public_id.split("/")[-1]
             url = resource["secure_url"]
             try:
-                parts = filename.upper().split("-")
+                parts = filename.upper().split("_")
                 famille = parts[0]
                 grille_num = int(parts[1][1:])
                 theme = int(parts[2][1:])
@@ -687,3 +687,105 @@ def liste_images():
         return {"images": sorted(images, key=lambda x: x["filename"])}
     except Exception as e:
         return {"images": [], "error": str(e)}
+
+
+# --- Audio questions (MP3 Cloudinary, resource_type="video") ---
+
+@router.post("/question-audio")
+async def upload_question_audio(files: list[UploadFile] = File(...)):
+    configurer_cloudinary()
+    uploaded = []
+    errors = []
+    for file in files:
+        if not file.filename.lower().endswith(".mp3"):
+            errors.append(f"{file.filename}: format non supporte (mp3 attendu)")
+            continue
+        try:
+            contents = await file.read()
+            public_id = f"caces_questions/audio/{file.filename.rsplit('.', 1)[0]}"
+            result = cloudinary.uploader.upload(
+                contents,
+                public_id=public_id,
+                overwrite=True,
+                resource_type="video"
+            )
+            uploaded.append({"filename": file.filename, "url": result["secure_url"]})
+        except Exception as e:
+            errors.append(f"{file.filename}: {str(e)}")
+    return {"uploaded": [u["filename"] for u in uploaded], "errors": errors}
+
+@router.post("/associer-audios")
+async def associer_audios(pin: str):
+    if pin != _get_pin_admin():
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    configurer_cloudinary()
+    from app.models.grille_theorie import ReponseGrille, GrilleTheorie
+    db = SessionLocal()
+    updated = 0
+    try:
+        result = cloudinary.api.resources(
+            type="upload",
+            prefix="caces_questions/audio/",
+            max_results=500,
+            resource_type="video"
+        )
+        for resource in result.get("resources", []):
+            public_id = resource["public_id"]
+            filename = public_id.split("/")[-1]
+            url = resource["secure_url"]
+            try:
+                parts = filename.upper().split("_")
+                famille = parts[0]
+                grille_num = int(parts[1][1:])
+                theme = int(parts[2][1:])
+                question = int(parts[3][1:])
+                grille = db.query(GrilleTheorie).filter(
+                    GrilleTheorie.numero == grille_num,
+                    GrilleTheorie.famille == famille
+                ).first()
+                if grille:
+                    rq = db.query(ReponseGrille).filter(
+                        ReponseGrille.grille_id == grille.id,
+                        ReponseGrille.theme == theme,
+                        ReponseGrille.numero_question == question
+                    ).first()
+                    if rq:
+                        rq.audio_url = url
+                        updated += 1
+            except Exception as e:
+                print(f"Erreur parsing audio {filename}: {e}")
+                continue
+        db.commit()
+    finally:
+        db.close()
+    return {"message": f"{updated} audios associes"}
+
+@router.delete("/supprimer-audio")
+async def supprimer_audio(filename: str, pin: str):
+    if pin != _get_pin_admin():
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    configurer_cloudinary()
+    try:
+        public_id = f"caces_questions/audio/{filename.rsplit('.', 1)[0]}"
+        cloudinary.uploader.destroy(public_id, resource_type="video")
+        return {"message": "Audio supprime"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/liste-audios")
+def liste_audios():
+    configurer_cloudinary()
+    try:
+        result = cloudinary.api.resources(
+            type="upload",
+            prefix="caces_questions/audio/",
+            max_results=500,
+            resource_type="video"
+        )
+        audios = []
+        for r in result.get("resources", []):
+            filename = r["public_id"].split("/")[-1]
+            audios.append({"filename": filename, "url": r["secure_url"]})
+        return {"audios": audios}
+    except Exception as e:
+        return {"audios": [], "error": str(e)}
