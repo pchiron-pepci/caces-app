@@ -1235,3 +1235,9 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 **Convention de nommage uniformisée (images ET audio) :** `R482_G1_T2_Q1` (underscores). La route `associer-images` existante a été corrigée de `split("-")` → `split("_")` dans le même commit.
 
 **Rappel étape 3 :** `get_questions_phase2` (sessions.py ou tirage_grille.py) → ajouter `"audio": q.audio_url` dans le dict question. Côté `test_theorie.html` : jouer `<audio>` si `q.audio` présent, sinon fallback `SpeechSynthesisUtterance(rate=0.8)`.
+
+**UI admin ajoutée dans `templates/admin_images.html` (commit 5a51f8d) :**
+- Section "🔊 Uploader des audios (MP3)" : drop-zone + `input[accept=".mp3"]` → `POST /api/upload/question-audio`
+- Bouton "Associer les audios" → `demanderPin()` (modale PIN existante, pas `prompt()`) → `POST /api/upload/associer-audios?pin=`
+- Liste audios : `GET /api/upload/liste-audios` → rendu `<audio controls>` + 🗑️ → `DELETE /api/upload/supprimer-audio`
+- Init : `chargerAudios()` appelé au chargement de la page aux côtés de `chargerImages()`
