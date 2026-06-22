@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+from app.services import storage
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
 from app.models.session import Session
@@ -1906,3 +1909,112 @@ def save_affectations_test(
             ))
     db.commit()
     return {"message": "Affectations testeurs enregistrées"}
+
+
+# ---------- Justificatif de dispense (stockage R2) ----------
+
+@router.post("/{session_id}/candidats/{sc_id}/dispense-fichier")
+async def upload_dispense_fichier(
+    session_id: int,
+    sc_id: int,
+    request: Request,
+    fichier: UploadFile = File(...),
+    db: DBSession = Depends(get_db),
+):
+    user = request.state.user
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+
+    sc = db.query(SessionCandidat).filter(
+        SessionCandidat.id == sc_id,
+        SessionCandidat.session_id == session_id,
+    ).first()
+    if not sc:
+        raise HTTPException(status_code=404, detail="Candidat de session introuvable")
+
+    nom = fichier.filename or "fichier"
+    ext = nom.rsplit(".", 1)[1].lower() if "." in nom else ""
+    if ext not in storage.EXTENSIONS_AUTORISEES:
+        raise HTTPException(status_code=400, detail="Type de fichier non autorise (PDF, Word ou Excel uniquement)")
+
+    contenu = await fichier.read()
+    if len(contenu) > storage.TAILLE_MAX:
+        raise HTTPException(status_code=400, detail="Fichier trop volumineux (10 Mo maximum)")
+    if not contenu:
+        raise HTTPException(status_code=400, detail="Fichier vide")
+
+    content_type = fichier.content_type or "application/octet-stream"
+
+    if sc.dispense_fichier_cle:
+        try:
+            storage.delete_fichier(sc.dispense_fichier_cle)
+        except Exception:
+            pass
+
+    cle = storage.construire_cle("dispenses", nom)
+    storage.upload_fichier(contenu, cle, content_type)
+
+    sc.dispense_fichier_cle = cle
+    sc.dispense_fichier_nom = nom[:255]
+    sc.dispense_fichier_type = content_type[:100]
+    db.commit()
+
+    return {"ok": True, "fichier_nom": sc.dispense_fichier_nom}
+
+
+@router.get("/{session_id}/candidats/{sc_id}/dispense-fichier")
+def get_dispense_fichier(
+    session_id: int,
+    sc_id: int,
+    request: Request,
+    db: DBSession = Depends(get_db),
+):
+    user = request.state.user
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+
+    sc = db.query(SessionCandidat).filter(
+        SessionCandidat.id == sc_id,
+        SessionCandidat.session_id == session_id,
+    ).first()
+    if not sc or not sc.dispense_fichier_cle:
+        raise HTTPException(status_code=404, detail="Aucun justificatif")
+
+    contenu = storage.get_fichier(sc.dispense_fichier_cle)
+    media = sc.dispense_fichier_type or "application/octet-stream"
+    nom = sc.dispense_fichier_nom or "justificatif"
+    return StreamingResponse(
+        BytesIO(contenu),
+        media_type=media,
+        headers={"Content-Disposition": f'inline; filename="{nom}"'},
+    )
+
+
+@router.delete("/{session_id}/candidats/{sc_id}/dispense-fichier")
+def delete_dispense_fichier(
+    session_id: int,
+    sc_id: int,
+    request: Request,
+    db: DBSession = Depends(get_db),
+):
+    user = request.state.user
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+
+    sc = db.query(SessionCandidat).filter(
+        SessionCandidat.id == sc_id,
+        SessionCandidat.session_id == session_id,
+    ).first()
+    if not sc:
+        raise HTTPException(status_code=404, detail="Candidat de session introuvable")
+
+    if sc.dispense_fichier_cle:
+        try:
+            storage.delete_fichier(sc.dispense_fichier_cle)
+        except Exception:
+            pass
+    sc.dispense_fichier_cle = None
+    sc.dispense_fichier_nom = None
+    sc.dispense_fichier_type = None
+    db.commit()
+    return {"ok": True}
