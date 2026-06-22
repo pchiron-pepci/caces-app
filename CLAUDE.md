@@ -315,7 +315,7 @@ python init_questions_r482.py
 | Basse | UT options facultatives = +0.5 UT (incluses déjà dans UT catégorie) | ✅ fait |
 | Basse | Supprimer `date_habilitation` et `date_expiration_habilitation` du modèle `Testeur` (doublons avec `HabilitationTesteur`) | à faire |
 | Haute | Table générique Justificatif (formation + dispense + présence) — modèle cadré | ✅ fait |
-| Haute | Justificatif formation : routes + indicateur tableau + menu multi-fichiers | à faire |
+| Haute | Justificatif formation : routes génériques ✅ — indicateur tableau + menu UI | à faire |
 | Haute | Détection dispense interne/externe modale (specs cadrées) | à faire |
 | Haute | Modèle dispense origine/pointeur (dispense_origine + source_type/id) | à faire |
 | Haute | Brancher dispense externe + CACES interne au moteur caces_obtenus.py | à faire |
