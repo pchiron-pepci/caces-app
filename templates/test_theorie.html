@@ -1300,7 +1300,7 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
     testeurId = TESTEUR_ID_JOUR;
     const nomComplet = START_NOM + ' ' + START_PRENOM;
     document.getElementById('identite-nom').textContent = nomComplet;
-    document.getElementById('identite-info').textContent = START_DDN ? 'Date de naissance le ' + START_DDN : '';
+    document.getElementById('identite-info').textContent = START_DDN ? 'Date de naissance le ' + formaterDateFr(START_DDN) : '';
     document.getElementById('header-candidat').textContent = nomComplet;
     document.getElementById('confirm-identite').checked = false;
     document.getElementById('ecran-selection').style.display = 'none';
@@ -1384,7 +1384,7 @@ function allerConfirmation() {
     const naissance = opt.getAttribute('data-naissance');
 
     document.getElementById('identite-nom').textContent = nom;
-    document.getElementById('identite-info').textContent = naissance ? 'Date de naissance le ' + naissance : '';
+    document.getElementById('identite-info').textContent = naissance ? 'Date de naissance le ' + formaterDateFr(naissance) : '';
     document.getElementById('header-candidat').textContent = nom;
     document.getElementById('confirm-identite').checked = false;
 
@@ -1409,6 +1409,14 @@ function annulerPinFormateur() {
     document.getElementById('zone-pas-moi').style.display = 'none';
 }
 
+function formaterDateFr(str) {
+    if (!str) return '';
+    // Format ISO YYYY-MM-DD attendu
+    const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[3] + '/' + m[2] + '/' + m[1];
+    return str; // déjà formatée ou format inattendu → on n'altère pas
+}
+
 function lireIdentiteVoixHaute() {
     if (!window.speechSynthesis) return;
     const nom = document.getElementById('identite-nom').textContent.trim();
@@ -1418,7 +1426,7 @@ function lireIdentiteVoixHaute() {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(texte);
     utterance.lang = 'fr-FR';
-    utterance.rate = 0.8;
+    utterance.rate = 0.9;
     window.speechSynthesis.speak(utterance);
 }
 
@@ -1493,7 +1501,7 @@ if (window.speechSynthesis) {
     window.speechSynthesis.cancel(); // Arrête la lecture précédente
     const utterance = new SpeechSynthesisUtterance(q.texte);
     utterance.lang = 'fr-FR';
-    utterance.rate = 0.8;
+    utterance.rate = 0.9;
     window.speechSynthesis.speak(utterance);
 }
 
@@ -1547,7 +1555,7 @@ function relireQuestion() {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(texte);
         utterance.lang = 'fr-FR';
-        utterance.rate = 0.8;
+        utterance.rate = 0.9;
         window.speechSynthesis.speak(utterance);
     }
 }
