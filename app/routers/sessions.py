@@ -315,9 +315,23 @@ def remove_candidat(session_id: int, id: int, pin: str = "", db: DBSession = Dep
             status_code=400,
             detail="Ce candidat est planifié dans le séquençage, retirez-le d'abord des jours avant de le supprimer"
         )
-    sc.actif = False
+    # Purge du justificatif de dispense sur R2 (ne part jamais avec la ligne)
+    if sc.dispense_fichier_cle:
+        try:
+            storage.delete_fichier(sc.dispense_fichier_cle)
+        except Exception:
+            pass
+
+    # Purge du consentement RGPD lie au candidat (couple session_id + stagiaire_id)
+    db.query(ConsentementRGPD).filter(
+        ConsentementRGPD.session_id == session_id,
+        ConsentementRGPD.stagiaire_id == sc.stagiaire_id,
+    ).delete(synchronize_session=False)
+
+    # Hard delete : la ligne + colonnes dispense/note/date/fichier_* partent avec
+    db.delete(sc)
     db.commit()
-    return {"message": "Candidat retire"}
+    return {"message": "Candidat supprime"}
 
 # EQUIPEMENTS
 @router.post("/{session_id}/equipements")
