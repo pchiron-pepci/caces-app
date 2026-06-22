@@ -1314,6 +1314,15 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - `dispense_fichier_type VARCHAR(100)` — type MIME, ex: `application/pdf`
 - Migration startup idempotente ajoutée dans `main.py` (pattern `ADD COLUMN IF NOT EXISTS`)
 
-**Étapes restantes :** 3/5 routes R2 (upload signé + delete), 4/5 UI modale candidat, 5/5 affichage/téléchargement.
+**Étape 4/5 terminée (commit 1088616) :** module `app/services/storage.py` créé + `boto3>=1.34.0` ajouté à requirements.txt (converti UTF-16→UTF-8 via iconv dans Git Bash — NE JAMAIS utiliser PowerShell Set-Content/Add-Content sur requirements.txt, corrompt l'encodage).
+- `_client()` : client S3 pointé sur R2 via `R2_ENDPOINT` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`, signature s3v4, region "auto"
+- `_bucket()` : lit `R2_BUCKET`
+- `construire_cle(prefixe, nom)` → `pepci/{prefixe}/{uuid}.{ext}`
+- `upload_fichier(bytes, cle, content_type)`, `get_fichier(cle)`, `delete_fichier(cle)`
+- `test_connexion()` : write/read/delete selftest, retourne `{"ok": bool, ...}`
+- Constantes : `EXTENSIONS_AUTORISEES`, `MIME_AUTORISES`, `TAILLE_MAX = 10 Mo`
+- TENANT = "pepci" en dur (mono-tenant pilote)
 
-**Infra R2 :** boto3 absent de requirements.txt — à ajouter. Variables env à câbler : `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`. Cloudinary (images/audio) reste intact, R2 est pour les PDF dispenses uniquement.
+**Variables env R2 câblées sur Render :** `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (NB : pas R2_BUCKET_NAME, juste R2_BUCKET).
+
+**Étapes restantes :** 3/5 routes FastAPI (upload + delete + téléchargement), 5/5 UI modale candidat + affichage.
