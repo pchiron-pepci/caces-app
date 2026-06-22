@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from app.services import storage
@@ -14,6 +14,7 @@ from app.models.categorie import Categorie, Famille
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant, AffectationTest
 from app.models.caces_obtenu import CacesObtenu
+from app.models.justificatif import Justificatif
 from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.utilisations_themes import UtilisationTheme
@@ -2032,5 +2033,134 @@ def delete_dispense_fichier(
     sc.dispense_fichier_cle = None
     sc.dispense_fichier_nom = None
     sc.dispense_fichier_type = None
+    db.commit()
+    return {"ok": True}
+
+
+# ---------- Justificatifs generiques (multi-fichiers, table justificatifs / R2) ----------
+
+@router.post("/{session_id}/justificatifs")
+async def upload_justificatif(
+    session_id: int,
+    request: Request,
+    type: str = Form(...),
+    session_candidat_id: int = Form(None),
+    fichier: UploadFile = File(...),
+    db: DBSession = Depends(get_db),
+):
+    user = request.state.user
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    if type not in ("formation", "dispense", "presence_session"):
+        raise HTTPException(status_code=400, detail="Type de justificatif invalide")
+
+    nom = fichier.filename or "fichier"
+    ext = nom.rsplit(".", 1)[1].lower() if "." in nom else ""
+    if ext not in storage.EXTENSIONS_AUTORISEES:
+        raise HTTPException(status_code=400, detail="Type de fichier non autorise (PDF, Word ou Excel)")
+
+    contenu = await fichier.read()
+    if len(contenu) > storage.TAILLE_MAX:
+        raise HTTPException(status_code=400, detail="Fichier trop volumineux (10 Mo maximum)")
+    if not contenu:
+        raise HTTPException(status_code=400, detail="Fichier vide")
+
+    content_type = fichier.content_type or "application/octet-stream"
+    cle = storage.construire_cle(f"justificatifs/{type}", nom)
+    storage.upload_fichier(contenu, cle, content_type)
+
+    j = Justificatif(
+        type=type,
+        session_id=session_id,
+        session_candidat_id=session_candidat_id,
+        fichier_cle=cle,
+        fichier_nom=nom[:300],
+        fichier_type=content_type[:100],
+        date_upload=dt.utcnow(),
+        uploade_par=f"{user.prenom} {user.nom}"[:200],
+    )
+    db.add(j)
+    db.commit()
+    db.refresh(j)
+    return {"ok": True, "id": j.id, "fichier_nom": j.fichier_nom}
+
+
+@router.get("/{session_id}/justificatifs")
+def lister_justificatifs(
+    session_id: int,
+    request: Request,
+    type: str = None,
+    session_candidat_id: int = None,
+    db: DBSession = Depends(get_db),
+):
+    user = request.state.user
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    q = db.query(Justificatif).filter(Justificatif.session_id == session_id)
+    if type:
+        q = q.filter(Justificatif.type == type)
+    if session_candidat_id is not None:
+        q = q.filter(Justificatif.session_candidat_id == session_candidat_id)
+    rows = q.order_by(Justificatif.date_upload.desc()).all()
+    return [
+        {
+            "id": j.id,
+            "type": j.type,
+            "fichier_nom": j.fichier_nom,
+            "date_upload": j.date_upload.isoformat() if j.date_upload else None,
+            "uploade_par": j.uploade_par,
+        }
+        for j in rows
+    ]
+
+
+@router.get("/{session_id}/justificatifs/{justif_id}")
+def voir_justificatif(
+    session_id: int,
+    justif_id: int,
+    request: Request,
+    db: DBSession = Depends(get_db),
+):
+    user = request.state.user
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    j = db.query(Justificatif).filter(
+        Justificatif.id == justif_id,
+        Justificatif.session_id == session_id,
+    ).first()
+    if not j or not j.fichier_cle:
+        raise HTTPException(status_code=404, detail="Justificatif introuvable")
+    contenu = storage.get_fichier(j.fichier_cle)
+    media = j.fichier_type or "application/octet-stream"
+    nom = j.fichier_nom or "justificatif"
+    return StreamingResponse(
+        BytesIO(contenu),
+        media_type=media,
+        headers={"Content-Disposition": f'inline; filename="{nom}"'},
+    )
+
+
+@router.delete("/{session_id}/justificatifs/{justif_id}")
+def supprimer_justificatif(
+    session_id: int,
+    justif_id: int,
+    request: Request,
+    db: DBSession = Depends(get_db),
+):
+    user = request.state.user
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    j = db.query(Justificatif).filter(
+        Justificatif.id == justif_id,
+        Justificatif.session_id == session_id,
+    ).first()
+    if not j:
+        raise HTTPException(status_code=404, detail="Justificatif introuvable")
+    if j.fichier_cle:
+        try:
+            storage.delete_fichier(j.fichier_cle)
+        except Exception:
+            pass
+    db.delete(j)
     db.commit()
     return {"ok": True}
