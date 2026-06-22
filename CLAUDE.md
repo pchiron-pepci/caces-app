@@ -1096,28 +1096,33 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 ### ✅ Chantier terminé : écran 2 (identité candidat) — restyle anthracite + date FR + lecture ralentie
 
-**Restyle anthracite (classes .sel2-*) :**
-- Tout l'inline de l'écran 2 → 14 classes CSS .sel2-* (sel2-tete, sel2-emoji, sel2-question, identite-nom, identite-info, sel2-voix-wrap, sel2-voix-btn, checkbox-confirm + input + span, sel2-pin + titre/texte/label/input/error/actions).
-- Emojis CONSERVÉS (choix utilisateur — plus convivial pour public faible littératie) : 👤 (en-tête), 🔊 (Lire à voix haute), 🔒 (zone PIN), ❌ (erreur PIN). Seules les couleurs/disposition passent en anthracite.
-- Carte candidat : 👤 + "Êtes-vous bien :" + nom en gros anthracite #383b40 (identite-nom) + date (identite-info) + bouton 🔊 pilule grise + checkbox engagement dans encadré #f9fafb (accent-color #383b40).
-- Bouton "Lire à voix haute" : bleu #1a237e/#e8eaf6 → pilule grise #f0efef.
-- Zone PIN formateur (#zone-pas-moi) : orange inline → ambre charte #FFF4E0/#F0C775 (cohérent avec les autres alertes). Garde style="display:none;" inline (piloté par demanderPinFormateur/annulerPinFormateur). #pin-formateur-error garde display:none inline.
-- Boutons Débloquer (anthracite) / Annuler (gris) dans .sel2-pin-actions.
+**Restyle anthracite (classes .sel2-*) :** tout l'inline de l'écran 2 → 14 classes CSS .sel2-* (sel2-tete, sel2-emoji, sel2-question, identite-nom, identite-info, sel2-voix-wrap, sel2-voix-btn, checkbox-confirm + input + span, sel2-pin + titre/texte/label/input/error/actions).
+- Emojis CONSERVÉS (choix utilisateur — plus convivial, public faible littératie) : 👤 🔊 🔒 ❌. Seules couleurs/disposition en anthracite.
+- Carte candidat : 👤 + "Êtes-vous bien :" + nom en gros anthracite (identite-nom) + date (identite-info) + bouton 🔊 pilule grise + checkbox engagement encadré #f9fafb (accent-color anthracite).
+- Zone PIN formateur (#zone-pas-moi) : orange inline → ambre charte #FFF4E0/#F0C775. Garde display:none inline (piloté JS). #pin-formateur-error garde display:none inline.
 
-**Migration 5 onclick → data-action (listener délégué sur #ecran-identite) :**
-- lireIdentiteVoixHaute → data-action="lire-voix"
-- allerConsignes → data-action="confirmer-identite"
-- demanderPinFormateur → data-action="pas-moi"
-- verifierPinFormateur → data-action="pin-debloquer"
-- annulerPinFormateur → data-action="pin-annuler"
-- Logique PIN strictement intacte (on n'a touché qu'à l'habillage + onclick).
+**Migration 5 onclick → data-action (listener délégué sur #ecran-identite) :** lire-voix (lireIdentiteVoixHaute), confirmer-identite (allerConsignes), pas-moi (demanderPinFormateur), pin-debloquer (verifierPinFormateur), pin-annuler (annulerPinFormateur). Logique PIN strictement intacte.
 
-**Nettoyage doublons CSS :** .identite-nom, .identite-info, .checkbox-confirm étaient définies 2 fois (anciennes lignes ~240-273 en bleu #1a237e/#f0f2f7/28px + nouvelles .sel2-* en anthracite). Anciennes SUPPRIMÉES, ne reste que les versions anthracite.
+**Nettoyage doublons CSS :** .identite-nom, .identite-info, .checkbox-confirm étaient définies 2 fois (anciennes en bleu #1a237e/#f0f2f7/28px + nouvelles .sel2-* anthracite). Anciennes SUPPRIMÉES.
 
-**Ajustement date FR :** la date de naissance arrivait en ISO YYYY-MM-DD (PostgreSQL) et s'affichait brute. Helper formaterDateFr(str) ajouté (regex ISO → jj/mm/aaaa, retourne tel quel si format inattendu). Appliqué aux 2 voies de remplissage de identite-info : voie QR (START_DDN) et voie tablette (data-naissance lu sur l'option).
+**Date FR :** date de naissance arrivait en ISO YYYY-MM-DD, affichée brute. Helper formaterDateFr(str) (regex ISO → jj/mm/aaaa) appliqué aux 2 voies de remplissage de identite-info : voie QR (START_DDN) et voie tablette (data-naissance).
 
-**Lecture vocale :** rate = 0.8 sur les 3 occurrences (lireIdentiteVoixHaute + lecture QCM + autre lecture). Tentative passage à 0.9 annulée (remis à 0.8 sur demande utilisateur).
+**Lecture vocale :** rate = 0.8 (tentative 0.9 annulée sur demande). ÉCART DOC/CODE RÉSOLU : claude.mp documentait 0.9, code réel était 0.8 — désormais aligné à 0.8 partout.
 
-**IDs préservés (JS) :** identite-nom, identite-info, confirm-identite (checkbox lue par allerConsignes), zone-pas-moi, pin-formateur-input, pin-formateur-error.
+**IDs préservés (JS) :** identite-nom, identite-info, confirm-identite, zone-pas-moi, pin-formateur-input, pin-formateur-error.
 
-**État charte anthracite :** ✅ header (titre centré), écran 1 (sélection), écran 2 (identité), écran 3 (consignes), QCM, récap. TOUT LE PARCOURS PRINCIPAL DU TEST est en anthracite. RESTE : écran 6 (résultat, non diagnostiqué, #1a237e lignes ~946/962), modale de confirmation (~ligne 1595/1704, 2 onclick : retourQcm + callback). 3 onclick restants au total, tous hors écrans 1/2/3 (récap ligne ~1073, modale).
+### ✅ Chantier en cours : variables CSS dans test_theorie.html (option A — couleurs de marque)
+
+**Objectif :** permettre un changement de couleur en cascade (modifier une ligne :root → tout le fichier suit). Périmètre LIMITÉ à test_theorie.html (le reste du site = chantier dédié ultérieur, fichier par fichier).
+
+**Bloc :root** (en haut du <style>) définit 14 variables : --noryx-anthracite (#383b40), --noryx-anthracite-fonce (#2a2c30), --noryx-ardoise (#4a5568), --noryx-gris (#888), --noryx-gris-clair (#f0efef), --noryx-surface (#f4f5f6), --noryx-blanc (#fff), --noryx-rouge (#cc0000), --noryx-rouge-erreur (#c62828), --noryx-ambre-fond (#FFF4E0), --noryx-ambre-bordure (#F0C775), --noryx-ambre-texte (#854F0B), --noryx-ambre-texte-pin (#7A5600), --noryx-ambre-pastille (#FAC775).
+
+**FAIT :** anthracite #383b40 → var(--noryx-anthracite) (18 occurrences CSS/HTML). RESTE À FAIRE (couleurs de marque, plus tard) : hover #2a2c30, ardoise #4a5568, gris-clair #f0efef, surface #f4f5f6, rouge-erreur #c62828, et les 5 ambres. NON variabilisés volontairement (option A) : #fff blanc, #888 gris générique. Bleu résiduel #1a237e/#f0f2f7 (écrans 6/modale) = laissé en dur, disparaîtra à leur restyle.
+
+**⚠️ RÈGLES CRITIQUES apprises (NE PAS recasser) :**
+1. JAMAIS PowerShell Set-Content sur ce fichier — il corrompt l'UTF-8 (accents → mojibake "Ã©"), ajoute un BOM (EF BB BF), et convertit LF→CRLF. Utiliser EXCLUSIVEMENT sed/str_replace via Git Bash. Un commit PowerShell a dû être annulé (restauration depuis commit sain f516c71).
+2. Le JS NE RÉSOUT PAS les variables CSS. Toute couleur en JavaScript (colorDark du QR ligne ~1308, timerEl.style.color du chrono) DOIT rester en hex en dur. Un sed global a remplacé colorDark par var(--noryx-anthracite) → QR invisible. Remis en '#383b40'.
+3. Après un sed global sur une couleur, la définition dans :root est aussi remplacée (auto-référence circulaire --noryx-X: var(--noryx-X)) → la variable ne résout plus → fond transparent. TOUJOURS remettre la ligne :root en hex après chaque sed (via str_replace pour éviter le piège des parenthèses regex non échappées).
+4. Encodage cible : UTF-8 SANS BOM, LF. Vérifier après chaque passe : file -i (charset=utf-8, pas de BOM) + head -c 3 | xxd (ne doit PAS être ef bb bf) + grep "Théorie\|Sélection" (accents corrects).
+
+**État charte anthracite :** ✅ header (titre centré), écrans 1/2/3, QCM, récap. RESTE : écran 6 (résultat, #1a237e ~946/962), modale confirmation (~1595/1704). Sécurité logo header : #test-logo a height fixe (40px/28px) + max-width (150px/110px) + object-fit:contain → tout format de logo sans casser le header.
