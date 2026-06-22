@@ -145,6 +145,9 @@ def _run_startup_migrations():
         "ALTER TABLE consentements_rgpd ADD COLUMN IF NOT EXISTS horodatage_verification TIMESTAMP",
         # session_candidats
         "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_note TEXT",
+        "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_fichier_cle VARCHAR(500)",
+        "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_fichier_nom VARCHAR(255)",
+        "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_fichier_type VARCHAR(100)",
         # utilisations_themes
         "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS date_tirage TIMESTAMP",
         "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS declenche_par_id INTEGER",
