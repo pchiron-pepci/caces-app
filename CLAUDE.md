@@ -1290,3 +1290,16 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 **Réglage vitesse MP3 :** PAS de playbackRate dans l'app (dégrade la voix). Les MP3 étant générés TTS, on RÉGÉNÈRE à la bonne vitesse à la source + réupload (overwrite=True écrase, audio_url inchangé, pas besoin de réassocier).
 
 **Indicateur "Dernière association" audio :** table dédiée AssociationAudioLog (date_association, nb_audios) créée par create_all() au boot (pas de migration manuelle). Route GET /derniere-association-audio. UI : span #derniere-assoc-audio sous le bouton, "Dernière association : JJ/MM/AAAA HH:MM (N/M)".
+
+### ✅ Chantier terminé : options incluses pilotées par résultat pratique (commit 13ab4af)
+
+**Besoin :** dans la modale de résultat pratique (#modal-pratique), les options incluses (opt.incluse=true) doivent se cocher automatiquement si RÉUSSI et se décocher si ÉCHEC. Les options facultatives restent libres.
+
+**Fichier :** static/js/session_detail.js uniquement.
+
+**Détails :**
+- `saisirResultatPratique` (~ligne 645) : boucle `displayOpts.forEach` distingue incluses/facultatives. Incluses → `data-incluse="1" disabled` + style gris + span `(incluse)`. Facultatives → unchanged.
+- Fonction `synchroniserOptionsIncluses()` : lit `[name="pratique-resultat"]:checked`, coche/décoche les `[data-incluse="1"]` selon `value === 'true'`. Appelée à l'ouverture de la modale ET sur changement radio via délégation `document.addEventListener('change', ...)`.
+- `sauvegarderPratique` inchangé : `querySelectorAll('[name="pratique-option"]:checked')` inclut nativement les `disabled` cochés → les incluses cochées (RÉUSSI) sont bien envoyées ; les décochées (ÉCHEC) sont absentes.
+
+**Radio résultat :** name=`pratique-resultat`, valeurs `"true"` (RÉUSSI) / `"false"` (ÉCHEC).
