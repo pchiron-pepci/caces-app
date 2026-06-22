@@ -1325,4 +1325,11 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Variables env R2 câblées sur Render :** `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (NB : pas R2_BUCKET_NAME, juste R2_BUCKET).
 
-**Étapes restantes :** 3/5 routes FastAPI (upload + delete + téléchargement), 5/5 UI modale candidat + affichage.
+**Étape 5a/5 terminée (commit 0541119) :** 3 routes FastAPI ajoutées en fin de `app/routers/sessions.py` :
+- `POST /{session_id}/candidats/{sc_id}/dispense-fichier` — upload multipart → R2, valide ext + taille, supprime l'ancien objet si existant, met à jour `dispense_fichier_cle/nom/type` sur `SessionCandidat`
+- `GET /{session_id}/candidats/{sc_id}/dispense-fichier` — StreamingResponse depuis R2, auth cookie (`request.state.user`)
+- `DELETE /{session_id}/candidats/{sc_id}/dispense-fichier` — supprime R2 + nullifie les 3 colonnes en BDD
+- Imports ajoutés en tête : `UploadFile, File`, `StreamingResponse`, `BytesIO`, `from app.services import storage`
+- Type DB : `DBSession` (alias `sqlalchemy.orm.Session`) — conforme au standard du fichier
+
+**Étape restante :** 5b/5 UI modale candidat (upload/affichage/suppression côté frontend).
