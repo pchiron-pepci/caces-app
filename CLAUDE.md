@@ -1222,5 +1222,16 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 2. `app/main.py` — `_run_startup_migrations()` : `"ALTER TABLE reponses_grilles ADD COLUMN IF NOT EXISTS audio_url VARCHAR(500)"` ajouté en fin de liste. Géré automatiquement au démarrage sur Render.
 
 **Rappels étapes suivantes :**
-- Étape 2 : route upload audio dans `app/routers/upload.py` (Cloudinary `resource_type="video"` pour MP3).
 - Étape 3 : `get_questions_phase2` → ajouter `"audio": q.audio_url` ; `test_theorie.html` → jouer MP3 si `q.audio` présent, sinon `SpeechSynthesisUtterance(rate=0.8)` (fallback déjà en place).
+
+### ✅ Chantier terminé : audio questions étape 2/3 — routes Cloudinary (commit 65fdcad)
+
+**Routes ajoutées dans `app/routers/upload.py` (fin de fichier) :**
+- `POST /api/upload/question-audio` — upload batch MP3 → Cloudinary `resource_type="video"` (Cloudinary classe les MP3 sous "video"), `public_id = caces_questions/audio/{nom_sans_extension}`
+- `POST /api/upload/associer-audios?pin=` — liste Cloudinary `prefix="caces_questions/audio/"`, parse `R482_G1_T2_Q1` (underscores), met à jour `rq.audio_url`
+- `DELETE /api/upload/supprimer-audio?filename=&pin=` — `cloudinary.uploader.destroy(public_id, resource_type="video")` — le `resource_type="video"` est obligatoire (sans ça Cloudinary cherche une image et renvoie "not found")
+- `GET /api/upload/liste-audios` — liste `prefix="caces_questions/audio/"` avec `resource_type="video"`
+
+**Convention de nommage uniformisée (images ET audio) :** `R482_G1_T2_Q1` (underscores). La route `associer-images` existante a été corrigée de `split("-")` → `split("_")` dans le même commit.
+
+**Rappel étape 3 :** `get_questions_phase2` (sessions.py ou tirage_grille.py) → ajouter `"audio": q.audio_url` dans le dict question. Côté `test_theorie.html` : jouer `<audio>` si `q.audio` présent, sinon fallback `SpeechSynthesisUtterance(rate=0.8)`.
