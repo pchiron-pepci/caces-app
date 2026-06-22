@@ -314,7 +314,7 @@ python init_questions_r482.py
 | Basse | Responsive mobile (CSS media queries) | à faire |
 | Basse | UT options facultatives = +0.5 UT (incluses déjà dans UT catégorie) | ✅ fait |
 | Basse | Supprimer `date_habilitation` et `date_expiration_habilitation` du modèle `Testeur` (doublons avec `HabilitationTesteur`) | à faire |
-| Haute | Table générique Justificatif (formation + dispense + présence) — modèle cadré | à faire |
+| Haute | Table générique Justificatif (formation + dispense + présence) — modèle cadré | ✅ fait |
 | Haute | Justificatif formation : routes + indicateur tableau + menu multi-fichiers | à faire |
 | Haute | Détection dispense interne/externe modale (specs cadrées) | à faire |
 | Haute | Modèle dispense origine/pointeur (dispense_origine + source_type/id) | à faire |
@@ -1409,9 +1409,12 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **⚠️ IMPACT MOTEUR CACES (`caces_obtenus.py`) — chantier lié OBLIGATOIRE :** `calculer_et_synchroniser` ne gère AUJOURD'HUI QUE les théories INTERNES (3 priorités). Ne sait PAS traiter dispense EXTERNE. Ajouter cas : dispense externe → base = `dispense_date` → calcul obtention+échéance (10 ans R.482 / 5 ans sinon). VÉRIFIER TOUS LES CAS avant implémentation.
 
-### 🔍 Chantier CADRÉ : table générique Justificatif (formation + dispense + présence session)
+### ✅ Chantier terminé : table générique Justificatif — modèle ORM + migration startup (2026-06-22)
 
 **Besoin déclencheur :** justificatif de FORMATION préalable par apprenant (feuille de présence). Le document PEPCI-49-01 impose la conservation des émargements 10 ans + preuve de formation au dossier.
+
+**Implémenté :** `app/models/justificatif.py` + `CREATE TABLE IF NOT EXISTS justificatifs` dans `_run_startup_migrations()` (main.py) + import `Justificatif` dans main.py. Table vide, routes et UI à faire (chantier suivant).
+
 
 **Modèle décidé : table générique `Justificatif` (multi-fichiers, une ligne par fichier), Option A (un seul modèle, 2 niveaux via nullable) :**
 - `id`
