@@ -1341,4 +1341,6 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
   4. Bloc complet en fin de fichier : `_majAffichageJustif`, `_justifMsg`, `_assurerCandidatEnregistre` (crée le candidat si mode création et capture `sc.id`), `_uploaderJustif` (FormData POST → R2), listeners délégués `click` (joindre/voir/retirer) + `change` (sc-justif-input → upload)
 - Branchement `data-fichier-nom` (commit f2ce031) : `data-fichier-nom="{{ sc.dispense_fichier_nom or '' }}"` ajouté sur le bouton ✏️ ET sur la pastille `Disp.` (rendue cliquable avec `data-action="editer-candidat"` + `cursor:pointer` + title enrichi). Listener JS ligne 199 : 5e arg `btn.dataset.fichierNom` passé à `editerCandidat()`.
 
-**Chantier pilote R2 — COMPLET** (commits c43c4f1 → f2ce031).
+**Chantier pilote R2 — COMPLET** (commits c43c4f1 → 5ae06fb).
+
+**Bug fix post-livraison (commit 5ae06fb) :** `editerCandidat()` n'affichait pas `#field-dispense-fichier` en mode édition (seul `_syncDispenseNote` le gérait, pas appelé à l'ouverture). Ajout d'une ligne miroir : `getElementById('field-dispense-fichier').style.display = theorie_dispensee ? 'block' : 'none'` juste après la même ligne pour `field-dispense-note`.
