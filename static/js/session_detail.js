@@ -748,6 +748,7 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('sc-theorie').value = theorie_dispensee ? 'dispense' : 'normal';
     document.getElementById('sc-dispense-note').value = dispenseNote || '';
     document.getElementById('field-dispense-note').style.display = theorie_dispensee ? 'block' : 'none';
+    document.getElementById('field-dispense-fichier').style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('field-stagiaire').style.display = 'none';
     _majAffichageJustif(fichierNom || '');
     document.getElementById('modal-candidat').style.display = 'flex';
