@@ -87,6 +87,7 @@
             <button class="btn btn-primary" onclick="associerAudios()">
                 🔗 Associer les audios aux questions
             </button>
+            <span id="derniere-assoc-audio" style="font-size:12px; color:#888;"></span>
         </div>
         <div id="assoc-status-audio" style="margin-top:8px; font-size:13px; color:#2e7d32;"></div>
     </div>
@@ -266,6 +267,20 @@ function handleDropAudio(event) {
     uploadAudio(event.dataTransfer.files);
 }
 
+function chargerDerniereAssociationAudio() {
+    fetch('/api/upload/derniere-association-audio')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var el = document.getElementById('derniere-assoc-audio');
+            if (!el) return;
+            if (d.date) {
+                el.textContent = 'Dernière association : ' + d.date + ' (' + d.nb_audios + ' / ' + d.total_cloudinary + ')';
+            } else {
+                el.textContent = 'Aucune association effectuée';
+            }
+        });
+}
+
 function associerAudios() {
     demanderPin('Associer les audios aux questions CACES® ?', async (pin) => {
         const status = document.getElementById('assoc-status-audio');
@@ -274,6 +289,7 @@ function associerAudios() {
         if (resp.ok) {
             const data = await resp.json();
             status.textContent = '✅ ' + data.message;
+            chargerDerniereAssociationAudio();
         } else {
             status.textContent = '❌ Erreur';
         }
@@ -324,7 +340,7 @@ document.addEventListener('click', function(e) {
     const actif = (b) => { b.style.borderBottomColor = '#383b40'; b.style.color = '#383b40'; b.style.fontWeight = '600'; };
     const inactif = (b) => { b.style.borderBottomColor = 'transparent'; b.style.color = '#888'; b.style.fontWeight = '500'; };
     if (cible === 'images') { actif(bI); inactif(bA); } else { actif(bA); inactif(bI); }
-    if (cible === 'audio' && typeof chargerAudios === 'function') chargerAudios();
+    if (cible === 'audio' && typeof chargerAudios === 'function') { chargerAudios(); chargerDerniereAssociationAudio(); }
 });
 
 chargerImages();

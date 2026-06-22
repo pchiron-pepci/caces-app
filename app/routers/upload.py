@@ -756,9 +756,35 @@ async def associer_audios(pin: str):
                 print(f"Erreur parsing audio {filename}: {e}")
                 continue
         db.commit()
+        from app.models.association_audio_log import AssociationAudioLog
+        from datetime import datetime
+        db.add(AssociationAudioLog(date_association=datetime.utcnow(), nb_audios=updated))
+        db.commit()
     finally:
         db.close()
     return {"message": f"{updated} audios associes"}
+
+@router.get("/derniere-association-audio")
+def derniere_association_audio():
+    configurer_cloudinary()
+    from app.models.association_audio_log import AssociationAudioLog
+    db = SessionLocal()
+    try:
+        log = db.query(AssociationAudioLog).order_by(AssociationAudioLog.date_association.desc()).first()
+        date_str = log.date_association.strftime("%d/%m/%Y %H:%M") if log else None
+        nb_audios = log.nb_audios if log else 0
+    finally:
+        db.close()
+    total_cloudinary = 0
+    try:
+        result = cloudinary.api.resources(
+            type="upload", prefix="caces_questions/audio/",
+            max_results=500, resource_type="video"
+        )
+        total_cloudinary = len(result.get("resources", []))
+    except Exception:
+        pass
+    return {"date": date_str, "nb_audios": nb_audios, "total_cloudinary": total_cloudinary}
 
 @router.delete("/supprimer-audio")
 async def supprimer_audio(filename: str, pin: str):
