@@ -1426,7 +1426,7 @@ function lireIdentiteVoixHaute() {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(texte);
     utterance.lang = 'fr-FR';
-    utterance.rate = 0.9;
+    utterance.rate = 0.8;
     window.speechSynthesis.speak(utterance);
 }
 
@@ -1501,7 +1501,7 @@ if (window.speechSynthesis) {
     window.speechSynthesis.cancel(); // Arrête la lecture précédente
     const utterance = new SpeechSynthesisUtterance(q.texte);
     utterance.lang = 'fr-FR';
-    utterance.rate = 0.9;
+    utterance.rate = 0.8;
     window.speechSynthesis.speak(utterance);
 }
 
@@ -1555,7 +1555,7 @@ function relireQuestion() {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(texte);
         utterance.lang = 'fr-FR';
-        utterance.rate = 0.9;
+        utterance.rate = 0.8;
         window.speechSynthesis.speak(utterance);
     }
 }

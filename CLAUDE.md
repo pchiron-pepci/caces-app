@@ -1116,7 +1116,7 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Ajustement date FR :** la date de naissance arrivait en ISO YYYY-MM-DD (PostgreSQL) et s'affichait brute. Helper formaterDateFr(str) ajouté (regex ISO → jj/mm/aaaa, retourne tel quel si format inattendu). Appliqué aux 2 voies de remplissage de identite-info : voie QR (START_DDN) et voie tablette (data-naissance lu sur l'option).
 
-**Ajustement lecture vocale :** rate passé de 0.8 à 0.9 sur les 3 occurrences (lireIdentiteVoixHaute + lecture QCM + autre lecture). ÉCART DOC/CODE RÉSOLU : claude.mp documentait "rate 0.9" alors que le code réel était à 0.8 — désormais aligné à 0.9 partout.
+**Lecture vocale :** rate = 0.8 sur les 3 occurrences (lireIdentiteVoixHaute + lecture QCM + autre lecture). Tentative passage à 0.9 annulée (remis à 0.8 sur demande utilisateur).
 
 **IDs préservés (JS) :** identite-nom, identite-info, confirm-identite (checkbox lue par allerConsignes), zone-pas-moi, pin-formateur-input, pin-formateur-error.
 
