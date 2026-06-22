@@ -6,12 +6,19 @@
 
 <div style="margin-bottom:24px;">
     <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:28px;">
-        Illustrations des questions
+        Médias des questions
     </h2>
     <p style="color:#666; font-size:14px;">
-        Nommez vos fichiers : <strong>R482-G1-T2-Q1.jpg</strong> (famille-grille-theme-question)
+        Images : <strong>R482_G1_T2_Q1.jpg</strong> — Audio : <strong>R482_G1_T2_Q1.mp3</strong>
     </p>
 </div>
+
+<div style="display:flex;gap:0;border-bottom:2px solid #e0e3e6;margin-bottom:20px;">
+    <button type="button" id="tab-btn-images" data-action="onglet-medias" data-cible="images" style="background:none;border:none;border-bottom:3px solid #383b40;padding:10px 22px;font-size:14px;font-weight:600;color:#383b40;cursor:pointer;margin-bottom:-2px;">🖼️ Images</button>
+    <button type="button" id="tab-btn-audio" data-action="onglet-medias" data-cible="audio" style="background:none;border:none;border-bottom:3px solid transparent;padding:10px 22px;font-size:14px;font-weight:500;color:#888;cursor:pointer;margin-bottom:-2px;">🔊 Audio</button>
+</div>
+
+<div id="tab-images">
 
 <!-- UPLOAD -->
 <div class="card" style="margin-bottom:16px;">
@@ -53,6 +60,10 @@
     </div>
 </div>
 
+</div><!-- /tab-images -->
+
+<div id="tab-audio" style="display:none;">
+
 <!-- UPLOAD AUDIO -->
 <div class="card" style="margin-top:24px; margin-bottom:16px;">
     <div class="card-header">
@@ -91,6 +102,8 @@
         Chargement...
     </div>
 </div>
+
+</div><!-- /tab-audio -->
 
 <!-- MODAL PIN -->
 <div id="modal-pin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
@@ -300,9 +313,22 @@ function supprimerAudio(filename) {
     });
 }
 
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action="onglet-medias"]');
+    if (!btn) return;
+    const cible = btn.dataset.cible;
+    document.getElementById('tab-images').style.display = (cible === 'images') ? 'block' : 'none';
+    document.getElementById('tab-audio').style.display = (cible === 'audio') ? 'block' : 'none';
+    const bI = document.getElementById('tab-btn-images');
+    const bA = document.getElementById('tab-btn-audio');
+    const actif = (b) => { b.style.borderBottomColor = '#383b40'; b.style.color = '#383b40'; b.style.fontWeight = '600'; };
+    const inactif = (b) => { b.style.borderBottomColor = 'transparent'; b.style.color = '#888'; b.style.fontWeight = '500'; };
+    if (cible === 'images') { actif(bI); inactif(bA); } else { actif(bA); inactif(bI); }
+    if (cible === 'audio' && typeof chargerAudios === 'function') chargerAudios();
+});
+
 chargerImages();
 chargerDerniereAssociation();
-chargerAudios();
 </script>
 
 {% endblock %}
