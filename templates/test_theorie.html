@@ -1219,6 +1219,8 @@ if (START_DIRECT && START_STAGIAIRE_ID) {
 chargerQuestions();
 
 let _qrInstance = null;
+var _audioUrlCourante = null;
+var _audioQuestionEnCours = null;
 function evaluerQR() {
     const selCand = document.getElementById('select-candidat');
     const selTest = document.getElementById('select-testeur');
@@ -1439,6 +1441,35 @@ async function demarrerTest() {
     demarrerTimer();
 }
 
+function _couperAudioEnCours() {
+    if (_audioQuestionEnCours) {
+        try { _audioQuestionEnCours.pause(); _audioQuestionEnCours.currentTime = 0; } catch(e) {}
+        _audioQuestionEnCours = null;
+    }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+
+function _lireTexteSysteme(texte) {
+    if (!window.speechSynthesis || !texte) return;
+    var u = new SpeechSynthesisUtterance(texte);
+    u.lang = 'fr-FR';
+    u.rate = 0.8;
+    window.speechSynthesis.speak(u);
+}
+
+function lireQuestion(audioUrl, texte) {
+    _couperAudioEnCours();
+    if (audioUrl) {
+        var a = new Audio(audioUrl);
+        _audioQuestionEnCours = a;
+        a.onerror = function() { _lireTexteSysteme(texte); };
+        var p = a.play();
+        if (p && p.catch) { p.catch(function() { _lireTexteSysteme(texte); }); }
+    } else {
+        _lireTexteSysteme(texte);
+    }
+}
+
 function afficherQuestion(idx) {
     questionActuelle = idx;
     const q = questions[idx];
@@ -1462,14 +1493,8 @@ function afficherQuestion(idx) {
 
     document.getElementById('q-texte').textContent = q.texte;
 
-// Lecture vocale automatique de la question
-if (window.speechSynthesis) {
-    window.speechSynthesis.cancel(); // Arrête la lecture précédente
-    const utterance = new SpeechSynthesisUtterance(q.texte);
-    utterance.lang = 'fr-FR';
-    utterance.rate = 0.8;
-    window.speechSynthesis.speak(utterance);
-}
+    _audioUrlCourante = q.audio || null;
+    lireQuestion(_audioUrlCourante, q.texte);
 
     const btnV = document.getElementById('btn-vrai');
     const btnF = document.getElementById('btn-faux');
@@ -1516,14 +1541,8 @@ function suivant() {
 }
 
 function relireQuestion() {
-    const texte = document.getElementById('q-texte').textContent;
-    if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(texte);
-        utterance.lang = 'fr-FR';
-        utterance.rate = 0.8;
-        window.speechSynthesis.speak(utterance);
-    }
+    var texte = document.getElementById('q-texte') ? document.getElementById('q-texte').textContent : '';
+    lireQuestion(_audioUrlCourante, texte);
 }
 
 function precedent() {
