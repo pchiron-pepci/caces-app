@@ -1417,6 +1417,7 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - `app/models/justificatif.py` : modèle ORM (type, session_id, session_candidat_id nullable, fichier_cle/nom/type, date_upload, uploade_par)
 - `CREATE TABLE IF NOT EXISTS justificatifs` dans `_run_startup_migrations()` (main.py) + import `Justificatif`
 - 4 routes dans `app/routers/sessions.py` : `POST /{session_id}/justificatifs` (upload), `GET /{session_id}/justificatifs` (liste, filtrable par type + session_candidat_id), `GET /{session_id}/justificatifs/{justif_id}` (StreamingResponse R2), `DELETE /{session_id}/justificatifs/{justif_id}` (purge R2 + db.delete)
+- `page_session_detail` (main.py ~l.1794) : calcul groupé anti-N+1 → `sc.passe_epreuve` (bool, stagiaire_id dans candidats_ids d'au moins un JourTest) + `sc.nb_justif_formation` (int, 1 requête groupée par session_candidat_id). Accessible dans le template via `{{ sc.passe_epreuve }}` / `{{ sc.nb_justif_formation }}`.
 - Permissions terrain : POST whitelisté dans `_verifier_role` (ligne ~583 main.py) ; DELETE non whitelisté → catch-all → 403 terrain, back-office uniquement
 
 
