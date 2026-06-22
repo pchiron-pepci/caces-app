@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action="editer-candidat"]');
-        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note, btn.dataset.fichierNom);
+        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note, btn.dataset.fichierNom, btn.dataset.dispenseDate);
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="ouvrir-ajout-jour-theorie"]')) ouvrirAjoutJourTheorie();
@@ -727,6 +727,8 @@ function _syncDispenseNote() {
     if (!isDispense) document.getElementById('sc-dispense-note').value = '';
     var champFichier = document.getElementById('field-dispense-fichier');
     if (champFichier) champFichier.style.display = isDispense ? 'block' : 'none';
+    var champDate = document.getElementById('field-dispense-date');
+    if (champDate) champDate.style.display = isDispense ? 'block' : 'none';
 }
 
 function ouvrirAjoutCandidat() {
@@ -736,12 +738,13 @@ function ouvrirAjoutCandidat() {
     _resetStagiaireSearch();
     document.getElementById('sc-theorie').value = 'normal';
     document.getElementById('sc-dispense-note').value = '';
+    document.getElementById('sc-dispense-date').value = '';
     document.getElementById('field-dispense-note').style.display = 'none';
     document.getElementById('field-stagiaire').style.display = 'block';
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
-function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichierNom) {
+function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichierNom, dispenseDate) {
     document.getElementById('candidat-title').textContent = 'Modifier candidat';
     document.getElementById('sc-id').value = id;
     document.getElementById('sc-stagiaire').value = stagiaireId;
@@ -749,6 +752,8 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('sc-dispense-note').value = dispenseNote || '';
     document.getElementById('field-dispense-note').style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('field-dispense-fichier').style.display = theorie_dispensee ? 'block' : 'none';
+    document.getElementById('field-dispense-date').style.display = theorie_dispensee ? 'block' : 'none';
+    document.getElementById('sc-dispense-date').value = dispenseDate || '';
     document.getElementById('field-stagiaire').style.display = 'none';
     _majAffichageJustif(fichierNom || '');
     document.getElementById('modal-candidat').style.display = 'flex';
@@ -763,7 +768,8 @@ async function sauvegarderCandidat() {
         session_id: window.SESSION_ID,
         stagiaire_id: parseInt(document.getElementById('sc-stagiaire').value),
         theorie_dispensee: isDispense,
-        dispense_note: isDispense ? (document.getElementById('sc-dispense-note').value.trim() || null) : null
+        dispense_note: isDispense ? (document.getElementById('sc-dispense-note').value.trim() || null) : null,
+        dispense_date: isDispense ? (document.getElementById('sc-dispense-date').value || null) : null
     };
     if (!id && !data.stagiaire_id) { alert('Choisir un stagiaire !'); return; }
     const url = id ? '/api/sessions/' + window.SESSION_ID + '/candidats/' + id : '/api/sessions/' + window.SESSION_ID + '/candidats';
