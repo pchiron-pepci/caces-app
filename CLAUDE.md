@@ -1332,4 +1332,13 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - Imports ajoutés en tête : `UploadFile, File`, `StreamingResponse`, `BytesIO`, `from app.services import storage`
 - Type DB : `DBSession` (alias `sqlalchemy.orm.Session`) — conforme au standard du fichier
 
-**Étape restante :** 5b/5 UI modale candidat (upload/affichage/suppression côté frontend).
+**Étape 5b/5 terminée (commit bee2d0e) :** UI modale candidat — champ justificatif de dispense.
+- `session_detail.html` : bloc `#field-dispense-fichier` inséré après `#field-dispense-note` — `input[type=file]` caché, bouton 📎 Joindre, span nom, boutons 👁️ Voir + 🗑️ Retirer (masqués si aucun fichier), div msg feedback.
+- `session_detail.js` — 4 modifications :
+  1. `_syncDispenseNote()` : affiche/masque aussi `#field-dispense-fichier` selon RÉUSSI/ÉCHEC
+  2. `ouvrirAjoutCandidat()` : appel `_majAffichageJustif('')` à l'ouverture en mode création
+  3. `editerCandidat()` : 5e param `fichierNom`, appel `_majAffichageJustif(fichierNom||'')` avant affichage modale
+  4. Bloc complet en fin de fichier : `_majAffichageJustif`, `_justifMsg`, `_assurerCandidatEnregistre` (crée le candidat si mode création et capture `sc.id`), `_uploaderJustif` (FormData POST → R2), listeners délégués `click` (joindre/voir/retirer) + `change` (sc-justif-input → upload)
+- **Reste à brancher** : 5e argument `fichierNom` dans l'appel `editerCandidat(...)` côté template HTML (data-attribute `dispense_fichier_nom` sur le bouton ✏️).
+
+**Chantier pilote R2 terminé** (fonctionnellement complet — le branchement du 5e arg est un finish à faire).
