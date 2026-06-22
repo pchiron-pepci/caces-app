@@ -21,6 +21,7 @@ class ReponseGrille(Base):
     points = Column(Float, default=1.0)
     texte_question = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=True)
+    audio_url = Column(String(500), nullable=True)
 
 class UtilisationGrille(Base):
     __tablename__ = "utilisations_grilles"
