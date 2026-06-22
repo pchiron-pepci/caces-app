@@ -1208,3 +1208,19 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - Tous rôles (terrain + back-office). node -c validé (syntaxe OK — important car une erreur casserait tout le JS de la page).
 
 **Scalabilité :** ~100 organismes simultanés = ~3 req/s à 30 s d'intervalle, négligeable. Multi-tenant (base par tenant) répartira la charge. Réévaluer SSE seulement si charge explose.
+
+### ✅ Chantier terminé : audio questions — étape 1/3 (colonne + migration) (commit adec9be)
+
+**Besoin :** permettre l'association d'un fichier audio MP3 (hébergé Cloudinary) à chaque question de grille théorique, avec fallback speech synthesis navigateur. Étape 1 = infrastructure BDD uniquement (pas encore d'upload ni de lecture).
+
+**Modèle — `app/models/grille_theorie.py` :**
+- `ReponseGrille` : `audio_url = Column(String(500), nullable=True)` ajouté après `image_url`.
+- Nullable : la plupart des questions resteront sans audio au début.
+
+**Migration — deux vecteurs :**
+1. `migrate_audio_question.py` : script idempotent (inspire des migrations existantes), détecte le dialecte SQLite/PostgreSQL, skip si colonne déjà présente. À exécuter manuellement sur Render si besoin. Colonne confirmée localement via SQLite PRAGMA.
+2. `app/main.py` — `_run_startup_migrations()` : `"ALTER TABLE reponses_grilles ADD COLUMN IF NOT EXISTS audio_url VARCHAR(500)"` ajouté en fin de liste. Géré automatiquement au démarrage sur Render.
+
+**Rappels étapes suivantes :**
+- Étape 2 : route upload audio dans `app/routers/upload.py` (Cloudinary `resource_type="video"` pour MP3).
+- Étape 3 : `get_questions_phase2` → ajouter `"audio": q.audio_url` ; `test_theorie.html` → jouer MP3 si `q.audio` présent, sinon `SpeechSynthesisUtterance(rate=0.8)` (fallback déjà en place).
