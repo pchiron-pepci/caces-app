@@ -1093,3 +1093,31 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 **État charte anthracite :** ✅ header (+ titre centré), écran 3 (consignes), QCM, récap, écran 1 (sélection). RESTE : écran 2 (identité — 3 alert(), bouton "Lire à voix haute" bleu, zone PIN formateur), écran 6 (résultat), modale de confirmation (~ligne 1552).
 
 **Leçon méthode :** tester sur mobile au fur et à mesure (pas à la fin) — l'écran 1 a demandé plusieurs allers-retours (logo dédoublé, badge débordant, titre décalé) qui auraient été vus plus tôt avec une vérif mobile immédiate.
+
+### ✅ Chantier terminé : écran 2 (identité candidat) — restyle anthracite + date FR + lecture ralentie
+
+**Restyle anthracite (classes .sel2-*) :**
+- Tout l'inline de l'écran 2 → 14 classes CSS .sel2-* (sel2-tete, sel2-emoji, sel2-question, identite-nom, identite-info, sel2-voix-wrap, sel2-voix-btn, checkbox-confirm + input + span, sel2-pin + titre/texte/label/input/error/actions).
+- Emojis CONSERVÉS (choix utilisateur — plus convivial pour public faible littératie) : 👤 (en-tête), 🔊 (Lire à voix haute), 🔒 (zone PIN), ❌ (erreur PIN). Seules les couleurs/disposition passent en anthracite.
+- Carte candidat : 👤 + "Êtes-vous bien :" + nom en gros anthracite #383b40 (identite-nom) + date (identite-info) + bouton 🔊 pilule grise + checkbox engagement dans encadré #f9fafb (accent-color #383b40).
+- Bouton "Lire à voix haute" : bleu #1a237e/#e8eaf6 → pilule grise #f0efef.
+- Zone PIN formateur (#zone-pas-moi) : orange inline → ambre charte #FFF4E0/#F0C775 (cohérent avec les autres alertes). Garde style="display:none;" inline (piloté par demanderPinFormateur/annulerPinFormateur). #pin-formateur-error garde display:none inline.
+- Boutons Débloquer (anthracite) / Annuler (gris) dans .sel2-pin-actions.
+
+**Migration 5 onclick → data-action (listener délégué sur #ecran-identite) :**
+- lireIdentiteVoixHaute → data-action="lire-voix"
+- allerConsignes → data-action="confirmer-identite"
+- demanderPinFormateur → data-action="pas-moi"
+- verifierPinFormateur → data-action="pin-debloquer"
+- annulerPinFormateur → data-action="pin-annuler"
+- Logique PIN strictement intacte (on n'a touché qu'à l'habillage + onclick).
+
+**Nettoyage doublons CSS :** .identite-nom, .identite-info, .checkbox-confirm étaient définies 2 fois (anciennes lignes ~240-273 en bleu #1a237e/#f0f2f7/28px + nouvelles .sel2-* en anthracite). Anciennes SUPPRIMÉES, ne reste que les versions anthracite.
+
+**Ajustement date FR :** la date de naissance arrivait en ISO YYYY-MM-DD (PostgreSQL) et s'affichait brute. Helper formaterDateFr(str) ajouté (regex ISO → jj/mm/aaaa, retourne tel quel si format inattendu). Appliqué aux 2 voies de remplissage de identite-info : voie QR (START_DDN) et voie tablette (data-naissance lu sur l'option).
+
+**Ajustement lecture vocale :** rate passé de 0.8 à 0.9 sur les 3 occurrences (lireIdentiteVoixHaute + lecture QCM + autre lecture). ÉCART DOC/CODE RÉSOLU : claude.mp documentait "rate 0.9" alors que le code réel était à 0.8 — désormais aligné à 0.9 partout.
+
+**IDs préservés (JS) :** identite-nom, identite-info, confirm-identite (checkbox lue par allerConsignes), zone-pas-moi, pin-formateur-input, pin-formateur-error.
+
+**État charte anthracite :** ✅ header (titre centré), écran 1 (sélection), écran 2 (identité), écran 3 (consignes), QCM, récap. TOUT LE PARCOURS PRINCIPAL DU TEST est en anthracite. RESTE : écran 6 (résultat, non diagnostiqué, #1a237e lignes ~946/962), modale de confirmation (~ligne 1595/1704, 2 onclick : retourQcm + callback). 3 onclick restants au total, tous hors écrans 1/2/3 (récap ligne ~1073, modale).
