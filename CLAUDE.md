@@ -1236,8 +1236,9 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Rappel étape 3 :** `get_questions_phase2` (sessions.py ou tirage_grille.py) → ajouter `"audio": q.audio_url` dans le dict question. Côté `test_theorie.html` : jouer `<audio>` si `q.audio` présent, sinon fallback `SpeechSynthesisUtterance(rate=0.8)`.
 
-**UI admin ajoutée dans `templates/admin_images.html` (commit 5a51f8d) :**
-- Section "🔊 Uploader des audios (MP3)" : drop-zone + `input[accept=".mp3"]` → `POST /api/upload/question-audio`
-- Bouton "Associer les audios" → `demanderPin()` (modale PIN existante, pas `prompt()`) → `POST /api/upload/associer-audios?pin=`
+**UI admin dans `templates/admin_images.html` :**
+- Commit 5a51f8d : section audio ajoutée (drop-zone MP3, bouton associer, liste `<audio controls>`, suppression)
+- Commit 68889c6 : page transformée en 2 onglets "🖼️ Images" / "🔊 Audio" — titre renommé "Médias des questions", lazy load audio (chargerAudios() déclenché à la première ouverture de l'onglet Audio, pas au chargement initial), listener `data-action="onglet-medias"` CSP-safe
+- PIN via `demanderPin()` (modale custom, pas `prompt()`) pour associer et supprimer
 - Liste audios : `GET /api/upload/liste-audios` → rendu `<audio controls>` + 🗑️ → `DELETE /api/upload/supprimer-audio`
 - Init : `chargerAudios()` appelé au chargement de la page aux côtés de `chargerImages()`
