@@ -1250,6 +1250,8 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Flux complet :** MP3 nommé `R482_G1_T2_Q1.mp3` uploadé via admin → `POST /associer-audios?pin=` → `audio_url` sur `ReponseGrille` → servi dans `get_questions_phase2` → `lireQuestion` joue le MP3, fallback voix si absent ou erreur réseau.
 
+**Fix connexe (commit cf857c0) :** crash JS `null.addEventListener` sur `/start` — `modal-confirm` était définie à la ligne 1694 (après `</script>` ligne 1691), donc `getElementById('modal-confirm')` retournait `null` au moment de l'exécution du script. Corrigé en attachant le listener à `document` (délégation) au lieu de `#modal-confirm` — `document` existe toujours, `closest('[data-action="fermer-confirm"]')` filtre correctement. Ce crash bloquait l'exécution complète du script, y compris les fonctions audio.
+
 **UI admin dans `templates/admin_images.html` :**
 - Commit 5a51f8d : section audio ajoutée (drop-zone MP3, bouton associer, liste `<audio controls>`, suppression)
 - Commit 68889c6 : page transformée en 2 onglets "🖼️ Images" / "🔊 Audio" — titre renommé "Médias des questions", lazy load audio (chargerAudios() déclenché à la première ouverture de l'onglet Audio, pas au chargement initial), listener `data-action="onglet-medias"` CSP-safe
