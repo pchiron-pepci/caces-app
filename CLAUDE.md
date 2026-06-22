@@ -1252,6 +1252,12 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Flux complet :** MP3 nommé `R482_G1_T2_Q1.mp3` uploadé via admin → `POST /associer-audios?pin=` → `audio_url` sur `ReponseGrille` → servi dans `get_questions_phase2` → `data.themes[t]` → `questions.push({audio: q.audio||null})` → `_audioUrlCourante = q.audio || null` → `lireQuestion` joue le MP3, fallback voix si absent ou erreur réseau.
 
+**Indicateur "Dernière association" audio (commit 61633e4) :**
+- Nouveau modèle `app/models/association_audio_log.py` : `AssociationAudioLog` (`id`, `date_association`, `nb_audios`) — table `association_audio_log` créée par `create_all()` au démarrage (import dans `main.py` ligne 29)
+- `associer_audios` : log `AssociationAudioLog(date_association=now(), nb_audios=updated)` après commit (calque exact `associer-images`)
+- Route `GET /api/upload/derniere-association-audio` : dernier log + count Cloudinary `prefix="caces_questions/audio/"` `resource_type="video"` → `{date, nb_audios, total_cloudinary}`
+- UI `admin_images.html` : `<span id="derniere-assoc-audio">` après bouton associer, `chargerDerniereAssociationAudio()` appelée après association réussie ET à l'ouverture de l'onglet Audio
+
 **Fix connexe 1 (commit cf857c0) :** crash JS `null.addEventListener` sur `/start` — `modal-confirm` était définie à la ligne 1694 (après `</script>` ligne 1691), donc `getElementById('modal-confirm')` retournait `null` au moment de l'exécution du script. Corrigé en attachant le listener à `document` (délégation) au lieu de `#modal-confirm` — `document` existe toujours, `closest('[data-action="fermer-confirm"]')` filtre correctement. Ce crash bloquait l'exécution complète du script, y compris les fonctions audio.
 
 **UI admin dans `templates/admin_images.html` :**
