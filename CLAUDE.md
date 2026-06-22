@@ -1239,6 +1239,7 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 **UI admin dans `templates/admin_images.html` :**
 - Commit 5a51f8d : section audio ajoutée (drop-zone MP3, bouton associer, liste `<audio controls>`, suppression)
 - Commit 68889c6 : page transformée en 2 onglets "🖼️ Images" / "🔊 Audio" — titre renommé "Médias des questions", lazy load audio (chargerAudios() déclenché à la première ouverture de l'onglet Audio, pas au chargement initial), listener `data-action="onglet-medias"` CSP-safe
+- Commit bb802e3 : bouton admin.html renommé "🎬 Médias des questions", `<title>` admin_images.html mis à jour
 - PIN via `demanderPin()` (modale custom, pas `prompt()`) pour associer et supprimer
 - Liste audios : `GET /api/upload/liste-audios` → rendu `<audio controls>` + 🗑️ → `DELETE /api/upload/supprimer-audio`
 - Init : `chargerAudios()` appelé au chargement de la page aux côtés de `chargerImages()`
