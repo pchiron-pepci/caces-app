@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action="editer-candidat"]');
-        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note);
+        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note, btn.dataset.fichierNom);
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="ouvrir-ajout-jour-theorie"]')) ouvrirAjoutJourTheorie();
