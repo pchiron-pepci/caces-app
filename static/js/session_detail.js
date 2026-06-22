@@ -2265,3 +2265,26 @@ document.addEventListener('change', function(e) {
         e.target.value = '';
     }
 });
+
+function afficherInfoToast(msg) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;top:20px;right:24px;background:#4a5568;color:white;padding:12px 20px;border-radius:8px;font-size:14px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:opacity .4s;';
+    document.body.appendChild(t);
+    setTimeout(function() {
+        t.style.opacity = '0';
+        setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 400);
+    }, 1800);
+}
+
+document.addEventListener('click', function(e) {
+    var p = e.target.closest('[data-action="dispense-fichier-direct"]');
+    if (!p) return;
+    var scId = p.dataset.scId;
+    var nom = p.dataset.fichierNom || '';
+    if (nom) {
+        window.open('/api/sessions/' + SESSION_ID + '/candidats/' + scId + '/dispense-fichier', '_blank');
+    } else {
+        afficherInfoToast('Aucun justificatif joint');
+    }
+});

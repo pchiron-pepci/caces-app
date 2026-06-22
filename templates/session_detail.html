@@ -1548,15 +1548,11 @@
                     </td>
                     <td data-label="TH" style="text-align:center;">
                         {% if sc.theorie_dispensee %}<span class="badge orange"
-                            data-action="editer-candidat"
+                            data-action="dispense-fichier-direct"
                             data-sc-id="{{ sc.id }}"
-                            data-stag-id="{{ sc.stagiaire_id }}"
-                            data-dispense="true"
-                            data-note="{{ sc.dispense_note or '' }}"
                             data-fichier-nom="{{ sc.dispense_fichier_nom or '' }}"
-                            data-dispense-date="{{ sc.dispense_date or '' }}"
                             style="font-size:10px; cursor:pointer;"
-                            title="{{ sc.dispense_note or 'Dispensé de théorie' }} — cliquer pour modifier">Disp.</span>{% else %}—{% endif %}
+                            title="{% if sc.dispense_fichier_nom %}Voir le justificatif : {{ sc.dispense_fichier_nom }}{% else %}Dispensé — aucun justificatif joint{% endif %}">Disp.</span>{% else %}—{% endif %}
                     </td>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <td data-label="Actions" style="text-align:center; white-space:nowrap;">
