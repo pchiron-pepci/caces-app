@@ -19,6 +19,7 @@ class SessionCandidat(Base):
     dispense_fichier_cle = Column(String(500), nullable=True)
     dispense_fichier_nom = Column(String(255), nullable=True)
     dispense_fichier_type = Column(String(100), nullable=True)
+    dispense_date = Column(Date, nullable=True)
     theorie_date = Column(Date, nullable=True)
     theorie_note_totale = Column(Integer, nullable=True)
     theorie_obtenue = Column(Boolean, nullable=True)
