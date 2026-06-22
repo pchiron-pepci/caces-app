@@ -725,11 +725,14 @@ function _syncDispenseNote() {
     const field = document.getElementById('field-dispense-note');
     field.style.display = isDispense ? 'block' : 'none';
     if (!isDispense) document.getElementById('sc-dispense-note').value = '';
+    var champFichier = document.getElementById('field-dispense-fichier');
+    if (champFichier) champFichier.style.display = isDispense ? 'block' : 'none';
 }
 
 function ouvrirAjoutCandidat() {
     document.getElementById('candidat-title').textContent = 'Ajouter un candidat';
     document.getElementById('sc-id').value = '';
+    _majAffichageJustif('');
     _resetStagiaireSearch();
     document.getElementById('sc-theorie').value = 'normal';
     document.getElementById('sc-dispense-note').value = '';
@@ -738,7 +741,7 @@ function ouvrirAjoutCandidat() {
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
-function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote) {
+function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichierNom) {
     document.getElementById('candidat-title').textContent = 'Modifier candidat';
     document.getElementById('sc-id').value = id;
     document.getElementById('sc-stagiaire').value = stagiaireId;
@@ -746,6 +749,7 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote) {
     document.getElementById('sc-dispense-note').value = dispenseNote || '';
     document.getElementById('field-dispense-note').style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('field-stagiaire').style.display = 'none';
+    _majAffichageJustif(fichierNom || '');
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
@@ -2136,3 +2140,121 @@ document.addEventListener('click', function(e) {
         demarrerPolling();
     }
 })();
+
+// ===== Justificatif de dispense (R2) — CSP-safe =====
+
+function _majAffichageJustif(nom) {
+    var span = document.getElementById('sc-justif-nom');
+    var btnVoir = document.getElementById('sc-justif-btn-voir');
+    var btnRetirer = document.getElementById('sc-justif-btn-retirer');
+    var msg = document.getElementById('sc-justif-msg');
+    if (msg) { msg.textContent = ''; msg.style.color = ''; }
+    if (nom) {
+        if (span) span.textContent = '📄 ' + nom;
+        if (btnVoir) btnVoir.style.display = 'inline-block';
+        if (btnRetirer) btnRetirer.style.display = 'inline-block';
+    } else {
+        if (span) span.textContent = 'Aucun justificatif joint';
+        if (btnVoir) btnVoir.style.display = 'none';
+        if (btnRetirer) btnRetirer.style.display = 'none';
+    }
+}
+
+function _justifMsg(texte, couleur) {
+    var msg = document.getElementById('sc-justif-msg');
+    if (msg) { msg.textContent = texte; msg.style.color = couleur || '#4a5568'; }
+}
+
+async function _assurerCandidatEnregistre() {
+    var idExistant = document.getElementById('sc-id').value;
+    if (idExistant) return idExistant;
+
+    var stagId = parseInt(document.getElementById('sc-stagiaire').value);
+    if (!stagId) { _justifMsg('Choisissez d\'abord un stagiaire.', '#cc0000'); return null; }
+
+    var isDispense = document.getElementById('sc-theorie').value === 'dispense';
+    var noteEl = document.getElementById('sc-dispense-note');
+    var data = {
+        session_id: window.SESSION_ID,
+        stagiaire_id: stagId,
+        theorie_dispensee: isDispense,
+        dispense_note: isDispense ? ((noteEl.value || '').trim() || null) : null
+    };
+    var resp = await fetch('/api/sessions/' + window.SESSION_ID + '/candidats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(data)
+    });
+    if (!resp.ok) {
+        var e = await resp.json().catch(function() { return {}; });
+        _justifMsg(e.detail || 'Erreur lors de l\'enregistrement du candidat.', '#cc0000');
+        return null;
+    }
+    var j = await resp.json();
+    if (j.id) {
+        document.getElementById('sc-id').value = j.id;
+        return j.id;
+    }
+    return null;
+}
+
+async function _uploaderJustif(fichier) {
+    var scId = await _assurerCandidatEnregistre();
+    if (!scId) return;
+
+    var fd = new FormData();
+    fd.append('fichier', fichier);
+    _justifMsg('Envoi en cours…', '#4a5568');
+    try {
+        var resp = await fetch('/api/sessions/' + window.SESSION_ID + '/candidats/' + scId + '/dispense-fichier', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: fd
+        });
+        if (!resp.ok) {
+            var e = await resp.json().catch(function() { return {}; });
+            _justifMsg(e.detail || 'Erreur lors de l\'envoi.', '#cc0000');
+            return;
+        }
+        var j = await resp.json();
+        _majAffichageJustif(j.fichier_nom || fichier.name);
+        _justifMsg('Justificatif enregistré.', '#2e7d32');
+    } catch (err) {
+        _justifMsg('Erreur réseau.', '#cc0000');
+    }
+}
+
+document.addEventListener('click', function(e) {
+    var joindre = e.target.closest('[data-action="sc-justif-joindre"]');
+    if (joindre) { document.getElementById('sc-justif-input').click(); return; }
+
+    var voir = e.target.closest('[data-action="sc-justif-voir"]');
+    if (voir) {
+        var scId = document.getElementById('sc-id').value;
+        if (scId) window.open('/api/sessions/' + window.SESSION_ID + '/candidats/' + scId + '/dispense-fichier', '_blank');
+        return;
+    }
+
+    var retirer = e.target.closest('[data-action="sc-justif-retirer"]');
+    if (retirer) {
+        var scId2 = document.getElementById('sc-id').value;
+        if (!scId2) return;
+        fetch('/api/sessions/' + window.SESSION_ID + '/candidats/' + scId2 + '/dispense-fichier', {
+            method: 'DELETE',
+            credentials: 'same-origin'
+        }).then(function(r) {
+            if (r.ok) { _majAffichageJustif(''); _justifMsg('Justificatif retiré.', '#2e7d32'); }
+            else { _justifMsg('Erreur lors du retrait.', '#cc0000'); }
+        }).catch(function() { _justifMsg('Erreur réseau.', '#cc0000'); });
+        return;
+    }
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'sc-justif-input') {
+        var f = e.target.files && e.target.files[0];
+        if (f) _uploaderJustif(f);
+        e.target.value = '';
+    }
+});

@@ -1911,6 +1911,23 @@
                 <label>Note de dispense (optionnelle)</label>
                 <textarea id="sc-dispense-note" rows="2" placeholder="Ex : CACES® R489 cat.1B obtenu le 12/05/2021…" style="resize:vertical;"></textarea>
             </div>
+            <div class="form-field" id="field-dispense-fichier" style="grid-column: span 2; display:none;">
+                <label>Justificatif de dispense (optionnel)</label>
+                <input type="file" id="sc-justif-input" accept=".pdf,.doc,.docx,.xls,.xlsx" style="display:none;">
+                <div id="sc-justif-zone" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-secondary" data-action="sc-justif-joindre" style="font-size:13px;">
+                        📎 Joindre un justificatif
+                    </button>
+                    <span id="sc-justif-nom" style="font-size:13px; color:#4a5568;"></span>
+                    <button type="button" class="btn btn-secondary" data-action="sc-justif-voir" id="sc-justif-btn-voir" style="display:none; font-size:13px;">
+                        👁️ Voir
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-action="sc-justif-retirer" id="sc-justif-btn-retirer" style="display:none; font-size:13px;">
+                        🗑️ Retirer
+                    </button>
+                </div>
+                <div id="sc-justif-msg" style="font-size:12px; margin-top:4px;"></div>
+            </div>
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" data-action="sauvegarder-candidat">Sauvegarder</button>
