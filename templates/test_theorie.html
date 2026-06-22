@@ -1305,7 +1305,7 @@ function evaluerQR() {
     const box = document.getElementById('qr-box');
     if (box) box.innerHTML = '';
     const url = window.location.origin + '/test/theorie/' + JOUR_ID + '/' + val + '/start';
-    new QRCode(box, { text: url, width: 120, height: 120, colorDark: 'var(--noryx-anthracite)', colorLight: '#ffffff' });
+    new QRCode(box, { text: url, width: 120, height: 120, colorDark: '#383b40', colorLight: '#ffffff' });
     section.style.display = 'block';
 }
 
