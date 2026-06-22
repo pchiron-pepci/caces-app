@@ -129,6 +129,7 @@ app/
 ### Soft delete vs hard delete
 - **Testeurs** : soft delete (`actif = False`), appelé "archiver" — les données historiques doivent rester liées
 - **Habilitations testeur** (`HabilitationTesteur`) : hard delete SQL (`db.delete()`) — pas d'historique nécessaire
+- **SessionCandidat** : hard delete SQL (`db.delete()`) depuis 2026-06-22 — un candidat retiré (erreur de saisie, changement de session) ne laisse aucune trace ; purges manuelles avant `db.delete` : fichier R2 (`storage.delete_fichier`) + `ConsentementRGPD` (couple `session_id`+`stagiaire_id`)
 - **Autres entités** : soft delete par défaut
 
 ### Authentification
@@ -204,7 +205,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 8. **Retrait candidat d'un jour pratique** : bloqué (400) si des `SessionEpreuve` existent pour ce candidat/jour (l'utilisateur doit d'abord supprimer les résultats via "Annuler le résultat") ; sinon hard delete `JourTestCandidat`
 8b. **Retrait candidat d'un jour théorique** : si un `ResultatTheorie` existe → avertissement modal → confirmation → PIN 1505 vérifié côté serveur → hard delete `ResultatTheorie` + `JourTestCandidat` ; si pas de `ResultatTheorie` → PIN → hard delete `JourTestCandidat` direct ; GET `/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/check-theorie` retourne `{"has_resultat": bool}`
 12. **Décochage catégorie dans modal jour pratique** : bloqué si une `SessionEpreuve` existe déjà pour ce candidat/catégorie/jour — message "Supprimez d'abord le résultat de la catégorie X avant de la retirer" ; vérifié côté client (JS, sur l'événement `change`) ET côté serveur (`add_candidats_jour` renvoie 400) ; `j.candidats_epreuves = {stagiaire_id: [cat_list]}` calculé dans `main.py` et passé à `ouvrirModifierJourPratique` comme 6e paramètre
-11. **Suppression candidat de la session** : vérifie d'abord qu'aucun `JourTestCandidat` n'existe pour cette session (sinon 400) ; soft delete `SessionCandidat.actif = False` ; PIN 1505 requis côté serveur via `DELETE /api/sessions/{id}/candidats/{sc_id}?pin=`
+11. **Suppression candidat de la session** : vérifie d'abord qu'aucun `JourTestCandidat` n'existe pour cette session (sinon 400) ; **hard delete** `db.delete(sc)` + purge fichier R2 (`dispense_fichier_cle`) + purge `ConsentementRGPD` (couple `session_id`+`stagiaire_id`) ; PIN 1505 requis côté serveur via `DELETE /api/sessions/{id}/candidats/{sc_id}?pin=`
 9. **Dates session** : vérification que les jours planifiés restent dans l'intervalle lors d'une modification
 10. **Statuts session** : `planifiee` → `en_cours` → `terminee` (ou `annulee`)
 
@@ -219,6 +220,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `Session` | `sessions` | `famille`, `lieu_id`, `statut`, `reference`, `date_cloture_terrain` (DateTime nullable — clôture terrain) |
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
 | `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
+| `SessionCandidat` | `session_candidats` | Inscription d'un stagiaire à une session ; `stagiaire_id`, `theorie_dispensee` Boolean, `dispense_note` Text, `dispense_fichier_cle` VARCHAR(500) (clé R2, JAMAIS le binaire), `dispense_fichier_nom` VARCHAR(255), `dispense_fichier_type` VARCHAR(100), `dispense_date` DATE (date obtention CACES externe justifiant la dispense — futur calcul validité 12 mois), `actif` Boolean (legacy — hard delete depuis 2026-06-22) |
 | `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` |
 | `ResultatTheorie` | `resultats_theorie` | UNIQUE `(jour_test_id, stagiaire_id)` ; `mode` VARCHAR(12) NOT NULL DEFAULT 'numerique' ('numerique'/'degrade') ; `bloque` Boolean défaut False — positionné comme SE, empêche la recherche de théorie dans `calculer_et_synchroniser` ; reprise par écrasement si mode='numerique', 409 si mode='degrade' ; `justificatif_pdf` Text nullable (base64) ; `justificatif_nom` VARCHAR(255) nullable — ajoutés par migration startup + `migrate_justificatif_theorie.py` ; update notes ne touche JAMAIS justificatif (opérations indépendantes) |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete ; `option_pe`/`option_tel` legacy — remplacés par `HabilitationOption` |
@@ -266,7 +268,7 @@ python migrate_cloture_terrain.py
 
 - **App** : `caces-app` — Starter $7/mois, Frankfurt
 - **DB** : `caces-db` — Free tier, **expire le 05/07/2026** → upgrader avant cette date
-- **Variables d'environnement** : `DATABASE_URL`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`
+- **Variables d'environnement** : `DATABASE_URL`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_CLOUD_NAME`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`
 
 ### Initialisation base (avec External URL Render)
 ```bash
@@ -312,6 +314,13 @@ python init_questions_r482.py
 | Basse | Responsive mobile (CSS media queries) | à faire |
 | Basse | UT options facultatives = +0.5 UT (incluses déjà dans UT catégorie) | ✅ fait |
 | Basse | Supprimer `date_habilitation` et `date_expiration_habilitation` du modèle `Testeur` (doublons avec `HabilitationTesteur`) | à faire |
+| Haute | Table générique Justificatif (formation + dispense + présence) — modèle cadré | à faire |
+| Haute | Justificatif formation : routes + indicateur tableau + menu multi-fichiers | à faire |
+| Haute | Détection dispense interne/externe modale (specs cadrées) | à faire |
+| Haute | Modèle dispense origine/pointeur (dispense_origine + source_type/id) | à faire |
+| Haute | Brancher dispense externe + CACES interne au moteur caces_obtenus.py | à faire |
+| Moyenne | Migrer justificatif dispense (colonnes plates) vers table Justificatif | à faire |
+| Moyenne | Migrer justificatif théorie (ResultatTheorie.justificatif_pdf base64) vers R2 | à faire |
 
 ### Dashboard — route GET /
 Variables de contexte passées au template `dashboard.html` :
@@ -1304,7 +1313,7 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Radio résultat :** name=`pratique-resultat`, valeurs `"true"` (RÉUSSI) / `"false"` (ÉCHEC).
 
-### 🔧 Chantier en cours : justificatif dispense théorie sur R2 (chantier pilote R2)
+### ✅ Chantier terminé : justificatif dispense théorie sur R2 (chantier pilote R2)
 
 **Contexte :** la dispense de théorie existe (`SessionCandidat.theorie_dispensee` + `dispense_note`). On ajoute un fichier justificatif stocké sur Cloudflare R2 — la BDD ne stocke que la clé + métadonnées, jamais le binaire.
 
@@ -1345,7 +1354,7 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Bug fix post-livraison (commit 5ae06fb) :** `editerCandidat()` n'affichait pas `#field-dispense-fichier` en mode édition (seul `_syncDispenseNote` le gérait, pas appelé à l'ouverture). Ajout d'une ligne miroir : `getElementById('field-dispense-fichier').style.display = theorie_dispensee ? 'block' : 'none'` juste après la même ligne pour `field-dispense-note`.
 
-### 🔧 Chantier en cours : date de dispense (dispense_date)
+### ✅ Chantier terminé : date de dispense (dispense_date)
 
 **Étape 1/2 terminée (commit d1b94a9) :** colonne `dispense_date DATE` ajoutée sur `session_candidats` (nullable, après `dispense_fichier_type`). Migration startup idempotente ajoutée dans `main.py`. Représente la date d'obtention de la théorie/CACES justifiant la dispense (utile pour futur calcul de validité CACES).
 
@@ -1355,3 +1364,70 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - `session_detail.js` : 5 modifications — `_syncDispenseNote` (affiche/masque field-dispense-date), `ouvrirAjoutCandidat` (vide sc-dispense-date), `editerCandidat` (6e param dispenseDate + display + pré-remplissage), listener (6e arg btn.dataset.dispenseDate), `sauvegarderCandidat` (dispense_date dans data{}).
 
 **Chantier date de dispense — COMPLET** (commits d1b94a9 → 2957dcf).
+
+### ✅ Chantier terminé : pilote stockage objet R2 + justificatif/date de dispense + permissions terrain + hard delete candidat
+
+**DÉCISION ARCHITECTURALE MAJEURE :** FICHIERS (PDF/Word/Excel) sur **Cloudflare R2** (objet S3-compatible), JAMAIS base64 en base. Cloudinary reste pour les IMAGES (photos/logo/signature). R2 = cible multi-tenant (un bucket par tenant à terme). Bucket `noryx-documents` (WEUR, privé). Tier gratuit 10 Go + egress gratuit.
+
+**Variables env Render :** `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.
+
+**Module `app/services/storage.py` (boto3) :** `construire_cle(prefixe, nom)` → `{TENANT}/{prefixe}/{uuid}.{ext}` (TENANT="pepci" en dur) ; `upload_fichier` / `get_fichier` / `delete_fichier` / `test_connexion` ; `EXTENSIONS_AUTORISEES` pdf/doc/docx/xls/xlsx ; `TAILLE_MAX` 10 Mo ; s3v4, region auto. boto3>=1.34.0 dans requirements.
+
+**`SessionCandidat` +4 colonnes (migrations startup `ADD COLUMN IF NOT EXISTS`) :** `dispense_fichier_cle/nom/type` + `dispense_date` DATE.
+
+**3 routes justificatif dispense (`sessions.py`, auth cookie `request.state.user`, PAS de PIN, multipart FormData PAS base64) :** `POST`/`GET`/`DELETE` `/api/sessions/{sid}/candidats/{sc_id}/dispense-fichier`. GET = StreamingResponse R2.
+
+**Permissions terrain (`_verifier_role` dans `main.py`) :** terrain UPLOAD (`POST`) autorisé — whitelisté ligne ~559 (cas : apprenant apporte CACES externe le jour du test) ; terrain VOIT (`GET`, jamais bloqué par le catch-all) ; terrain NE SUPPRIME PAS (`DELETE` tombe dans catch-all → 403, back-office only, anti-erreur).
+
+**Modale candidat (CSP-safe) :** zone dispense (si théorie="dispense") = champ date + note + justificatif. Upload immédiat ; en création `_assurerCandidatEnregistre()` crée le candidat (`add_candidat` renvoie `id`) puis uploade. Pré-remplissage via `data-fichier-nom` + `data-dispense-date` (5e/6e args `editerCandidat`). Crayon ✏️ = édite. **Pastille "Disp." = ouvre DIRECTEMENT le justificatif** (`data-action="dispense-fichier-direct"`), toast info ardoise "Aucun justificatif joint" si absent (`afficherInfoToast`, `#4a5568`). NON BLOQUANT.
+
+**`remove_candidat` : SOFT → HARD DELETE.** `db.delete(sc)` au lieu de `actif=False`. Philosophie : retrait par erreur/changement de session = AUCUNE trace. Protection ligne 307 CONSERVÉE (refus 400 si `JourTestCandidat` planifié — garantit pas d'épreuve/résultat/CACES). Purges manuelles AVANT `db.delete` (pas de FK cascade) : fichier R2 (`storage.delete_fichier`) + `ConsentementRGPD` (couple `session_id`+`stagiaire_id`).
+
+**RÈGLES ANTI-RÉGRESSION (permanentes) :**
+- Ne JAMAIS stocker de binaire en base → `storage.py` R2, persister que la clé. Justificatif théorie existant (`ResultatTheorie.justificatif_pdf` base64) à migrer vers R2 plus tard.
+- Le fichier R2 ne part JAMAIS seul → purge explicite `storage.delete_fichier()` AVANT `db.delete`.
+- Variables `--noryx-*` CSS définies seulement dans `test_theorie.html` (PAS globales) → rester inline en dur hors test_theorie tant que CSS non centralisé.
+- JAMAIS éditer requirements.txt/Python via PowerShell (UTF-16 → build cassé). iconv/sed Git Bash ou VS Code (UTF-8).
+
+### 🔍 Chantier CADRÉ : détection dispense interne/externe (modale candidat)
+
+**PRINCIPE CARDINAL : l'opérateur valide TOUJOURS. Le système assiste/propose/exige mais n'auto-coche JAMAIS une dispense** (responsabilité réglementaire humaine, opposable en audit).
+
+**Deux durées à NE JAMAIS confondre :**
+- **12 mois** = bénéfice d'une épreuve obtenue en attendant l'autre. Fixe, toutes familles. → DÉCISION DE DISPENSE.
+- **5 ans / 10 ans** = validité du CACES délivré (10 ans R.482, 5 ans sinon). → CALCUL ÉCHÉANCE du futur CACES, PAS la dispense.
+
+**Règle dispense interne (détection auto) :** dispensable si, MÊME FAMILLE, base < 12 mois vs DATE DU JOUR : soit `ResultatTheorie` `obtenue=True`, soit `CacesObtenu` validé. « < 12 mois » = date origine +1 an −1 jour ≥ aujourd'hui. (CACES < 12 mois = forcément valide.)
+
+**Deux origines, modélisées différemment :**
+- **EXTERNE (autre OTC) :** date SAISIE opérateur OBLIGATOIRE (BLOQUANT, le système ne peut l'inventer) + justificatif PDF R2.
+- **INTERNE (notre base) :** le système connaît/recalcule la date depuis la source ; on stocke un POINTEUR vers l'enregistrement + trace décision ; pas de justificatif (preuve en base).
+
+**Modèle à créer (colonnes futures `SessionCandidat`) :** `dispense_origine` (`'interne'`/`'externe'`) ; `dispense_source_type` (`'theorie'`/`'caces'`) + `dispense_source_id` (pointeur polymorphe) ; `dispense_date` (existe) OBLIGATOIRE si externe, null si interne.
+
+**Comportement modale (3 temps) :** (1) sélection stagiaire → système cherche base interne, si trouvée INFORME sans cocher (« Dispense interne possible : [type+enreg #id] — départ 12 mois : [date] », traçabilité obligatoire) ; (2) opérateur coche ; (3) si coché : externe → date OBLIGATOIRE bloquant + justificatif ; interne → lie le pointeur.
+
+**⚠️ IMPACT MOTEUR CACES (`caces_obtenus.py`) — chantier lié OBLIGATOIRE :** `calculer_et_synchroniser` ne gère AUJOURD'HUI QUE les théories INTERNES (3 priorités). Ne sait PAS traiter dispense EXTERNE. Ajouter cas : dispense externe → base = `dispense_date` → calcul obtention+échéance (10 ans R.482 / 5 ans sinon). VÉRIFIER TOUS LES CAS avant implémentation.
+
+### 🔍 Chantier CADRÉ : table générique Justificatif (formation + dispense + présence session)
+
+**Besoin déclencheur :** justificatif de FORMATION préalable par apprenant (feuille de présence). Le document PEPCI-49-01 impose la conservation des émargements 10 ans + preuve de formation au dossier.
+
+**Modèle décidé : table générique `Justificatif` (multi-fichiers, une ligne par fichier), Option A (un seul modèle, 2 niveaux via nullable) :**
+- `id`
+- `type` : `'formation'` / `'dispense'` / `'presence_session'` (extensible)
+- `session_id` : FK `sessions`, TOUJOURS rempli
+- `session_candidat_id` : FK `session_candidats`, NULLABLE (rempli formation/dispense = niveau candidat ; NULL pour `presence_session` = niveau session)
+- `fichier_cle` / `fichier_nom` / `fichier_type` : R2
+- `date_upload` / `uploade_par` : traçabilité audit
+
+**Purges (pas de FK cascade, manuel) :** hard delete candidat → purger `Justificatif` où `session_candidat_id = X` (+ R2) ; suppression session → purger où `session_id = Y` (+ R2).
+
+**Justificatif FORMATION — comportement :**
+- Document(s) par apprenant, indépendant du module formation interne (`JourFormation`). Couvre 80% des cas.
+- Permissions IDENTIQUES à la dispense : terrain upload + voit, back-office supprime.
+- INDICATEUR tableau candidats : affiché pour tout candidat passant AU MOINS une épreuve (théorie OU pratique inscrite). Dispensé-théorie qui passe la pratique = garde l'indicateur. Candidat ne passant rien = pas d'indicateur.
+- Avec justificatif → icône cliquable ouvre le doc. Sans → icône ALERTE FORTE NON BLOQUANTE (le testeur vérifie, décide).
+- Multi-fichiers → clic sur l'icône ouvre un MENU (voir fichiers / ajouter) plutôt qu'une action simple. Pas de surcharge de la modale candidat.
+
+**Convergence future :** migrer la dispense (colonnes plates actuelles) vers cette table générique (dette technique assumée). La table prévoit déjà `type='dispense'`.
