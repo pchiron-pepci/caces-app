@@ -554,6 +554,10 @@ def _verifier_role(path: str, method: str, role: str):
         # Exception : suppression résultat théorique — terrain peut corriger un mauvais candidat (PIN formateur requis)
         if method == "DELETE" and _re.match(r"^/api/sessions/\d+/theorie/reponses/\d+/\d+$", base):
             return True
+        # justificatif de dispense POST (terrain peut uploader, ex: CACES externe apporte le jour du test)
+        # NB: DELETE volontairement NON whiteliste -> suppression reservee au back-office (anti-erreur)
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/candidats/\d+/dispense-fichier$", base):
+            return True
         # Toutes les routes d'écriture sur les sessions (création + toutes sous-ressources)
         if method != "GET" and (base == "/api/sessions" or _re.match(r"^/api/sessions/\d+", base)):
             return False
