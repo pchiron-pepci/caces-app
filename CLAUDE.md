@@ -1344,3 +1344,9 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 **Chantier pilote R2 — COMPLET** (commits c43c4f1 → 5ae06fb).
 
 **Bug fix post-livraison (commit 5ae06fb) :** `editerCandidat()` n'affichait pas `#field-dispense-fichier` en mode édition (seul `_syncDispenseNote` le gérait, pas appelé à l'ouverture). Ajout d'une ligne miroir : `getElementById('field-dispense-fichier').style.display = theorie_dispensee ? 'block' : 'none'` juste après la même ligne pour `field-dispense-note`.
+
+### 🔧 Chantier en cours : date de dispense (dispense_date)
+
+**Étape 1/2 terminée (commit d1b94a9) :** colonne `dispense_date DATE` ajoutée sur `session_candidats` (nullable, après `dispense_fichier_type`). Migration startup idempotente ajoutée dans `main.py`. Représente la date d'obtention de la théorie/CACES justifiant la dispense (utile pour futur calcul de validité CACES).
+
+**Étape restante :** 2/2 UI — champ date dans la modale candidat (à côté de dispense_note), pré-remplissage à l'ouverture, envoi dans le PUT/POST `sauvegarderCandidat`.
