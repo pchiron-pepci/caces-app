@@ -1339,6 +1339,6 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
   2. `ouvrirAjoutCandidat()` : appel `_majAffichageJustif('')` à l'ouverture en mode création
   3. `editerCandidat()` : 5e param `fichierNom`, appel `_majAffichageJustif(fichierNom||'')` avant affichage modale
   4. Bloc complet en fin de fichier : `_majAffichageJustif`, `_justifMsg`, `_assurerCandidatEnregistre` (crée le candidat si mode création et capture `sc.id`), `_uploaderJustif` (FormData POST → R2), listeners délégués `click` (joindre/voir/retirer) + `change` (sc-justif-input → upload)
-- **Reste à brancher** : 5e argument `fichierNom` dans l'appel `editerCandidat(...)` côté template HTML (data-attribute `dispense_fichier_nom` sur le bouton ✏️).
+- Branchement `data-fichier-nom` (commit f2ce031) : `data-fichier-nom="{{ sc.dispense_fichier_nom or '' }}"` ajouté sur le bouton ✏️ ET sur la pastille `Disp.` (rendue cliquable avec `data-action="editer-candidat"` + `cursor:pointer` + title enrichi). Listener JS ligne 199 : 5e arg `btn.dataset.fichierNom` passé à `editerCandidat()`.
 
-**Chantier pilote R2 terminé** (fonctionnellement complet — le branchement du 5e arg est un finish à faire).
+**Chantier pilote R2 — COMPLET** (commits c43c4f1 → f2ce031).
