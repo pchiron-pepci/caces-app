@@ -643,8 +643,16 @@ function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identit
     if (displayOpts.length > 0) {
         let html = '<label style="font-size:12px; font-weight:700; color:#555; display:block; margin-bottom:8px;">Options réussies</label><div style="display:flex; flex-wrap:wrap; gap:12px;">';
         displayOpts.forEach(function(opt) {
-            const checked = obtained.includes(opt.code) ? 'checked' : '';
-            html += '<label style="display:flex; align-items:center; gap:6px; font-size:14px; cursor:pointer;"><input type="checkbox" name="pratique-option" value="' + opt.code + '" ' + checked + '> ' + opt.code + ' — ' + opt.libelle + '</label>';
+            if (opt.incluse) {
+                html += '<label style="display:flex;align-items:center;gap:6px;font-size:14px;color:#888;cursor:default;">'
+                     + '<input type="checkbox" name="pratique-option" value="' + opt.code + '" data-incluse="1" disabled> '
+                     + opt.code + ' — ' + opt.libelle + ' <span style="font-size:11px;color:#aaa;">(incluse)</span></label>';
+            } else {
+                const checked = obtained.includes(opt.code) ? 'checked' : '';
+                html += '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">'
+                     + '<input type="checkbox" name="pratique-option" value="' + opt.code + '" ' + checked + '> '
+                     + opt.code + ' — ' + opt.libelle + '</label>';
+            }
         });
         html += '</div>';
         container.innerHTML = html;
@@ -653,10 +661,25 @@ function saisirResultatPratique(stagiaireId, categorie, date, testeurId, identit
         container.innerHTML = '';
         container.style.display = 'none';
     }
+    synchroniserOptionsIncluses();
     document.getElementById('modal-pratique').style.display = 'flex';
 }
 
 function fermerModalPratique() { document.getElementById('modal-pratique').style.display = 'none'; }
+
+function synchroniserOptionsIncluses() {
+    var reussi = document.querySelector('[name="pratique-resultat"]:checked');
+    var estReussi = reussi && reussi.value === 'true';
+    document.querySelectorAll('[name="pratique-option"][data-incluse="1"]').forEach(function(cb) {
+        cb.checked = !!estReussi;
+    });
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.name === 'pratique-resultat') {
+        synchroniserOptionsIncluses();
+    }
+});
 
 function annulerResultatPratique() {
     const epreuveId = document.getElementById('pratique-epreuve-id').value;
