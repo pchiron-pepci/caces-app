@@ -1234,7 +1234,21 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Convention de nommage uniformisée (images ET audio) :** `R482_G1_T2_Q1` (underscores). La route `associer-images` existante a été corrigée de `split("-")` → `split("_")` dans le même commit.
 
-**Rappel étape 3 :** `get_questions_phase2` (sessions.py ou tirage_grille.py) → ajouter `"audio": q.audio_url` dans le dict question. Côté `test_theorie.html` : jouer `<audio>` si `q.audio` présent, sinon fallback `SpeechSynthesisUtterance(rate=0.8)`.
+### ✅ Chantier terminé : audio questions étape 3/3 — lecture MP3 + fallback voix (commit ab8aa57)
+
+**`app/services/tirage_grille.py` — `get_questions_phase2` :**
+- Clé `"audio": q.audio_url` ajoutée dans le dict question (après `"image"`). `None` si pas d'audio.
+
+**`templates/test_theorie.html` — 4 modifications :**
+1. Globals : `var _audioUrlCourante = null` + `var _audioQuestionEnCours = null` (niveau script)
+2. `_couperAudioEnCours()` : pause/reset `Audio` en cours + `speechSynthesis.cancel()`
+3. `_lireTexteSysteme(texte)` : `SpeechSynthesisUtterance` `rate=0.8`, `lang=fr-FR`
+4. `lireQuestion(audioUrl, texte)` : priorité MP3 (`new Audio(audioUrl).play()`), fallback `onerror` + `.catch()` → `_lireTexteSysteme`. Si pas d'audioUrl → directement synthèse.
+- Bloc auto-lecture dans `afficherQuestion` remplacé par `_audioUrlCourante = q.audio || null; lireQuestion(…)`
+- `relireQuestion()` remplacé par `lireQuestion(_audioUrlCourante, texte_dom)`
+- `lireIdentiteVoixHaute()` (écran identité) inchangé — pas de question, pas d'audio Cloudinary
+
+**Flux complet :** MP3 nommé `R482_G1_T2_Q1.mp3` uploadé via admin → `POST /associer-audios?pin=` → `audio_url` sur `ReponseGrille` → servi dans `get_questions_phase2` → `lireQuestion` joue le MP3, fallback voix si absent ou erreur réseau.
 
 **UI admin dans `templates/admin_images.html` :**
 - Commit 5a51f8d : section audio ajoutée (drop-zone MP3, bouton associer, liste `<audio controls>`, suppression)
