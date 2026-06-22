@@ -39,6 +39,7 @@ from app.models.carte_caces import CarteCaces
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.attestation_neutralite import AttestationNeutralite
 from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant, AffectationTest
+from app.models.justificatif import Justificatif
 
 from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
@@ -358,6 +359,25 @@ try:
                 statut VARCHAR(20) NOT NULL DEFAULT 'a_valider',
                 created_at TIMESTAMP DEFAULT NOW(),
                 CONSTRAINT uq_caces_obtenu UNIQUE(stagiaire_id, session_id, categorie)
+            )
+        """))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS justificatifs (
+                id SERIAL PRIMARY KEY,
+                type VARCHAR(30) NOT NULL,
+                session_id INTEGER NOT NULL REFERENCES sessions(id),
+                session_candidat_id INTEGER REFERENCES session_candidats(id),
+                fichier_cle VARCHAR(500),
+                fichier_nom VARCHAR(300),
+                fichier_type VARCHAR(100),
+                date_upload TIMESTAMP,
+                uploade_par VARCHAR(200)
             )
         """))
         _conn.commit()
