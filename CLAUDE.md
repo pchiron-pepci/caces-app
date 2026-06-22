@@ -1267,3 +1267,26 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - PIN via `demanderPin()` (modale custom, pas `prompt()`) pour associer et supprimer
 - Liste audios : `GET /api/upload/liste-audios` → rendu `<audio controls>` + 🗑️ → `DELETE /api/upload/supprimer-audio`
 - Init : `chargerAudios()` appelé au chargement de la page aux côtés de `chargerImages()`
+
+### ✅ Chantier terminé : audio MP3 par question (TTS) avec fallback voix système
+
+**Besoin :** chaque question peut avoir un MP3 (généré TTS/IA). Au test : si MP3 dispo → on le joue ; sinon → synthèse vocale navigateur (rate 0.8). MP3 prioritaire.
+
+**Stockage :** Cloudinary resource_type="video" (Cloudinary classe l'audio en vidéo). Convention de nommage UNIFORMISÉE en underscores : R482_G1_T1_Q001.mp3 (famille_grille_theme_question). Le parsing images est AUSSI passé en underscores (split("_")) — une seule convention pour tout.
+
+**Étape 1 — modèle :** ReponseGrille (table reponses_grilles) + colonne audio_url VARCHAR(500). Migration migrate_audio_question.py (idempotent) + startup.
+
+**Étape 2 — upload admin (upload.py) :** 4 routes calquées sur les images : POST /question-audio (batch MP3 → Cloudinary video, public_id caces_questions/audio/{nom}), POST /associer-audios (parse nom underscores → audio_url, PIN admin), DELETE /supprimer-audio (destroy avec resource_type="video" OBLIGATOIRE sinon "not found"), GET /liste-audios (prefix caces_questions/audio/, resource_type="video"). UI : admin_images.html renommée "Médias des questions" avec ONGLETS Images/Audio (lazy load audio, évite de scroller 5000 images). Bouton admin renommé "🎬 Médias des questions".
+
+**Étape 3 — lecture :** get_questions_phase2 (tirage_grille.py) ajoute "audio": q.audio_url. test_theorie.html : 3 fonctions (_couperAudioEnCours, _lireTexteSysteme, lireQuestion) — MP3 prioritaire, coupure du précédent, double fallback (onerror MP3 cassé + catch autoplay rejeté). _audioUrlCourante au niveau script (partagé auto-lecture + relireQuestion).
+
+**3 BUGS RÉSOLUS (longue session de debug) :**
+1. Crash JS : listener sur #modal-confirm via getElementById().addEventListener() — l'élément est défini APRÈS le </script>, donc null au moment de l'exécution → crash qui tuait tout le bas du script. Fix : délégation sur document (document.addEventListener('click', ...) + closest('[data-action="fermer-confirm"]')).
+2. Champ audio perdu dans le JS : la route /jours/{}/grille transmet bien "audio" (vérifié dans le JSON), mais le push questions[] (test_theorie.html ~ligne 1145) recopiait les champs en OUBLIANT audio → q.audio undefined → toujours fallback voix. Fix : ajout de "audio: q.audio || null" au push.
+3. Projection collective (main.py ~665) : questions_flat construit sans audio — PAS corrigé (la projection n'a pas besoin d'audio, c'est un affichage vidéoprojecteur).
+
+**Couverture par thème :** une grille de test est assemblée par TIRAGE de thèmes issus de grilles différentes (INRS). Donc sonoriser "la grille 1" ne sonorise QUE les questions de grille 1 qui sortent au tirage. Les thèmes tirés d'autres grilles non sonorisées → fallback voix système (normal).
+
+**Réglage vitesse MP3 :** PAS de playbackRate dans l'app (dégrade la voix). Les MP3 étant générés TTS, on RÉGÉNÈRE à la bonne vitesse à la source + réupload (overwrite=True écrase, audio_url inchangé, pas besoin de réassocier).
+
+**Indicateur "Dernière association" audio :** table dédiée AssociationAudioLog (date_association, nb_audios) créée par create_all() au boot (pas de migration manuelle). Route GET /derniere-association-audio. UI : span #derniere-assoc-audio sous le bouton, "Dernière association : JJ/MM/AAAA HH:MM (N/M)".
