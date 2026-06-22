@@ -2050,3 +2050,66 @@ document.addEventListener('click', function(e) {
         return;
     }
 });
+
+(function() {
+    var POLL_MS = 30000;
+    var _refSignature = null;
+    var _pollStarted = false;
+
+    var MODAL_IDS = ['modal-pin', 'modal-jour-theorie', 'modal-jour-pratique',
+        'modal-candidat-jour', 'modal-modifier-jour-theorie', 'modal-pratique',
+        'modal-candidat', 'modal-equipement', 'modal-testeurs', 'modal-avert-cloture',
+        'modal-choix-test', 'modal-loupe-theorie'];
+
+    function uneModaleOuverte() {
+        return MODAL_IDS.some(function(id) {
+            var el = document.getElementById(id);
+            return el && el.style.display === 'flex';
+        });
+    }
+
+    function signatureEtat(data) {
+        if (!data || !data.candidats) return '';
+        return data.candidats.map(function(c) {
+            return c.stagiaire_id + ':' + c.theorie + ':' + c.pratique + ':' + c.neutralite;
+        }).join('|');
+    }
+
+    function verifierEtatLive() {
+        if (document.hidden) return;
+        if (typeof window.SESSION_ID === 'undefined' || !window.SESSION_ID) return;
+
+        fetch('/api/sessions/' + window.SESSION_ID + '/etat-live', { credentials: 'same-origin' })
+            .then(function(r) { if (!r.ok) throw new Error('etat-live ' + r.status); return r.json(); })
+            .then(function(data) {
+                var sig = signatureEtat(data);
+
+                if (_refSignature === null) {
+                    _refSignature = sig;
+                    return;
+                }
+
+                if (sig === _refSignature) return;
+
+                if (uneModaleOuverte()) {
+                    return;
+                }
+
+                location.reload();
+            })
+            .catch(function(e) { console.warn('Suivi live indisponible:', e.message); });
+    }
+
+    function demarrerPolling() {
+        if (_pollStarted) return;
+        _pollStarted = true;
+        verifierEtatLive();
+        setInterval(verifierEtatLive, POLL_MS);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', demarrerPolling);
+    } else {
+        demarrerPolling();
+    }
+})();
