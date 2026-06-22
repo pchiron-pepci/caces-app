@@ -1248,9 +1248,11 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - `relireQuestion()` remplacé par `lireQuestion(_audioUrlCourante, texte_dom)`
 - `lireIdentiteVoixHaute()` (écran identité) inchangé — pas de question, pas d'audio Cloudinary
 
-**Flux complet :** MP3 nommé `R482_G1_T2_Q1.mp3` uploadé via admin → `POST /associer-audios?pin=` → `audio_url` sur `ReponseGrille` → servi dans `get_questions_phase2` → `lireQuestion` joue le MP3, fallback voix si absent ou erreur réseau.
+**Fix connexe 2 (commit eb3e89b) :** champ `audio` absent du `questions.push()` JS (ligne ~1146 de `test_theorie.html`) — l'API renvoyait `audio_url` correctement mais le JS ne le copiait pas dans l'objet `questions[]`, donc `q.audio` était toujours `undefined` → toujours fallback voix. Corrigé : `audio: q.audio || null` ajouté après `image`.
 
-**Fix connexe (commit cf857c0) :** crash JS `null.addEventListener` sur `/start` — `modal-confirm` était définie à la ligne 1694 (après `</script>` ligne 1691), donc `getElementById('modal-confirm')` retournait `null` au moment de l'exécution du script. Corrigé en attachant le listener à `document` (délégation) au lieu de `#modal-confirm` — `document` existe toujours, `closest('[data-action="fermer-confirm"]')` filtre correctement. Ce crash bloquait l'exécution complète du script, y compris les fonctions audio.
+**Flux complet :** MP3 nommé `R482_G1_T2_Q1.mp3` uploadé via admin → `POST /associer-audios?pin=` → `audio_url` sur `ReponseGrille` → servi dans `get_questions_phase2` → `data.themes[t]` → `questions.push({audio: q.audio||null})` → `_audioUrlCourante = q.audio || null` → `lireQuestion` joue le MP3, fallback voix si absent ou erreur réseau.
+
+**Fix connexe 1 (commit cf857c0) :** crash JS `null.addEventListener` sur `/start` — `modal-confirm` était définie à la ligne 1694 (après `</script>` ligne 1691), donc `getElementById('modal-confirm')` retournait `null` au moment de l'exécution du script. Corrigé en attachant le listener à `document` (délégation) au lieu de `#modal-confirm` — `document` existe toujours, `closest('[data-action="fermer-confirm"]')` filtre correctement. Ce crash bloquait l'exécution complète du script, y compris les fonctions audio.
 
 **UI admin dans `templates/admin_images.html` :**
 - Commit 5a51f8d : section audio ajoutée (drop-zone MP3, bouton associer, liste `<audio controls>`, suppression)
