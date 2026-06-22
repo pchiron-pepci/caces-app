@@ -1685,7 +1685,7 @@ document.getElementById('ecran-identite').addEventListener('click', function(e) 
     if (e.target.closest('[data-action="pin-debloquer"]')) { verifierPinFormateur(); return; }
     if (e.target.closest('[data-action="pin-annuler"]')) { annulerPinFormateur(); return; }
 });
-document.getElementById('modal-confirm').addEventListener('click', function(e) {
+document.addEventListener('click', function(e) {
     if (e.target.closest('[data-action="fermer-confirm"]')) fermerConfirm();
 });
 </script>
