@@ -237,7 +237,7 @@
             transition: background 0.2s;
         }
 
-        .btn-action:hover { background: #2a2c30; }
+        .btn-action:hover { background: var(--noryx-anthracite-fonce); }
         .btn-action:active { transform: scale(0.99); }
 
         .btn-action-secondary {
@@ -282,7 +282,7 @@
         .theme-badge {
             display: inline-block;
             background: #edf0f3;
-            color: #4a5568;
+            color: var(--noryx-ardoise);
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
@@ -308,7 +308,7 @@
             font-size: 21px;
             line-height: 1.45;
             font-weight: 700;
-            color: #4a5568;
+            color: var(--noryx-ardoise);
             margin: 4px 0 18px;
             min-height: 130px;
             display: flex;
@@ -347,14 +347,14 @@
         .btn-faux.selected {
             border-color: #EF9F27;
             background: #FAEEDA;
-            color: #854F0B;
+            color: var(--noryx-ambre-texte);
             opacity: 1;
         }
         .btn-vrai.selected .rep-ico,
         .btn-vrai.selected .rep-mot,
         .btn-faux.selected .rep-ico,
         .btn-faux.selected .rep-mot {
-            color: #854F0B;
+            color: var(--noryx-ambre-texte);
         }
 
         .navigation {
@@ -407,9 +407,9 @@
         }
 
         .recap-q.repondue {
-            background: #FAC775;
-            color: #854F0B;
-            border: 1px solid #FAC775;
+            background: var(--noryx-ambre-pastille);
+            color: var(--noryx-ambre-texte);
+            border: 1px solid var(--noryx-ambre-pastille);
         }
         .recap-q.vide {
             background: #eceff1;
@@ -458,7 +458,7 @@
             gap: 6px;
             background: transparent;
             border: none;
-            color: #4a5568;
+            color: var(--noryx-ardoise);
             font-weight: 700;
             font-size: 13px;
             padding: 4px 0;
@@ -513,7 +513,7 @@
             width: 30px;
             height: 30px;
             border-radius: 8px;
-            background: #f0efef;
+            background: var(--noryx-gris-clair);
             color: var(--noryx-anthracite);
             display: flex;
             align-items: center;
@@ -523,7 +523,7 @@
         }
         .cons-ico-num { font-size: 14px; font-weight: 700; }
         .cons-ico-rouge { color: #cc0000; }
-        .cons-txt { font-size: 13px; color: #4a5568; line-height: 1.4; }
+        .cons-txt { font-size: 13px; color: var(--noryx-ardoise); line-height: 1.4; }
         .cons-txt strong { color: var(--noryx-anthracite); }
         .cons-btn {
             margin-top: 16px;
@@ -533,14 +533,14 @@
             justify-content: center;
             gap: 8px;
         }
-        .cons-btn:hover { background: #2a2c30; }
+        .cons-btn:hover { background: var(--noryx-anthracite-fonce); }
         .cons-btn-ico { font-size: 13px; }
 
         .btn-recap-mini {
             display: none;
             align-items: center;
             gap: 6px;
-            background: #4a5568;
+            background: var(--noryx-ardoise);
             color: #fff;
             border: none;
             font-weight: 700;
@@ -566,12 +566,12 @@
             padding: 12px 13px;
         }
         .recap-cadre-gris {
-            background: #f4f5f6;
+            background: var(--noryx-surface);
             border: 1px solid #e0e3e6;
         }
         .recap-cadre-jaune {
             background: #FAEEDA;
-            border: 1px solid #FAC775;
+            border: 1px solid var(--noryx-ambre-pastille);
         }
         .recap-cadre-pastille {
             width: 20px;
@@ -580,11 +580,11 @@
             flex-shrink: 0;
         }
         .rcp-gris { background: #eceff1; border: 1px solid #cfd8dc; }
-        .rcp-jaune { background: #FAC775; }
+        .rcp-jaune { background: var(--noryx-ambre-pastille); }
         .recap-cadre-txt { font-size: 14px; color: #5f6b76; }
-        .recap-cadre-jaune .recap-cadre-txt { color: #854F0B; }
+        .recap-cadre-jaune .recap-cadre-txt { color: var(--noryx-ambre-texte); }
         .recap-nb-sans { font-size: 19px; font-weight: 700; color: #E24B4A; }
-        .recap-nb-rep { font-size: 19px; font-weight: 700; color: #854F0B; }
+        .recap-nb-rep { font-size: 19px; font-weight: 700; color: var(--noryx-ambre-texte); }
 
         .recap-complet {
             display: flex;
@@ -613,13 +613,13 @@
         .recap-complet-sous { font-size: 12px; color: #0F6E56; }
 
         .recap-aide {
-            border-left: 3px solid #4a5568;
-            background: #f4f5f6;
+            border-left: 3px solid var(--noryx-ardoise);
+            background: var(--noryx-surface);
             border-radius: 0 8px 8px 0;
             padding: 10px 14px;
             margin-bottom: 18px;
             font-size: 13px;
-            color: #4a5568;
+            color: var(--noryx-ardoise);
             line-height: 1.4;
         }
 
@@ -628,7 +628,7 @@
             align-items: center;
             gap: 8px;
             padding: 13px 30px;
-            background: #4a5568;
+            background: var(--noryx-ardoise);
             color: #fff;
             border: none;
             border-radius: 999px;
@@ -698,7 +698,7 @@
 
         .sel1-grille-info { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .sel1-grille-badge {
-            background: #f0efef;
+            background: var(--noryx-gris-clair);
             color: var(--noryx-anthracite);
             font-size: 11px;
             font-weight: 700;
@@ -720,7 +720,7 @@
         .sel1-qr-ico {
             width: 34px; height: 34px;
             border-radius: 9px;
-            background: #f0efef;
+            background: var(--noryx-gris-clair);
             color: var(--noryx-anthracite);
             display: inline-flex;
             align-items: center;
@@ -728,7 +728,7 @@
             font-size: 17px;
             margin-bottom: 8px;
         }
-        .sel1-qr-texte { font-size: 13px; color: #4a5568; line-height: 1.4; }
+        .sel1-qr-texte { font-size: 13px; color: var(--noryx-ardoise); line-height: 1.4; }
         .sel1-qr-texte strong { color: var(--noryx-anthracite); }
         .sel1-qr-box { margin: 12px auto 0; }
 
@@ -743,11 +743,11 @@
             margin-bottom: 12px;
         }
         .sel1-msg-warning {
-            background: #FFF4E0;
-            border: 1px solid #F0C775;
+            background: var(--noryx-ambre-fond);
+            border: 1px solid var(--noryx-ambre-bordure);
             border-radius: 10px;
             padding: 12px 14px;
-            color: #7A5600;
+            color: var(--noryx-ambre-texte-pin);
             font-size: 13px;
             line-height: 1.4;
             margin-bottom: 12px;
@@ -764,7 +764,7 @@
         .identite-info { text-align: center; font-size: 14px; color: #888; margin-top: 2px; }
         .sel2-voix-wrap { text-align: center; margin: 16px 0 4px; }
         .sel2-voix-btn {
-            background: #f0efef;
+            background: var(--noryx-gris-clair);
             border: none;
             border-radius: 999px;
             padding: 10px 22px;
@@ -790,17 +790,17 @@
             height: 18px;
             accent-color: var(--noryx-anthracite);
         }
-        .checkbox-confirm span { font-size: 13px; color: #4a5568; line-height: 1.4; }
+        .checkbox-confirm span { font-size: 13px; color: var(--noryx-ardoise); line-height: 1.4; }
 
         .sel2-pin {
             margin-top: 14px;
-            background: #FFF4E0;
-            border: 1.5px solid #F0C775;
+            background: var(--noryx-ambre-fond);
+            border: 1.5px solid var(--noryx-ambre-bordure);
             border-radius: 12px;
             padding: 16px;
         }
-        .sel2-pin-titre { font-size: 15px; font-weight: 700; color: #7A5600; margin-bottom: 4px; }
-        .sel2-pin-texte { font-size: 13px; color: #7A5600; margin-bottom: 14px; line-height: 1.4; }
+        .sel2-pin-titre { font-size: 15px; font-weight: 700; color: var(--noryx-ambre-texte-pin); margin-bottom: 4px; }
+        .sel2-pin-texte { font-size: 13px; color: var(--noryx-ambre-texte-pin); margin-bottom: 14px; line-height: 1.4; }
         .sel2-pin-label {
             font-size: 11px;
             font-weight: 700;
@@ -813,7 +813,7 @@
         .sel2-pin-input {
             width: 100%;
             padding: 12px;
-            border: 1.5px solid #F0C775;
+            border: 1.5px solid var(--noryx-ambre-bordure);
             border-radius: 10px;
             font-size: 20px;
             letter-spacing: 8px;
@@ -824,7 +824,7 @@
             color: var(--noryx-anthracite);
             outline: none;
         }
-        .sel2-pin-error { color: #c62828; font-size: 13px; margin-bottom: 10px; }
+        .sel2-pin-error { color: var(--noryx-rouge-erreur); font-size: 13px; margin-bottom: 10px; }
         .sel2-pin-actions { display: flex; gap: 8px; }
         .sel2-pin-actions .btn-action,
         .sel2-pin-actions .btn-action-secondary { margin-top: 0; flex: 1; }
@@ -1088,7 +1088,7 @@
         <button class="btn-valider" data-action="valider-test" type="button"><span style="font-size:16px;">&#10003;</span> Valider mes réponses</button>
     </div>
     <button class="btn-retour" onclick="retourQcm()">← Continuer a repondre</button>
-    <div id="msg-erreur-submit" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:#c62828; font-size:14px; line-height:1.5;"></div>
+    <div id="msg-erreur-submit" style="display:none; margin-top:12px; background:#ffebee; border:1px solid #ef9a9a; border-radius:10px; padding:14px 16px; color:var(--noryx-rouge-erreur); font-size:14px; line-height:1.5;"></div>
 </div>
 
 <!-- ECRAN 6 : FIN -->
