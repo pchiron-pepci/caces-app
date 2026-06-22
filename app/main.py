@@ -578,6 +578,10 @@ def _verifier_role(path: str, method: str, role: str):
         # NB: DELETE volontairement NON whiteliste -> suppression reservee au back-office (anti-erreur)
         if method == "POST" and _re.match(r"^/api/sessions/\d+/candidats/\d+/dispense-fichier$", base):
             return True
+        # justificatif generique POST (terrain peut uploader : feuille de presence formation, etc.)
+        # NB: DELETE volontairement NON whiteliste -> suppression reservee au back-office
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/justificatifs$", base):
+            return True
         # Toutes les routes d'écriture sur les sessions (création + toutes sous-ressources)
         if method != "GET" and (base == "/api/sessions" or _re.match(r"^/api/sessions/\d+", base)):
             return False
