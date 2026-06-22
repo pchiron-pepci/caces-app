@@ -1791,6 +1791,31 @@ def page_session_detail(request: Request, session_id: int):
             JourTest.actif == True
         ).first() is not None
 
+        # --- Indicateur justificatif de formation (chantier table Justificatif) ---
+        from app.models.justificatif import Justificatif
+
+        # 1. Quels candidats passent au moins une epreuve (theorie OU pratique) ?
+        #    = stagiaire_id present dans candidats_ids d'au moins un jour de test
+        stagiaires_avec_epreuve = set()
+        for j in jours_test:
+            for sid in getattr(j, "candidats_ids", []) or []:
+                stagiaires_avec_epreuve.add(sid)
+
+        # 2. Justificatifs formation de la session, groupes par session_candidat_id (1 requete)
+        justifs_formation = db.query(Justificatif).filter(
+            Justificatif.session_id == session_id,
+            Justificatif.type == "formation",
+        ).all()
+        nb_justif_formation_par_sc = {}
+        for jf in justifs_formation:
+            if jf.session_candidat_id is not None:
+                nb_justif_formation_par_sc[jf.session_candidat_id] = nb_justif_formation_par_sc.get(jf.session_candidat_id, 0) + 1
+
+        # 3. Annoter chaque SessionCandidat : passe_epreuve + nb_justif_formation
+        for sc in session_candidats:
+            sc.passe_epreuve = sc.stagiaire_id in stagiaires_avec_epreuve
+            sc.nb_justif_formation = nb_justif_formation_par_sc.get(sc.id, 0)
+
         return templates.TemplateResponse(
             request=request,
             name="session_detail.html",
