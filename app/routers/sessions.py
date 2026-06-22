@@ -547,6 +547,121 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db),
 
     db.commit()
     return {"message": "Jour supprime"}
+
+@router.get("/{session_id}/etat-live")
+def etat_live_session(session_id: int, request: Request, db: DBSession = Depends(get_db)):
+    from app.models.attestation_neutralite import AttestationNeutralite
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session introuvable")
+
+    # Candidats actifs — batch JOIN Stagiaire (pas de N+1)
+    sc_rows = db.query(SessionCandidat, Stagiaire).join(
+        Stagiaire, Stagiaire.id == SessionCandidat.stagiaire_id
+    ).filter(
+        SessionCandidat.session_id == session_id,
+        SessionCandidat.actif == True
+    ).order_by(Stagiaire.nom, Stagiaire.prenom).all()
+
+    if not sc_rows:
+        return {"session_id": session_id, "ts": dt.utcnow().isoformat() + "Z", "candidats": []}
+
+    stagiaire_ids = [stag.id for _, stag in sc_rows]
+
+    # ResultatTheorie — un par (jour_test_id, stagiaire_id), on garde le plus récent par stagiaire
+    rts = db.query(ResultatTheorie).filter(
+        ResultatTheorie.session_id == session_id,
+        ResultatTheorie.stagiaire_id.in_(stagiaire_ids)
+    ).order_by(ResultatTheorie.id.desc()).all()
+    rt_par_stag: Dict[int, ResultatTheorie] = {}
+    for rt in rts:
+        if rt.stagiaire_id not in rt_par_stag:
+            rt_par_stag[rt.stagiaire_id] = rt
+
+    # SessionEpreuve — catégories réalisées par candidat
+    epreuves = db.query(SessionEpreuve).filter(
+        SessionEpreuve.session_id == session_id,
+        SessionEpreuve.stagiaire_id.in_(stagiaire_ids)
+    ).all()
+    cats_faites: Dict[int, set] = {}
+    for ep in epreuves:
+        if getattr(ep, 'bloque', False):
+            continue
+        cats_faites.setdefault(ep.stagiaire_id, set()).add(ep.categorie)
+
+    # Catégories planifiées (jours pratique → JourTestCandidat)
+    jp_ids = [j.id for j in db.query(JourTest.id).filter(
+        JourTest.session_id == session_id, JourTest.type == "pratique"
+    ).all()]
+    cats_planifiees: Dict[int, set] = {}
+    if jp_ids:
+        for jtc in db.query(JourTestCandidat).filter(
+            JourTestCandidat.jour_test_id.in_(jp_ids),
+            JourTestCandidat.stagiaire_id.in_(stagiaire_ids),
+            JourTestCandidat.actif == True
+        ).all():
+            if jtc.categories:
+                for cat in (c.strip() for c in jtc.categories.split(",") if c.strip()):
+                    cats_planifiees.setdefault(jtc.stagiaire_id, set()).add(cat)
+
+    # AttestationNeutralite (via jours théorie)
+    jt_ids = [j.id for j in db.query(JourTest.id).filter(
+        JourTest.session_id == session_id, JourTest.type == "theorie"
+    ).all()]
+    attest_par_stag: Dict[int, AttestationNeutralite] = {}
+    if jt_ids:
+        for an in db.query(AttestationNeutralite).filter(
+            AttestationNeutralite.jour_test_id.in_(jt_ids),
+            AttestationNeutralite.stagiaire_id.in_(stagiaire_ids)
+        ).all():
+            existing = attest_par_stag.get(an.stagiaire_id)
+            if not existing or (an.horodatage and (not existing.horodatage or an.horodatage > existing.horodatage)):
+                attest_par_stag[an.stagiaire_id] = an
+
+    # Construction réponse
+    candidats = []
+    for sc, stag in sc_rows:
+        sid = stag.id
+        rt = rt_par_stag.get(sid)
+
+        if (rt and rt.dispense) or sc.theorie_dispensee:
+            theorie = "dispense"
+        elif rt and not rt.bloque and rt.obtenue is not None:
+            theorie = "passe"
+        else:
+            theorie = "en_attente"
+
+        faites = cats_faites.get(sid, set())
+        planifiees = cats_planifiees.get(sid, set())
+        if faites and planifiees and faites >= planifiees:
+            pratique = "complet"
+        elif faites:
+            pratique = "partiel"
+        else:
+            pratique = "en_attente"
+
+        an = attest_par_stag.get(sid)
+        neutralite = "signee" if (an and an.signature_base64) else "en_attente"
+
+        candidats.append({
+            "stagiaire_id": sid,
+            "nom": stag.nom,
+            "prenom": stag.prenom,
+            "theorie": theorie,
+            "pratique": pratique,
+            "neutralite": neutralite,
+        })
+
+    return {
+        "session_id": session_id,
+        "ts": dt.utcnow().isoformat() + "Z",
+        "candidats": candidats,
+    }
+
 @router.get("/{session_id}/theorie/{stagiaire_id}")
 def get_resultat_theorie(session_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
     rt = db.query(ResultatTheorie).filter(
