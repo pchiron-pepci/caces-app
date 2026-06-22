@@ -1717,16 +1717,19 @@ document.getElementById('ecran-identite').addEventListener('click', function(e) 
     if (e.target.closest('[data-action="pin-debloquer"]')) { verifierPinFormateur(); return; }
     if (e.target.closest('[data-action="pin-annuler"]')) { annulerPinFormateur(); return; }
 });
+document.getElementById('modal-confirm').addEventListener('click', function(e) {
+    if (e.target.closest('[data-action="fermer-confirm"]')) fermerConfirm();
+});
 </script>
 
 <!-- MODAL CONFIRM -->
 <div id="modal-confirm" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:20px; padding:32px 28px 24px; width:360px; max-width:92vw; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.18);">
         <div style="font-size:44px; margin-bottom:12px;">⚠️</div>
-        <p style="font-size:16px; font-weight:700; color:#1a237e; margin-bottom:8px;" id="confirm-message"></p>
-        <p style="font-size:13px; color:#888; margin-bottom:24px;">Cette action est irréversible.</p>
+        <p style="font-size:16px; font-weight:700; color:var(--noryx-rouge); margin-bottom:8px;" id="confirm-message"></p>
+        <p style="font-size:13px; color:var(--noryx-gris); margin-bottom:24px;">Cette action est irréversible.</p>
         <button class="btn-valider" id="confirm-ok-btn" style="margin-bottom:10px;">Valider quand même</button>
-        <button class="btn-retour" onclick="fermerConfirm()">← Revenir au test</button>
+        <button class="btn-retour" data-action="fermer-confirm" type="button">← Revenir au test</button>
     </div>
 </div>
 {% endif %}
