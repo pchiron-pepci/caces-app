@@ -1111,13 +1111,13 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **IDs préservés (JS) :** identite-nom, identite-info, confirm-identite, zone-pas-moi, pin-formateur-input, pin-formateur-error.
 
-### ✅ Chantier en cours : variables CSS dans test_theorie.html (option A — couleurs de marque)
+### ✅ Chantier terminé : variables CSS dans test_theorie.html (option A — couleurs de marque)
 
 **Objectif :** permettre un changement de couleur en cascade (modifier une ligne :root → tout le fichier suit). Périmètre LIMITÉ à test_theorie.html (le reste du site = chantier dédié ultérieur, fichier par fichier).
 
 **Bloc :root** (en haut du <style>) définit 14 variables : --noryx-anthracite (#383b40), --noryx-anthracite-fonce (#2a2c30), --noryx-ardoise (#4a5568), --noryx-gris (#888), --noryx-gris-clair (#f0efef), --noryx-surface (#f4f5f6), --noryx-blanc (#fff), --noryx-rouge (#cc0000), --noryx-rouge-erreur (#c62828), --noryx-ambre-fond (#FFF4E0), --noryx-ambre-bordure (#F0C775), --noryx-ambre-texte (#854F0B), --noryx-ambre-texte-pin (#7A5600), --noryx-ambre-pastille (#FAC775).
 
-**FAIT :** anthracite #383b40 → var(--noryx-anthracite) (18 occurrences CSS/HTML). RESTE À FAIRE (couleurs de marque, plus tard) : hover #2a2c30, ardoise #4a5568, gris-clair #f0efef, surface #f4f5f6, rouge-erreur #c62828, et les 5 ambres. NON variabilisés volontairement (option A) : #fff blanc, #888 gris générique. Bleu résiduel #1a237e/#f0f2f7 (écrans 6/modale) = laissé en dur, disparaîtra à leur restyle.
+**FAIT (complet) :** toutes les couleurs de marque variabilisées via sed/Git Bash — anthracite (#383b40, 18 occ.), hover (#2a2c30), ardoise (#4a5568, 10 occ.), gris-clair (#f0efef), surface (#f4f5f6), rouge-erreur (#c62828), et les 5 ambres (#FFF4E0, #F0C775, #854F0B, #7A5600, #FAC775). NON variabilisés volontairement (option A) : #fff blanc, #888 gris générique. Bleu résiduel #1a237e/#f0f2f7 (écrans 6/modale) laissé en dur, disparaîtra à leur restyle. Changer une couleur de marque = modifier une ligne dans :root, tout le fichier suit.
 
 **⚠️ RÈGLES CRITIQUES apprises (NE PAS recasser) :**
 1. JAMAIS PowerShell Set-Content sur ce fichier — il corrompt l'UTF-8 (accents → mojibake "Ã©"), ajoute un BOM (EF BB BF), et convertit LF→CRLF. Utiliser EXCLUSIVEMENT sed/str_replace via Git Bash. Un commit PowerShell a dû être annulé (restauration depuis commit sain f516c71).
