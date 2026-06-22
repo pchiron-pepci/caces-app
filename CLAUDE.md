@@ -1126,3 +1126,85 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 4. Encodage cible : UTF-8 SANS BOM, LF. Vérifier après chaque passe : file -i (charset=utf-8, pas de BOM) + head -c 3 | xxd (ne doit PAS être ef bb bf) + grep "Théorie\|Sélection" (accents corrects).
 
 **État charte anthracite :** ✅ header (titre centré), écrans 1/2/3, QCM, récap. RESTE : écran 6 (résultat, #1a237e ~946/962), modale confirmation (~1595/1704). Sécurité logo header : #test-logo a height fixe (40px/28px) + max-width (150px/110px) + object-fit:contain → tout format de logo sans casser le header.
+
+### ✅ Chantier terminé : écran 6 (résultat) — restyle anthracite + reformulation phrase fin (commit 7caaf78)
+
+**Périmètre :** #ecran-resultat dans templates/test_theorie.html (lignes ~1095–1118). 24 lignes HTML uniquement.
+
+**Couleurs migrées :**
+- h2 titre "Bravo et merci…" : color:#1a237e → color:var(--noryx-anthracite)
+- 2× `<p>` corps de carte : color:#333 → color:var(--noryx-ardoise)
+- `<p>` mention résultats : color:#666 → color:var(--noryx-gris)
+- phrase tablette : color:#1a237e → color:var(--noryx-anthracite)
+
+**Reformulation phrase finale :**
+- "REMETTEZ LA TABLETTE AU TESTEUR" (uppercase 2.4rem) → "Prévenez votre testeur que vous avez terminé" (1.6rem — réduit car nouvelle phrase plus longue)
+- Ton moins impératif ; text-transform:uppercase conservé ; reste du style intact (gras, centrage, anthracite).
+
+### ✅ Chantier terminé : modale de confirmation — restyle + migration onclick (commit 878088f)
+
+**Périmètre :** #modal-confirm dans templates/test_theorie.html (lignes ~1722–1731). Modale unique, s'ouvre uniquement quand questions sans réponse (valider() avec force=false).
+
+**Couleurs migrées :**
+- #confirm-message : color:#1a237e → color:var(--noryx-rouge) (titre alerte rouge — c'est un avertissement "questions sans réponse")
+- "Cette action est irréversible." : color:#888 → color:var(--noryx-gris)
+
+**Migration onclick → data-action :**
+- Bouton "← Revenir au test" : onclick="fermerConfirm()" → data-action="fermer-confirm" type="button"
+- Listener délégué ajouté sur #modal-confirm (plus précis qu'un listener global document)
+- confirm-ok-btn.onclick (JS dynamique, callback variable) : INTENTIONNELLEMENT conservé — légitime
+
+**État charte anthracite :** ✅ COMPLET sur test_theorie.html — header (titre centré), écrans 1/2/3/6, QCM, récap, modale confirmation. #1a237e résiduel uniquement dans le CSS QCM (boutons réponse, options, navigation) — chantier CSS QCM bleu distinct.
+
+### ✅ Chantier terminé : suivi live session — route + polling (commits 46a2b84, 745b949)
+
+**Route `GET /api/sessions/{id}/etat-live` (sessions.py) :** état temps réel par candidat — `theorie` (passe/en_attente/dispense), `pratique` (complet/partiel/en_attente), `neutralite` (signee/en_attente). 5 requêtes batch, auth cookie, 401 si non authentifié. Double dispense : `sc.theorie_dispensee OR rt.dispense`. Résultats bloqués exclus (`rt.bloque`, `ep.bloque`).
+
+**Polling `static/js/session_detail.js` (IIFE en fin de fichier) :** toutes les 30 s, compare une signature `stagiaire_id:theorie:pratique:neutralite` — si différente et aucune modale ouverte → `location.reload()`. Suspendu si `document.hidden`. Première réponse = référence (pas de reload au démarrage). 12 modales surveillées via `style.display === 'flex'`.
+
+### ✅ Chantier terminé : route GET /api/sessions/{id}/etat-live (commit 46a2b84)
+
+**Objectif :** état temps réel par candidat pour un tableau de bord live de session.
+
+**Réponse JSON :**
+```json
+{ "session_id": 42, "ts": "2026-06-22T14:30:00Z",
+  "candidats": [{ "stagiaire_id": 7, "nom": "DUPONT", "prenom": "Jean",
+    "theorie": "passe|en_attente|dispense",
+    "pratique": "complet|partiel|en_attente",
+    "neutralite": "signee|en_attente" }] }
+```
+
+**Règles métier :**
+- `theorie` : `dispense` si `rt.dispense OR sc.theorie_dispensee` ; `passe` si `rt` existe, non bloqué, `obtenue is not None` ; sinon `en_attente`
+- `pratique` : compare `cats_faites` (SessionEpreuve non bloquées) vs `cats_planifiees` (JourTestCandidat actifs, jours pratique) — `complet/partiel/en_attente`
+- `neutralite` : `signee` si AttestationNeutralite existe avec `signature_base64 non null` (via jours théorie de la session)
+
+**Anti-N+1 :** 5 requêtes batch quel que soit le nombre de candidats. Auth : middleware cookie (401 si non authentifié).
+
+### ✅ Chantier terminé : nettoyage CSS orphelines test_theorie.html (commit 713a967)
+
+- 6 classes CSS pré-restyle écran 1 supprimées (remplacées par .sel1-*) : `.selection-logo-circle`, `.selection-titre`, `.grille-info`, `.grille-badge`, `.grille-texte`, `.timer-display`. Contenaient encore des `#1a237e` / `#e8eaf6` / `#3949ab` inutilisés.
+- `select:focus { border-color: #1a237e }` → `var(--noryx-anthracite)` (seule règle `select:focus` encore active sur les selects natifs).
+- **Résultat :** zéro `#1a237e` dans test_theorie.html. 52 lignes supprimées.
+
+### ✅ Chantier terminé : suivi live session (polling + auto-reload)
+
+**Besoin :** sur session_detail.html, voir les résultats tomber sans recharger manuellement (un testeur dépose une note → le back-office/terrain la voit apparaître). Théorie et pratique ne sont jamais simultanées (axes distincts dans le temps), donc PAS de bandeau de synthèse séparé — on rafraîchit la page existante.
+
+**Approche retenue (après arbitrage) :** auto-reload discret conditionnel, PAS de mise à jour DOM ciblée (trop complexe à reconstruire fidèlement : 5 badges T1-T5, note, RÉUSSI/ÉCHEC). Le reload complet est plus simple et fiable, et comme les résultats arrivent espacés (jamais 50 d'un coup), un reload occasionnel est imperceptible.
+
+**Route serveur — GET /api/sessions/{id}/etat-live (sessions.py) :**
+- Auth cookie (request.state.user, 401 sinon). Renvoie {session_id, ts, candidats:[{stagiaire_id, nom, prenom, theorie, pratique, neutralite}]}.
+- Statuts : theorie = "dispense" (rt.dispense OU sc.theorie_dispensee) / "passe" (rt non bloqué + obtenue non null) / "en_attente". pratique = "complet" (toutes catégories planifiées faites, hors bloquées) / "partiel" / "en_attente". neutralite = "signee" (signature_base64 non null) / "en_attente".
+- ANTI-N+1 : 5 requêtes batch quelle que soit la taille de session (candidats, ResultatTheorie, SessionEpreuve, JourTestCandidat planifiées, AttestationNeutralite via jt_ids).
+- Subtilités gérées : double dispense (inscription + résultat), exclusion des résultats bloque=True (théorie ET pratique), AttestationNeutralite sans FK réelle (jointure manuelle via jour_test_id des jours théorie).
+
+**Polling client — fin de static/js/session_detail.js (IIFE) :**
+- Intervalle 30 s (page admin, pas de hot path). window.SESSION_ID lu depuis #session-data.
+- Comparaison par SIGNATURE : sérialise l'état candidats (stagiaire_id:theorie:pratique:neutralite). Reload SEULEMENT si la signature change vs la référence. 1er appel = établit la référence sans reload (pas de boucle).
+- Garde-fous (non-intrusif) : (1) suspendu si document.hidden (onglet caché) ; (2) si changement détecté MAIS une modale est ouverte → ne met PAS à jour la référence et ne recharge pas → reload différé jusqu'à fermeture de la modale (changement jamais perdu) ; (3) erreur réseau → console.warn, pas de crash, réessai au cycle suivant.
+- MODAL_IDS liste les modales surveillées (modal-pin, modal-jour-theorie/pratique, modal-candidat, modal-loupe-theorie, etc.) ; détection via style.display === 'flex'.
+- Tous rôles (terrain + back-office). node -c validé (syntaxe OK — important car une erreur casserait tout le JS de la page).
+
+**Scalabilité :** ~100 organismes simultanés = ~3 req/s à 30 s d'intervalle, négligeable. Multi-tenant (base par tenant) répartira la charge. Réévaluer SSE seulement si charge explose.
