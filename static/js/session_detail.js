@@ -2323,7 +2323,7 @@ document.addEventListener('click', function(e) {
               + '<span style="flex:1; font-size:13px;">📄 ' + (j.fichier_nom || 'fichier')
               + '<span style="color:#999; font-size:11px;"> · ' + d + (j.uploade_par ? ' · ' + j.uploade_par : '') + '</span></span>'
               + '<button class="btn btn-secondary" style="font-size:11px; padding:2px 8px;" data-action="justif-formation-voir" data-id="' + j.id + '">Voir</button>'
-              + (back ? '<button class="btn" style="font-size:11px; padding:2px 8px; background:#cc0000; color:#fff;" data-action="justif-formation-supprimer" data-id="' + j.id + '">🗑️</button>' : '')
+              + (back ? '<button class="btn-suppr-justif" style="border:none; background:transparent; color:#888; cursor:pointer; font-size:14px; padding:2px 6px;" data-action="justif-formation-supprimer" data-id="' + j.id + '" title="Supprimer ce justificatif">🗑️</button>' : '')
               + '</div>';
       });
       container.innerHTML = html;
@@ -2344,11 +2344,11 @@ document.addEventListener('click', function(e) {
     box.innerHTML =
         '<div style="background:#2d2d2d; color:#fff; padding:12px 16px; border-radius:10px 10px 0 0; display:flex; align-items:center; justify-content:between;">'
       + '<strong style="flex:1;">📋 Justificatifs de formation</strong>'
-      + '<span data-action="justif-formation-fermer" style="cursor:pointer; font-size:18px;">✕</span>'
+      + '<span data-action="justif-formation-fermer" title="Fermer" style="cursor:pointer; font-size:22px; line-height:1; padding:0 4px;">&times;</span>'
       + '</div>'
       + '<div id="liste-justif-formation"></div>'
       + '<div style="padding:12px 16px; border-top:1px solid #eee;">'
-      + '<button class="btn" style="background:#1a7a3a; color:#fff;" data-action="justif-formation-ajouter">+ Ajouter un fichier</button>'
+      + '<button class="btn" style="background:#2d2d2d; color:#fff;" data-action="justif-formation-ajouter">+ Ajouter un fichier</button>'
       + '</div>';
     overlay.appendChild(box);
     document.body.appendChild(overlay);
@@ -2372,10 +2372,34 @@ document.addEventListener('click', function(e) {
         // recharger la liste de la modale ouverte
         var cont = document.getElementById('liste-justif-formation');
         if (cont) _chargerListeFormation(scId, cont);
-        // rechargement page pour mettre a jour la pastille FORM. (compteur)
-        setTimeout(function() { location.reload(); }, 700);
+        // mettre a jour la pastille FORM. sans recharger la page
+        _majPastilleFormation(scId);
       })
       .catch(function(err) { afficherErreur(err.message || 'Erreur upload'); });
+  }
+
+  async function _majPastilleFormation(scId) {
+    try {
+      var resp = await fetch('/api/sessions/' + SESSION_ID + '/justificatifs?type=formation&session_candidat_id=' + scId,
+                             { credentials: 'same-origin' });
+      if (!resp.ok) return;
+      var liste = await resp.json();
+      var n = liste.length;
+      var pastille = document.querySelector('[data-action="justif-formation-menu"][data-sc-id="' + scId + '"]');
+      if (!pastille) return;
+      pastille.setAttribute('data-nb', n);
+      if (n > 0) {
+        pastille.style.background = '#1a7a3a';
+        pastille.style.color = '#fff';
+        pastille.textContent = '📋 ' + n;
+        pastille.title = n + ' justificatif(s) de formation — cliquer pour voir / ajouter';
+      } else {
+        pastille.style.background = '#d98800';
+        pastille.style.color = '#fff';
+        pastille.textContent = '⚠️ Formation';
+        pastille.title = 'Aucun justificatif de formation — cliquer pour en ajouter';
+      }
+    } catch (e) { /* silencieux */ }
   }
 
   // Listener delegue unique
@@ -2423,7 +2447,7 @@ document.addEventListener('click', function(e) {
           if (!resp.ok) { return resp.json().then(function(d) { throw new Error(d.detail || 'Erreur'); }); }
           afficherSuccesToast('Justificatif supprime');
           if (scId2) { var c = document.getElementById('liste-justif-formation'); if (c) _chargerListeFormation(scId2, c); }
-          setTimeout(function() { location.reload(); }, 700);
+          if (scId2) _majPastilleFormation(scId2);
         })
         .catch(function(err) { afficherErreur(err.message || 'Erreur suppression'); });
       return;
