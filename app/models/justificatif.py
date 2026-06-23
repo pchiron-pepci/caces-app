@@ -22,3 +22,4 @@ class Justificatif(Base):
     date_upload = Column(DateTime, nullable=True)
     uploade_par = Column(String(200), nullable=True)
     libelle = Column(String(300), nullable=True)
+    uploade_par_role = Column(String(20), nullable=True)

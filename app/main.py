@@ -157,6 +157,7 @@ def _run_startup_migrations():
         "ALTER TABLE reponses_grilles ADD COLUMN IF NOT EXISTS audio_url VARCHAR(500)",
         # justificatifs
         "ALTER TABLE justificatifs ADD COLUMN IF NOT EXISTS libelle VARCHAR(300)",
+        "ALTER TABLE justificatifs ADD COLUMN IF NOT EXISTS uploade_par_role VARCHAR(20)",
     ]
     for sql in _MIGRATIONS:
         try:
@@ -380,7 +381,8 @@ try:
                 fichier_type VARCHAR(100),
                 date_upload TIMESTAMP,
                 uploade_par VARCHAR(200),
-                libelle VARCHAR(300)
+                libelle VARCHAR(300),
+                uploade_par_role VARCHAR(20)
             )
         """))
         _conn.commit()
