@@ -321,9 +321,11 @@ python init_questions_r482.py
 | Haute | Réduction images côté client avant upload (1600px/JPEG 80%) | ✅ fait |
 | Haute | Détection dispense interne/externe (modale candidat) | à faire |
 | Haute | Brancher dispense externe au moteur caces_obtenus.py | à faire |
-| Moyenne | Convergence justificatif dispense → table Justificatif (fichier seulement) | à faire |
+| Moyenne | Convergence justificatif dispense → table Justificatif (fichier seulement) | ÉCARTÉ (non-convergence assumée) |
 | Moyenne | Corrections couleur pastille FORM. ardoise + footer Actions en ligne | à faire |
-| Moyenne | Migrer justificatif théorie (ResultatTheorie.justificatif_pdf base64) vers R2 | à faire |
+| Haute | Migration justificatif théorie base64 → R2 | ✅ fait |
+| Haute | Export ZIP enrichi (formation + documents + dispense) | ✅ fait |
+| Moyenne | Migrer justificatif théorie (ResultatTheorie.justificatif_pdf base64) vers R2 | ✅ fait |
 | Note | Notice utilisateur Justificatifs/Documents (.docx) générée pour PEPCI | fait (hors repo) |
 
 ### Dashboard — route GET /
@@ -826,6 +828,32 @@ Requêtes groupées anti-N+1 ajoutées :
 **Fichier :** `app/services/pdf_recap_session.py` — section `_collecter_donnees`. Remplacement des dicts `principal_ids/autre_ids` par `user_theorie/user_pratique` (dict `{uid: bool}`) agrégés par `or`. Tri alphabétique par nom. `formateurs_label` rejoint les labels avec `", "`.
 
 **Champ supprimé :** colonne `principal` d'`AffectationFormation` — plus jamais utilisée dans ce service (son usage UX dans d'autres vues est inchangé).
+
+### ✅ Chantier terminé : migration justificatif théorie base64 → R2 (2026-06-23)
+
+**Contexte :** `ResultatTheorie.justificatif_pdf` était le DERNIER vestige de stockage binaire en base (Text base64), d'avant R2. Migré vers R2. Version PROPRE (base de dev vidée bientôt) : pas de cohabitation, pas de script de migration des anciens, suppression franche du base64.
+
+**Modèle `ResultatTheorie` (`jour_test.py`) :** `justificatif_pdf` (Text base64) REMPLACÉ par `justificatif_cle` (String 500, clé R2). `justificatif_nom` conservé.
+**Migration startup (`main.py`) :** `ADD COLUMN justificatif_cle VARCHAR(500)` + `DROP COLUMN IF EXISTS justificatif_pdf`. Pas de CREATE TABLE séparé (géré par `Base.metadata.create_all()`).
+**Route POST `upload_justificatif_theorie` :** front INCHANGÉ (JSON + `fichier_base64` + PIN formateur). Le serveur décode le base64 reçu → `storage.upload_fichier(contenu, cle="justificatifs/theorie/...", "application/pdf")` → stocke `justificatif_cle`. Purge ancien fichier R2 si remplacement.
+**Route GET `get_justificatif_theorie` :** `storage.get_fichier(rt.justificatif_cle)` → StreamingResponse (au lieu de `base64.b64decode`).
+**Export ZIP :** lit depuis R2 (`storage.get_fichier(rt.justificatif_cle)`).
+**NON TOUCHÉ :** `NonConformite.justificatif_pdf` (homonyme, table différente, base64 conservé — autre chantier).
+**Résultat :** plus AUCUN justificatif de session en base64 (dispense, formation, documents, théorie = tous R2). Vestiges base64 restants (non-conformités, docs testeurs, signature config…) = ménage séparé pour plus tard.
+
+### ✅ Chantier terminé : enrichissement export ZIP (formation + documents + dispense) (2026-06-23)
+
+**Contexte :** l'export ZIP datait d'avant la table Justificatif et l'onglet Documents — il ne contenait ni les justificatifs de formation, ni les documents de session, ni la dispense. Complété.
+
+**3 nouvelles boucles dans `generer_zip_session` (`export_zip_session.py`), même pattern que l'existant (try/except par pièce, `storage.get_fichier`, `zf.writestr`) :**
+- `formation/{candidat}/{fichier}` : table Justificatif `type='formation'`, multi-fichiers, par candidat (helper `_sc_to_stag` pour résoudre `session_candidat_id` → `stagiaire_id`)
+- `documents/{libelle_fichier}` : table Justificatif `type='document_session'`, niveau session (préfixe = libellé sanitizé)
+- `dispense/{candidat}.ext` : colonnes plates `SessionCandidat.dispense_fichier_cle` (mono-fichier — la dispense N'EST PAS dans la table Justificatif, décision de non-convergence)
+
+**Imports ajoutés :** `Justificatif`, `SessionCandidat`.
+**Batch-load stagiaires élargi :** inclut les `stag_ids` des `SessionCandidat` (sinon un candidat n'ayant QUE formation/dispense, sans RT/consentement, sortait mal nommé).
+
+**Structure ZIP finale :** `corrige.pdf`, `recap_resultats.pdf`, `justificatifs/` (théorie dégradé), `tests_numeriques/`, `consentements/`, `neutralite/`, `formation/`, `documents/`, `dispense/`.
 
 ### ✅ Chantier terminé : export ZIP — UX fond-de-tâche + toast (commits 49bc8f4 + 1f624e7)
 
@@ -1513,11 +1541,9 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 ---
 
-### 🔍 CADRÉ : convergence chirurgicale du justificatif de dispense vers table Justificatif
+### ❌ DÉCISION TRANCHÉE : non-convergence dispense → table Justificatif (2026-06-23)
 
-**FRONTIÈRE STRICTE :** SEUL le ou les FICHIER(S) de dispense convergent vers la table générique (`type='dispense'`, multi-fichiers au passage). La LOGIQUE MÉTIER reste sur `SessionCandidat` : `dispense_date`, `dispense_note`, `theorie_dispensee`, + futures `dispense_origine`/`source_type`/`source_id`.
-
-**Migration :** fichiers existants des colonnes `dispense_fichier_*` → lignes `Justificatif` ; supprimer les 3 colonnes `dispense_fichier_cle`/`nom`/`type` (PAS `dispense_date` ni `dispense_note`). Refondre l'UI dispense pour le menu multi-fichiers commun (identique à FORM.).
+La convergence du justificatif de dispense vers la table `Justificatif` est **ÉCARTÉE**. La dispense reste en colonnes plates `SessionCandidat` (`dispense_fichier_cle`/`nom`/`type` + `dispense_date` + `dispense_note`) car c'est un objet métier spécifique (date, origine, note) distinct d'un simple fichier. L'export ZIP lit déjà `dispense_fichier_cle` directement depuis `SessionCandidat`. **Ne PAS reproposer ce chantier.**
 
 ---
 
