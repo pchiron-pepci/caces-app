@@ -2484,7 +2484,7 @@ document.addEventListener('click', function(e) {
         html += '<div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 8px; border-bottom:1px solid #eee;">'
               + '<div style="flex:1 1 200px; min-width:0;">'
               + '<span style="display:inline-block; background:#4a5568; color:#fff; font-size:11px; padding:1px 8px; border-radius:10px; margin-right:6px;">' + (j.libelle ? _docEsc(j.libelle) : 'Document') + '</span>'
-              + '<span style="word-break:break-word;">📄 ' + _docEsc(j.fichier_nom || 'fichier') + '</span>'
+              + '<span title="' + _docEsc(j.fichier_nom || 'fichier') + '" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;">📄 ' + _docEsc(j.fichier_nom || 'fichier') + '</span>'
               + '<div style="color:#999; font-size:11px; margin-top:2px;">' + d + (j.uploade_par ? ' · ' + _docEsc(j.uploade_par) : '') + '</div>'
               + '</div>'
               + '<div style="flex:0 0 auto; display:flex; align-items:center; gap:6px; margin-left:auto;">'
