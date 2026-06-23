@@ -2478,21 +2478,21 @@ document.addEventListener('click', function(e) {
         return;
       }
       var back = _docEstBackOffice();
-      var html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+      var html = '';
       liste.forEach(function(j) {
         var d = j.date_upload ? new Date(j.date_upload).toLocaleDateString('fr-FR') : '';
-        html += '<tr style="border-bottom:1px solid #eee;">'
-              + '<td style="padding:8px 6px;">'
-              + '<span style="display:inline-block; background:#4a5568; color:#fff; font-size:11px; padding:1px 7px; border-radius:10px; margin-right:6px;">'
-              + (j.libelle ? _docEsc(j.libelle) : 'Document') + '</span>'
-              + '📄 ' + _docEsc(j.fichier_nom || 'fichier') + '</td>'
-              + '<td style="padding:8px 6px; color:#999; white-space:nowrap;">' + d + (j.uploade_par ? ' · ' + _docEsc(j.uploade_par) : '') + '</td>'
-              + '<td style="padding:8px 6px; text-align:right; white-space:nowrap;">'
+        html += '<div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 8px; border-bottom:1px solid #eee;">'
+              + '<div style="flex:1 1 200px; min-width:0;">'
+              + '<span style="display:inline-block; background:#4a5568; color:#fff; font-size:11px; padding:1px 8px; border-radius:10px; margin-right:6px;">' + (j.libelle ? _docEsc(j.libelle) : 'Document') + '</span>'
+              + '<span style="word-break:break-word;">📄 ' + _docEsc(j.fichier_nom || 'fichier') + '</span>'
+              + '<div style="color:#999; font-size:11px; margin-top:2px;">' + d + (j.uploade_par ? ' · ' + _docEsc(j.uploade_par) : '') + '</div>'
+              + '</div>'
+              + '<div style="flex:0 0 auto; display:flex; align-items:center; gap:6px; margin-left:auto;">'
               + '<button class="btn btn-secondary" style="font-size:11px; padding:2px 8px;" data-action="doc-session-voir" data-id="' + j.id + '">Voir</button>'
-              + (back ? ' <button style="border:none; background:transparent; color:#888; cursor:pointer; font-size:14px; padding:2px 6px;" data-action="doc-session-supprimer" data-id="' + j.id + '" title="Supprimer">🗑️</button>' : '')
-              + '</td></tr>';
+              + (back ? '<button style="border:none; background:transparent; color:#888; cursor:pointer; font-size:14px; padding:2px 6px;" data-action="doc-session-supprimer" data-id="' + j.id + '" title="Supprimer">🗑️</button>' : '')
+              + '</div>'
+              + '</div>';
       });
-      html += '</table>';
       cont.innerHTML = html;
     } catch (e) {
       cont.innerHTML = '<div style="color:#cc0000; padding:8px;">Erreur réseau</div>';
