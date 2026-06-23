@@ -1,5 +1,36 @@
 var STAGIAIRES_DATA = [];
 
+function reduireImage(file) {
+  return new Promise(function(resolve) {
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) { resolve(file); return; }
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function() {
+      try {
+        var MAX = 1600;
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if (!w || !h) { URL.revokeObjectURL(url); resolve(file); return; }
+        var scale = Math.min(1, MAX / Math.max(w, h));
+        var nw = Math.round(w * scale), nh = Math.round(h * scale);
+        var canvas = document.createElement('canvas');
+        canvas.width = nw; canvas.height = nh;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, nw, nh);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(function(blob) {
+          if (!blob) { resolve(file); return; }
+          if (blob.size >= file.size) { resolve(file); return; }
+          var nomBase = (file.name || 'photo').replace(/\.[^.]+$/, '');
+          var nouveau = new File([blob], nomBase + '.jpg', { type: 'image/jpeg' });
+          resolve(nouveau);
+        }, 'image/jpeg', 0.8);
+      } catch (e) { URL.revokeObjectURL(url); resolve(file); }
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const _d = document.getElementById('session-data');
     if (_d) {
@@ -2211,6 +2242,7 @@ async function _uploaderJustif(fichier) {
     if (!scId) return;
 
     var fd = new FormData();
+    fichier = await reduireImage(fichier);
     fd.append('fichier', fichier);
     _justifMsg('Envoi en cours…', '#4a5568');
     try {
@@ -2357,10 +2389,11 @@ document.addEventListener('click', function(e) {
     _chargerListeFormation(scId, document.getElementById('liste-justif-formation'));
   }
 
-  function _uploaderFormation(scId, fichier) {
+  async function _uploaderFormation(scId, fichier) {
     var fd = new FormData();
     fd.append('type', 'formation');
     fd.append('session_candidat_id', scId);
+    fichier = await reduireImage(fichier);
     fd.append('fichier', fichier);
     afficherInfoToast('Envoi en cours…');
     fetch('/api/sessions/' + SESSION_ID + '/justificatifs', { method: 'POST', credentials: 'same-origin', body: fd })
@@ -2514,7 +2547,8 @@ document.addEventListener('click', function(e) {
     var libelle = libelleInput ? libelleInput.value.trim() : '';
     var fd = new FormData();
     fd.append('type', 'document_session');
-    fd.append('fichier', fileInput.files[0]);
+    var fichierDoc = await reduireImage(fileInput.files[0]);
+    fd.append('fichier', fichierDoc);
     if (libelle) fd.append('libelle', libelle);
     try {
       var resp = await fetch('/api/sessions/' + SESSION_ID + '/justificatifs', {
