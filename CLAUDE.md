@@ -1413,13 +1413,14 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Besoin déclencheur :** justificatif de FORMATION préalable par apprenant (feuille de présence). Le document PEPCI-49-01 impose la conservation des émargements 10 ans + preuve de formation au dossier.
 
-**Implémenté (backend + indicateur UI ✅ — menu upload/voir/supprimer à faire) :**
+**Implémenté ✅ (backend complet + UI indicateur + menu multi-fichiers) :**
 - `app/models/justificatif.py` : modèle ORM (type, session_id, session_candidat_id nullable, fichier_cle/nom/type, date_upload, uploade_par)
 - `CREATE TABLE IF NOT EXISTS justificatifs` dans `_run_startup_migrations()` (main.py) + import `Justificatif`
 - 4 routes dans `app/routers/sessions.py` : `POST /{session_id}/justificatifs` (upload), `GET /{session_id}/justificatifs` (liste, filtrable par type + session_candidat_id), `GET /{session_id}/justificatifs/{justif_id}` (StreamingResponse R2), `DELETE /{session_id}/justificatifs/{justif_id}` (purge R2 + db.delete)
 - `page_session_detail` (main.py ~l.1794) : calcul groupé anti-N+1 → `sc.passe_epreuve` (bool, stagiaire_id dans candidats_ids d'au moins un JourTest) + `sc.nb_justif_formation` (int, 1 requête groupée par session_candidat_id). Accessible dans le template via `{{ sc.passe_epreuve }}` / `{{ sc.nb_justif_formation }}`.
 - Permissions terrain : POST whitelisté dans `_verifier_role` (ligne ~583 main.py) ; DELETE non whitelisté → catch-all → 403 terrain, back-office uniquement
-- `session_detail.html` : colonne `FORM.` dans thead (toujours visible) + `<td data-label="FORM.">` dans tbody : badge vert 📋 N si justif présent, badge ambre ⚠️ Formation si 0, `—` gris si candidat ne passe pas d'épreuve. data-action=`justif-formation-menu` sur les deux badges (listener JS à brancher).
+- `session_detail.html` : colonne `FORM.` dans thead (toujours visible) + `<td data-label="FORM.">` dans tbody : badge vert 📋 N si justif présent, badge ambre ⚠️ Formation si 0, `—` gris si candidat ne passe pas d'épreuve. data-action=`justif-formation-menu` sur les deux badges.
+- `session_detail.js` (fin fichier, IIFE) : menu multi-fichiers `justif-formation-*` — overlay dynamique créé au clic (pas d'input file dans le template), liste paginée via GET, bouton Voir → `window.open` GET/{justif_id}, bouton + Ajouter → input createElement + FormData POST, bouton 🗑️ Supprimer → DELETE (visible back-office uniquement via `data-user-role` sur `#session-data`). Reload automatique 700ms après upload/suppression pour mettre à jour le compteur FORM.
 
 
 **Modèle décidé : table générique `Justificatif` (multi-fichiers, une ligne par fichier), Option A (un seul modèle, 2 niveaux via nullable) :**
