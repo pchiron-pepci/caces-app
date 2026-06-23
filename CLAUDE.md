@@ -1463,23 +1463,25 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 ---
 
-### 🔍 ALGORITHME DÉFINITIF : base théorique valable (dispense ET calcul dates CACES)
+### 🔍 ALGORITHME CONSOLIDÉ : base théorique valable (dispense ET calcul dates CACES)
 
-**2 RECHERCHES EN PARALLÈLE (pas une hiérarchie de priorités) :**
+**Pour un stagiaire + une famille, collecter TOUTES les bases candidates et garder la PLUS RÉCENTE (bénéfice candidat = validité maximale). 3 sources :**
 
-**Recherche 1 — CACES de référence :** le CACES NON-extension (`post_cloture==False`), statut valide, le PLUS RÉCENT par `date_obtention`, dont `date_obtention` < 12 mois. S'il existe PLUSIEURS CACES « initiaux » (non-extension) dans la famille → prendre le PLUS RÉCENT.
+**Source R1 — CACES de référence :** `CacesObtenu` NON-extension (`post_cloture==False`), statut valide, le PLUS RÉCENT par `date_obtention`, `date_obtention` < 12 mois. Plusieurs CACES « initiaux » → le plus récent. Base = `date_obtention`.
 
-**Recherche 2 — théorie ORPHELINE :** la théorie réussie (`ResultatTheorie` `obtenue==True`) la PLUS RÉCENTE, < 12 mois, SANS CACES rattaché (= orpheline), et plus récente que le CACES de référence s'il existe.
+**Source R2-a — théorie de la SESSION COURANTE (continuité §8) :** la théorie réussie (`ResultatTheorie` `obtenue==True`) de la session où on inscrit le candidat reste une base, MÊME SI elle a déjà fondé des CACES dans cette session, TANT QUE la session n'est pas clôturée. Base = date du jour de théorie (`JourTest.date`). Pas besoin de lien théorie↔CACES pour cette source.
 
-**COHÉRENCE ÉTANCHE (clé) :** si un CACES a été délivré, la théorie qui le sous-tend N'EST PLUS orpheline (elle est « consommée » par ce CACES). Donc JAMAIS de double comptage : une théorie est soit orpheline (pas de CACES → recherche 2), soit rattachée à un CACES (→ recherche 1). Jamais les deux.
+**Source R2-b — théorie ORPHELINE d'une AUTRE session :** théorie réussie, autre session, SANS AUCUN CACES rattaché dans la famille, < 12 mois. Base = date du jour de théorie. (Cas typique : candidat a repassé sa théorie ailleurs mais pas encore passé de pratique dans la famille.)
 
-**DÉCISION :** base retenue = la PLUS RÉCENTE entre (recherche 1) et (recherche 2). « Le plus récent » s'applique à CHAQUE niveau → durée de validité maximale au bénéfice du candidat (même s'il existe une théorie validée sur la session à une date plus ancienne, on ne la prend pas).
+**DÉCISION :** base retenue = la PLUS RÉCENTE parmi R1, R2-a, R2-b. Valable/dispensable si base + 1 an − 1 jour >= aujourd'hui.
 
-**VALABLE/DISPENSABLE si :** base + 1 an − 1 jour >= aujourd'hui.
+**POINT CLÉ — une théorie peut fonder PLUSIEURS CACES :** une seule théorie sert à plusieurs catégories (1 théorie + N pratiques → N CACES). Donc « consommée » ne veut PAS dire « ne peut plus servir » : une théorie ayant fondé 3 CACES peut encore dispenser une 4e cat si < 12 mois. La notion d'orpheline (R2-b) = « n'a AUCUN CACES rattaché dans la famille », pas « jamais utilisée ». R2-a (même session) est l'exception : la théorie de la session courante reste base même si elle a fondé des CACES, par continuité §8.
 
-**Dépend du PRÉ-REQUIS `post_cloture` persisté** (sans lui, impossible d'identifier les CACES non-extension en recherche 1).
+**IMPACT TECHNIQUE — lien théorie↔CACES (pré-requis R0) :** `CacesObtenu` n'a AUCUN lien vers la `ResultatTheorie` qui l'a fondée (vérifié : pas de `resultat_theorie_id`, aucune jointure RT↔CACES). Pour R2-b (savoir si une théorie a un CACES rattaché), il faut soit ajouter un champ `resultat_theorie_id` sur `CacesObtenu` (renseigné au calcul, recalculé comme `post_cloture` — donnée dérivée jamais figée), soit déduire de façon fiable. R2-a ne nécessite PAS ce lien. Décision lien explicite vs déduction : EN COURS (attention : une théorie fonde plusieurs CACES → le lien doit gérer le 1-vers-N ; « orpheline » = AUCUN CACES ne pointe vers cette théorie).
 
-**Note architecture :** cet algorithme remplace la logique « 3 priorités hiérarchiques + bornes ±365j » du moteur actuel (`caces_obtenus.py`) qui a les écarts A (corrigé), B et C. La refonte du moteur vers cet algorithme unifié est le vrai chantier — il sert le calcul des dates CACES ET la dispense (source de vérité commune).
+**Dépend AUSSI du pré-requis `post_cloture` persisté (FAIT, étape 0)** pour identifier les CACES non-extension en R1.
+
+**PLAN REFONTE MOTEUR (`caces_obtenus.py`) :** R0 = lien théorie↔CACES (si retenu) ; R1 = fonction isolée « base théorique valable » (3 sources) testable ; R2 = écart B (fenêtre +1 an −1 jour exact via `relativedelta`, théorie <= pratique) ; R3 = écart C (choix CACES initial extension) à trancher ; R4 = brancher dans `_calculer_pour_epreuve` + tests cas d'école ; puis étape A dispense (proposition s'appuie sur R1).
 
 ---
 
