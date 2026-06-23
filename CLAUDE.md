@@ -317,7 +317,8 @@ python init_questions_r482.py
 | Haute | Justificatif formation (table générique, multi-fichiers, indicateur, menu) | ✅ fait |
 | Haute | Onglet Documents de session (document_session + libelle + puces + responsive) | ✅ fait |
 | Haute | Stockage R2 + storage.py (+ images jpg/png/heic) | ✅ fait |
-| Haute | Suppression justificatifs par rôle (uploade_par_role) — cadré, 5 étapes | à faire |
+| Haute | Suppression justificatifs par rôle (uploade_par_role) — cadré, 5 étapes | ✅ fait |
+| Haute | Réduction images côté client avant upload (1600px/JPEG 80%) | ✅ fait |
 | Haute | Détection dispense interne/externe (modale candidat) | à faire |
 | Haute | Brancher dispense externe au moteur caces_obtenus.py | à faire |
 | Moyenne | Convergence justificatif dispense → table Justificatif (fichier seulement) | à faire |
@@ -1462,24 +1463,46 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 ---
 
-### 🔍 CADRÉ : suppression des justificatifs par RÔLE (diagnostic fait, 5 étapes)
+### ✅ Chantier terminé : suppression des justificatifs par RÔLE (2026-06-23)
 
-**Règle :** "uploadé par le terrain → supprimable par le terrain ; back-office → accès total". Distinction par RÔLE (pas par personne — un testeur terrain peut supprimer ce qu'un autre testeur terrain a uploadé).
+**Règle :** "uploadé par le terrain → supprimable par le terrain ; back-office (admin/utilisateur) → accès total à tout". Distinction par RÔLE (pas par personne : un testeur terrain peut supprimer ce qu'un autre testeur terrain a uploadé). Périmètre : table Justificatif (formation + documents de session). La dispense (colonnes plates) suivra à la convergence.
 
-**Modèle :** ajouter colonne `uploade_par_role` (`'terrain'`/`'admin'`/`'utilisateur'`) sur `justificatifs`, renseignée à l'upload depuis `request.state.user.role`.
+**Matrice :**
+| Qui supprime | Fichier 'terrain' | Fichier back-office | Ancien (rôle NULL) |
+|---|---|---|---|
+| Back-office | oui | oui | oui |
+| Terrain | oui | 403 | 403 |
 
-**5 étapes :**
-1. Colonne `uploade_par_role` : modèle (`app/models/justificatif.py`) + migration startup `ALTER TABLE IF NOT EXISTS` + bloc `CREATE TABLE` dans `main.py`
-2. Route `POST /{session_id}/justificatifs` : renseigner `uploade_par_role = user.role` à l'upload
-3. Route `DELETE /{session_id}/justificatifs/{justif_id}` : back-office (`role in ('admin','utilisateur')`) supprime tout ; terrain uniquement si `j.uploade_par_role == 'terrain'` (sinon 403)
-4. Middleware `_verifier_role` dans `main.py` : **WHITELISTER** le `DELETE /api/sessions/\d+/justificatifs/\d+` pour terrain — SANS ça la logique de route ne sert à rien (le middleware intercepte avant la route)
-5. Front : bouton 🗑️ visible au terrain seulement sur ses propres fichiers (`j.uploade_par_role == 'terrain'`) — sinon 403 au clic même si visible
+**5 étapes réalisées :**
+1. Colonne `uploade_par_role VARCHAR(20)` nullable sur justificatifs (modèle + ALTER startup + CREATE TABLE). En prod (11 colonnes).
+2. Upload renseigne le rôle : `uploade_par_role=(user.role if getattr(user,"role",None) else None)` dans le constructeur Justificatif.
+3. Route DELETE supprimer_justificatif : `est_back_office = role in ("admin","utilisateur")` ; si pas back-office et `j.uploade_par_role != "terrain"` → 403. Back-office supprime tout sans condition.
+4. Middleware `_verifier_role` : `DELETE ^/api/sessions/\d+/justificatifs/\d+$` whitelisté pour terrain (placé APRÈS le POST `justificatifs$`, AVANT le catch-all). Le terrain atteint la route ; la route filtre.
+5. Front (2 listes) : `_peutSuppr(j)` (formation) et `_docPeutSuppr(j)` (documents) = `_estBackOffice() || j.uploade_par_role === 'terrain'`. Corbeille affichée selon ce prédicat. `lister_justificatifs` renvoie `uploade_par_role` dans le dict.
 
-**Périmètre :** table `Justificatif` (formation + documents de session). Dispense en colonnes plates suivra à la convergence.
+**Double sécurité :** affichage front (corbeille conditionnée) + garde serveur (403 dans la route). Un terrain qui forcerait l'API prend 403.
+**Valeurs rôle :** `"admin"`/`"utilisateur"` = back-office ; tout le reste = terrain. Via `request.state.user.role` / `data-user-role` côté front.
+**Anciens fichiers** (uploade_par_role NULL) : seul back-office peut les supprimer.
 
-**Anciens fichiers** sans `uploade_par_role` (NULL) → seul back-office peut supprimer (comportement sûr par défaut).
+---
 
-**Valeurs rôle confirmées :** `"admin"` / `"utilisateur"` explicites dans le code ; terrain = tout le reste (catch-all). Accès via `request.state.user.role`.
+### ✅ Chantier terminé : réduction des images côté navigateur avant upload (2026-06-23)
+
+**Objectif :** éviter l'explosion du stockage R2 (photos iPhone ~3-5 Mo × centaines de sessions). Réduction AVANT upload = moins de stockage ET upload plus rapide en 4G terrain.
+
+**Fonction commune `reduireImage(file)` (`static/js/session_detail.js`, scope global, ligne 3, async/Promise) :**
+- Si pas une image (`file.type` ne commence pas par `'image/'`) → renvoie le fichier inchangé (PDF/Word/Excel passent tels quels).
+- Si image : charge dans un canvas, redimensionne à MAX 1600px sur le plus grand côté, re-encode en JPEG qualité 0.8, renomme en `.jpg`.
+- Garde-fou : si le blob réduit n'est pas plus petit que l'original (`blob.size >= file.size`) → garde l'original.
+- Fallback gracieux : `img.onerror` (HEIC non décodable par le canvas) → renvoie le fichier original sans bloquer.
+
+**Branchement dans les 3 uploads** (`await reduireImage` avant `fd.append('fichier', ...)`) :
+- `_uploaderJustif` (dispense) — déjà async
+- `_uploaderFormation` (formation) — **passée async** pour l'occasion
+- `_docAjouter` (documents) — déjà async
+
+**Résultat typique :** photo iPhone 4 Mo → 200-400 Ko. PDF/Word/Excel intacts.
+**Limite HEIC :** un HEIC non décodable part en pleine taille (fallback), pas de blocage. iPhone convertit souvent en JPEG au partage, donc cas rare.
 
 ---
 
