@@ -375,7 +375,7 @@ function _resetStagiaireSearch() {
 }
 
 function showTab(name, btn) {
-    ['sequencage','candidats','testeurs','equipements'].forEach(t => {
+    ['sequencage','candidats','testeurs','equipements','documents'].forEach(t => {
         document.getElementById('tab-' + t).style.display = 'none';
     });
     document.getElementById('tab-' + name).style.display = 'block';
