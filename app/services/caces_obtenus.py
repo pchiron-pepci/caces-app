@@ -42,7 +42,7 @@ def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famil
     else:
         q = q.filter(SessionModel.statut == "terminee")
 
-    return q.order_by(ResultatTheorie.id.asc()).first()
+    return q.order_by(JourTest.date.desc(), ResultatTheorie.id.desc()).first()
 
 
 def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
@@ -66,12 +66,18 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
                 → date_obtention = date_prat
                 → date_echeance = date_echeance du 1er CacesObtenu valide (même famille), sinon calcul normal
     """
-    rt = db.query(ResultatTheorie).filter(
-        ResultatTheorie.stagiaire_id == ep.stagiaire_id,
-        ResultatTheorie.session_id == ep.session_id,
-        ResultatTheorie.obtenue == True,
-        ResultatTheorie.bloque != True,
-    ).order_by(ResultatTheorie.id.asc()).first()
+    rt = (
+        db.query(ResultatTheorie)
+        .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
+        .filter(
+            ResultatTheorie.stagiaire_id == ep.stagiaire_id,
+            ResultatTheorie.session_id == ep.session_id,
+            ResultatTheorie.obtenue == True,
+            ResultatTheorie.bloque != True,
+        )
+        .order_by(JourTest.date.desc(), ResultatTheorie.id.desc())
+        .first()
+    )
 
     post_cloture = False
 
