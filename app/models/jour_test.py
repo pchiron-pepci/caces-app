@@ -52,6 +52,6 @@ class ResultatTheorie(Base):
     dispense = Column(Boolean, default=False)
     bloque = Column(Boolean, default=False, nullable=False)
     mode = Column(String(12), nullable=False, default="numerique")
-    justificatif_pdf = Column(Text, nullable=True)
+    justificatif_cle = Column(String(500), nullable=True)
     justificatif_nom = Column(String(255), nullable=True)
     testeur_id = Column(Integer, ForeignKey("testeurs.id"), nullable=True)

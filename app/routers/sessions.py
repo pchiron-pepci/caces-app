@@ -843,8 +843,16 @@ def upload_justificatif_theorie(session_id: int, stagiaire_id: int, jour_test_id
     ).first()
     if not rt:
         raise HTTPException(status_code=404, detail="Aucun résultat théorique pour ce candidat et ce jour")
-    rt.justificatif_pdf = body.fichier_base64
-    rt.justificatif_nom = body.fichier_nom
+    import base64 as _b64
+    contenu = _b64.b64decode(body.fichier_base64)
+    if rt.justificatif_cle:
+        try: storage.delete_fichier(rt.justificatif_cle)
+        except Exception: pass
+    nom = body.fichier_nom or "justificatif.pdf"
+    cle = storage.construire_cle("justificatifs/theorie", nom)
+    storage.upload_fichier(contenu, cle, "application/pdf")
+    rt.justificatif_cle = cle
+    rt.justificatif_nom = nom
     db.commit()
     return {"ok": True, "fichier_nom": rt.justificatif_nom}
 
@@ -864,9 +872,9 @@ def get_justificatif_theorie(session_id: int, stagiaire_id: int, jour_test_id: i
         ResultatTheorie.jour_test_id == jour_test_id,
         ResultatTheorie.stagiaire_id == stagiaire_id,
     ).first()
-    if not rt or not rt.justificatif_pdf:
+    if not rt or not rt.justificatif_cle:
         raise HTTPException(status_code=404, detail="Aucun justificatif pour ce résultat")
-    pdf_bytes = base64.b64decode(rt.justificatif_pdf)
+    pdf_bytes = storage.get_fichier(rt.justificatif_cle)
     nom = rt.justificatif_nom or "justificatif.pdf"
     return SR(
         BytesIO(pdf_bytes),
