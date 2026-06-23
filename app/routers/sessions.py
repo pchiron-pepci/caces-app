@@ -2160,6 +2160,11 @@ def supprimer_justificatif(
     ).first()
     if not j:
         raise HTTPException(status_code=404, detail="Justificatif introuvable")
+    role = getattr(user, "role", None)
+    est_back_office = role in ("admin", "utilisateur")
+    if not est_back_office:
+        if j.uploade_par_role != "terrain":
+            raise HTTPException(status_code=403, detail="Vous ne pouvez supprimer que les documents ajoutes par le terrain.")
     if j.fichier_cle:
         try:
             storage.delete_fichier(j.fichier_cle)
