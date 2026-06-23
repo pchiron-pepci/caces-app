@@ -285,6 +285,12 @@ def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = D
             sc.dispense_origine     = "externe"
             sc.dispense_source_type = None
             sc.dispense_source_id   = None
+    if sc.dispense_origine == "externe":
+        from app.services.caces_obtenus import limite_12_mois
+        if not data.dispense_date:
+            raise HTTPException(status_code=400, detail="Dispense externe : la date d'obtention justifiant la dispense est obligatoire.")
+        if limite_12_mois(data.dispense_date) < date.today():
+            raise HTTPException(status_code=400, detail="Dispense externe : la base invoquee a plus de 12 mois (theorie perimee).")
     db.add(sc)
     db.commit()
     db.refresh(sc)
@@ -317,6 +323,12 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
         sc.dispense_origine     = None
         sc.dispense_source_type = None
         sc.dispense_source_id   = None
+    if sc.dispense_origine == "externe":
+        from app.services.caces_obtenus import limite_12_mois
+        if not data.dispense_date:
+            raise HTTPException(status_code=400, detail="Dispense externe : la date d'obtention justifiant la dispense est obligatoire.")
+        if limite_12_mois(data.dispense_date) < date.today():
+            raise HTTPException(status_code=400, detail="Dispense externe : la base invoquee a plus de 12 mois (theorie perimee).")
     db.commit()
     return {"message": "Candidat mis a jour"}
 

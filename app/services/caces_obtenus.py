@@ -232,6 +232,14 @@ def calculer_et_synchroniser(db: Session) -> list:
     )
 
 
+def limite_12_mois(date_ref):
+    """Date limite de validite des 12 mois : date_ref + 1 an - 1 jour (gere le 29 fevrier)."""
+    try:
+        return date(date_ref.year + 1, date_ref.month, date_ref.day) - timedelta(days=1)
+    except ValueError:
+        return date(date_ref.year + 1, 3, 1) - timedelta(days=1)
+
+
 def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
     """
     Détecte la base de dispense théorique la plus récente pour un stagiaire/famille.
@@ -244,13 +252,6 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
     NE COCHE RIEN — pure lecture/info.
     """
     candidates = []  # liste de dicts {date, type, reference, source, lien, source_id}
-
-    # helper 12 mois : base valable si base + 1 an - 1 jour >= aujourd'hui
-    def _limite_dispense(d):
-        try:
-            return date(d.year + 1, d.month, d.day) - timedelta(days=1)
-        except ValueError:
-            return date(d.year + 1, 3, 1) - timedelta(days=1)
     today = date.today()
 
     # --- Source R1 : CACES non-extension, meme famille, valide/a_valider, < 12 mois ---
@@ -265,7 +266,7 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
         .all()
     )
     for c in caces_list:
-        if c.date_obtention and _limite_dispense(c.date_obtention) >= today:
+        if c.date_obtention and limite_12_mois(c.date_obtention) >= today:
             candidates.append({
                 "date": c.date_obtention,
                 "type": "caces",
@@ -291,7 +292,7 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
         )
         if rt_courante:
             jt = db.query(JourTest).filter(JourTest.id == rt_courante.jour_test_id).first()
-            if jt and jt.date and _limite_dispense(jt.date) >= today:
+            if jt and jt.date and limite_12_mois(jt.date) >= today:
                 candidates.append({
                     "date": jt.date, "type": "theorie", "reference": "Theorie de la session courante",
                     "source": "R2-a", "source_id": rt_courante.id,
@@ -318,7 +319,7 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
         if a_un_caces:
             continue
         jt = db.query(JourTest).filter(JourTest.id == rt.jour_test_id).first()
-        if jt and jt.date and _limite_dispense(jt.date) >= today:
+        if jt and jt.date and limite_12_mois(jt.date) >= today:
             candidates.append({
                 "date": jt.date, "type": "theorie", "reference": "Theorie (autre session)",
                 "source": "R2-b", "source_id": rt.id,
@@ -335,7 +336,7 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
         "type": meilleure["type"],
         "date_origine": meilleure["date"].isoformat(),
         "reference": meilleure["reference"],
-        "date_limite_dispense": _limite_dispense(meilleure["date"]).isoformat(),
+        "date_limite_dispense": limite_12_mois(meilleure["date"]).isoformat(),
         "lien": meilleure["lien"],
         "source": meilleure["source"],
         "source_id": meilleure["source_id"],
