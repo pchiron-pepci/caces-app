@@ -1502,6 +1502,31 @@ Une extension hérite de l'échéance du CACES initial ADOSSÉ À LA MÊME THÉO
 
 ---
 
+### 🔧 ARCHITECTURE « DEUX PASSES » : calcul des extensions (écart C + `caces_initial_id`)
+
+**PROBLÈME :** l'échéance d'une extension = l'échéance du CACES INITIAL (celui qui partage sa théorie de référence), PAS un recalcul depuis la théorie. Donc le CACES initial doit exister en base AVANT de calculer l'extension. Or `calculer_et_synchroniser` parcourt les épreuves SANS ordre garanti (`query.all()` sans `order_by`) → une extension pouvait être traitée avant son initial → échéance fausse.
+
+**TROIS DATES d'une extension (ne pas confondre) :**
+- date théorie héritée (ex 15/01/2026)
+- `date_obtention` de l'extension = date de la PRATIQUE de l'extension (ex 15/06/2026, POSTÉRIEURE à la théorie) — §9
+- `date_echeance` de l'extension = celle du CACES INITIAL (ex 14/01/2036), lue en base, PAS recalculée depuis la théorie
+
+**SOLUTION — DEUX PASSES dans `calculer_et_synchroniser` :**
+- Parcours unique : pour chaque épreuve, appeler `_calculer_pour_epreuve` (donne `post_cloture`). Si `post_cloture==False` → traiter immédiatement (PASSE 1, non-extensions, création/maj + commit). Si `post_cloture==True` → METTRE DE CÔTÉ pour la passe 2 (pas de double calcul de la partie coûteuse).
+- PASSE 2 (extensions, après commit passe 1) : pour chaque extension, le CACES initial = le `CacesObtenu` NON-extension (`post_cloture==False`) dont `resultat_theorie_id == rt.id` (la théorie héritée). Lire son `date_echeance` → l'appliquer à l'extension. Remplir `caces_initial_id`.
+
+**CORRECTIONS ÉCART C apportées :**
+- Avant : `caces_initial` cherché via `statut=="valide"` (excluait `a_valider` → initial non validé = `None` → fallback faux) + `order_by(date_echeance.asc())` (mauvais critère).
+- Après : recherche par `resultat_theorie_id == rt.id` ET `post_cloture==False` ; inclure `statut` `a_valider` ET `valide` ; échéance = `date_echeance` de cet initial.
+
+**PAS DE CHAÎNE :** un CACES initial est TOUJOURS un non-extension (il a une théorie propre). Une extension pointe toujours vers un non-extension, jamais vers une autre extension → 2 passes suffisent (pas de récursion).
+
+**CAS LIMITE (fallback) :** si une extension ne trouve AUCUN CACES initial partageant sa théorie (donnée incohérente, initial annulé) → fallback calcul normal (`_date_echeance` famille/`date_prat`) + idéalement un marqueur/log, JAMAIS de crash.
+
+**Mis à jour plan refonte :** R0-a (liens, `resultat_theorie_id` rempli) FAIT. R0-b = remplir `caces_initial_id` via l'architecture deux passes ci-dessus (= aussi la correction écart C). Puis R1 (fonction base théorique 3 sources), R2 (écart B fenêtre +1 an −1 j), R4 (brancher), cas externe (4e source) en dernier.
+
+---
+
 ### 🔧 AUDIT moteur `caces_obtenus.py` — écarts vs cadrage (code critique, NON en prod)
 
 Cas 1, 2, 3 globalement justes. Écarts trouvés :
