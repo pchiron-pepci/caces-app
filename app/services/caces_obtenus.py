@@ -338,4 +338,5 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
         "date_limite_dispense": _limite_dispense(meilleure["date"]).isoformat(),
         "lien": meilleure["lien"],
         "source": meilleure["source"],
+        "source_id": meilleure["source_id"],
     }

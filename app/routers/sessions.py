@@ -274,6 +274,17 @@ def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = D
     if existing:
         raise HTTPException(status_code=400, detail="Candidat deja inscrit")
     sc = SessionCandidat(**data.model_dump())
+    if data.theorie_dispensee:
+        from app.services.caces_obtenus import detecter_base_theorique
+        _base = detecter_base_theorique(db, data.stagiaire_id, s.famille, session_id)
+        if _base.get("possible"):
+            sc.dispense_origine     = "interne"
+            sc.dispense_source_type = _base.get("type")
+            sc.dispense_source_id   = _base.get("source_id")
+        else:
+            sc.dispense_origine     = "externe"
+            sc.dispense_source_type = None
+            sc.dispense_source_id   = None
     db.add(sc)
     db.commit()
     db.refresh(sc)
@@ -291,6 +302,21 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
     sc.theorie_dispensee = data.theorie_dispensee
     sc.dispense_note = data.dispense_note if data.theorie_dispensee else None
     sc.dispense_date = data.dispense_date if data.theorie_dispensee else None
+    if data.theorie_dispensee:
+        from app.services.caces_obtenus import detecter_base_theorique
+        _base = detecter_base_theorique(db, sc.stagiaire_id, s.famille, sc.session_id)
+        if _base.get("possible"):
+            sc.dispense_origine     = "interne"
+            sc.dispense_source_type = _base.get("type")
+            sc.dispense_source_id   = _base.get("source_id")
+        else:
+            sc.dispense_origine     = "externe"
+            sc.dispense_source_type = None
+            sc.dispense_source_id   = None
+    else:
+        sc.dispense_origine     = None
+        sc.dispense_source_type = None
+        sc.dispense_source_id   = None
     db.commit()
     return {"message": "Candidat mis a jour"}
 
