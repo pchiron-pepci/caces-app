@@ -1588,7 +1588,7 @@
                             data-sc-id="{{ sc.id }}"
                             data-fichier-nom="{{ sc.dispense_fichier_nom or '' }}"
                             style="font-size:10px; cursor:pointer;"
-                            title="{% if sc.dispense_fichier_nom %}Voir le justificatif : {{ sc.dispense_fichier_nom }}{% else %}Dispensé — aucun justificatif joint{% endif %}">Disp.</span>{% else %}—{% endif %}
+                            title="{% if sc.dispense_fichier_nom %}Voir le justificatif : {{ sc.dispense_fichier_nom }}{% else %}Dispensé — aucun justificatif joint{% endif %}">Disp.</span>{% if sc.dispense_origine == 'externe' and not sc.dispense_fichier_cle %} <span style="font-size:11px; cursor:help;" title="Dispense externe : justificatif manquant (à joindre)">⚠️</span>{% endif %}{% else %}—{% endif %}
                     </td>
                     <td data-label="FORM." style="text-align:center;">
                       {% if sc.passe_epreuve %}
