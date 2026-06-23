@@ -21,6 +21,7 @@ from app.models.jour_test import ResultatTheorie, JourTest
 from app.models.stagiaire import Stagiaire
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.attestation_neutralite import AttestationNeutralite
+from app.services import storage
 from app.services.pdf_test_theorie import generer_corrige
 from app.services.pdf_recap_session import generer_recap_resultats
 from app.services.pdf_detail_theorie import generer_pdf_detail_theorie
@@ -102,10 +103,10 @@ def generer_zip_session(session_id: int, db: DBSession) -> bytes:
 
         # ── justificatifs scannés (mode dégradé) ─────────────────────────────
         for rt in all_rts:
-            if not rt.justificatif_pdf:
+            if not rt.justificatif_cle:
                 continue
             try:
-                pdf_bytes = base64.b64decode(rt.justificatif_pdf)
+                pdf_bytes = storage.get_fichier(rt.justificatif_cle)
                 nom = (rt.justificatif_nom or f"justificatif_stag{rt.stagiaire_id}.pdf")
                 nom = nom.replace("/", "_").replace("\\", "_")
                 zf.writestr(f"justificatifs/{nom}", pdf_bytes)
