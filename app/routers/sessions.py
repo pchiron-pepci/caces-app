@@ -2045,13 +2045,14 @@ async def upload_justificatif(
     request: Request,
     type: str = Form(...),
     session_candidat_id: int = Form(None),
+    libelle: str = Form(None),
     fichier: UploadFile = File(...),
     db: DBSession = Depends(get_db),
 ):
     user = request.state.user
     if not user:
         raise HTTPException(status_code=401, detail="Non authentifie")
-    if type not in ("formation", "dispense", "presence_session"):
+    if type not in ("formation", "dispense", "presence_session", "document_session"):
         raise HTTPException(status_code=400, detail="Type de justificatif invalide")
 
     nom = fichier.filename or "fichier"
@@ -2078,6 +2079,7 @@ async def upload_justificatif(
         fichier_type=content_type[:100],
         date_upload=dt.utcnow(),
         uploade_par=f"{user.prenom} {user.nom}"[:200],
+        libelle=(libelle[:300] if libelle else None),
     )
     db.add(j)
     db.commit()
@@ -2109,6 +2111,7 @@ def lister_justificatifs(
             "fichier_nom": j.fichier_nom,
             "date_upload": j.date_upload.isoformat() if j.date_upload else None,
             "uploade_par": j.uploade_par,
+            "libelle": j.libelle,
         }
         for j in rows
     ]
