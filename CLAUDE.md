@@ -1462,6 +1462,23 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Règle permanente** : `_detecterDispense` NE COCHE RIEN (side-effect zéro côté client). La décision appartient à l'opérateur. La traçabilité est calculée côté serveur au moment du save.
 
+### ✅ Chantier terminé : dispense externe — garde-fous serveur (C1-serveur) (2026-06-23)
+
+**Contexte :** une dispense est "externe" quand le serveur ne trouve AUCUNE base interne (autre organisme, ou vieux CACES PEPCI hors base). `dispense_origine='externe'` est posé au save (étape B). C1-serveur ajoute les garde-fous réglementaires durs.
+
+**Helper réutilisable `limite_12_mois(date_ref)` (`app/services/caces_obtenus.py`, module-level, ligne 235) :**
+- Calcul "+1 an −1 jour" avec gestion 29 février (fallback 1er mars année+1).
+- Remplace la fonction imbriquée `_limite_dispense` de `detecter_base_theorique` (4 appels internes basculés : R1, R2-a, R2-b, retour dict). Source unique du calcul des 12 mois pour la dispense.
+- `_date_echeance` (5/10 ans CACES) reste séparée — autre calcul, autre usage.
+
+**Garde-fous au save (`add_candidat` + `update_candidat`, `sessions.py`) :**
+- Après le bloc traçabilité, AVANT `db.add`/`db.commit` : si `sc.dispense_origine == "externe"` :
+  - date manquante (`not data.dispense_date`) → HTTP 400 "Dispense externe : la date d'obtention justifiant la dispense est obligatoire."
+  - `limite_12_mois(data.dispense_date) < date.today()` → HTTP 400 "Dispense externe : la base invoquee a plus de 12 mois (theorie perimee)."
+- Rejet AVANT enregistrement (aucune donnée partielle en base).
+- L'interne (`dispense_origine='interne'`) n'est PAS contrôlé ici : sa date est validée par `detecter_base_theorique` (qui a déjà vérifié la fenêtre 12 mois).
+- `date` et `HTTPException` déjà importés en tête de `sessions.py` — aucun import de tête ajouté.
+
 ### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
 
 **DÉCOUVERTE MAJEURE :** cette logique ne couvre PAS que la dispense. La même mécanique (trouver la base théorique valable, distinguer extension/non-extension, prendre la plus récente) sert AUSSI à la détermination des dates de CACES. Dispense et calcul de dates = deux usages de la MÊME logique sous-jacente → à terme, source de vérité commune (réutiliser/étendre `caces_obtenus.py`, pas dupliquer).
