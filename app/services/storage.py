@@ -8,13 +8,16 @@ from botocore.config import Config
 TENANT = "pepci"
 
 # Extensions et types MIME autorises pour les justificatifs
-EXTENSIONS_AUTORISEES = {"pdf", "doc", "docx", "xls", "xlsx"}
+EXTENSIONS_AUTORISEES = {"pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "heic"}
 MIME_AUTORISES = {
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.ms-excel",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "image/jpeg",
+    "image/png",
+    "image/heic",
 }
 TAILLE_MAX = 10 * 1024 * 1024  # 10 Mo
 
