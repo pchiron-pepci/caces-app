@@ -1393,25 +1393,32 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - Variables `--noryx-*` CSS définies seulement dans `test_theorie.html` (PAS globales) → rester inline en dur hors test_theorie tant que CSS non centralisé.
 - JAMAIS éditer requirements.txt/Python via PowerShell (UTF-16 → build cassé). iconv/sed Git Bash ou VS Code (UTF-8).
 
-### 🔍 Chantier CADRÉ : détection dispense interne/externe (modale candidat)
+### 🔍 CADRÉ : détection / proposition de dispense (interne/externe) — cadrage corrigé
 
-**PRINCIPE CARDINAL : l'opérateur valide TOUJOURS. Le système assiste/propose/exige mais n'auto-coche JAMAIS une dispense** (responsabilité réglementaire humaine, opposable en audit).
+**PRINCIPE CARDINAL :** le système propose / informe, l'opérateur VALIDE TOUJOURS. Jamais d'auto-cochage d'une dispense (responsabilité réglementaire humaine, opposable en audit).
+
+**SÉPARATION DES RESPONSABILITÉS (point d'architecture clé — corrigé) :**
+- **La dispense capture une DONNÉE BRUTE, elle ne calcule RIEN :** date (date d'obtention de la théorie ou du CACES qui justifie la dispense) + origine (interne/externe) + pointeur (si interne) ou justificatif PDF (si externe). Elle sert uniquement à autoriser « pas de théorie à repasser ».
+- **La dispense ne manipule les 12 MOIS QUE pour la DÉTECTION interne** (la base est-elle encore < 12 mois ?). Elle ne connaît RIEN des 5/10 ans.
+- **Le MOTEUR CACES (`caces_obtenus.py`) est SEUL responsable du calcul** obtention + échéance (règles 10 ans R.482 / 5 ans sinon). La dispense externe lui fournit une date de base théorique ; il en déduit l'échéance EXACTEMENT comme il le fait déjà pour une théorie interne. La date de dispense ne fixe PAS la date d'obtention (= date épreuve pratique) mais alimente le calcul de validité, et ce calcul vit dans le moteur, PAS dans la dispense.
 
 **Deux durées à NE JAMAIS confondre :**
-- **12 mois** = bénéfice d'une épreuve obtenue en attendant l'autre. Fixe, toutes familles. → DÉCISION DE DISPENSE.
-- **5 ans / 10 ans** = validité du CACES délivré (10 ans R.482, 5 ans sinon). → CALCUL ÉCHÉANCE du futur CACES, PAS la dispense.
+- 12 mois = bénéfice d'une épreuve en attendant l'autre (fixe, toutes familles) → fonde la dispense, sert à la DÉTECTION.
+- 5/10 ans = validité du CACES délivré → calcul d'échéance, EXCLUSIVEMENT dans le moteur CACES.
 
-**Règle dispense interne (détection auto) :** dispensable si, MÊME FAMILLE, base < 12 mois vs DATE DU JOUR : soit `ResultatTheorie` `obtenue=True`, soit `CacesObtenu` validé. « < 12 mois » = date origine +1 an −1 jour ≥ aujourd'hui. (CACES < 12 mois = forcément valide.)
+**Détection interne :** dispensable si MÊME FAMILLE + base < 12 mois vs date du jour (`ResultatTheorie` `obtenue==True` OU `CacesObtenu` validé). « < 12 mois » = date origine +1 an −1 jour ≥ aujourd'hui.
 
-**Deux origines, modélisées différemment :**
-- **EXTERNE (autre OTC) :** date SAISIE opérateur OBLIGATOIRE (BLOQUANT, le système ne peut l'inventer) + justificatif PDF R2.
-- **INTERNE (notre base) :** le système connaît/recalcule la date depuis la source ; on stocke un POINTEUR vers l'enregistrement + trace décision ; pas de justificatif (preuve en base).
+**Deux origines :**
+- INTERNE (notre base) : le système connaît la date depuis la source, propose, stocke un POINTEUR + trace décision, pas de justificatif (preuve en base).
+- EXTERNE (autre OTC) : date SAISIE opérateur OBLIGATOIRE (bloquant — le système ne peut l'inventer) + justificatif PDF R2.
 
-**Modèle à créer (colonnes futures `SessionCandidat`) :** `dispense_origine` (`'interne'`/`'externe'`) ; `dispense_source_type` (`'theorie'`/`'caces'`) + `dispense_source_id` (pointeur polymorphe) ; `dispense_date` (existe) OBLIGATOIRE si externe, null si interne.
+**Modèle futur (colonnes `SessionCandidat`) :** `dispense_origine` (`'interne'`/`'externe'`), `dispense_source_type` (`'theorie'`/`'caces'`), `dispense_source_id` (pointeur), `dispense_date` (existe) obligatoire si externe.
 
-**Comportement modale (3 temps) :** (1) sélection stagiaire → système cherche base interne, si trouvée INFORME sans cocher (« Dispense interne possible : [type+enreg #id] — départ 12 mois : [date] », traçabilité obligatoire) ; (2) opérateur coche ; (3) si coché : externe → date OBLIGATOIRE bloquant + justificatif ; interne → lie le pointeur.
+**Comportement modale 3 temps :** (1) sélection stagiaire → recherche base interne → si trouvée INFORME sans cocher (« Dispense interne possible : [type + enreg #id] — départ 12 mois : [date] ») ; (2) opérateur coche ; (3) si coché : externe → date + justificatif obligatoires, interne → lie le pointeur.
 
-**⚠️ IMPACT MOTEUR CACES (`caces_obtenus.py`) — chantier lié OBLIGATOIRE :** `calculer_et_synchroniser` ne gère AUJOURD'HUI QUE les théories INTERNES (3 priorités). Ne sait PAS traiter dispense EXTERNE. Ajouter cas : dispense externe → base = `dispense_date` → calcul obtention+échéance (10 ans R.482 / 5 ans sinon). VÉRIFIER TOUS LES CAS avant implémentation.
+**⚠️ IMPACT MOTEUR `caces_obtenus.py` (chantier lié OBLIGATOIRE) :** `calculer_et_synchroniser` ne gère AUJOURD'HUI que les théories internes (3 priorités). Ajouter le cas dispense EXTERNE → base théorique = `dispense_date` → calcul obtention (date pratique) + échéance (10 ans R.482 / 5 ans sinon). VÉRIFIER TOUS LES CAS avant implémentation.
+
+**Couches du chantier (à développer plus tard, ordre à définir) :** (a) détection + proposition (cherche et informe, sans cocher) ; (b) modèle de stockage origine/pointeur ; (c) impact moteur CACES (dispense externe comme 4e source de base théorique).
 
 ### ✅ Chantier terminé : table générique Justificatif — modèle + routes + permissions (2026-06-22)
 
