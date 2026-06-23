@@ -2288,3 +2288,145 @@ document.addEventListener('click', function(e) {
         afficherInfoToast('Aucun justificatif joint');
     }
 });
+
+// ===== Justificatifs de formation — menu multi-fichiers (chantier table Justificatif) =====
+(function() {
+  // Recupere le role pour savoir si on affiche le bouton Supprimer (back-office uniquement)
+  function _estBackOffice() {
+    var el = document.getElementById('session-data');
+    if (!el) return false;
+    var role = el.getAttribute('data-user-role') || '';
+    return role === 'admin' || role === 'utilisateur';
+  }
+
+  function _fermerMenuFormation() {
+    var ex = document.getElementById('overlay-justif-formation');
+    if (ex) ex.remove();
+  }
+
+  async function _chargerListeFormation(scId, container) {
+    container.innerHTML = '<div style="padding:12px; color:#888;">Chargement…</div>';
+    try {
+      var resp = await fetch('/api/sessions/' + SESSION_ID + '/justificatifs?type=formation&session_candidat_id=' + scId,
+                             { credentials: 'same-origin' });
+      if (!resp.ok) { container.innerHTML = '<div style="padding:12px; color:#cc0000;">Erreur de chargement</div>'; return; }
+      var liste = await resp.json();
+      if (!liste.length) {
+        container.innerHTML = '<div style="padding:12px; color:#d98800;">⚠️ Aucun justificatif de formation pour ce candidat.</div>';
+        return;
+      }
+      var html = '';
+      var back = _estBackOffice();
+      liste.forEach(function(j) {
+        var d = j.date_upload ? new Date(j.date_upload).toLocaleDateString('fr-FR') : '';
+        html += '<div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid #eee;">'
+              + '<span style="flex:1; font-size:13px;">📄 ' + (j.fichier_nom || 'fichier')
+              + '<span style="color:#999; font-size:11px;"> · ' + d + (j.uploade_par ? ' · ' + j.uploade_par : '') + '</span></span>'
+              + '<button class="btn btn-secondary" style="font-size:11px; padding:2px 8px;" data-action="justif-formation-voir" data-id="' + j.id + '">Voir</button>'
+              + (back ? '<button class="btn" style="font-size:11px; padding:2px 8px; background:#cc0000; color:#fff;" data-action="justif-formation-supprimer" data-id="' + j.id + '">🗑️</button>' : '')
+              + '</div>';
+      });
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = '<div style="padding:12px; color:#cc0000;">Erreur reseau</div>';
+    }
+  }
+
+  function _ouvrirMenuFormation(scId) {
+    _fermerMenuFormation();
+    var overlay = document.createElement('div');
+    overlay.id = 'overlay-justif-formation';
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:9999; display:flex; align-items:center; justify-content:center;';
+    overlay.setAttribute('data-sc-id', scId);
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff; border-radius:10px; width:90%; max-width:480px; max-height:80vh; overflow:auto; box-shadow:0 8px 30px rgba(0,0,0,0.3);';
+    box.innerHTML =
+        '<div style="background:#2d2d2d; color:#fff; padding:12px 16px; border-radius:10px 10px 0 0; display:flex; align-items:center; justify-content:between;">'
+      + '<strong style="flex:1;">📋 Justificatifs de formation</strong>'
+      + '<span data-action="justif-formation-fermer" style="cursor:pointer; font-size:18px;">✕</span>'
+      + '</div>'
+      + '<div id="liste-justif-formation"></div>'
+      + '<div style="padding:12px 16px; border-top:1px solid #eee;">'
+      + '<button class="btn" style="background:#1a7a3a; color:#fff;" data-action="justif-formation-ajouter">+ Ajouter un fichier</button>'
+      + '</div>';
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    _chargerListeFormation(scId, document.getElementById('liste-justif-formation'));
+  }
+
+  function _uploaderFormation(scId, fichier) {
+    var fd = new FormData();
+    fd.append('type', 'formation');
+    fd.append('session_candidat_id', scId);
+    fd.append('fichier', fichier);
+    afficherInfoToast('Envoi en cours…');
+    fetch('/api/sessions/' + SESSION_ID + '/justificatifs', { method: 'POST', credentials: 'same-origin', body: fd })
+      .then(function(resp) {
+        if (!resp.ok) { return resp.json().then(function(d) { throw new Error(d.detail || 'Erreur'); }); }
+        return resp.json();
+      })
+      .then(function() {
+        afficherSuccesToast('Justificatif ajoute');
+        // recharger la liste de la modale ouverte
+        var cont = document.getElementById('liste-justif-formation');
+        if (cont) _chargerListeFormation(scId, cont);
+        // rechargement page pour mettre a jour la pastille FORM. (compteur)
+        setTimeout(function() { location.reload(); }, 700);
+      })
+      .catch(function(err) { afficherErreur(err.message || 'Erreur upload'); });
+  }
+
+  // Listener delegue unique
+  document.addEventListener('click', function(e) {
+    var open = e.target.closest('[data-action="justif-formation-menu"]');
+    if (open) { _ouvrirMenuFormation(open.dataset.scId); return; }
+
+    var fermer = e.target.closest('[data-action="justif-formation-fermer"]');
+    if (fermer) { _fermerMenuFormation(); return; }
+
+    // clic sur l'overlay (hors box) ferme
+    if (e.target.id === 'overlay-justif-formation') { _fermerMenuFormation(); return; }
+
+    var voir = e.target.closest('[data-action="justif-formation-voir"]');
+    if (voir) {
+      window.open('/api/sessions/' + SESSION_ID + '/justificatifs/' + voir.dataset.id, '_blank');
+      return;
+    }
+
+    var ajouter = e.target.closest('[data-action="justif-formation-ajouter"]');
+    if (ajouter) {
+      var overlay = document.getElementById('overlay-justif-formation');
+      var scId = overlay ? overlay.getAttribute('data-sc-id') : null;
+      if (!scId) return;
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.doc,.docx,.xls,.xlsx';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      input.addEventListener('change', function() {
+        if (input.files && input.files[0]) _uploaderFormation(scId, input.files[0]);
+        input.remove();
+      });
+      input.click();
+      return;
+    }
+
+    var suppr = e.target.closest('[data-action="justif-formation-supprimer"]');
+    if (suppr) {
+      var overlay2 = document.getElementById('overlay-justif-formation');
+      var scId2 = overlay2 ? overlay2.getAttribute('data-sc-id') : null;
+      if (!confirm('Supprimer ce justificatif de formation ?')) return;
+      fetch('/api/sessions/' + SESSION_ID + '/justificatifs/' + suppr.dataset.id, { method: 'DELETE', credentials: 'same-origin' })
+        .then(function(resp) {
+          if (!resp.ok) { return resp.json().then(function(d) { throw new Error(d.detail || 'Erreur'); }); }
+          afficherSuccesToast('Justificatif supprime');
+          if (scId2) { var c = document.getElementById('liste-justif-formation'); if (c) _chargerListeFormation(scId2, c); }
+          setTimeout(function() { location.reload(); }, 700);
+        })
+        .catch(function(err) { afficherErreur(err.message || 'Erreur suppression'); });
+      return;
+    }
+  });
+})();
