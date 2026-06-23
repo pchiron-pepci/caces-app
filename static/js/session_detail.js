@@ -2317,13 +2317,14 @@ document.addEventListener('click', function(e) {
       }
       var html = '';
       var back = _estBackOffice();
+      var _peutSuppr = function(j) { return _estBackOffice() || (j.uploade_par_role === 'terrain'); };
       liste.forEach(function(j) {
         var d = j.date_upload ? new Date(j.date_upload).toLocaleDateString('fr-FR') : '';
         html += '<div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid #eee;">'
               + '<span style="flex:1; font-size:13px;">📄 ' + (j.fichier_nom || 'fichier')
               + '<span style="color:#999; font-size:11px;"> · ' + d + (j.uploade_par ? ' · ' + j.uploade_par : '') + '</span></span>'
               + '<button class="btn btn-secondary" style="font-size:11px; padding:2px 8px;" data-action="justif-formation-voir" data-id="' + j.id + '">Voir</button>'
-              + (back ? '<button class="btn-suppr-justif" style="border:none; background:transparent; color:#888; cursor:pointer; font-size:14px; padding:2px 6px;" data-action="justif-formation-supprimer" data-id="' + j.id + '" title="Supprimer ce justificatif">🗑️</button>' : '')
+              + (_peutSuppr(j) ? '<button class="btn-suppr-justif" style="border:none; background:transparent; color:#888; cursor:pointer; font-size:14px; padding:2px 6px;" data-action="justif-formation-supprimer" data-id="' + j.id + '" title="Supprimer ce justificatif">🗑️</button>' : '')
               + '</div>';
       });
       container.innerHTML = html;
@@ -2478,6 +2479,7 @@ document.addEventListener('click', function(e) {
         return;
       }
       var back = _docEstBackOffice();
+      var _docPeutSuppr = function(j) { return _docEstBackOffice() || (j.uploade_par_role === 'terrain'); };
       var html = '';
       liste.forEach(function(j) {
         var d = j.date_upload ? new Date(j.date_upload).toLocaleDateString('fr-FR') : '';
@@ -2489,7 +2491,7 @@ document.addEventListener('click', function(e) {
               + '</div>'
               + '<div style="flex:0 0 auto; display:flex; align-items:center; gap:6px; margin-left:auto;">'
               + '<button class="btn btn-secondary" style="font-size:11px; padding:2px 8px;" data-action="doc-session-voir" data-id="' + j.id + '">Voir</button>'
-              + (back ? '<button style="border:none; background:transparent; color:#888; cursor:pointer; font-size:14px; padding:2px 6px;" data-action="doc-session-supprimer" data-id="' + j.id + '" title="Supprimer">🗑️</button>' : '')
+              + (_docPeutSuppr(j) ? '<button style="border:none; background:transparent; color:#888; cursor:pointer; font-size:14px; padding:2px 6px;" data-action="doc-session-supprimer" data-id="' + j.id + '" title="Supprimer">🗑️</button>' : '')
               + '</div>'
               + '</div>';
       });

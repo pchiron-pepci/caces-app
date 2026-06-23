@@ -2113,6 +2113,7 @@ def lister_justificatifs(
             "date_upload": j.date_upload.isoformat() if j.date_upload else None,
             "uploade_par": j.uploade_par,
             "libelle": j.libelle,
+            "uploade_par_role": j.uploade_par_role,
         }
         for j in rows
     ]
