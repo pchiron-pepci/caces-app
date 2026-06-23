@@ -15,6 +15,8 @@ class CacesObtenu(Base):
     date_obtention = Column(Date, nullable=False)
     date_echeance = Column(Date, nullable=False)
     post_cloture = Column(Boolean, default=False, nullable=True)
+    resultat_theorie_id = Column(Integer, ForeignKey("resultats_theorie.id"), nullable=True)
+    caces_initial_id    = Column(Integer, ForeignKey("caces_obtenus.id"), nullable=True)
     numero_ordre = Column(Integer, unique=True, nullable=True)
     statut = Column(String(20), nullable=False, default="a_valider")
     motif_annulation = Column(Text, nullable=True)

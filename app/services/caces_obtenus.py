@@ -131,6 +131,7 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
         "date_echeance": echeance,
         "options_obtenues": ep.options_obtenues,
         "post_cloture": post_cloture,
+        "resultat_theorie_id": (rt.id if (rt and not post_cloture) else None),
     }
 
 
@@ -165,6 +166,7 @@ def calculer_et_synchroniser(db: Session) -> list:
                 existing.date_echeance = calc["date_echeance"]
                 existing.options_obtenues = calc["options_obtenues"]
                 existing.post_cloture = calc["post_cloture"]
+                existing.resultat_theorie_id = calc["resultat_theorie_id"]
             elif existing.statut == "annule" and calc is not None:
                 # Remise en a_valider automatique : les données source sont toujours valides
                 existing.statut = "a_valider"
@@ -173,6 +175,7 @@ def calculer_et_synchroniser(db: Session) -> list:
                 existing.date_echeance = calc["date_echeance"]
                 existing.options_obtenues = calc["options_obtenues"]
                 existing.post_cloture = calc["post_cloture"]
+                existing.resultat_theorie_id = calc["resultat_theorie_id"]
             continue
 
         if calc is None:
@@ -188,6 +191,7 @@ def calculer_et_synchroniser(db: Session) -> list:
             date_echeance=calc["date_echeance"],
             statut="a_valider",
             post_cloture=calc["post_cloture"],
+            resultat_theorie_id=calc["resultat_theorie_id"],
         ))
 
     db.commit()

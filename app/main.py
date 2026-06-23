@@ -133,6 +133,8 @@ def _run_startup_migrations():
         # caces_obtenus
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT",
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS post_cloture BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS resultat_theorie_id INTEGER",
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS caces_initial_id INTEGER",
         # carte_caces
         "ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS caces_json TEXT",
         "ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS token_verification VARCHAR(36)",
@@ -361,6 +363,8 @@ try:
                 date_obtention DATE NOT NULL,
                 date_echeance DATE NOT NULL,
                 post_cloture BOOLEAN DEFAULT FALSE,
+                resultat_theorie_id INTEGER,
+                caces_initial_id INTEGER,
                 numero_ordre INTEGER UNIQUE,
                 statut VARCHAR(20) NOT NULL DEFAULT 'a_valider',
                 created_at TIMESTAMP DEFAULT NOW(),
