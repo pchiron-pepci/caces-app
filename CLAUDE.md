@@ -314,13 +314,16 @@ python init_questions_r482.py
 | Basse | Responsive mobile (CSS media queries) | à faire |
 | Basse | UT options facultatives = +0.5 UT (incluses déjà dans UT catégorie) | ✅ fait |
 | Basse | Supprimer `date_habilitation` et `date_expiration_habilitation` du modèle `Testeur` (doublons avec `HabilitationTesteur`) | à faire |
-| Haute | Table générique Justificatif (formation + dispense + présence) — modèle cadré | ✅ fait |
-| Haute | Justificatif formation : routes génériques ✅ — indicateur tableau + menu UI | à faire |
-| Haute | Détection dispense interne/externe modale (specs cadrées) | à faire |
-| Haute | Modèle dispense origine/pointeur (dispense_origine + source_type/id) | à faire |
-| Haute | Brancher dispense externe + CACES interne au moteur caces_obtenus.py | à faire |
-| Moyenne | Migrer justificatif dispense (colonnes plates) vers table Justificatif | à faire |
+| Haute | Justificatif formation (table générique, multi-fichiers, indicateur, menu) | ✅ fait |
+| Haute | Onglet Documents de session (document_session + libelle + puces + responsive) | ✅ fait |
+| Haute | Stockage R2 + storage.py (+ images jpg/png/heic) | ✅ fait |
+| Haute | Suppression justificatifs par rôle (uploade_par_role) — cadré, 5 étapes | à faire |
+| Haute | Détection dispense interne/externe (modale candidat) | à faire |
+| Haute | Brancher dispense externe au moteur caces_obtenus.py | à faire |
+| Moyenne | Convergence justificatif dispense → table Justificatif (fichier seulement) | à faire |
+| Moyenne | Corrections couleur pastille FORM. ardoise + footer Actions en ligne | à faire |
 | Moyenne | Migrer justificatif théorie (ResultatTheorie.justificatif_pdf base64) vers R2 | à faire |
+| Note | Notice utilisateur Justificatifs/Documents (.docx) générée pour PEPCI | fait (hors repo) |
 
 ### Dashboard — route GET /
 Variables de contexte passées au template `dashboard.html` :
@@ -1442,3 +1445,55 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - Multi-fichiers → clic sur l'icône ouvre un MENU (voir fichiers / ajouter) plutôt qu'une action simple. Pas de surcharge de la modale candidat.
 
 **Convergence future :** migrer la dispense (colonnes plates actuelles) vers cette table générique (dette technique assumée). La table prévoit déjà `type='dispense'`.
+
+### ✅ Chantier terminé : onglet "Documents" de session (niveau session)
+
+**5e onglet "📁 Docs."** dans la page session (à côté de Séq./Cand./UT/Mat.). Pattern onglet : bouton `data-tab="documents"` + panneau `id="tab-documents"` + `'documents'` ajouté à la liste EN DUR du `forEach` de `showTab` (3 touches synchronisées obligatoires — sinon la bascule casse).
+
+**Périmètre :** UNIQUEMENT documents niveau session (`type='document_session'`, `session_candidat_id NULL`). Ne mélange PAS les justificatifs candidats (formation/dispense) — décision anti-confusion : justificatifs candidats dans le tableau candidats, documents de session dans l'onglet.
+
+**UI :**
+- Zone d'ajout = champ libellé libre + **boutons-puces** (Feuille de présence / VGP / Matériel / Photo / Convention / Autre) qui remplissent le champ au clic — REMPLACENT la `<datalist>` (inopérante sur mobile : s'affiche mais le choix ne s'inscrit pas dans le champ). Champ fichier (`accept` PDF/Word/Excel/images).
+- Liste en **cartes flex responsive** (pas de table — débordait sur mobile) ; nom de fichier tronqué sur une ligne (`text-overflow:ellipsis` + `min-width:0` sur le parent + `title` au survol). Badge libellé ardoise `#4a5568`.
+
+**JS :** IIFE dédiée dans `static/js/session_detail.js`. `_docChargerListe` (chargée à l'ouverture de l'onglet via listener `show-tab[documents]`), `_docAjouter` (POST FormData, reset inputs, rechargement liste sans reload), `_docSupprimer` (confirm + DELETE + rechargement). CSP-safe, pas de `location.reload`.
+
+**Permissions :** POST `/justificatifs$` déjà whitelisté terrain ; DELETE `/justificatifs/{id}` → catch-all → back-office only. Bouton 🗑️ visible uniquement si `_docEstBackOffice()` (`role == 'admin' || role == 'utilisateur'`).
+
+---
+
+### 🔍 CADRÉ : suppression des justificatifs par RÔLE (diagnostic fait, 5 étapes)
+
+**Règle :** "uploadé par le terrain → supprimable par le terrain ; back-office → accès total". Distinction par RÔLE (pas par personne — un testeur terrain peut supprimer ce qu'un autre testeur terrain a uploadé).
+
+**Modèle :** ajouter colonne `uploade_par_role` (`'terrain'`/`'admin'`/`'utilisateur'`) sur `justificatifs`, renseignée à l'upload depuis `request.state.user.role`.
+
+**5 étapes :**
+1. Colonne `uploade_par_role` : modèle (`app/models/justificatif.py`) + migration startup `ALTER TABLE IF NOT EXISTS` + bloc `CREATE TABLE` dans `main.py`
+2. Route `POST /{session_id}/justificatifs` : renseigner `uploade_par_role = user.role` à l'upload
+3. Route `DELETE /{session_id}/justificatifs/{justif_id}` : back-office (`role in ('admin','utilisateur')`) supprime tout ; terrain uniquement si `j.uploade_par_role == 'terrain'` (sinon 403)
+4. Middleware `_verifier_role` dans `main.py` : **WHITELISTER** le `DELETE /api/sessions/\d+/justificatifs/\d+` pour terrain — SANS ça la logique de route ne sert à rien (le middleware intercepte avant la route)
+5. Front : bouton 🗑️ visible au terrain seulement sur ses propres fichiers (`j.uploade_par_role == 'terrain'`) — sinon 403 au clic même si visible
+
+**Périmètre :** table `Justificatif` (formation + documents de session). Dispense en colonnes plates suivra à la convergence.
+
+**Anciens fichiers** sans `uploade_par_role` (NULL) → seul back-office peut supprimer (comportement sûr par défaut).
+
+**Valeurs rôle confirmées :** `"admin"` / `"utilisateur"` explicites dans le code ; terrain = tout le reste (catch-all). Accès via `request.state.user.role`.
+
+---
+
+### 🔍 CADRÉ : convergence chirurgicale du justificatif de dispense vers table Justificatif
+
+**FRONTIÈRE STRICTE :** SEUL le ou les FICHIER(S) de dispense convergent vers la table générique (`type='dispense'`, multi-fichiers au passage). La LOGIQUE MÉTIER reste sur `SessionCandidat` : `dispense_date`, `dispense_note`, `theorie_dispensee`, + futures `dispense_origine`/`source_type`/`source_id`.
+
+**Migration :** fichiers existants des colonnes `dispense_fichier_*` → lignes `Justificatif` ; supprimer les 3 colonnes `dispense_fichier_cle`/`nom`/`type` (PAS `dispense_date` ni `dispense_note`). Refondre l'UI dispense pour le menu multi-fichiers commun (identique à FORM.).
+
+---
+
+### ⚠️ Corrections couleur NON appliquées (commit 0f74a86 au message trompeur — code jamais modifié)
+
+**LEÇON : ne JAMAIS se fier au message de commit — toujours `grep` sur le fichier réel après modif.**
+
+- **Pastille FORM. "présente" :** encore `#1a7a3a` (vert) dans HTML (`session_detail.html` ~1592) ET JS (`_majPastilleFormation` ~2392). À passer en `#4a5568` (ardoise) aux DEUX endroits (sinon le JS repeint en vert après chaque rechargement).
+- **Footer Actions mobile :** boutons crayon+corbeille s'empilent (capture confirmée) au lieu d'être en ligne. Manque `flex-direction:row` + `flex-wrap:nowrap` + groupement. Fond à passer en `#e8edf5` (ardoise pâle).
