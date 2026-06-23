@@ -2389,7 +2389,7 @@ document.addEventListener('click', function(e) {
       if (!pastille) return;
       pastille.setAttribute('data-nb', n);
       if (n > 0) {
-        pastille.style.background = '#1a7a3a';
+        pastille.style.background = '#4a5568';
         pastille.style.color = '#fff';
         pastille.textContent = '📋 ' + n;
         pastille.title = n + ' justificatif(s) de formation — cliquer pour voir / ajouter';
