@@ -1481,7 +1481,24 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Dépend AUSSI du pré-requis `post_cloture` persisté (FAIT, étape 0)** pour identifier les CACES non-extension en R1.
 
-**PLAN REFONTE MOTEUR (`caces_obtenus.py`) :** R0 = lien théorie↔CACES (si retenu) ; R1 = fonction isolée « base théorique valable » (3 sources) testable ; R2 = écart B (fenêtre +1 an −1 jour exact via `relativedelta`, théorie <= pratique) ; R3 = écart C (choix CACES initial extension) à trancher ; R4 = brancher dans `_calculer_pour_epreuve` + tests cas d'école ; puis étape A dispense (proposition s'appuie sur R1).
+**PLAN REFONTE MOTEUR (`caces_obtenus.py`) :** R0 = AJOUTER les DEUX liens (`resultat_theorie_id` + `caces_initial_id`) sur `CacesObtenu`, renseignés au calcul/recalcul (pattern `post_cloture`) ; R1 = fonction « base théorique valable » (3 sources) ; R2 = écart B (fenêtre +1 an −1 jour exact via `relativedelta`, théorie <= pratique) ; R3 = écart C RÉSOLU = `caces_initial` = CACES non-ext partageant la théorie de référence ; R4 = brancher dans `_calculer_pour_epreuve` + tests cas d'école ; puis étape A dispense (proposition s'appuie sur R1).
+
+---
+
+### 🔧 ARCHITECTURE FINALE : deux liens sur `CacesObtenu` + résolution écart C
+
+**DEUX LIENS COMPLÉMENTAIRES (mutuellement exclusifs) sur `CacesObtenu` :**
+- `resultat_theorie_id` (FK `ResultatTheorie`, nullable) : la théorie qui FONDE le CACES. Rempli si NON-extension (théorie propre). NULL si extension (pas de théorie propre). Usage : déterminer si une théorie est orpheline (source R2-b) — une théorie est orpheline si AUCUN CACES non-extension ne la pointe.
+- `caces_initial_id` (FK `CacesObtenu`, nullable, auto-référence) : le CACES initial dont l'extension HÉRITE l'échéance. Rempli si extension. NULL si non-extension. Usage : porter l'échéance héritée + résoudre l'écart C.
+
+Un CACES est soit non-extension (`resultat_theorie_id` rempli, `caces_initial_id` NULL), soit extension (`resultat_theorie_id` NULL, `caces_initial_id` rempli). Reflète la réalité métier sans confusion.
+
+**RÉSOLUTION ÉCART C (le bon CACES initial pour une extension) :**
+Une extension hérite de l'échéance du CACES initial ADOSSÉ À LA MÊME THÉORIE DE RÉFÉRENCE que celle qui rend l'extension possible (= la base valable < 12 mois déterminée par l'algorithme consolidé). PAS « le plus ancien » ni « le plus récent » dans l'absolu — celui qui PARTAGE LA THÉORIE. On le retrouve via `resultat_theorie_id` : le CACES initial = celui dont `resultat_theorie_id == la théorie de référence de l'extension`.
+
+**Exemple (plusieurs initiaux) :** R.482 cat A théorie+pratique 01/01/2025 (initial 1, éch 31/12/2034) ; cat F théorie+pratique 15/01/2026 (initial 2, éch 14/01/2036) ; extension B1 le 15/06/2026 → théorie du cat A (01/01/2025) PÉRIMÉE au 15/06/2026 (>12 mois), théorie du cat F (15/01/2026) VALABLE → B1 hérite de l'échéance du cat F = 14/01/2036 (PAS du cat A). Le bon initial = celui qui partage la théorie valable.
+
+**BOUCLE COHÉRENTE :** la théorie de référence (base valable la plus récente, algorithme consolidé) détermine À LA FOIS : (1) la possibilité de dispense, (2) le CACES initial dont l'extension hérite l'échéance. UNE SEULE logique → un seul moteur (vision cible : éviter les dérives).
 
 ---
 
@@ -1491,7 +1508,7 @@ Cas 1, 2, 3 globalement justes. Écarts trouvés :
 
 - **ÉCART A (CONFIRMÉ, CORRIGÉ commit 1d8a380)** : `_chercher_theorie_autre_session` (ligne 45) ET priorité 1 même session (ligne 74) triaient par `ResultatTheorie.id.asc()` = théorie la PLUS ANCIENNE. Doit être la PLUS RÉCENTE. Corrigé → `order_by(JourTest.date.desc(), ResultatTheorie.id.desc())`. Priorité 1 : ajout du JOIN JourTest (absent avant).
 - **ÉCART B (à corriger)** : fenêtre `JourTest.date` entre `date_pratique ± 365 jours` (SYMÉTRIQUE). Devrait être « théorie + 12 mois >= pratique » (théorie AVANT la pratique, dans les 12 mois ; le +365 après pratique n'a pas de sens pour une théorie antérieure ; 365 jours ≠ +1 an −1 jour). À corriger.
-- **ÉCART C (à examiner)** : choix du CACES initial pour l'extension via `order_by(CacesObtenu.date_echeance.asc()).first()` (ligne 120). Est-ce le bon « CACES initial » ? À confronter à la règle réglementaire.
+- **ÉCART C (RÉSOLU par architecture) :** `order_by(CacesObtenu.date_echeance.asc()).first()` (ligne 120) = « le plus ancien » — incorrect si plusieurs initiaux avec théories différentes. Solution : `caces_initial` = CACES non-ext dont `resultat_theorie_id` == théorie de référence de l'extension (voir section ARCHITECTURE FINALE ci-dessus). Attend R0 (liens FK).
 - **ÉCART D** = même bug que A (tri id asc en priorité 1) → corrigé avec A.
 
 ### ✅ Chantier terminé : table générique Justificatif — modèle + routes + permissions (2026-06-22)
