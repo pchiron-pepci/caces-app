@@ -1730,7 +1730,34 @@
 
 <!-- TAB DOCUMENTS -->
 <div id="tab-documents" style="display:none;">
-    <div style="padding:16px; color:#888;">Onglet Documents — contenu à venir.</div>
+  <div style="padding:16px;">
+    <h3 style="margin:0 0 4px; color:#2d2d2d;">📁 Documents de la session</h3>
+    <p style="margin:0 0 16px; color:#777; font-size:13px;">Feuilles de présence, VGP, photos d'engins, conventions… Documents liés à la session (pas à un candidat). Formats : PDF, Word, Excel, images. 10 Mo max.</p>
+
+    <div style="background:#f6f7f9; border:1px solid #e2e5ea; border-radius:8px; padding:12px; margin-bottom:16px;">
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
+        <div style="flex:1; min-width:160px;">
+          <label style="display:block; font-size:12px; color:#555; margin-bottom:4px;">Nature / libellé</label>
+          <input type="text" id="doc-session-libelle" list="doc-session-natures" placeholder="ex. Feuille de présence, VGP…" style="width:100%; padding:6px 8px; border:1px solid #cbd2dc; border-radius:6px;">
+          <datalist id="doc-session-natures">
+            <option value="Feuille de présence"></option>
+            <option value="VGP"></option>
+            <option value="Matériel"></option>
+            <option value="Photo"></option>
+            <option value="Convention"></option>
+            <option value="Autre"></option>
+          </datalist>
+        </div>
+        <div style="flex:1; min-width:160px;">
+          <label style="display:block; font-size:12px; color:#555; margin-bottom:4px;">Fichier</label>
+          <input type="file" id="doc-session-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.heic" style="width:100%;">
+        </div>
+        <button class="btn" data-action="doc-session-ajouter" style="background:#2d2d2d; color:#fff; white-space:nowrap;">+ Ajouter le document</button>
+      </div>
+    </div>
+
+    <div id="doc-session-liste"><div style="color:#888; padding:8px;">Chargement…</div></div>
+  </div>
 </div>
 
 <!-- MODAL PLANIFIER JOUR THEORIE -->

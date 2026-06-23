@@ -2454,3 +2454,106 @@ document.addEventListener('click', function(e) {
     }
   });
 })();
+
+// ===== Onglet Documents de session (type=document_session) =====
+(function() {
+  function _docEstBackOffice() {
+    var el = document.getElementById('session-data');
+    if (!el) return false;
+    var role = el.getAttribute('data-user-role') || '';
+    return role === 'admin' || role === 'utilisateur';
+  }
+
+  async function _docChargerListe() {
+    var cont = document.getElementById('doc-session-liste');
+    if (!cont) return;
+    cont.innerHTML = '<div style="color:#888; padding:8px;">Chargement…</div>';
+    try {
+      var resp = await fetch('/api/sessions/' + SESSION_ID + '/justificatifs?type=document_session',
+                             { credentials: 'same-origin' });
+      if (!resp.ok) { cont.innerHTML = '<div style="color:#cc0000; padding:8px;">Erreur de chargement</div>'; return; }
+      var liste = await resp.json();
+      if (!liste.length) {
+        cont.innerHTML = '<div style="color:#999; padding:8px; font-style:italic;">Aucun document pour cette session.</div>';
+        return;
+      }
+      var back = _docEstBackOffice();
+      var html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+      liste.forEach(function(j) {
+        var d = j.date_upload ? new Date(j.date_upload).toLocaleDateString('fr-FR') : '';
+        html += '<tr style="border-bottom:1px solid #eee;">'
+              + '<td style="padding:8px 6px;">'
+              + '<span style="display:inline-block; background:#4a5568; color:#fff; font-size:11px; padding:1px 7px; border-radius:10px; margin-right:6px;">'
+              + (j.libelle ? _docEsc(j.libelle) : 'Document') + '</span>'
+              + '📄 ' + _docEsc(j.fichier_nom || 'fichier') + '</td>'
+              + '<td style="padding:8px 6px; color:#999; white-space:nowrap;">' + d + (j.uploade_par ? ' · ' + _docEsc(j.uploade_par) : '') + '</td>'
+              + '<td style="padding:8px 6px; text-align:right; white-space:nowrap;">'
+              + '<button class="btn btn-secondary" style="font-size:11px; padding:2px 8px;" data-action="doc-session-voir" data-id="' + j.id + '">Voir</button>'
+              + (back ? ' <button style="border:none; background:transparent; color:#888; cursor:pointer; font-size:14px; padding:2px 6px;" data-action="doc-session-supprimer" data-id="' + j.id + '" title="Supprimer">🗑️</button>' : '')
+              + '</td></tr>';
+      });
+      html += '</table>';
+      cont.innerHTML = html;
+    } catch (e) {
+      cont.innerHTML = '<div style="color:#cc0000; padding:8px;">Erreur réseau</div>';
+    }
+  }
+
+  function _docEsc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function _docAjouter() {
+    var fileInput = document.getElementById('doc-session-file');
+    var libelleInput = document.getElementById('doc-session-libelle');
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+      alert('Sélectionnez un fichier.'); return;
+    }
+    var libelle = libelleInput ? libelleInput.value.trim() : '';
+    var fd = new FormData();
+    fd.append('type', 'document_session');
+    fd.append('fichier', fileInput.files[0]);
+    if (libelle) fd.append('libelle', libelle);
+    try {
+      var resp = await fetch('/api/sessions/' + SESSION_ID + '/justificatifs', {
+        method: 'POST', body: fd, credentials: 'same-origin'
+      });
+      var data = await resp.json();
+      if (!resp.ok) { alert(data.detail || 'Erreur upload'); return; }
+      fileInput.value = '';
+      if (libelleInput) libelleInput.value = '';
+      _docChargerListe();
+    } catch (e) {
+      alert('Erreur réseau');
+    }
+  }
+
+  async function _docSupprimer(id) {
+    if (!confirm('Supprimer ce document ?')) return;
+    try {
+      var resp = await fetch('/api/sessions/' + SESSION_ID + '/justificatifs/' + id, {
+        method: 'DELETE', credentials: 'same-origin'
+      });
+      if (!resp.ok) { alert('Erreur suppression'); return; }
+      _docChargerListe();
+    } catch (e) {
+      alert('Erreur réseau');
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    var tabBtn = e.target.closest('[data-action="show-tab"][data-tab="documents"]');
+    if (tabBtn) { _docChargerListe(); return; }
+
+    var act = e.target.closest('[data-action]');
+    if (!act) return;
+    var action = act.getAttribute('data-action');
+
+    if (action === 'doc-session-ajouter') { _docAjouter(); return; }
+    if (action === 'doc-session-voir') {
+      window.open('/api/sessions/' + SESSION_ID + '/justificatifs/' + act.getAttribute('data-id'), '_blank');
+      return;
+    }
+    if (action === 'doc-session-supprimer') { _docSupprimer(act.getAttribute('data-id')); return; }
+  });
+})();
