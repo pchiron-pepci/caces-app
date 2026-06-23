@@ -20,6 +20,9 @@ class SessionCandidat(Base):
     dispense_fichier_nom = Column(String(255), nullable=True)
     dispense_fichier_type = Column(String(100), nullable=True)
     dispense_date = Column(Date, nullable=True)
+    dispense_origine     = Column(String(20), nullable=True)   # 'interne' | 'externe'
+    dispense_source_type = Column(String(20), nullable=True)   # 'theorie' | 'caces'
+    dispense_source_id   = Column(Integer, nullable=True)      # id ResultatTheorie ou CacesObtenu (NULL si externe)
     theorie_date = Column(Date, nullable=True)
     theorie_note_totale = Column(Integer, nullable=True)
     theorie_obtenue = Column(Boolean, nullable=True)
