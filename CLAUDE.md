@@ -1479,6 +1479,25 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - L'interne (`dispense_origine='interne'`) n'est PAS contrôlé ici : sa date est validée par `detecter_base_theorique` (qui a déjà vérifié la fenêtre 12 mois).
 - `date` et `HTTPException` déjà importés en tête de `sessions.py` — aucun import de tête ajouté.
 
+### ✅ Chantier terminé : dispense externe — indicateur visuel (C1-UI) (2026-06-23)
+
+**Contexte :** le justificatif d'une dispense externe s'uploade par un appel SÉPARÉ (`POST /candidats/{sc_id}/dispense-fichier`), APRÈS le save du candidat — l'`sc_id` n'existe pas avant le save, donc impossible d'exiger le fichier comme garde-fou dur au save. Décision : alerte de vigilance NON BLOQUANTE (cohérent avec l'alerte "⚠️ Formation" existante).
+
+**Implémentation (purement template, aucun JS, aucune migration) :**
+- `templates/session_detail.html`, cellule TH de la table candidats : pastille ⚠️ ajoutée APRÈS le span "Disp." si `sc.dispense_origine == 'externe' and not sc.dispense_fichier_cle`.
+- `title` : "Dispense externe : justificatif manquant (à joindre)".
+- `sc.dispense_origine` lisible directement (objet ORM passé au template via `session_candidats`).
+- Le span "Disp." existant (`data-action="dispense-fichier-direct"`) reste strictement inchangé.
+
+**Rendu :** externe sans justif → "Disp. ⚠️" ; externe avec justif → "Disp." ; interne → "Disp." (l'alerte ne concerne QUE l'externe).
+
+**Bilan étape C1 (garde-fous dispense externe) — COMPLET :**
+- Date obligatoire + contrôle 12 mois → GARANTIS SERVEUR (rejet au save, C1-serveur)
+- Justificatif → alerte visuelle ⚠️ non bloquante (C1-UI)
+- Réserve : si blocage dur du justificatif souhaité un jour → le poser à la CLÔTURE de session (jalon où l'`sc_id` existe et le dossier doit être complet), pas au save. Chantier à part, seulement si le besoin se confirme.
+
+**RESTE étape C : C2-moteur** — la dispense externe (date saisie + justif) devient une 4e source que `caces_obtenus.py` sait utiliser comme base théorique pour calculer les dates du futur CACES. Morceau délicat (touche au moteur refond), à cadrer à part. À faire à tête fraîche.
+
 ### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
 
 **DÉCOUVERTE MAJEURE :** cette logique ne couvre PAS que la dispense. La même mécanique (trouver la base théorique valable, distinguer extension/non-extension, prendre la plus récente) sert AUSSI à la détermination des dates de CACES. Dispense et calcul de dates = deux usages de la MÊME logique sous-jacente → à terme, source de vérité commune (réutiliser/étendre `caces_obtenus.py`, pas dupliquer).
