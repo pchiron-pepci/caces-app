@@ -1463,6 +1463,26 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 ---
 
+### 🔍 ALGORITHME DÉFINITIF : base théorique valable (dispense ET calcul dates CACES)
+
+**2 RECHERCHES EN PARALLÈLE (pas une hiérarchie de priorités) :**
+
+**Recherche 1 — CACES de référence :** le CACES NON-extension (`post_cloture==False`), statut valide, le PLUS RÉCENT par `date_obtention`, dont `date_obtention` < 12 mois. S'il existe PLUSIEURS CACES « initiaux » (non-extension) dans la famille → prendre le PLUS RÉCENT.
+
+**Recherche 2 — théorie ORPHELINE :** la théorie réussie (`ResultatTheorie` `obtenue==True`) la PLUS RÉCENTE, < 12 mois, SANS CACES rattaché (= orpheline), et plus récente que le CACES de référence s'il existe.
+
+**COHÉRENCE ÉTANCHE (clé) :** si un CACES a été délivré, la théorie qui le sous-tend N'EST PLUS orpheline (elle est « consommée » par ce CACES). Donc JAMAIS de double comptage : une théorie est soit orpheline (pas de CACES → recherche 2), soit rattachée à un CACES (→ recherche 1). Jamais les deux.
+
+**DÉCISION :** base retenue = la PLUS RÉCENTE entre (recherche 1) et (recherche 2). « Le plus récent » s'applique à CHAQUE niveau → durée de validité maximale au bénéfice du candidat (même s'il existe une théorie validée sur la session à une date plus ancienne, on ne la prend pas).
+
+**VALABLE/DISPENSABLE si :** base + 1 an − 1 jour >= aujourd'hui.
+
+**Dépend du PRÉ-REQUIS `post_cloture` persisté** (sans lui, impossible d'identifier les CACES non-extension en recherche 1).
+
+**Note architecture :** cet algorithme remplace la logique « 3 priorités hiérarchiques + bornes ±365j » du moteur actuel (`caces_obtenus.py`) qui a les écarts A (corrigé), B et C. La refonte du moteur vers cet algorithme unifié est le vrai chantier — il sert le calcul des dates CACES ET la dispense (source de vérité commune).
+
+---
+
 ### 🔧 AUDIT moteur `caces_obtenus.py` — écarts vs cadrage (code critique, NON en prod)
 
 Cas 1, 2, 3 globalement justes. Écarts trouvés :
