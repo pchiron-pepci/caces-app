@@ -328,8 +328,8 @@ python init_questions_r482.py
 | Haute | Moteur CACES — écart A corrigé (théorie la plus récente, date desc) | ✅ fait |
 | Haute | Moteur CACES — écart B (fenêtre 12 mois sens unique) | ✅ fait |
 | Haute | Moteur CACES — écart C (choix CACES initial extension) | à examiner |
-| Haute | Détection dispense — étape 0 : persister post_cloture sur CacesObtenu | à faire |
-| Haute | Détection dispense — étape A : proposition vérifiable dans modale candidat | à faire |
+| Haute | Détection dispense — étape 0 : persister post_cloture sur CacesObtenu | ✅ fait |
+| Haute | Détection dispense — étape A : proposition vérifiable dans modale candidat | ✅ fait |
 | Moyenne | Migrer justificatif théorie (ResultatTheorie.justificatif_pdf base64) vers R2 | ✅ fait |
 | Note | Notice utilisateur Justificatifs/Documents (.docx) générée pour PEPCI | fait (hors repo) |
 
@@ -1425,6 +1425,42 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - Le fichier R2 ne part JAMAIS seul → purge explicite `storage.delete_fichier()` AVANT `db.delete`.
 - Variables `--noryx-*` CSS définies seulement dans `test_theorie.html` (PAS globales) → rester inline en dur hors test_theorie tant que CSS non centralisé.
 - JAMAIS éditer requirements.txt/Python via PowerShell (UTF-16 → build cassé). iconv/sed Git Bash ou VS Code (UTF-8).
+
+### ✅ Chantier terminé : détection dispense étape A — proposition vérifiable dans modale candidat (2026-06-23)
+
+**Objectif :** quand l'opérateur coche "Théorie dispensée" pour un candidat, le système détecte automatiquement s'il existe une base de dispense (CACES ou théorie < 12 mois) et AFFICHE UNE PROPOSITION INFO. Le système NE COCHE RIEN, NE REMPLIT RIEN automatiquement — l'opérateur valide toujours.
+
+**Fichiers modifiés :** `app/services/caces_obtenus.py`, `app/routers/stagiaires.py`, `app/routers/sessions.py`, `app/models/session_candidat.py`, `app/main.py`, `templates/session_detail.html`, `static/js/session_detail.js`.
+
+**Étape R1 — service `detecter_base_theorique` (`app/services/caces_obtenus.py`, lignes 235-342) :**
+- Fonction pure (lecture seule, pas de side effect), 3 sources (règle 12 mois = base + 1 an − 1 jour >= today) :
+  - **R1** : `CacesObtenu` non-extension (`post_cloture==False`), statut `valide`/`a_valider`, même famille, `date_obtention` dans la fenêtre.
+  - **R2-a** : `ResultatTheorie` `obtenue==True` de la session courante (si `session_id` fourni) — continuité §8.
+  - **R2-b** : `ResultatTheorie` `obtenue==True` d'une autre session, même famille, ORPHELINE (aucun `CacesObtenu.resultat_theorie_id` ne pointe dessus), dans la fenêtre.
+- Retourne `{"possible": False}` ou `{"possible": True, "type" ("theorie"/"caces"), "date_origine", "reference", "date_limite_dispense", "lien", "source" ("R1"/"R2-a"/"R2-b"), "source_id"}`.
+- Candidat le plus récent gagne (`max(candidates, key=lambda x: x["date"])`). Pattern `_limite_dispense(d)` avec gestion 29 fév.
+
+**Étape A1 — route `GET /stagiaires/{stag_id}/base-theorique?famille=&session_id=` (`app/routers/stagiaires.py`, ligne 354) :**
+- Wrapper mince appelant `detecter_base_theorique`. Auth middleware cookie.
+
+**Étape A2 — modale candidat (`templates/session_detail.html` + `static/js/session_detail.js`) :**
+- `<div id="dispense-proposition">` (infobox bleue, `display:none` par défaut) dans le bloc dispense.
+- `window._scStagiaireId` mémorisé dans `_selectionnerCandidatStagiaire()`.
+- `_syncDispenseNote()` appelle `_detecterDispense()` à chaque changement du select théorie.
+- `_detecterDispense()` : fetch `/stagiaires/{id}/base-theorique?…` → si `data.possible`, affiche la proposition (type, référence, dates, lien vérification) ; sinon message "Aucune base". NE COCHE RIEN.
+
+**Étape B-colonnes — 3 colonnes traçabilité sur `SessionCandidat` (`app/models/session_candidat.py`, lignes 23-25) :**
+- `dispense_origine VARCHAR(20)` : `'interne'` (base détectée) ou `'externe'` (pas de base, justificatif manuel).
+- `dispense_source_type VARCHAR(20)` : `'theorie'` ou `'caces'` (NULL si externe).
+- `dispense_source_id INTEGER` : id `ResultatTheorie` ou `CacesObtenu` (NULL si externe).
+- Migrations startup (`main.py`) : 3 `ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS`.
+
+**Étape B-save — calcul serveur (`app/routers/sessions.py`) :**
+- Dans `add_candidat` (après `sc = SessionCandidat(…)`, avant `db.add(sc)`) : si `data.theorie_dispensee`, appel `detecter_base_theorique` → remplit `dispense_origine`/`source_type`/`source_id`. Interne si `possible`, externe sinon.
+- Dans `update_candidat` (après `sc.dispense_date`) : même logique + reset à `None` si `theorie_dispensee=False`.
+- **JAMAIS depuis le client** : ces 3 champs ABSENTS du schéma Pydantic `SessionCandidatCreate` — le JS ne les transmet jamais.
+
+**Règle permanente** : `_detecterDispense` NE COCHE RIEN (side-effect zéro côté client). La décision appartient à l'opérateur. La traçabilité est calculée côté serveur au moment du save.
 
 ### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
 
