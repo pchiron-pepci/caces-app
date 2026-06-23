@@ -391,6 +391,7 @@ function _afficherResultatsCandidats(resultats) {
 
 function _selectionnerCandidatStagiaire(id, label) {
     document.getElementById('sc-stagiaire').value = id;
+    window._scStagiaireId = id;
     var inp = document.getElementById('sc-stagiaire-search');
     if (inp) inp.value = label;
     var liste = document.getElementById('sc-stagiaire-liste');
@@ -760,6 +761,49 @@ function _syncDispenseNote() {
     if (champFichier) champFichier.style.display = isDispense ? 'block' : 'none';
     var champDate = document.getElementById('field-dispense-date');
     if (champDate) champDate.style.display = isDispense ? 'block' : 'none';
+    _detecterDispense();
+}
+
+function _detecterDispense() {
+    var box = document.getElementById('dispense-proposition');
+    if (!box) return;
+    var isDispense = document.getElementById('sc-theorie').value === 'dispense';
+    var stagId = window._scStagiaireId;
+    var famille = window.SESSION_FAMILLE;
+    var sessionId = window.SESSION_ID;
+    if (!isDispense || !stagId || !famille) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+    }
+    box.style.display = 'block';
+    box.innerHTML = '🔎 Recherche d\'une base de dispense…';
+    var url = '/stagiaires/' + stagId + '/base-theorique?famille=' + encodeURIComponent(famille) + (sessionId ? '&session_id=' + sessionId : '');
+    fetch(url, { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data || !data.possible) {
+                box.innerHTML = 'ℹ️ Aucune base de dispense trouvée en interne pour cette famille (théorie ou CACES de moins de 12 mois). Vous pouvez saisir une dispense externe manuellement.';
+                box.style.background = '#fff7e6';
+                box.style.borderColor = '#e0c080';
+                return;
+            }
+            var typeLib = data.type === 'caces' ? 'CACES' : 'Théorie';
+            var lienHtml = data.lien ? ' · <a href="' + data.lien + '" target="_blank">Vérifier ↗</a>' : '';
+            box.style.background = '#eef4fb';
+            box.style.borderColor = '#bcd';
+            box.innerHTML =
+                '<strong>ℹ️ Dispense possible (à valider par vous)</strong><br>' +
+                'Base : ' + typeLib + ' — ' + (data.reference || '') + '<br>' +
+                'Date d\'origine : ' + data.date_origine + ' · Dispense valable jusqu\'au ' + data.date_limite_dispense +
+                lienHtml +
+                '<br><span style="color:#666;">Le système propose, vous décidez : cochez la dispense et renseignez les champs si vous validez.</span>';
+        })
+        .catch(function() {
+            box.innerHTML = '⚠️ Erreur lors de la recherche de base de dispense.';
+            box.style.background = '#fdecea';
+            box.style.borderColor = '#e0a0a0';
+        });
 }
 
 function ouvrirAjoutCandidat() {
