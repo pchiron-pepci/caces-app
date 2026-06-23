@@ -17,11 +17,15 @@ def _date_echeance(famille: str, date_obt: date) -> date:
 def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famille, date_pratique, statut_filtre):
     """
     Cherche un ResultatTheorie.obtenue=True hors de la session de pratique,
-    même famille, abs(date_theo - date_prat) ≤ 365 jours.
+    même famille, théorie dans les 12 mois précédant la pratique
+    (date_theo <= date_prat et >= date_prat - 1 an + 1 jour).
     statut_filtre : "ouvert" (statut != terminee) ou "terminee".
     """
-    limite_avant = date_pratique - timedelta(days=365)
-    limite_apres = date_pratique + timedelta(days=365)
+    try:
+        limite_avant = date(date_pratique.year - 1, date_pratique.month, date_pratique.day) + timedelta(days=1)
+    except ValueError:
+        # 29 février inexistant en année-1 → 1er mars année-1
+        limite_avant = date(date_pratique.year - 1, 3, 1)
 
     q = (
         db.query(ResultatTheorie)
@@ -34,7 +38,7 @@ def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famil
             ResultatTheorie.session_id != session_id_pratique,
             SessionModel.famille == famille,
             JourTest.date >= limite_avant,
-            JourTest.date <= limite_apres,
+            JourTest.date <= date_pratique,
         )
     )
     if statut_filtre == "ouvert":
@@ -226,3 +230,112 @@ def calculer_et_synchroniser(db: Session) -> list:
         .order_by(CacesObtenu.id.desc())
         .all()
     )
+
+
+def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
+    """
+    Détecte la base de dispense théorique la plus récente pour un stagiaire/famille.
+    3 sources (règle 12 mois = base + 1 an - 1 jour >= aujourd'hui) :
+      R1   : CACES non-extension, valide/a_valider, même famille
+      R2-a : théorie de la session courante (si session_id fourni)
+      R2-b : théorie orpheline d'une autre session (aucun CacesObtenu.resultat_theorie_id pointant dessus)
+    Retourne {"possible": False} ou {"possible": True, "type", "date_origine",
+    "reference", "date_limite_dispense", "lien", "source"}.
+    NE COCHE RIEN — pure lecture/info.
+    """
+    candidates = []  # liste de dicts {date, type, reference, source, lien, source_id}
+
+    # helper 12 mois : base valable si base + 1 an - 1 jour >= aujourd'hui
+    def _limite_dispense(d):
+        try:
+            return date(d.year + 1, d.month, d.day) - timedelta(days=1)
+        except ValueError:
+            return date(d.year + 1, 3, 1) - timedelta(days=1)
+    today = date.today()
+
+    # --- Source R1 : CACES non-extension, meme famille, valide/a_valider, < 12 mois ---
+    caces_list = (
+        db.query(CacesObtenu)
+        .filter(
+            CacesObtenu.stagiaire_id == stagiaire_id,
+            CacesObtenu.famille == famille,
+            CacesObtenu.statut.in_(["valide", "a_valider"]),
+            CacesObtenu.post_cloture == False,
+        )
+        .all()
+    )
+    for c in caces_list:
+        if c.date_obtention and _limite_dispense(c.date_obtention) >= today:
+            candidates.append({
+                "date": c.date_obtention,
+                "type": "caces",
+                "reference": f"CACES {c.famille} cat {c.categorie}" + (f" n°{c.numero_ordre}" if c.numero_ordre else ""),
+                "source": "R1",
+                "source_id": c.id,
+                "lien": "/cartes-caces",
+            })
+
+    # --- Source R2-a : theorie de la SESSION COURANTE (si session_id fourni) ---
+    if session_id:
+        rt_courante = (
+            db.query(ResultatTheorie)
+            .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
+            .filter(
+                ResultatTheorie.stagiaire_id == stagiaire_id,
+                ResultatTheorie.session_id == session_id,
+                ResultatTheorie.obtenue == True,
+                ResultatTheorie.bloque != True,
+            )
+            .order_by(JourTest.date.desc(), ResultatTheorie.id.desc())
+            .first()
+        )
+        if rt_courante:
+            jt = db.query(JourTest).filter(JourTest.id == rt_courante.jour_test_id).first()
+            if jt and jt.date and _limite_dispense(jt.date) >= today:
+                candidates.append({
+                    "date": jt.date, "type": "theorie", "reference": "Theorie de la session courante",
+                    "source": "R2-a", "source_id": rt_courante.id,
+                    "lien": f"/sessions/{session_id}/projection/{rt_courante.jour_test_id}",
+                })
+
+    # --- Source R2-b : theorie ORPHELINE d'une autre session (aucun CACES rattache) ---
+    rts = (
+        db.query(ResultatTheorie)
+        .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
+        .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
+        .filter(
+            ResultatTheorie.stagiaire_id == stagiaire_id,
+            ResultatTheorie.obtenue == True,
+            ResultatTheorie.bloque != True,
+            SessionModel.famille == famille,
+        )
+    )
+    if session_id:
+        rts = rts.filter(ResultatTheorie.session_id != session_id)
+    for rt in rts.all():
+        # orpheline = aucun CacesObtenu ne pointe vers ce ResultatTheorie
+        a_un_caces = db.query(CacesObtenu).filter(CacesObtenu.resultat_theorie_id == rt.id).first()
+        if a_un_caces:
+            continue
+        jt = db.query(JourTest).filter(JourTest.id == rt.jour_test_id).first()
+        if jt and jt.date and _limite_dispense(jt.date) >= today:
+            candidates.append({
+                "date": jt.date, "type": "theorie", "reference": "Theorie (autre session)",
+                "source": "R2-b", "source_id": rt.id,
+                "lien": "",
+            })
+
+    if not candidates:
+        return {"possible": False}
+
+    # garder la PLUS RECENTE
+    meilleure = max(candidates, key=lambda x: x["date"])
+    return {
+        "possible": True,
+        "type": meilleure["type"],
+        "date_origine": meilleure["date"].isoformat(),
+        "reference": meilleure["reference"],
+        "date_limite_dispense": _limite_dispense(meilleure["date"]).isoformat(),
+        "lien": meilleure["lien"],
+        "source": meilleure["source"],
+    }
