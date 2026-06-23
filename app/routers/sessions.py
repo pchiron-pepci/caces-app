@@ -2080,6 +2080,7 @@ async def upload_justificatif(
         date_upload=dt.utcnow(),
         uploade_par=f"{user.prenom} {user.nom}"[:200],
         libelle=(libelle[:300] if libelle else None),
+        uploade_par_role=(user.role if getattr(user, "role", None) else None),
     )
     db.add(j)
     db.commit()
