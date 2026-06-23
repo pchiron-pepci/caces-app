@@ -1472,6 +1472,7 @@
                     <th>Employeur</th>
                     <th>RGPD</th>
                     <th style="text-align:center;" title="Théorie">TH</th>
+                    <th style="text-align:center;" title="Justificatif de formation préalable">FORM.</th>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
@@ -1553,6 +1554,27 @@
                             data-fichier-nom="{{ sc.dispense_fichier_nom or '' }}"
                             style="font-size:10px; cursor:pointer;"
                             title="{% if sc.dispense_fichier_nom %}Voir le justificatif : {{ sc.dispense_fichier_nom }}{% else %}Dispensé — aucun justificatif joint{% endif %}">Disp.</span>{% else %}—{% endif %}
+                    </td>
+                    <td data-label="FORM." style="text-align:center;">
+                      {% if sc.passe_epreuve %}
+                        {% if sc.nb_justif_formation and sc.nb_justif_formation > 0 %}
+                          <span class="badge"
+                            data-action="justif-formation-menu"
+                            data-sc-id="{{ sc.id }}"
+                            data-nb="{{ sc.nb_justif_formation }}"
+                            style="background:#1a7a3a; color:#fff; font-size:10px; cursor:pointer;"
+                            title="{{ sc.nb_justif_formation }} justificatif(s) de formation — cliquer pour voir / ajouter">📋 {{ sc.nb_justif_formation }}</span>
+                        {% else %}
+                          <span class="badge"
+                            data-action="justif-formation-menu"
+                            data-sc-id="{{ sc.id }}"
+                            data-nb="0"
+                            style="background:#d98800; color:#fff; font-size:10px; cursor:pointer;"
+                            title="Aucun justificatif de formation — cliquer pour en ajouter">⚠️ Formation</span>
+                        {% endif %}
+                      {% else %}
+                        <span style="color:#bbb;">—</span>
+                      {% endif %}
                     </td>
                     {% if session.statut != 'terminee' and user_role != 'terrain' %}
                     <td data-label="Actions" style="text-align:center; white-space:nowrap;">
