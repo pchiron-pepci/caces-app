@@ -64,7 +64,7 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
                 → date_echeance = _date_echeance(famille, date_prat)
       Cas 4 : extension (session clôturée, post_cloture=True) + théorie ≤ pratique
                 → date_obtention = date_prat
-                → date_echeance = date_echeance du 1er CacesObtenu valide (même famille), sinon calcul normal
+                → date_echeance = None (déterminée en passe 2 via caces_initial)
     """
     rt = (
         db.query(ResultatTheorie)
@@ -108,40 +108,74 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
         date_obtention = date_theo
         echeance = _date_echeance(ep.famille, date_theo)
     elif post_cloture:
-        # Cas 4 : extension + théorie ≤ pratique → date pratique, écheance = CACES® initial
+        # Cas 4 : extension + théorie ≤ pratique → date pratique, écheance déterminée en passe 2
         date_obtention = date_prat
-        caces_initial = (
-            db.query(CacesObtenu)
-            .filter(
-                CacesObtenu.stagiaire_id == ep.stagiaire_id,
-                CacesObtenu.famille == ep.famille,
-                CacesObtenu.statut == "valide",
-            )
-            .order_by(CacesObtenu.date_echeance.asc())
-            .first()
-        )
-        echeance = caces_initial.date_echeance if caces_initial else _date_echeance(ep.famille, date_obtention)
+        echeance = None
     else:
         # Cas 1/2 : théorie ≤ pratique, non-extension → date pratique
         date_obtention = date_prat
         echeance = _date_echeance(ep.famille, date_prat)
 
     return {
-        "date_obtention": date_obtention,
-        "date_echeance": echeance,
-        "options_obtenues": ep.options_obtenues,
-        "post_cloture": post_cloture,
+        "date_obtention":      date_obtention,
+        "date_echeance":       echeance,
+        "options_obtenues":    ep.options_obtenues,
+        "post_cloture":        post_cloture,
         "resultat_theorie_id": (rt.id if (rt and not post_cloture) else None),
+        "theorie_source_id":   (rt.id if rt else None),
     }
+
+
+def _appliquer_caces(db, ep, calc, caces_initial_id=None):
+    existing = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == ep.stagiaire_id,
+        CacesObtenu.session_id == ep.session_id,
+        CacesObtenu.categorie == ep.categorie,
+    ).first()
+    if existing:
+        if existing.statut == "a_valider":
+            existing.date_obtention      = calc["date_obtention"]
+            existing.date_echeance       = calc["date_echeance"]
+            existing.options_obtenues    = calc["options_obtenues"]
+            existing.post_cloture        = calc["post_cloture"]
+            existing.resultat_theorie_id = calc["resultat_theorie_id"]
+            existing.caces_initial_id    = caces_initial_id
+        elif existing.statut == "annule":
+            existing.statut              = "a_valider"
+            existing.numero_ordre        = None
+            existing.date_obtention      = calc["date_obtention"]
+            existing.date_echeance       = calc["date_echeance"]
+            existing.options_obtenues    = calc["options_obtenues"]
+            existing.post_cloture        = calc["post_cloture"]
+            existing.resultat_theorie_id = calc["resultat_theorie_id"]
+            existing.caces_initial_id    = caces_initial_id
+        return
+    db.add(CacesObtenu(
+        stagiaire_id=ep.stagiaire_id,
+        session_id=ep.session_id,
+        famille=ep.famille,
+        categorie=ep.categorie,
+        options_obtenues=calc["options_obtenues"],
+        date_obtention=calc["date_obtention"],
+        date_echeance=calc["date_echeance"],
+        statut="a_valider",
+        post_cloture=calc["post_cloture"],
+        resultat_theorie_id=calc["resultat_theorie_id"],
+        caces_initial_id=caces_initial_id,
+    ))
 
 
 def calculer_et_synchroniser(db: Session) -> list:
     """
-    Pour chaque épreuve pratique réussie :
-    - Si aucun CacesObtenu n'existe → crée un enregistrement 'a_valider'
-    - Si un enregistrement 'a_valider' existe → recalcule et met à jour les dates
-      (notamment si le statut d'une session de théorie a changé : terminee → mode extension)
-    - Si statut valide/annule → ne touche pas
+    Deux passes :
+    - Passe 1 : non-extensions (post_cloture=False) → crée/met à jour + commit
+    - Passe 2 : extensions (post_cloture=True) → retrouve le CACES initial via
+      resultat_theorie_id, applique son écheance, remplit caces_initial_id
+
+    Comportement statuts identique dans les deux passes :
+    - a_valider → recalcule et met à jour
+    - annule → remet en a_valider avec nouvelles dates
+    - valide → intouchable
 
     Appelé automatiquement lors de la clôture d'une session.
     """
@@ -150,49 +184,39 @@ def calculer_et_synchroniser(db: Session) -> list:
         SessionEpreuve.bloque != True,
     ).all()
 
+    extensions_differees = []  # (ep, calc) à traiter en passe 2
+
+    # --- PASSE 1 : non-extensions ---
     for ep in epreuves_ok:
         calc = _calculer_pour_epreuve(ep, db)
-
-        existing = db.query(CacesObtenu).filter(
-            CacesObtenu.stagiaire_id == ep.stagiaire_id,
-            CacesObtenu.session_id == ep.session_id,
-            CacesObtenu.categorie == ep.categorie,
-        ).first()
-
-        if existing:
-            if existing.statut == "a_valider" and calc is not None:
-                # Recalculer les dates en cas de changement (ex : session théorie clôturée)
-                existing.date_obtention = calc["date_obtention"]
-                existing.date_echeance = calc["date_echeance"]
-                existing.options_obtenues = calc["options_obtenues"]
-                existing.post_cloture = calc["post_cloture"]
-                existing.resultat_theorie_id = calc["resultat_theorie_id"]
-            elif existing.statut == "annule" and calc is not None:
-                # Remise en a_valider automatique : les données source sont toujours valides
-                existing.statut = "a_valider"
-                existing.numero_ordre = None
-                existing.date_obtention = calc["date_obtention"]
-                existing.date_echeance = calc["date_echeance"]
-                existing.options_obtenues = calc["options_obtenues"]
-                existing.post_cloture = calc["post_cloture"]
-                existing.resultat_theorie_id = calc["resultat_theorie_id"]
-            continue
-
         if calc is None:
             continue
+        if calc["post_cloture"]:
+            extensions_differees.append((ep, calc))
+            continue
+        _appliquer_caces(db, ep, calc, caces_initial_id=None)
 
-        db.add(CacesObtenu(
-            stagiaire_id=ep.stagiaire_id,
-            session_id=ep.session_id,
-            famille=ep.famille,
-            categorie=ep.categorie,
-            options_obtenues=calc["options_obtenues"],
-            date_obtention=calc["date_obtention"],
-            date_echeance=calc["date_echeance"],
-            statut="a_valider",
-            post_cloture=calc["post_cloture"],
-            resultat_theorie_id=calc["resultat_theorie_id"],
-        ))
+    db.commit()  # tous les non-extensions ont leur resultat_theorie_id en base
+
+    # --- PASSE 2 : extensions ---
+    for ep, calc in extensions_differees:
+        initial = (
+            db.query(CacesObtenu)
+            .filter(
+                CacesObtenu.resultat_theorie_id == calc["theorie_source_id"],
+                CacesObtenu.post_cloture == False,
+                CacesObtenu.statut.in_(["a_valider", "valide"]),
+            )
+            .first()
+        )
+        if initial:
+            calc["date_echeance"] = initial.date_echeance
+            caces_init_id = initial.id
+        else:
+            # fallback : initial introuvable (incohérence/annulé) → calcul normal
+            calc["date_echeance"] = _date_echeance(ep.famille, calc["date_obtention"])
+            caces_init_id = None
+        _appliquer_caces(db, ep, calc, caces_initial_id=caces_init_id)
 
     db.commit()
 
