@@ -21,6 +21,8 @@ from app.models.jour_test import ResultatTheorie, JourTest
 from app.models.stagiaire import Stagiaire
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.attestation_neutralite import AttestationNeutralite
+from app.models.justificatif import Justificatif
+from app.models.session_candidat import SessionCandidat
 from app.services import storage
 from app.services.pdf_test_theorie import generer_corrige
 from app.services.pdf_recap_session import generer_recap_resultats
@@ -36,6 +38,13 @@ def _sanitize(nom: str) -> str:
     for ch in r'/\:*?"<>| ':
         nom = nom.replace(ch, "_")
     return nom
+
+
+def _sc_to_stag(session_candidat_id, db):
+    if not session_candidat_id:
+        return None
+    sc = db.query(SessionCandidat).filter(SessionCandidat.id == session_candidat_id).first()
+    return sc.stagiaire_id if sc else None
 
 
 def _nom_candidat(stagiaire_id: int, stagiaires: dict) -> str:
@@ -141,6 +150,63 @@ def generer_zip_session(session_id: int, db: DBSession) -> bytes:
                 zf.writestr(f"neutralite/neutralite_{nom}.pdf", pdf_bytes)
             except Exception as e:
                 print(f"[ZIP] neutralite stag={a.stagiaire_id} id={a.id} error: {e}", flush=True)
+
+        # Élargissement du dict stagiaires aux candidats dispense/formation
+        scs_all = db.query(SessionCandidat).filter(
+            SessionCandidat.session_id == session_id,
+        ).all()
+        extra_ids = {sc.stagiaire_id for sc in scs_all} - stag_ids
+        if extra_ids:
+            for s in db.query(Stagiaire).filter(Stagiaire.id.in_(extra_ids)).all():
+                stagiaires[s.id] = s
+
+        # ── boucle 5 : justificatifs de FORMATION ────────────────────────────
+        justifs_formation = db.query(Justificatif).filter(
+            Justificatif.session_id == session_id,
+            Justificatif.type == "formation",
+        ).all()
+        for j in justifs_formation:
+            try:
+                if not j.fichier_cle:
+                    continue
+                data = storage.get_fichier(j.fichier_cle)
+                nom_cand = _nom_candidat(_sc_to_stag(j.session_candidat_id, db), stagiaires) if j.session_candidat_id else "session"
+                nom_fichier = _sanitize(j.fichier_nom or f"formation_{j.id}")
+                zf.writestr(f"formation/{nom_cand}/{nom_fichier}", data)
+            except Exception:
+                pass
+
+        # ── boucle 6 : DOCUMENTS de session ──────────────────────────────────
+        justifs_docs = db.query(Justificatif).filter(
+            Justificatif.session_id == session_id,
+            Justificatif.type == "document_session",
+        ).all()
+        for j in justifs_docs:
+            try:
+                if not j.fichier_cle:
+                    continue
+                data = storage.get_fichier(j.fichier_cle)
+                prefixe = _sanitize(j.libelle) + "_" if j.libelle else ""
+                nom_fichier = prefixe + _sanitize(j.fichier_nom or f"document_{j.id}")
+                zf.writestr(f"documents/{nom_fichier}", data)
+            except Exception:
+                pass
+
+        # ── boucle 7 : justificatifs de DISPENSE ─────────────────────────────
+        scs_dispense = db.query(SessionCandidat).filter(
+            SessionCandidat.session_id == session_id,
+            SessionCandidat.dispense_fichier_cle.isnot(None),
+        ).all()
+        for sc in scs_dispense:
+            try:
+                data = storage.get_fichier(sc.dispense_fichier_cle)
+                nom_cand = _nom_candidat(sc.stagiaire_id, stagiaires)
+                ext = ""
+                if sc.dispense_fichier_nom and "." in sc.dispense_fichier_nom:
+                    ext = "." + sc.dispense_fichier_nom.rsplit(".", 1)[1]
+                zf.writestr(f"dispense/{nom_cand}{ext}", data)
+            except Exception:
+                pass
 
     buf.seek(0)
     return buf.getvalue()
