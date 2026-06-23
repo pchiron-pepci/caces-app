@@ -419,6 +419,33 @@
         content: attr(data-label); display: block; font-size: 10px; font-weight: 700;
         text-transform: uppercase; color: #1565c0; letter-spacing: 0.4px; white-space: nowrap;
     }
+    /* Cellule Actions en footer de carte (mobile) */
+    .table-candidats tbody td[data-label="Actions"] {
+        order: 5;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: #f0f1f4;
+        border-top: 1px solid #d8dbe0;
+        border-radius: 0 0 8px 8px;
+        text-align: left;
+    }
+    .table-candidats tbody td[data-label="Actions"]::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #555;
+        text-transform: uppercase;
+        font-size: 11px;
+    }
+    .table-candidats tbody td[data-label="Actions"] .btn-edit,
+    .table-candidats tbody td[data-label="Actions"] .btn-trash {
+        margin-left: 4px;
+    }
 
     /* ── Matériel (.table-materiel) — vue cartes mobile ── */
     .table-materiel { display: block !important; min-width: 0 !important; width: 100% !important; }
