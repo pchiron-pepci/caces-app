@@ -2545,6 +2545,13 @@ document.addEventListener('click', function(e) {
     var tabBtn = e.target.closest('[data-action="show-tab"][data-tab="documents"]');
     if (tabBtn) { _docChargerListe(); return; }
 
+    var puce = e.target.closest('[data-action="doc-nature-puce"]');
+    if (puce) {
+      var inp = document.getElementById('doc-session-libelle');
+      if (inp) { inp.value = puce.dataset.val; inp.focus(); }
+      return;
+    }
+
     var act = e.target.closest('[data-action]');
     if (!act) return;
     var action = act.getAttribute('data-action');
