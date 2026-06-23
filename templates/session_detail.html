@@ -425,13 +425,15 @@
         width: 100%;
         box-sizing: border-box;
         display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
         align-items: center;
         justify-content: space-between;
         gap: 8px;
         margin-top: 8px;
-        padding: 8px 12px;
-        background: #f0f1f4;
-        border-top: 1px solid #d8dbe0;
+        padding: 6px 10px;
+        background: #e8edf5;
+        border-top: 1px solid #cdd6e4;
         border-radius: 0 0 8px 8px;
         text-align: left;
     }
@@ -441,10 +443,15 @@
         color: #555;
         text-transform: uppercase;
         font-size: 11px;
+        flex: 1 1 auto;
+        white-space: nowrap;
     }
     .table-candidats tbody td[data-label="Actions"] .btn-edit,
     .table-candidats tbody td[data-label="Actions"] .btn-trash {
-        margin-left: 4px;
+        display: inline-flex;
+        align-items: center;
+        flex: 0 0 auto;
+        margin: 0 0 0 6px;
     }
 
     /* ── Matériel (.table-materiel) — vue cartes mobile ── */
