@@ -325,6 +325,11 @@ python init_questions_r482.py
 | Moyenne | Corrections couleur pastille FORM. ardoise + footer Actions en ligne | à faire |
 | Haute | Migration justificatif théorie base64 → R2 | ✅ fait |
 | Haute | Export ZIP enrichi (formation + documents + dispense) | ✅ fait |
+| Haute | Moteur CACES — écart A corrigé (théorie la plus récente, date desc) | ✅ fait |
+| Haute | Moteur CACES — écart B (fenêtre 12 mois sens unique) | à faire |
+| Haute | Moteur CACES — écart C (choix CACES initial extension) | à examiner |
+| Haute | Détection dispense — étape 0 : persister post_cloture sur CacesObtenu | à faire |
+| Haute | Détection dispense — étape A : proposition vérifiable dans modale candidat | à faire |
 | Moyenne | Migrer justificatif théorie (ResultatTheorie.justificatif_pdf base64) vers R2 | ✅ fait |
 | Note | Notice utilisateur Justificatifs/Documents (.docx) générée pour PEPCI | fait (hors repo) |
 
@@ -1421,32 +1426,51 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - Variables `--noryx-*` CSS définies seulement dans `test_theorie.html` (PAS globales) → rester inline en dur hors test_theorie tant que CSS non centralisé.
 - JAMAIS éditer requirements.txt/Python via PowerShell (UTF-16 → build cassé). iconv/sed Git Bash ou VS Code (UTF-8).
 
-### 🔍 CADRÉ : détection / proposition de dispense (interne/externe) — cadrage corrigé
+### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
 
-**PRINCIPE CARDINAL :** le système propose / informe, l'opérateur VALIDE TOUJOURS. Jamais d'auto-cochage d'une dispense (responsabilité réglementaire humaine, opposable en audit).
+**DÉCOUVERTE MAJEURE :** cette logique ne couvre PAS que la dispense. La même mécanique (trouver la base théorique valable, distinguer extension/non-extension, prendre la plus récente) sert AUSSI à la détermination des dates de CACES. Dispense et calcul de dates = deux usages de la MÊME logique sous-jacente → à terme, source de vérité commune (réutiliser/étendre `caces_obtenus.py`, pas dupliquer).
 
-**SÉPARATION DES RESPONSABILITÉS (point d'architecture clé — corrigé) :**
-- **La dispense capture une DONNÉE BRUTE, elle ne calcule RIEN :** date (date d'obtention de la théorie ou du CACES qui justifie la dispense) + origine (interne/externe) + pointeur (si interne) ou justificatif PDF (si externe). Elle sert uniquement à autoriser « pas de théorie à repasser ».
-- **La dispense ne manipule les 12 MOIS QUE pour la DÉTECTION interne** (la base est-elle encore < 12 mois ?). Elle ne connaît RIEN des 5/10 ans.
-- **Le MOTEUR CACES (`caces_obtenus.py`) est SEUL responsable du calcul** obtention + échéance (règles 10 ans R.482 / 5 ans sinon). La dispense externe lui fournit une date de base théorique ; il en déduit l'échéance EXACTEMENT comme il le fait déjà pour une théorie interne. La date de dispense ne fixe PAS la date d'obtention (= date épreuve pratique) mais alimente le calcul de validité, et ce calcul vit dans le moteur, PAS dans la dispense.
+**PRINCIPE :** système PROPOSE/INFORME, opérateur VALIDE TOUJOURS (jamais auto-cochage). Proposition VÉRIFIABLE (infos source + lien cliquable dans la modale).
 
-**Deux durées à NE JAMAIS confondre :**
-- 12 mois = bénéfice d'une épreuve en attendant l'autre (fixe, toutes familles) → fonde la dispense, sert à la DÉTECTION.
-- 5/10 ans = validité du CACES délivré → calcul d'échéance, EXCLUSIVEMENT dans le moteur CACES.
+**RÈGLE 12 MOIS :** théorie réussie valable 12 mois. « < 12 mois » = date_ref + 1 an − 1 jour >= aujourd'hui.
 
-**Détection interne :** dispensable si MÊME FAMILLE + base < 12 mois vs date du jour (`ResultatTheorie` `obtenue==True` OU `CacesObtenu` validé). « < 12 mois » = date origine +1 an −1 jour ≥ aujourd'hui.
+**RÈGLE DE DÉCISION : LA PLUS RÉCENTE GAGNE.** Collecter TOUTES les bases candidates, garder la date la PLUS RÉCENTE (bénéfice candidat). PAS de hiérarchie CACES vs théorie.
+- Source A : `ResultatTheorie` `obtenue==True`, même famille (via `rt.session_id` → `Session.famille`) → date = `JourTest.date` (via `rt.jour_test_id`).
+- Source B : `CacesObtenu` valide, même famille, `post_cloture==False` (NON-extension) → date = `date_obtention`. Extensions (`post_cloture==True`) IGNORÉES.
 
-**Deux origines :**
-- INTERNE (notre base) : le système connaît la date depuis la source, propose, stocke un POINTEUR + trace décision, pas de justificatif (preuve en base).
-- EXTERNE (autre OTC) : date SAISIE opérateur OBLIGATOIRE (bloquant — le système ne peut l'inventer) + justificatif PDF R2.
+**5 cas valides :**
+- **Cas 1** : théorie+pratique même jour (théorie 01/04/2026 + cat A même jour ; revient cat F 15/06/2026 → réf 01/04/2026, limite 31/03/2027 → dispense OK).
+- **Cas 2** : théorie avant, pratiques tardives, MÊME session NON clôturée (§8) : théorie 01/11/2024, pratiques R489 1B 15/09/2025 + 5 20/10/2025 → obtentions normales (éch. 2030), PAS extensions même si ~1 an et CACES déjà délivrés. Session ouverte = continuité.
+- **Cas 3** : extension après clôture (§9) : CACES cat A 30/06/2026 (éch 29/06/2036), session clôturée, NOUVELLE session cat F 31/05/2027 → réf CACES cat A (non-ext), limite 29/06/2027 → dispense OK. Cat F délivrée 31/05/2027 mais échéance = CACES initial 29/06/2036. Cat F est `post_cloture==True` → PAS nouvelle référence.
+- **Cas 4** : théorie périmée : déc 2027 veut cat B1, réf 30/06/2026 limite 29/06/2027 dépassée → repasser théorie. Nouveau CACES (`post_cloture==False`) devient nouvelle référence.
+- **Cas 5** : plusieurs bases : vieille théorie 10/01/2026 + CACES non-ext 05/05/2026 → garder le plus récent (05/05/2026), dispense jusqu'au 04/05/2027.
 
-**Modèle futur (colonnes `SessionCandidat`) :** `dispense_origine` (`'interne'`/`'externe'`), `dispense_source_type` (`'theorie'`/`'caces'`), `dispense_source_id` (pointeur), `dispense_date` (existe) obligatoire si externe.
+**NOTION EXTENSION (§9) = `post_cloture==True` :** certificat dans famille ou candidat a DÉJÀ un CACES, repasse QUE la pratique, théorie héritée, SESSION DIFFÉRENTE et CLÔTURÉE, échéance = CACES initial. La CLÔTURE de session fait basculer en extension. Session ouverte = continuité (`post_cloture==False`).
 
-**Comportement modale 3 temps :** (1) sélection stagiaire → recherche base interne → si trouvée INFORME sans cocher (« Dispense interne possible : [type + enreg #id] — départ 12 mois : [date] ») ; (2) opérateur coche ; (3) si coché : externe → date + justificatif obligatoires, interne → lie le pointeur.
+**⚠️ PRÉ-REQUIS ÉTAPE 0 :** `post_cloture` PAS persisté aujourd'hui (variable locale éphémère). AJOUTER champ Boolean `post_cloture` sur `CacesObtenu`, écrit au calcul ET recalcul. Sans ça, impossible d'exclure les extensions → dispense FAUSSE. Base dev vidée bientôt → pas de souci anciens.
 
-**⚠️ IMPACT MOTEUR `caces_obtenus.py` (chantier lié OBLIGATOIRE) :** `calculer_et_synchroniser` ne gère AUJOURD'HUI que les théories internes (3 priorités). Ajouter le cas dispense EXTERNE → base théorique = `dispense_date` → calcul obtention (date pratique) + échéance (10 ans R.482 / 5 ans sinon). VÉRIFIER TOUS LES CAS avant implémentation.
+**FRONTIÈRE :** dispense = donnée brute ; calcul échéance (10 ans R.482 / 5 ans sinon) = moteur CACES uniquement.
 
-**Couches du chantier (à développer plus tard, ordre à définir) :** (a) détection + proposition (cherche et informe, sans cocher) ; (b) modèle de stockage origine/pointeur ; (c) impact moteur CACES (dispense externe comme 4e source de base théorique).
+**SÉPARATION DES RESPONSABILITÉS :**
+- La dispense capture une DONNÉE BRUTE : date + origine (interne/externe) + pointeur (si interne) ou justificatif PDF (si externe).
+- INTERNE (notre base) : système connaît la date, propose, stocke POINTEUR + trace décision. Pas de justificatif (preuve en base).
+- EXTERNE (autre OTC) : date SAISIE opérateur OBLIGATOIRE (bloquant) + justificatif PDF R2.
+- **Modèle futur (colonnes `SessionCandidat`) :** `dispense_origine`, `dispense_source_type`, `dispense_source_id`, `dispense_date` (obligatoire si externe).
+
+**Comportement modale 3 temps :** (1) sélection stagiaire → recherche base interne → si trouvée INFORME sans cocher ; (2) opérateur coche ; (3) si coché : externe → date + justificatif obligatoires, interne → lie le pointeur.
+
+**Couches du chantier (ordre à définir) :** (a) étape 0 : persister `post_cloture` sur `CacesObtenu` ; (b) étape A : détection + proposition vérifiable ; (c) modèle stockage origine/pointeur ; (d) impact moteur CACES (dispense externe comme 4e source).
+
+---
+
+### 🔧 AUDIT moteur `caces_obtenus.py` — écarts vs cadrage (code critique, NON en prod)
+
+Cas 1, 2, 3 globalement justes. Écarts trouvés :
+
+- **ÉCART A (CONFIRMÉ, CORRIGÉ commit 1d8a380)** : `_chercher_theorie_autre_session` (ligne 45) ET priorité 1 même session (ligne 74) triaient par `ResultatTheorie.id.asc()` = théorie la PLUS ANCIENNE. Doit être la PLUS RÉCENTE. Corrigé → `order_by(JourTest.date.desc(), ResultatTheorie.id.desc())`. Priorité 1 : ajout du JOIN JourTest (absent avant).
+- **ÉCART B (à corriger)** : fenêtre `JourTest.date` entre `date_pratique ± 365 jours` (SYMÉTRIQUE). Devrait être « théorie + 12 mois >= pratique » (théorie AVANT la pratique, dans les 12 mois ; le +365 après pratique n'a pas de sens pour une théorie antérieure ; 365 jours ≠ +1 an −1 jour). À corriger.
+- **ÉCART C (à examiner)** : choix du CACES initial pour l'extension via `order_by(CacesObtenu.date_echeance.asc()).first()` (ligne 120). Est-ce le bon « CACES initial » ? À confronter à la règle réglementaire.
+- **ÉCART D** = même bug que A (tri id asc en priorité 1) → corrigé avec A.
 
 ### ✅ Chantier terminé : table générique Justificatif — modèle + routes + permissions (2026-06-22)
 
