@@ -326,7 +326,7 @@ python init_questions_r482.py
 | Haute | Migration justificatif théorie base64 → R2 | ✅ fait |
 | Haute | Export ZIP enrichi (formation + documents + dispense) | ✅ fait |
 | Haute | Moteur CACES — écart A corrigé (théorie la plus récente, date desc) | ✅ fait |
-| Haute | Moteur CACES — écart B (fenêtre 12 mois sens unique) | à faire |
+| Haute | Moteur CACES — écart B (fenêtre 12 mois sens unique) | ✅ fait |
 | Haute | Moteur CACES — écart C (choix CACES initial extension) | à examiner |
 | Haute | Détection dispense — étape 0 : persister post_cloture sur CacesObtenu | à faire |
 | Haute | Détection dispense — étape A : proposition vérifiable dans modale candidat | à faire |
@@ -1532,7 +1532,7 @@ Une extension hérite de l'échéance du CACES initial ADOSSÉ À LA MÊME THÉO
 Cas 1, 2, 3 globalement justes. Écarts trouvés :
 
 - **ÉCART A (CONFIRMÉ, CORRIGÉ commit 1d8a380)** : `_chercher_theorie_autre_session` (ligne 45) ET priorité 1 même session (ligne 74) triaient par `ResultatTheorie.id.asc()` = théorie la PLUS ANCIENNE. Doit être la PLUS RÉCENTE. Corrigé → `order_by(JourTest.date.desc(), ResultatTheorie.id.desc())`. Priorité 1 : ajout du JOIN JourTest (absent avant).
-- **ÉCART B (à corriger)** : fenêtre `JourTest.date` entre `date_pratique ± 365 jours` (SYMÉTRIQUE). Devrait être « théorie + 12 mois >= pratique » (théorie AVANT la pratique, dans les 12 mois ; le +365 après pratique n'a pas de sens pour une théorie antérieure ; 365 jours ≠ +1 an −1 jour). À corriger.
+- **ÉCART B (CORRIGÉ)** : fenêtre `JourTest.date` unidirectionnelle `[date_prat - 1 an + 1 j ; date_prat]` — pattern maison `date(year-1, month, day) + timedelta(1)` + fallback 29 fév → 1er mars. Plus de `limite_apres` ni de symétrie `±365`. Tri écart A inchangé.
 - **ÉCART C (RÉSOLU par architecture) :** `order_by(CacesObtenu.date_echeance.asc()).first()` (ligne 120) = « le plus ancien » — incorrect si plusieurs initiaux avec théories différentes. Solution : `caces_initial` = CACES non-ext dont `resultat_theorie_id` == théorie de référence de l'extension (voir section ARCHITECTURE FINALE ci-dessus). Attend R0 (liens FK).
 - **ÉCART D** = même bug que A (tri id asc en priorité 1) → corrigé avec A.
 
