@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action="editer-candidat"]');
-        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note, btn.dataset.fichierNom, btn.dataset.dispenseDate, btn.dataset.dispenseOrigine || '');
+        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note, btn.dataset.fichierNom, btn.dataset.dispenseDate, btn.dataset.dispenseOrigine || '', btn.dataset.dispenseEcheance || '');
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="ouvrir-ajout-jour-theorie"]')) ouvrirAjoutJourTheorie();
@@ -783,6 +783,8 @@ function _syncDispenseNote() {
     if (champDate) champDate.style.display = isDispense ? 'block' : 'none';
     var champOrigine = document.getElementById('field-dispense-origine');
     if (champOrigine) champOrigine.style.display = isDispense ? 'block' : 'none';
+    var champEch = document.getElementById('field-dispense-echeance');
+    if (champEch && !isDispense) champEch.style.display = 'none';
     _detecterDispense();
 }
 
@@ -856,6 +858,8 @@ function _appliquerVisibiliteOrigine() {
             champDate.disabled = true;
         }
     }
+    var champEcheanceWrap = document.getElementById('field-dispense-echeance');
+    if (champEcheanceWrap) champEcheanceWrap.style.display = estExterne ? 'block' : 'none';
     _verifierQ2();
 }
 
@@ -875,7 +879,7 @@ function _verifierQ2() {
 
 function _appliquerRoleModaleCandidat() {
     var estTerrain = window.USER_ROLE === 'terrain';
-    var ids = ['sc-stagiaire-search', 'sc-theorie', 'dispense-origine-interne', 'dispense-origine-externe', 'sc-dispense-date', 'sc-dispense-note'];
+    var ids = ['sc-stagiaire-search', 'sc-theorie', 'dispense-origine-interne', 'dispense-origine-externe', 'sc-dispense-date', 'sc-dispense-echeance', 'sc-dispense-note'];
     ids.forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.disabled = estTerrain;
@@ -903,7 +907,7 @@ function ouvrirAjoutCandidat() {
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
-function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichierNom, dispenseDate, origine) {
+function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichierNom, dispenseDate, origine, dispenseEcheance) {
     window._scStagiaireId = stagiaireId;
     document.getElementById('candidat-title').textContent = 'Modifier candidat';
     document.getElementById('sc-id').value = id;
@@ -915,6 +919,8 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('field-dispense-date').style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('field-dispense-origine').style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('sc-dispense-date').value = dispenseDate || '';
+    document.getElementById('sc-dispense-echeance').value = dispenseEcheance || '';
+    document.getElementById('field-dispense-echeance').style.display = (theorie_dispensee && origine === 'externe') ? 'block' : 'none';
     document.getElementById('field-stagiaire').style.display = 'none';
     _majAffichageJustif(fichierNom || '');
     if (theorie_dispensee) {
@@ -940,7 +946,8 @@ async function sauvegarderCandidat() {
         theorie_dispensee: isDispense,
         dispense_note: isDispense ? (document.getElementById('sc-dispense-note').value.trim() || null) : null,
         dispense_date: isDispense ? (document.getElementById('sc-dispense-date').value || null) : null,
-        dispense_origine_choisie: isDispense ? ((document.querySelector('input[name="dispense-origine"]:checked') || {}).value || null) : null
+        dispense_origine_choisie: isDispense ? ((document.querySelector('input[name="dispense-origine"]:checked') || {}).value || null) : null,
+        dispense_echeance: isDispense ? (document.getElementById('sc-dispense-echeance').value || null) : null
     };
     if (!id && !data.stagiaire_id) { alert('Choisir un stagiaire !'); return; }
     const url = id ? '/api/sessions/' + window.SESSION_ID + '/candidats/' + id : '/api/sessions/' + window.SESSION_ID + '/candidats';

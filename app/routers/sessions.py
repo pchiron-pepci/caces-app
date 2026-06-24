@@ -98,6 +98,7 @@ class SessionCandidatCreate(BaseModel):
     theorie_dispensee: bool = False
     dispense_note: Optional[str] = None
     dispense_date: Optional[date] = None
+    dispense_echeance: Optional[date] = None
     dispense_origine_choisie: Optional[str] = None
 
 class EquipementCreate(BaseModel):
@@ -300,12 +301,15 @@ def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = D
         raise HTTPException(status_code=400, detail="Candidat deja inscrit")
     sc = SessionCandidat(**data.model_dump(exclude={"dispense_origine_choisie"}))
     _appliquer_tracabilite_dispense(sc, data, db, data.stagiaire_id, s.famille, session_id)
+    sc.dispense_echeance = data.dispense_echeance if (data.theorie_dispensee and sc.dispense_origine == "externe") else None
     if sc.dispense_origine == "externe":
         from app.services.caces_obtenus import limite_12_mois
         if not data.dispense_date:
             raise HTTPException(status_code=400, detail="Dispense externe : la date d'obtention justifiant la dispense est obligatoire.")
         if limite_12_mois(data.dispense_date) < date.today():
             raise HTTPException(status_code=400, detail="Dispense externe : la base invoquee a plus de 12 mois (theorie perimee).")
+        if not data.dispense_echeance:
+            raise HTTPException(status_code=400, detail="Dispense externe : la date d'echeance (reportee du CACES externe) est obligatoire.")
     db.add(sc)
     db.commit()
     db.refresh(sc)
@@ -330,6 +334,7 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
         _dispense_change = (
             bool(data.theorie_dispensee) != bool(sc.theorie_dispensee)
             or (data.dispense_date or None) != (sc.dispense_date or None)
+            or (data.dispense_echeance or None) != (sc.dispense_echeance or None)
             or ((data.dispense_note or None) != (sc.dispense_note or None))
         )
         if _dispense_change:
@@ -341,12 +346,15 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
     sc.dispense_note = data.dispense_note if data.theorie_dispensee else None
     sc.dispense_date = data.dispense_date if data.theorie_dispensee else None
     _appliquer_tracabilite_dispense(sc, data, db, sc.stagiaire_id, s.famille, sc.session_id)
+    sc.dispense_echeance = data.dispense_echeance if (data.theorie_dispensee and sc.dispense_origine == "externe") else None
     if sc.dispense_origine == "externe":
         from app.services.caces_obtenus import limite_12_mois
         if not data.dispense_date:
             raise HTTPException(status_code=400, detail="Dispense externe : la date d'obtention justifiant la dispense est obligatoire.")
         if limite_12_mois(data.dispense_date) < date.today():
             raise HTTPException(status_code=400, detail="Dispense externe : la base invoquee a plus de 12 mois (theorie perimee).")
+        if not data.dispense_echeance:
+            raise HTTPException(status_code=400, detail="Dispense externe : la date d'echeance (reportee du CACES externe) est obligatoire.")
     db.commit()
     return {"message": "Candidat mis a jour"}
 

@@ -1622,6 +1622,7 @@
                             data-fichier-nom="{{ sc.dispense_fichier_nom or '' }}"
                             data-dispense-date="{{ sc.dispense_date or '' }}"
                             data-dispense-origine="{{ sc.dispense_origine or '' }}"
+                            data-dispense-echeance="{{ sc.dispense_echeance or '' }}"
                             title="Modifier ce candidat">✏️</button>
                         <button class="btn-trash"
                             data-action="retirer-candidat"
@@ -2021,6 +2022,10 @@
             <div class="form-field" id="field-dispense-date" style="grid-column: span 2; display:none;">
                 <label>Date d'obtention (théorie ou CACES justifiant la dispense)</label>
                 <input type="date" id="sc-dispense-date" style="width:100%;">
+            </div>
+            <div class="form-field" id="field-dispense-echeance" style="grid-column: span 2; display:none;">
+                <label>Date d'échéance (reportée du CACES externe)</label>
+                <input type="date" id="sc-dispense-echeance" style="width:100%;">
             </div>
             <div class="form-field" id="field-dispense-note" style="grid-column: span 2; display:none;">
                 <label>Note de dispense (optionnelle)</label>
