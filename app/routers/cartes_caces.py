@@ -392,6 +392,7 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
                 "categorie": co.categorie,
                 "categorie_libelle": libelles.get(co.categorie, ""),
                 "numero_ordre": co.numero_ordre,
+                "ancien_numero": co.ancien_numero,
                 "options_obtenues": co.options_obtenues or "",
                 "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
                 "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
@@ -510,8 +511,8 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
     siret_line = ' · '.join(p for p in siret_parts if p)
 
     nums_caces = ' – '.join(
-        str(co.get('numero_ordre', '')).zfill(4)
-        for co in caces_list if co.get('numero_ordre')
+        co.get('ancien_numero') or str(co.get('numero_ordre', '')).zfill(4)
+        for co in caces_list if co.get('ancien_numero') or co.get('numero_ordre')
     )
 
     all_opts: dict = {}
@@ -551,7 +552,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
 
     verso_rows = ''
     for co in caces_list:
-        no = str(co.get('numero_ordre', '')).zfill(4) if co.get('numero_ordre') else '—'
+        no = co.get('ancien_numero') or (str(co.get('numero_ordre', '')).zfill(4) if co.get('numero_ordre') else '—')
         opts_html = ''
         if co.get('options_obtenues'):
             for o in co['options_obtenues'].split(','):

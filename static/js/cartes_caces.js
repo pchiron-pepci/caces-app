@@ -519,7 +519,7 @@ async function _chargerCacesCarte(carteId, el) {
                 + '<td style="font-size:12px;color:#444;padding:5px 10px;">' + (co.categorie_libelle || '—') + '</td>'
                 + '<td style="font-weight:700;color:#1a237e;font-size:12px;padding:5px 10px;">' + co.categorie + '</td>'
                 + '<td style="padding:5px 10px;">' + opts + '</td>'
-                + '<td style="font-family:monospace;font-size:12px;padding:5px 10px;"><span style="background:#e8eaf6;padding:1px 7px;border-radius:3px;">' + _noFormate(co.numero_ordre) + '</span></td>'
+                + '<td style="font-family:monospace;font-size:12px;padding:5px 10px;"><span style="background:#e8eaf6;padding:1px 7px;border-radius:3px;">' + (co.ancien_numero ? co.ancien_numero : _noFormate(co.numero_ordre)) + '</span></td>'
                 + '<td style="font-size:12px;color:#444;white-space:nowrap;padding:5px 10px;">' + _fmtDate(co.date_obtention) + '</td>'
                 + '<td style="font-size:12px;color:#2e7d32;font-weight:700;white-space:nowrap;padding:5px 10px;">' + _fmtDate(co.date_echeance) + '</td>'
                 + '<td style="font-size:11px;color:#666;padding:5px 10px;">' + (co.testeur_nom || '—') + '</td>'
@@ -569,7 +569,7 @@ function _buildCarteHtml(data, format) {
 
 function _buildCr80Html(data, cfg) {
     const numsCaces = data.caces
-        .map(function (co) { return co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : ''; })
+        .map(function (co) { return co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : ''); })
         .filter(Boolean).join(' – ');
 
     const sigNom = [cfg.signataire_prenom, cfg.signataire_nom].filter(Boolean).join(' ');
@@ -598,7 +598,7 @@ function _buildCr80Html(data, cfg) {
 
     // Verso rows — Options next to Cat.
     const versoRows = data.caces.map(function (co) {
-        const no = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+        const no = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
         const opts = co.options_obtenues
             ? co.options_obtenues.split(',').map(function (o) {
                 return '<span class="vopt-badge">' + o.trim() + '</span>';
@@ -809,7 +809,7 @@ function _buildA5Html(data, cfg) {
     const hasOpts = data.caces.some(function (co) { return co.options_obtenues; });
 
     const caceRows = data.caces.map(function (co) {
-        const no = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+        const no = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
         const opts = co.options_obtenues || '—';
         return '<tr>'
             + '<td style="font-weight:700;color:#1a237e;">' + co.categorie + '</td>'
