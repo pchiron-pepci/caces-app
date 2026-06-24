@@ -1546,6 +1546,40 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 5. **`editerCandidat`** : paramètre `origine` ajouté (7e). `data-dispense-origine="{{ sc.dispense_origine or '' }}"` sur le bouton HTML. Le listener passe `btn.dataset.dispenseOrigine || ''`. La fonction pré-coche la radio AVANT `_detecterDispense()` → la garde `!radioInt.checked && !radioExt.checked` ne re-coche pas interne si externe déjà coché.
 6. **`sauvegarderCandidat`** : `dispense_origine_choisie` ajouté au payload JSON via `document.querySelector('input[name="dispense-origine"]:checked').value || null`. Null si rien coché → serveur fait la détection auto (rétrocompat).
 
+### ✅ Chantier terminé : correctifs post-test dispense + override externe (2026-06-24)
+
+**Correctifs UI (suite aux tests) :**
+- Proposition de dispense déclenchée dès la **sélection du nom** (avant de choisir "Dispense"), plus seulement au changement du select théorie. `_detecterDispense()` appelée dans `_selectionnerCandidatStagiaire` + à l'ouverture en édition.
+- Proposition **persistante en réouverture/édition** : `editerCandidat` pose `window._scStagiaireId` et appelle `_detecterDispense()`.
+- `_detecterDispense` affiche la proposition même en mode "À tester" (suggestion, ne coche rien).
+- Dates de la proposition au format FR (helper `_dateFr`, JJ/MM/AAAA) au lieu d'ISO.
+- **Onglet actif conservé** après reload (`sessionStorage 'sessionDetailTab'` écrit dans `showTab`, restauré au `DOMContentLoaded`) — couvre TOUS les onglets, pas que candidats.
+- Lien "Vérifier" de la source R1 (CACES) corrigé : pointe vers `/caces-obtenus` (la carte peut ne pas être émise) au lieu de `/cartes-caces`.
+
+**D0 — Verrou réglementaire (`sessions.py`, `update_candidat`) :**
+- Si un `CacesObtenu` `statut='valide'` existe sur `(stagiaire_id, session_id)` ET que la dispense change (bool/date/note différents) → `HTTPException 409` "Annulez d'abord le CACES". En PREMIER, avant toute écriture.
+- `'a_valider'` ne bloque PAS (proposition recalculable — fenêtre de correction).
+
+**D1 — Override externe (serveur, `sessions.py`) :**
+- Schéma `SessionCandidatCreate` : `+dispense_origine_choisie` (`Optional[str]`, `'interne'`|`'externe'`|`None`).
+- Helper module-level `_appliquer_tracabilite_dispense(sc, data, db, stagiaire_id, famille, session_id)` : si choix=`'externe'` → force externe sans pointeur (même si interne existe) ; sinon détection serveur. IDS EXPLICITES en paramètres (`add` : `data.stagiaire_id` + `session_id` route ; `update` : `sc.stagiaire_id` + `sc.session_id`). `source_id` JAMAIS du client.
+- `add_candidat` : `SessionCandidat(**data.model_dump(exclude={"dispense_origine_choisie"}))` — exclusion OBLIGATOIRE (champ non-colonne, sinon TypeError ORM).
+- Garde-fous date+12 mois inchangés, une seule fois par route.
+
+**D2 — Override externe (UI, `session_detail.html` + `.js`) :**
+- Radios "Base interne / Base externe" (`#field-dispense-origine`), visibles quand dispense cochée.
+- `_detecterDispense` : mémorise `window._dispenseDateInterne` (pour Q2) ; base trouvée → interne activable + préselectionné si rien coché ; AUCUNE base → interne GRISÉ (`disabled`), externe forcé.
+- `_appliquerVisibiliteOrigine` : masque l'encart proposition si externe ; champ date **GRISÉ + pré-rempli** (date détectée) en interne, **ACTIF** en externe (saisie libre).
+- `_verifierQ2` : avertissement NON BLOQUANT si externe coché ET date saisie ANTÉRIEURE à la base interne (la plus récente devrait primer). Réactif (au `change` de la radio OU de la date).
+- **Cohérence édition** : `editerCandidat` reçoit `data-dispense-origine` (7e param) et pré-coche la radio selon l'origine STOCKÉE avant `_detecterDispense` (la garde `!checked && !checked` préserve le choix). Un externe forcé reste externe à la réouverture.
+- `sauvegarderCandidat` : transmet `dispense_origine_choisie` (radio cochée ou `null` → rétrocompat détection auto).
+
+**Règle confirmée :** en interne, la date est INFORMATIVE (le serveur utilise la source détectée, jamais `dispense_date` du client). En externe, date saisie + garde-fous serveur.
+
+**RESTE : C2-moteur** — la dispense externe (date saisie + justif) devient une 4e source que `caces_obtenus.py` sait utiliser comme base théorique pour calculer les dates du futur CACES. Dernier morceau, touche au moteur refondu.
+
+---
+
 ### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
 
 **DÉCOUVERTE MAJEURE :** cette logique ne couvre PAS que la dispense. La même mécanique (trouver la base théorique valable, distinguer extension/non-extension, prendre la plus récente) sert AUSSI à la détermination des dates de CACES. Dispense et calcul de dates = deux usages de la MÊME logique sous-jacente → à terme, source de vérité commune (réutiliser/étendre `caces_obtenus.py`, pas dupliquer).
