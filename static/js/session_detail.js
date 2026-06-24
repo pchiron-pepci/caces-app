@@ -879,8 +879,9 @@ function _appliquerVisibiliteOrigine() {
             champDate.disabled = true;
         }
     }
+    var estDispense = document.getElementById('sc-theorie').value === 'dispense';
     var champEcheanceWrap = document.getElementById('field-dispense-echeance');
-    if (champEcheanceWrap) champEcheanceWrap.style.display = estExterne ? 'block' : 'none';
+    if (champEcheanceWrap) champEcheanceWrap.style.display = (estDispense && estExterne) ? 'block' : 'none';
     _verifierQ2();
     _verifierEcheance();
 }
