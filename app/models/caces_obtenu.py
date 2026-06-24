@@ -19,6 +19,7 @@ class CacesObtenu(Base):
     caces_initial_id    = Column(Integer, ForeignKey("caces_obtenus.id"), nullable=True)
     dispense_externe_sc_id = Column(Integer, ForeignKey("session_candidats.id"), nullable=True)  # CACES fonde sur la dispense externe de ce SessionCandidat
     numero_ordre = Column(Integer, unique=True, nullable=True)
+    ancien_numero = Column(String(50), nullable=True)  # numero historique PEPCI (repris), informatif, affiche sur la carte pour les CACES repris
     statut = Column(String(20), nullable=False, default="a_valider")
     motif_annulation = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

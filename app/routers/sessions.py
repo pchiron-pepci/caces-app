@@ -181,13 +181,14 @@ def session_a_des_donnees(session_id: int, db: DBSession) -> bool:
 @router.get("/search")
 def search_sessions(q: str = "", db: DBSession = Depends(get_db)):
     rows = db.query(Session).filter(
-        Session.reference.ilike(f"%{q}%")
+        Session.reference.ilike(f"%{q}%"),
+        (Session.type != "reprise") | (Session.type.is_(None)),
     ).order_by(Session.id.desc()).limit(10).all()
     return [{"id": s.id, "reference": s.reference or f"Session #{s.id}", "famille": s.famille, "statut": s.statut} for s in rows]
 
 @router.get("/", response_model=list[SessionResponse])
 def liste_sessions(db: DBSession = Depends(get_db)):
-    return db.query(Session).order_by(Session.id.desc()).all()
+    return db.query(Session).filter((Session.type != "reprise") | (Session.type.is_(None))).order_by(Session.id.desc()).all()
 
 @router.post("/", response_model=SessionResponse)
 def create_session(data: SessionCreate, db: DBSession = Depends(get_db)):

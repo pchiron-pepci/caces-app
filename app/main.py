@@ -136,6 +136,7 @@ def _run_startup_migrations():
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS resultat_theorie_id INTEGER",
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS caces_initial_id INTEGER",
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS dispense_externe_sc_id INTEGER",
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS ancien_numero VARCHAR(50)",
         # carte_caces
         "ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS caces_json TEXT",
         "ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS token_verification VARCHAR(36)",
@@ -1161,7 +1162,7 @@ def page_sessions(request: Request):
     _u = getattr(request.state, "user", None)
     db = SessionLocal()
     try:
-        liste = db.query(Session).order_by(Session.id.desc()).all()
+        liste = db.query(Session).filter((Session.type != "reprise") | (Session.type.is_(None))).order_by(Session.id.desc()).all()
         lieux = db.query(Lieu).filter(Lieu.actif == True).all()
         familles = db.query(Famille).filter(Famille.actif == True).all()
         testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
