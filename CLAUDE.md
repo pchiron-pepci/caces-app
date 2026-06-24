@@ -1498,6 +1498,54 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **RESTE étape C : C2-moteur** — la dispense externe (date saisie + justif) devient une 4e source que `caces_obtenus.py` sait utiliser comme base théorique pour calculer les dates du futur CACES. Morceau délicat (touche au moteur refond), à cadrer à part. À faire à tête fraîche.
 
+### ✅ Chantier terminé : D0 — verrou réglementaire dispense (2026-06-24)
+
+**Règle :** interdire toute modification de la dispense (bool + date + note) d'un candidat si un CACES `statut='valide'` repose dessus. Statut `a_valider` ne bloque pas.
+
+**Implémentation (`app/routers/sessions.py`, route `update_candidat`) :**
+- Requête `CacesObtenu` avec `statut=='valide'` sur le couple `(stagiaire_id, session_id)` du candidat.
+- Si trouvé : calcul `_dispense_change` (3 champs : bool/date/note) → si changement réel → `HTTPException(409, detail="Un CACES delivre repose sur cette base de dispense. Annulez d'abord le CACES (page CACES obtenus) avant de modifier la dispense de ce candidat.")`.
+- `CacesObtenu` déjà importé ligne 16 — aucun import supplémentaire.
+- Positionné EN PREMIER dans `update_candidat`, avant toute écriture.
+
+**Note : `a_valider` non bloquant** — délibéré : le CACES n'est pas encore livré, la dispense reste corrigeable.
+
+---
+
+### ✅ Chantier terminé : D1 — override externe dispense (2026-06-24)
+
+**Besoin :** permettre à l'opérateur de forcer `dispense_origine='externe'` même quand une base interne est détectable (ex. CACES d'un autre organisme saisi manuellement = inconnu de la base). Sans override, le serveur choisirait toujours `interne`.
+
+**4 parties dans `app/routers/sessions.py` :**
+
+1. **Schéma `SessionCandidatCreate`** : `dispense_origine_choisie: Optional[str] = None` ajouté après `dispense_date`. Champ optionnel, valeur attendue : `"externe"` ou `None`.
+
+2. **Helper module-level `_appliquer_tracabilite_dispense(sc, data, db, stagiaire_id, famille, session_id)`** (avant `router = APIRouter(…)`) :
+   - `not data.theorie_dispensee` → efface origine/source_type/source_id.
+   - `data.dispense_origine_choisie == "externe"` → force `externe`, source_type/source_id à None, return.
+   - Sinon : appel `detecter_base_theorique` → `interne` si trouvé, `externe` sinon.
+   - IDs EXPLICITES en paramètres (add passe `data.stagiaire_id` + `session_id` de route ; update passe `sc.stagiaire_id` + `sc.session_id`). Pas de `source_id` venant du client.
+
+3. **`add_candidat`** : `SessionCandidat(**data.model_dump(exclude={"dispense_origine_choisie"}))` (exclut le champ non-colonne) + `_appliquer_tracabilite_dispense(sc, data, db, data.stagiaire_id, s.famille, session_id)` (remplace l'ancien bloc if/else). Garde-fous date+12 mois inchangés après.
+
+4. **`update_candidat`** : verrou D0 en premier (inchangé) → écriture 3 champs (inchangée) → `_appliquer_tracabilite_dispense(sc, data, db, sc.stagiaire_id, s.famille, sc.session_id)` (remplace l'ancien bloc if/else/else) → garde-fous date+12 mois inchangés.
+
+**Invariants maintenus :** `source_id` jamais du client ; `exclude={"dispense_origine_choisie"}` sur add pour ne pas passer le champ à l'ORM ; verrou D0 en premier dans update ; garde-fous une seule fois par route.
+
+### ✅ Chantier terminé : D2 — UI override externe (2026-06-24)
+
+**Objectif :** permettre à l'opérateur de choisir l'origine en modale candidat (interne détectée vs externe forcée), avec cohérence en édition et avertissement si la date externe est antérieure à la base interne.
+
+**Fichiers modifiés :** `templates/session_detail.html` + `static/js/session_detail.js`
+
+**5 parties :**
+1. **HTML** : bloc `#field-dispense-origine` (radios `interne`/`externe` + `#dispense-q2-warning`) inséré entre `#dispense-proposition` et `#field-dispense-date`. Affiché/masqué avec les autres champs dispense.
+2. **`_syncDispenseNote`** : affiche/masque `#field-dispense-origine` avec les autres champs dispense.
+3. **`_detecterDispense`** : déclare `radioInt`/`radioExt` + reset `window._dispenseDateInterne = null` en tête. Cas `!data.possible` : grise interne, force externe. Cas `data.possible` : active les deux, mémorise `window._dispenseDateInterne = data.date_origine`, pré-coche interne si rien n'est coché (`!radioInt.checked && !radioExt.checked`), puis appelle `_appliquerVisibiliteOrigine()`.
+4. **Nouvelles fonctions** : `_appliquerVisibiliteOrigine()` (masque encart proposition si externe choisi, appelle `_verifierQ2`) ; `_verifierQ2()` (avertissement amber si date externe < date interne). Listener `change` sur `dispense-origine` et `sc-dispense-date` dans DOMContentLoaded.
+5. **`editerCandidat`** : paramètre `origine` ajouté (7e). `data-dispense-origine="{{ sc.dispense_origine or '' }}"` sur le bouton HTML. Le listener passe `btn.dataset.dispenseOrigine || ''`. La fonction pré-coche la radio AVANT `_detecterDispense()` → la garde `!radioInt.checked && !radioExt.checked` ne re-coche pas interne si externe déjà coché.
+6. **`sauvegarderCandidat`** : `dispense_origine_choisie` ajouté au payload JSON via `document.querySelector('input[name="dispense-origine"]:checked').value || null`. Null si rien coché → serveur fait la détection auto (rétrocompat).
+
 ### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
 
 **DÉCOUVERTE MAJEURE :** cette logique ne couvre PAS que la dispense. La même mécanique (trouver la base théorique valable, distinguer extension/non-extension, prendre la plus récente) sert AUSSI à la détermination des dates de CACES. Dispense et calcul de dates = deux usages de la MÊME logique sous-jacente → à terme, source de vérité commune (réutiliser/étendre `caces_obtenus.py`, pas dupliquer).
