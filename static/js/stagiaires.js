@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         caces.forEach(function (co, i) {
             const bg = i % 2 === 0 ? '#fff' : '#f5f7ff';
-            const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+            const noFormate = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
             const options = co.options_obtenues
                 ? co.options_obtenues.split(',').map(function (o) {
                     return '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:0 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>';
@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         return '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:0 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>';
                       }).join(' ')
                     : '<span style="color:#ccc;">—</span>';
-                const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+                const noFormate = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
                 return '<div style="display:flex;align-items:center;gap:0;padding:5px 8px;border-bottom:1px solid #e8eef0;">'
                     + '<div style="width:50px;min-width:50px;"><span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;">' + co.categorie + '</span></div>'
                     + '<div style="flex:1;font-size:11px;color:#444;">' + (co.categorie_libelle || '—') + '</div>'

@@ -352,6 +352,7 @@ def get_caces_valides_stagiaire(id: int, db: Session = Depends(get_db)):
         result.append({
             "id": co.id,
             "numero_ordre": co.numero_ordre,
+            "ancien_numero": co.ancien_numero,
             "famille": co.famille,
             "categorie": co.categorie,
             "options_obtenues": co.options_obtenues or "",
