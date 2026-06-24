@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', function () {
             detail.style.display = open ? 'none' : 'block';
             if (arrow) arrow.textContent = open ? '▶' : '▼';
         }
+        else if (action === 'ajouter-reprise') { ouvrirModalReprise(btn.dataset.id); return; }
+        else if (action === 'fermer-modal-reprise') { document.getElementById('modal-reprise').style.display = 'none'; return; }
+        else if (action === 'confirmer-ajout-reprise') { confirmerAjoutReprise(); return; }
         else if (action === 'toggle-caces-carte') {
             const carteId = btn.dataset.carteId;
             const detail = document.getElementById('stag-caces-detail-' + carteId);
@@ -236,14 +239,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         body.innerHTML = '<em style="color:#888;">Chargement...</em>';
         try {
-            const [rHisto, rCaces, rCartes] = await Promise.all([
+            const [rHisto, rCaces, rCartes, rReprises] = await Promise.all([
                 fetch('/stagiaires/' + id + '/historique'),
                 fetch('/stagiaires/' + id + '/caces-valides'),
                 fetch('/stagiaires/' + id + '/cartes-emises'),
+                fetch('/stagiaires/' + id + '/reprises'),
             ]);
-            if (!rHisto.ok || !rCaces.ok || !rCartes.ok) throw new Error();
-            const [sessions, caces, cartes] = await Promise.all([rHisto.json(), rCaces.json(), rCartes.json()]);
-            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces) + renderCartesEmises(cartes);
+            if (!rHisto.ok || !rCaces.ok || !rCartes.ok || !rReprises.ok) throw new Error();
+            const [sessions, caces, cartes, reprises] = await Promise.all([rHisto.json(), rCaces.json(), rCartes.json(), rReprises.json()]);
+            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces) + renderCartesEmises(cartes) + renderReprisesHistorique(reprises, id);
             body.dataset.loaded = '1';
         } catch (_) {
             body.innerHTML = '<em style="color:red;">Erreur de chargement.</em>';
@@ -379,6 +383,41 @@ document.addEventListener('DOMContentLoaded', function () {
         return html;
     }
 
+    function renderReprisesHistorique(reprises, stagiaireId) {
+        var lignes = '';
+        if (!reprises || reprises.length === 0) {
+            lignes = '<div style="color:#888;font-size:13px;padding:6px 0;">Aucun CACES repris.</div>';
+        } else {
+            lignes = reprises.map(function(r) {
+                var opts = r.options_obtenues
+                    ? r.options_obtenues.split(',').map(function(o){ return '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:1px 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>'; }).join(' ')
+                    : '<span style="color:#ccc;font-size:11px;">—</span>';
+                return '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #eef0f6;font-size:12px;flex-wrap:wrap;">'
+                    + '<span style="font-family:monospace;font-weight:700;color:#7b1fa2;white-space:nowrap;" title="Ancien numero (repris)">' + (r.ancien_numero || '—') + '</span>'
+                    + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
+                    + '<span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
+                    + '<span style="display:flex;gap:2px;">' + opts + '</span>'
+                    + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
+                    + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
+                    + (r.testeur_nom ? '<span style="color:#888;font-size:11px;">' + r.testeur_nom + '</span>' : '')
+                    + '</div>';
+            }).join('');
+        }
+        return '<div style="margin-top:14px;">'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+            + '<strong style="color:#7b1fa2;font-size:13px;">🪪 Historique repris</strong>'
+            + '<button data-action="ajouter-reprise" data-id="' + stagiaireId + '" style="background:#7b1fa2;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">+ Ajouter</button>'
+            + '</div>'
+            + lignes
+            + '</div>';
+    }
+
+    function _fmtDateRep(iso) {
+        if (!iso) return '—';
+        var p = iso.split('-');
+        return p[2] + '/' + p[1] + '/' + p[0];
+    }
+
     function renderCartesEmises(cartes) {
         let html = '<div style="margin-top:16px;">';
         html += '<div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">🪪 Cartes émises</div>';
@@ -472,4 +511,107 @@ document.addEventListener('DOMContentLoaded', function () {
         const parts = iso.split('-');
         return parts[2] + '/' + parts[1] + '/' + parts[0];
     }
+
+    // ── Reprise d'historique ───────────────────────────────────────────────
+    var _repriseStagiaireId = null;
+
+    function ouvrirModalReprise(stagiaireId) {
+        _repriseStagiaireId = stagiaireId;
+        document.getElementById('rep-categorie').innerHTML = '<option value="">— Choisir une famille d\'abord —</option>';
+        document.getElementById('rep-categorie').disabled = true;
+        document.getElementById('rep-options').value = '';
+        document.getElementById('rep-date-obtention').value = '';
+        document.getElementById('rep-date-echeance').value = '';
+        document.getElementById('rep-ancien-numero').value = '';
+        document.getElementById('rep-pin').value = '';
+        var err = document.getElementById('rep-error');
+        err.style.display = 'none'; err.textContent = '';
+        var sFam = document.getElementById('rep-famille');
+        sFam.innerHTML = '<option value="">— Choisir —</option>';
+        try {
+            var familles = JSON.parse(document.getElementById('reprise-data').dataset.familles || '[]');
+            familles.forEach(function(f) {
+                var o = document.createElement('option');
+                o.value = f.code; o.textContent = f.code + ' — ' + f.libelle;
+                sFam.appendChild(o);
+            });
+        } catch (e) {}
+        sFam.value = '';
+        var sTest = document.getElementById('rep-testeur');
+        sTest.innerHTML = '<option value="">— Chargement… —</option>';
+        fetch('/api/testeurs/', { credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(testeurs){
+                sTest.innerHTML = '<option value="">— Choisir —</option>';
+                (testeurs || []).forEach(function(t){
+                    var o = document.createElement('option');
+                    o.value = t.id; o.textContent = t.nom + ' ' + t.prenom;
+                    sTest.appendChild(o);
+                });
+            })
+            .catch(function(){ sTest.innerHTML = '<option value="">— Erreur chargement —</option>'; });
+        document.getElementById('modal-reprise').style.display = 'flex';
+    }
+
+    document.addEventListener('change', function(e){
+        if (e.target && e.target.id === 'rep-famille') {
+            var fam = e.target.value;
+            var sCat = document.getElementById('rep-categorie');
+            if (!fam) { sCat.innerHTML = '<option value="">— Choisir une famille d\'abord —</option>'; sCat.disabled = true; return; }
+            sCat.innerHTML = '<option value="">— Chargement… —</option>'; sCat.disabled = true;
+            fetch('/admin/categories/' + encodeURIComponent(fam), { credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(cats){
+                    sCat.innerHTML = '<option value="">— Choisir —</option>';
+                    (cats || []).forEach(function(c){
+                        var o = document.createElement('option');
+                        o.value = c.code; o.textContent = c.code + ' — ' + c.libelle;
+                        sCat.appendChild(o);
+                    });
+                    sCat.disabled = false;
+                })
+                .catch(function(){ sCat.innerHTML = '<option value="">— Erreur —</option>'; sCat.disabled = true; });
+        }
+    });
+
+    function confirmerAjoutReprise() {
+        var err = document.getElementById('rep-error');
+        err.style.display = 'none'; err.textContent = '';
+        var payload = {
+            famille: document.getElementById('rep-famille').value,
+            categorie: document.getElementById('rep-categorie').value,
+            options_obtenues: document.getElementById('rep-options').value.trim() || null,
+            date_obtention: document.getElementById('rep-date-obtention').value,
+            date_echeance: document.getElementById('rep-date-echeance').value,
+            ancien_numero: document.getElementById('rep-ancien-numero').value.trim(),
+            testeur_id: parseInt(document.getElementById('rep-testeur').value, 10),
+            pin: document.getElementById('rep-pin').value,
+        };
+        if (!payload.famille || !payload.categorie || !payload.date_obtention || !payload.date_echeance || !payload.ancien_numero || !payload.testeur_id || !payload.pin) {
+            err.textContent = 'Tous les champs (sauf options) sont obligatoires.'; err.style.display = 'block'; return;
+        }
+        fetch('/stagiaires/' + _repriseStagiaireId + '/reprises', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        })
+        .then(function(r){
+            if (r.ok) return r.json().then(function(){
+                document.getElementById('modal-reprise').style.display = 'none';
+                var sid = _repriseStagiaireId;
+                var body = document.getElementById('hist-body-' + sid);
+                var btn = document.querySelector('[data-action="historique"][data-id="' + sid + '"]');
+                if (body) { delete body.dataset.loaded; }
+                var row = document.getElementById('hist-' + sid);
+                if (row) { row.style.display = 'none'; if (btn) btn.textContent = '▶'; }
+                if (btn) toggleHistorique(String(sid), btn);
+            });
+            return r.json().then(function(d){
+                err.textContent = '❌ ' + (d.detail || 'Erreur'); err.style.display = 'block';
+            });
+        })
+        .catch(function(){ err.textContent = '❌ Erreur réseau.'; err.style.display = 'block'; });
+    }
+
 });

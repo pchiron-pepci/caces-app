@@ -251,6 +251,55 @@
     .table-stagiaires td.stag-ddn { color: #1565c0; font-weight: 600; }
 }
 </style>
+<div id="reprise-data" data-familles='{{ familles_reprise | tojson }}' style="display:none;"></div>
+
+<div id="modal-reprise" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:12px; padding:24px; width:440px; max-width:95%; max-height:90vh; overflow-y:auto;">
+    <h3 style="margin:0 0 16px; color:#7b1fa2;">🪪 Ajouter un CACES repris</h3>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-weight:600; font-size:13px;">Famille</label>
+        <select id="rep-famille" style="width:100%; padding:8px;"><option value="">— Choisir —</option></select>
+      </div>
+      <div>
+        <label style="font-weight:600; font-size:13px;">Catégorie</label>
+        <select id="rep-categorie" style="width:100%; padding:8px;" disabled><option value="">— Choisir une famille d'abord —</option></select>
+      </div>
+      <div>
+        <label style="font-weight:600; font-size:13px;">Options (codes séparés par virgule, optionnel)</label>
+        <input type="text" id="rep-options" placeholder="ex: PE,TEL" style="width:100%; padding:8px;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-weight:600; font-size:13px;">Date d'obtention</label>
+          <input type="date" id="rep-date-obtention" style="width:100%; padding:8px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-weight:600; font-size:13px;">Date d'échéance</label>
+          <input type="date" id="rep-date-echeance" style="width:100%; padding:8px;">
+        </div>
+      </div>
+      <div>
+        <label style="font-weight:600; font-size:13px;">Ancien numéro (PEPCI)</label>
+        <input type="text" id="rep-ancien-numero" placeholder="ex: PEPCI-2023-0042" style="width:100%; padding:8px;">
+      </div>
+      <div>
+        <label style="font-weight:600; font-size:13px;">Testeur</label>
+        <select id="rep-testeur" style="width:100%; padding:8px;"><option value="">— Chargement… —</option></select>
+      </div>
+      <div>
+        <label style="font-weight:600; font-size:13px;">Code PIN administrateur</label>
+        <input type="password" id="rep-pin" style="width:100%; padding:8px;">
+      </div>
+      <div id="rep-error" style="display:none; color:#c62828; font-size:13px;"></div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+        <button data-action="fermer-modal-reprise" style="background:#eee; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;">Annuler</button>
+        <button data-action="confirmer-ajout-reprise" style="background:#7b1fa2; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-weight:700; cursor:pointer;">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <link rel="stylesheet" href="/static/vendor/cropperjs/cropper.min.css">
 <script src="/static/vendor/cropperjs/cropper.min.js"></script>
 <script src="/static/js/stagiaires.js"></script>

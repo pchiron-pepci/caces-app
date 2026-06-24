@@ -956,12 +956,15 @@ def page_stagiaires(request: Request):
     db = SessionLocal()
     try:
         liste = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
+        familles = db.query(Famille).filter(Famille.actif == True).order_by(Famille.code).all()
+        familles_data = [{"code": f.code, "libelle": f.libelle} for f in familles]
         return templates.TemplateResponse(
             request=request,
             name="stagiaires.html",
             context={
                 "page": "stagiaires",
-                "stagiaires": liste
+                "stagiaires": liste,
+                "familles_reprise": familles_data,
             }
         )
     finally:
