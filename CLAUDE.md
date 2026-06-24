@@ -1578,6 +1578,17 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **RESTE : C2-moteur** — la dispense externe (date saisie + justif) devient une 4e source que `caces_obtenus.py` sait utiliser comme base théorique pour calculer les dates du futur CACES. Dernier morceau, touche au moteur refondu.
 
+### ✅ Chantier terminé : modale candidat en lecture seule pour le terrain (2026-06-24)
+
+**Règle :** le terrain peut VOIR et JOINDRE un justificatif de dispense, mais ne peut pas modifier les données du candidat (inscription, dispense, origine, date, note). Le serveur protège déjà (`POST/PUT /candidats` = 403 terrain) — ce chantier aligne l'UI sur cette réalité.
+
+**Implémentation (`static/js/session_detail.js` + `templates/session_detail.html`) :**
+- `_appliquerRoleModaleCandidat()` (nouvelle fonction) : si `window.USER_ROLE === 'terrain'`, griser les 6 champs (`sc-stagiaire-search`, `sc-theorie`, `dispense-origine-interne`, `dispense-origine-externe`, `sc-dispense-date`, `sc-dispense-note`), masquer le bouton "Sauvegarder", remplacer "Annuler" par "Fermer".
+- Appelée en fin de `editerCandidat` (après `_detecterDispense()`).
+- `ouvrirAjoutCandidat` : garde terrain en tête — `afficherErreur` + `return` avant affichage modale (double sécurité, le bouton est déjà masqué).
+- Bouton 👥 "ajouter candidat" (`data-action="ouvrir-ajout-candidat"`) enveloppé dans `{% if user_role != 'terrain' %}`.
+- Le bouton 📎 "Joindre justificatif" reste actif (route `POST /dispense-fichier` whitelistée terrain).
+
 ---
 
 ### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
