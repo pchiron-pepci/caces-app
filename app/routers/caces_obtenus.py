@@ -174,6 +174,7 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
             "date_base": sc_disp.dispense_date.isoformat() if sc_disp.dispense_date else None,
             "echeance":  sc_disp.dispense_echeance.isoformat() if sc_disp.dispense_echeance else None,
             "justif":    bool(sc_disp.dispense_fichier_cle),
+            "sc_id":     sc_disp.id,
         }
 
     return {
