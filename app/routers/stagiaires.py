@@ -12,6 +12,8 @@ from app.models.jour_formation import PlanningApprenant
 from app.models.non_conformite import NonConformite
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.attestation_neutralite import AttestationNeutralite
+from app.models.session import Session as SessionModel
+from app.services.reprise_historique import get_or_create_session_reprise
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
@@ -21,6 +23,16 @@ import os
 router = APIRouter(prefix="/stagiaires", tags=["Stagiaires"])
 
 UPLOAD_DIR = "uploads/photos"
+
+class CacesRepriseCreate(BaseModel):
+    famille: str
+    categorie: str
+    options_obtenues: Optional[str] = None
+    date_obtention: date
+    date_echeance: date
+    ancien_numero: str
+    testeur_id: int
+    pin: str
 
 class StagiaireCreate(BaseModel):
     nom: str
@@ -349,6 +361,91 @@ def get_caces_valides_stagiaire(id: int, db: Session = Depends(get_db)):
         })
 
     return result
+
+
+@router.get("/{id}/reprises")
+def get_reprises_stagiaire(id: int, db: Session = Depends(get_db)):
+    from app.models.testeur import Testeur
+    reference = "REPRISE-" + str(id)
+    sess = db.query(SessionModel).filter(
+        SessionModel.type == "reprise",
+        SessionModel.reference == reference,
+    ).first()
+    if not sess:
+        return []
+    cos = (
+        db.query(CacesObtenu)
+        .filter(CacesObtenu.stagiaire_id == id, CacesObtenu.session_id == sess.id)
+        .order_by(CacesObtenu.famille, CacesObtenu.categorie)
+        .all()
+    )
+    result = []
+    for co in cos:
+        ep = db.query(SessionEpreuve).filter(
+            SessionEpreuve.stagiaire_id == id,
+            SessionEpreuve.session_id == sess.id,
+            SessionEpreuve.categorie == co.categorie,
+        ).first()
+        testeur_nom = ""
+        if ep and ep.testeur_id:
+            t = db.query(Testeur).filter(Testeur.id == ep.testeur_id).first()
+            if t:
+                testeur_nom = f"{t.nom} {t.prenom}"
+        result.append({
+            "id": co.id,
+            "famille": co.famille,
+            "categorie": co.categorie,
+            "options_obtenues": co.options_obtenues or "",
+            "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
+            "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
+            "ancien_numero": co.ancien_numero or "",
+            "testeur_nom": testeur_nom,
+            "testeur_id": ep.testeur_id if ep else None,
+        })
+    return result
+
+
+@router.post("/{id}/reprises")
+def creer_reprise_caces(id: int, data: CacesRepriseCreate, db: Session = Depends(get_db)):
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if data.date_echeance <= data.date_obtention:
+        raise HTTPException(status_code=400, detail="La date d'echeance doit etre posterieure a la date d'obtention.")
+    sess = get_or_create_session_reprise(id, db)
+    existe = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == id,
+        CacesObtenu.session_id == sess.id,
+        CacesObtenu.categorie == data.categorie,
+    ).first()
+    if existe:
+        raise HTTPException(status_code=409, detail="Un CACES repris existe deja pour cette categorie. Supprimez-le d'abord pour le remplacer.")
+    co = CacesObtenu(
+        stagiaire_id=id,
+        session_id=sess.id,
+        famille=data.famille,
+        categorie=data.categorie,
+        options_obtenues=data.options_obtenues or None,
+        date_obtention=data.date_obtention,
+        date_echeance=data.date_echeance,
+        statut="valide",
+        numero_ordre=None,
+        ancien_numero=data.ancien_numero,
+    )
+    db.add(co)
+    ep = SessionEpreuve(
+        session_id=sess.id,
+        stagiaire_id=id,
+        testeur_id=data.testeur_id,
+        date=data.date_obtention,
+        famille=data.famille,
+        categorie=data.categorie,
+        options_obtenues=data.options_obtenues or None,
+        obtenue=True,
+    )
+    db.add(ep)
+    db.commit()
+    db.refresh(co)
+    return {"message": "CACES repris ajoute", "id": co.id}
 
 
 @router.get("/{stag_id}/base-theorique")
