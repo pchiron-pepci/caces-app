@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-action="editer-candidat"]');
-        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note, btn.dataset.fichierNom, btn.dataset.dispenseDate);
+        if (btn) editerCandidat(parseInt(btn.dataset.scId), parseInt(btn.dataset.stagId), btn.dataset.dispense === 'true', btn.dataset.note, btn.dataset.fichierNom, btn.dataset.dispenseDate, btn.dataset.dispenseOrigine || '');
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="ouvrir-ajout-jour-theorie"]')) ouvrirAjoutJourTheorie();
@@ -365,6 +365,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (_btn) showTab(_savedTab, _btn);
         }
     } catch(e) {}
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.name === 'dispense-origine') { _appliquerVisibiliteOrigine(); }
+        if (e.target && e.target.id === 'sc-dispense-date') { _verifierQ2(); }
+    });
 });
 
 // ── Source des résultats candidats — remplacer le CORPS de cette fonction
@@ -777,12 +781,17 @@ function _syncDispenseNote() {
     if (champFichier) champFichier.style.display = isDispense ? 'block' : 'none';
     var champDate = document.getElementById('field-dispense-date');
     if (champDate) champDate.style.display = isDispense ? 'block' : 'none';
+    var champOrigine = document.getElementById('field-dispense-origine');
+    if (champOrigine) champOrigine.style.display = isDispense ? 'block' : 'none';
     _detecterDispense();
 }
 
 function _detecterDispense() {
     var box = document.getElementById('dispense-proposition');
     if (!box) return;
+    var radioInt = document.getElementById('dispense-origine-interne');
+    var radioExt = document.getElementById('dispense-origine-externe');
+    window._dispenseDateInterne = null;
     var isDispense = document.getElementById('sc-theorie').value === 'dispense';
     var stagId = window._scStagiaireId;
     var famille = window.SESSION_FAMILLE;
@@ -802,6 +811,9 @@ function _detecterDispense() {
                 box.innerHTML = 'ℹ️ Aucune base de dispense trouvée en interne pour cette famille (théorie ou CACES de moins de 12 mois). Vous pouvez saisir une dispense externe manuellement.';
                 box.style.background = '#fff7e6';
                 box.style.borderColor = '#e0c080';
+                if (radioInt) { radioInt.disabled = true; }
+                if (radioExt) { radioExt.disabled = false; if (!radioInt || !radioInt.checked) radioExt.checked = true; }
+                if (radioInt && radioInt.checked) { radioInt.checked = false; if (radioExt) radioExt.checked = true; }
                 return;
             }
             var typeLib = data.type === 'caces' ? 'CACES' : 'Théorie';
@@ -814,12 +826,39 @@ function _detecterDispense() {
                 'Date d\'origine : ' + _dateFr(data.date_origine) + ' · Dispense valable jusqu\'au ' + _dateFr(data.date_limite_dispense) +
                 lienHtml +
                 '<br><span style="color:#666;">Le système propose, vous décidez : cochez la dispense et renseignez les champs si vous validez.</span>';
+            window._dispenseDateInterne = data.date_origine || null;
+            if (radioInt) radioInt.disabled = false;
+            if (radioExt) radioExt.disabled = false;
+            if (radioInt && radioExt && !radioInt.checked && !radioExt.checked) { radioInt.checked = true; }
+            _appliquerVisibiliteOrigine();
         })
         .catch(function() {
             box.innerHTML = '⚠️ Erreur lors de la recherche de base de dispense.';
             box.style.background = '#fdecea';
             box.style.borderColor = '#e0a0a0';
         });
+}
+
+function _appliquerVisibiliteOrigine() {
+    var radioExt = document.getElementById('dispense-origine-externe');
+    var box = document.getElementById('dispense-proposition');
+    var estExterne = radioExt && radioExt.checked;
+    if (box) box.style.display = estExterne ? 'none' : (box.innerHTML.trim() ? 'block' : 'none');
+    _verifierQ2();
+}
+
+function _verifierQ2() {
+    var warn = document.getElementById('dispense-q2-warning');
+    var radioExt = document.getElementById('dispense-origine-externe');
+    if (!warn || !radioExt) return;
+    var dateExtVal = document.getElementById('sc-dispense-date').value;
+    if (radioExt.checked && window._dispenseDateInterne && dateExtVal && dateExtVal < window._dispenseDateInterne) {
+        warn.style.display = 'block';
+        warn.innerHTML = '⚠️ La date externe saisie (' + _dateFr(dateExtVal) + ') est ANTERIEURE a la base interne detectee (' + _dateFr(window._dispenseDateInterne) + '). La base la plus recente devrait primer — verifiez votre saisie.';
+    } else {
+        warn.style.display = 'none';
+        warn.innerHTML = '';
+    }
 }
 
 function ouvrirAjoutCandidat() {
@@ -835,7 +874,7 @@ function ouvrirAjoutCandidat() {
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
-function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichierNom, dispenseDate) {
+function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichierNom, dispenseDate, origine) {
     window._scStagiaireId = stagiaireId;
     document.getElementById('candidat-title').textContent = 'Modifier candidat';
     document.getElementById('sc-id').value = id;
@@ -845,9 +884,17 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('field-dispense-note').style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('field-dispense-fichier').style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('field-dispense-date').style.display = theorie_dispensee ? 'block' : 'none';
+    document.getElementById('field-dispense-origine').style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('sc-dispense-date').value = dispenseDate || '';
     document.getElementById('field-stagiaire').style.display = 'none';
     _majAffichageJustif(fichierNom || '');
+    if (theorie_dispensee) {
+        var re = document.getElementById('dispense-origine-externe');
+        var ri = document.getElementById('dispense-origine-interne');
+        if (origine === 'externe') { if (re) re.checked = true; if (ri) ri.checked = false; }
+        else if (origine === 'interne') { if (ri) ri.checked = true; if (re) re.checked = false; }
+        else { if (re) re.checked = false; if (ri) ri.checked = false; }
+    }
     document.getElementById('modal-candidat').style.display = 'flex';
     _detecterDispense();
 }
@@ -862,7 +909,8 @@ async function sauvegarderCandidat() {
         stagiaire_id: parseInt(document.getElementById('sc-stagiaire').value),
         theorie_dispensee: isDispense,
         dispense_note: isDispense ? (document.getElementById('sc-dispense-note').value.trim() || null) : null,
-        dispense_date: isDispense ? (document.getElementById('sc-dispense-date').value || null) : null
+        dispense_date: isDispense ? (document.getElementById('sc-dispense-date').value || null) : null,
+        dispense_origine_choisie: isDispense ? ((document.querySelector('input[name="dispense-origine"]:checked') || {}).value || null) : null
     };
     if (!id && !data.stagiaire_id) { alert('Choisir un stagiaire !'); return; }
     const url = id ? '/api/sessions/' + window.SESSION_ID + '/candidats/' + id : '/api/sessions/' + window.SESSION_ID + '/candidats';

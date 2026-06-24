@@ -1621,6 +1621,7 @@
                             data-note="{{ sc.dispense_note or '' }}"
                             data-fichier-nom="{{ sc.dispense_fichier_nom or '' }}"
                             data-dispense-date="{{ sc.dispense_date or '' }}"
+                            data-dispense-origine="{{ sc.dispense_origine or '' }}"
                             title="Modifier ce candidat">✏️</button>
                         <button class="btn-trash"
                             data-action="retirer-candidat"
@@ -2004,6 +2005,18 @@
                 </select>
             </div>
             <div class="form-field" id="dispense-proposition" style="grid-column: span 2; display:none; background:#eef4fb; border:1px solid #bcd; border-radius:6px; padding:10px 12px; font-size:13px;">
+            </div>
+            <div class="form-field" id="field-dispense-origine" style="grid-column: span 2; display:none;">
+                <label>Origine de la dispense</label>
+                <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                    <label style="font-weight:normal; cursor:pointer;">
+                        <input type="radio" name="dispense-origine" value="interne" id="dispense-origine-interne"> Base interne (détectée)
+                    </label>
+                    <label style="font-weight:normal; cursor:pointer;">
+                        <input type="radio" name="dispense-origine" value="externe" id="dispense-origine-externe"> Base externe (autre organisme)
+                    </label>
+                </div>
+                <div id="dispense-q2-warning" style="display:none; margin-top:6px; padding:6px 10px; background:#fff7e6; border:1px solid #e0c080; border-radius:4px; font-size:12px; color:#8a6d3b;"></div>
             </div>
             <div class="form-field" id="field-dispense-date" style="grid-column: span 2; display:none;">
                 <label>Date d'obtention (théorie ou CACES justifiant la dispense)</label>
