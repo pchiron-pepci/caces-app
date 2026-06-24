@@ -1494,7 +1494,7 @@
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <p style="color:#666; font-size:14px;">{{ session_candidats|length }} candidat(s) inscrit(s)</p>
         {% if session.statut != 'terminee' and user_role != 'terrain' %}
-        <button class="btn btn-secondary" data-action="ouvrir-ajout-candidat" title="Ajouter un candidat" style="padding:6px 12px; font-size:12px; cursor:pointer;">👥</button>
+        {% if user_role != 'terrain' %}<button class="btn btn-secondary" data-action="ouvrir-ajout-candidat" title="Ajouter un candidat" style="padding:6px 12px; font-size:12px; cursor:pointer;">👥</button>{% endif %}
         {% endif %}
     </div>
     <div class="card">

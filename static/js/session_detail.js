@@ -873,6 +873,19 @@ function _verifierQ2() {
     }
 }
 
+function _appliquerRoleModaleCandidat() {
+    var estTerrain = window.USER_ROLE === 'terrain';
+    var ids = ['sc-stagiaire-search', 'sc-theorie', 'dispense-origine-interne', 'dispense-origine-externe', 'sc-dispense-date', 'sc-dispense-note'];
+    ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.disabled = estTerrain;
+    });
+    var btnSave = document.querySelector('[data-action="sauvegarder-candidat"]');
+    if (btnSave) btnSave.style.display = estTerrain ? 'none' : '';
+    var btnAnnuler = document.querySelector('[data-action="fermer-modal-candidat"]');
+    if (btnAnnuler && estTerrain) btnAnnuler.textContent = 'Fermer';
+}
+
 function ouvrirAjoutCandidat() {
     document.getElementById('candidat-title').textContent = 'Ajouter un candidat';
     document.getElementById('sc-id').value = '';
@@ -883,6 +896,10 @@ function ouvrirAjoutCandidat() {
     document.getElementById('sc-dispense-date').value = '';
     document.getElementById('field-dispense-note').style.display = 'none';
     document.getElementById('field-stagiaire').style.display = 'block';
+    if (window.USER_ROLE === 'terrain') {
+        afficherErreur('L\'inscription d\'un candidat est reservee au back-office.');
+        return;
+    }
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
@@ -909,6 +926,7 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     }
     document.getElementById('modal-candidat').style.display = 'flex';
     _detecterDispense();
+    _appliquerRoleModaleCandidat();
 }
 
 function fermerModalCandidat() { document.getElementById('modal-candidat').style.display = 'none'; }
