@@ -150,6 +150,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
         }
+
+        const btnJustif = e.target.closest('[data-action="ouvrir-justif-dispense"]');
+        if (btnJustif) {
+            const sid = btnJustif.dataset.sessionId;
+            const scId = btnJustif.dataset.scId;
+            if (sid && scId) window.open('/api/sessions/' + sid + '/candidats/' + scId + '/dispense-fichier', '_blank');
+        }
     });
 });
 
@@ -311,7 +318,7 @@ function ligneDispense(co) {
     let justif = '';
     if (estExt) {
         justif = d.justif
-            ? '<span style="color:#2e7d32;" title="Justificatif joint">📎</span>'
+            ? `<span data-action="ouvrir-justif-dispense" data-session-id="${co.session_id_pratique}" data-sc-id="${d.sc_id}" style="color:#2e7d32;cursor:pointer;" title="Ouvrir le justificatif">📎</span>`
             : '<span style="color:#e65100;" title="Justificatif manquant">⚠️</span>';
     }
     return `
@@ -331,7 +338,15 @@ function badgeDispense(co) {
     const bg = estExt ? '#fff3e0' : '#e8f5e9';
     const fg = estExt ? '#e65100' : '#2e7d32';
     const warn = (estExt && !co.dispense.justif) ? ' ⚠️' : '';
-    return `<span title="Dispense ${estExt ? 'externe' : 'interne'}${warn ? ' — justificatif manquant' : ''}" style="background:${bg};color:${fg};border-radius:3px;padding:0 5px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:6px;">${txt}${warn}</span>`;
+    const cliquable = (estExt && co.dispense.justif);
+    const dataAttrs = cliquable
+        ? ` data-action="ouvrir-justif-dispense" data-session-id="${co.session_id_pratique}" data-sc-id="${co.dispense.sc_id}"`
+        : '';
+    const curseur = cliquable ? 'cursor:pointer;' : '';
+    const titre = cliquable
+        ? 'Ouvrir le justificatif'
+        : `Dispense ${estExt ? 'externe' : 'interne'}${warn ? ' — justificatif manquant' : ''}`;
+    return `<span${dataAttrs} title="${titre}" style="background:${bg};color:${fg};border-radius:3px;padding:0 5px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:6px;${curseur}">${txt}${warn}</span>`;
 }
 
 function badgeStatut(statut) {
