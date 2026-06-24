@@ -319,8 +319,11 @@ python init_questions_r482.py
 | Haute | Stockage R2 + storage.py (+ images jpg/png/heic) | ✅ fait |
 | Haute | Suppression justificatifs par rôle (uploade_par_role) — cadré, 5 étapes | ✅ fait |
 | Haute | Réduction images côté client avant upload (1600px/JPEG 80%) | ✅ fait |
-| Haute | Détection dispense interne/externe (modale candidat) | à faire |
-| Haute | Brancher dispense externe au moteur caces_obtenus.py | à faire |
+| Haute | Détection dispense interne/externe (modale candidat) | ✅ fait |
+| Haute | Brancher dispense externe au moteur caces_obtenus.py | ✅ fait |
+| Haute | Affichage origine dispense dans CACES obtenus (ligne + badge + justif cliquable) | ✅ fait |
+| Haute | Stabilisation parcours dispense en ajout (3 fixes : reset, externe forcé, écheance prématurée) | ✅ fait |
+| Haute | Module REPRISE D'HISTORIQUE (H1-H5 : CacesObtenu repris, théories/pratiques orphelines) | à faire |
 | Moyenne | Convergence justificatif dispense → table Justificatif (fichier seulement) | ÉCARTÉ (non-convergence assumée) |
 | Moyenne | Corrections couleur pastille FORM. ardoise + footer Actions en ligne | à faire |
 | Haute | Migration justificatif théorie base64 → R2 | ✅ fait |
@@ -1858,3 +1861,64 @@ La convergence du justificatif de dispense vers la table `Justificatif` est **É
 
 - **Pastille FORM. "présente" :** encore `#1a7a3a` (vert) dans HTML (`session_detail.html` ~1592) ET JS (`_majPastilleFormation` ~2392). À passer en `#4a5568` (ardoise) aux DEUX endroits (sinon le JS repeint en vert après chaque rechargement).
 - **Footer Actions mobile :** boutons crayon+corbeille s'empilent (capture confirmée) au lieu d'être en ligne. Manque `flex-direction:row` + `flex-wrap:nowrap` + groupement. Fond à passer en `#e8edf5` (ardoise pâle).
+
+---
+
+### ✅ Chantier terminé : affichage origine dispense dans CACES obtenus (2026-06-24)
+
+**Backend — `app/routers/caces_obtenus.py`, `_get_theorie_pratique` :**
+- Bloc `dispense_info` ajouté : requête `SessionCandidat` (session_id + stagiaire_id du CACES) → expose `{origine, date_base, echeance, justif, sc_id}` ou `None`. Import `SessionCandidat` en tête du fichier.
+- Champ `"dispense": dispense_info` dans le `return`, présent dans `/api/caces-obtenus/a-valider` et `/valides`.
+
+**Frontend — `static/js/caces_obtenus.js` :**
+- `ligneDispense(co)` : ligne complète "🪪 Dispense" dans les cartes à valider — vert si interne, orange si externe ; date de base, échéance externe, 📎 cliquable si justif / ⚠️ si absent. Retourne `''` si `co.dispense == null` (CACES normaux inchangés).
+- `badgeDispense(co)` : badge compact "Disp. int./ext." dans la liste valides. Cliquable si externe + justif.
+- `${ligneDispense(co)}` inséré dans `renderCarteAValider` après le bloc Théorie ; `${badgeDispense(co)}` dans `_renderLigne` à côté du nom (div `display:flex` pour préserver l'ellipsis du span nom sans tronquer le badge).
+
+**Justificatif cliquable (CSP-safe) :**
+- `data-action="ouvrir-justif-dispense"` sur 📎 et badge externe-avec-justif.
+- Listener délégué existant → `window.open('/api/sessions/{session_id_pratique}/candidats/{sc_id}/dispense-fichier', '_blank')` (auth cookie suffit, pas de fetch+blob).
+
+---
+
+### ✅ Chantier terminé : stabilisation parcours dispense en AJOUT candidat — 3 fixes (2026-06-24)
+
+Le champ échéance externe (`#field-dispense-echeance`) avait plusieurs bugs en ajout (`static/js/session_detail.js`) :
+
+**Fix 1 — Reset incomplet (`ouvrirAjoutCandidat`) :**
+`ouvrirAjoutCandidat` ne réinitialisait pas l'état dispense → valeurs résiduelles si on éditait un externe puis ouvrait Ajouter. Fix : reset complet (`sc-dispense-echeance`, radios origine décochées, sous-champs masqués, warnings vidés, `window._dispenseDateInterne = null`). Garde terrain conservé après le reset, avant `modal.style.display = 'flex'`.
+
+**Fix 2 — Échéance jamais affichée en externe forcé (`_detecterDispense`) :**
+La branche "aucune base trouvée" forçait `radioExt.checked = true` programmatiquement (ne déclenche PAS l'event `change` → listener l.369 muet) mais n'appelait PAS `_appliquerVisibiliteOrigine` → champ échéance restait masqué → save bloqué (échéance obligatoire serveur). Fix : ajout de `_appliquerVisibiliteOrigine()` avant le `return` de cette branche.
+
+**Fix 3 — Échéance prématurée (`_appliquerVisibiliteOrigine`) :**
+Le champ apparaissait dès la sélection du stagiaire (hors mode dispense) car `_appliquerVisibiliteOrigine` ne testait que `estExterne`. Fix : condition `(estDispense && estExterne)` — `estDispense = (sc-theorie.value === 'dispense')`.
+
+**Règle finale :** champ échéance visible UNIQUEMENT si dispense sélectionnée ET origine externe cochée. Cohérent avec `_syncDispenseNote` (masque si `!isDispense`, l.807) et `editerCandidat` (affiche si `theorie_dispensee && origine === 'externe'`, l.993). `_appliquerVisibiliteOrigine` est le seul point d'affichage du champ → couvre tous les chemins (sélection stagiaire, changement origine, branche aucune-base, édition).
+
+---
+
+### 🔜 CADRAGE À FAIRE : module REPRISE D'HISTORIQUE (migration sans reprise auto)
+
+**Problème :** à la bascule NORYX, l'historique PEPCI (CACES, théories, pratiques) n'est pas en base. Le système ne détecte rien → forçait l'usage de la "dispense externe" (impasse pour une théorie PEPCI sans échéance externe). De plus, la réédition de carte (doc PEPCI §6) exige que TOUS les CACES du titulaire existent en base — pas juste soient "dispensés".
+
+**Décision : reprise structurée EN BASE ("vision vivante").** Les enregistrements repris sont traités par le moteur comme des natifs : dispense interne détecte les théories reprises, extension via `caces_initial_id` fonctionne.
+
+**Principes tranchés :**
+- Un CACES repris = `CacesObtenu` statut `valide` créé à la main, dates historiques saisies. Le moteur ne le recalcule jamais (les `valide` sont intouchables) mais l'utilise comme `caces_initial` pour les extensions.
+- **Numéros d'ordre :** on ne reprend PAS les anciens numéros PEPCI dans la séquence NORYX. Le CACES repris reçoit un numéro NORYX normal (séquence intacte, zéro collision). L'ancien numéro PEPCI est stocké dans une colonne dédiée `ancien_numero` (TEXT libre, ex. `"PEPCI-2023-0042"`), purement informative. L'`ancien_numero` S'AFFICHE SUR LA CARTE pour les repris ; le numéro NORYX pour les natifs. Le moteur lit les dates, jamais les numéros.
+- **Marqueur repris :** flag dédié `repris=True` OU déduit de `ancien_numero IS NOT NULL` — à trancher en H1.
+- Théorie orpheline reprise = `ResultatTheorie` `obtenue=True` créée à la main → détectée par le moteur comme base de dispense interne. Pratique orpheline = `SessionEpreuve` `obtenue=True` créée à la main.
+- Saisie sous PIN admin.
+- La "dispense externe" reste réservée aux AUTRES organismes uniquement. La reprise d'historique REMPLACE l'usage détourné de l'externe pour les acquis PEPCI.
+
+**Point technique délicat :** `ResultatTheorie` a `jour_test_id` FK obligatoire ; `SessionEpreuve` idem. Créer une orpheline reprise sans `JourTest`/`Session` réels pose question (session technique "reprise" ? FK nullable ?) → à trancher en H1/H3/H4. Vérifier aussi que le CACES repris (sans `SessionEpreuve` native) survit aux passes du moteur (ne soit pas nettoyé faute d'épreuve source).
+
+**Découpages H1-H5 :**
+| Chantier | Périmètre |
+|---|---|
+| H1 | Modèle : colonne `ancien_numero` TEXT + marqueur repris + création `CacesObtenu valide` direct ; règle affichage carte (`ancien_numero` pour repris, numéro NORYX pour natifs) |
+| H2 | Saisie manuelle des CACES en cours sous PIN (besoin n°1 : réédition carte + extension) |
+| H3 | Théories orphelines reprises (`ResultatTheorie` sans session réelle) |
+| H4 | Pratiques orphelines reprises (`SessionEpreuve` sans session réelle) |
+| H5 | Intégration : carte affiche repris + `ancien_numero` + pastille ; extension via `caces_initial_id` ; vérif moteur survive aux repris ; "dispense externe" réservée aux autres organismes |
