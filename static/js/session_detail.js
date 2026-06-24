@@ -844,6 +844,15 @@ function _appliquerVisibiliteOrigine() {
     var box = document.getElementById('dispense-proposition');
     var estExterne = radioExt && radioExt.checked;
     if (box) box.style.display = estExterne ? 'none' : (box.innerHTML.trim() ? 'block' : 'none');
+    var champDate = document.getElementById('sc-dispense-date');
+    if (champDate) {
+        if (estExterne) {
+            champDate.disabled = false;
+        } else {
+            if (window._dispenseDateInterne) champDate.value = window._dispenseDateInterne;
+            champDate.disabled = true;
+        }
+    }
     _verifierQ2();
 }
 
