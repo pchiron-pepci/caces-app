@@ -367,7 +367,8 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch(e) {}
     document.addEventListener('change', function(e) {
         if (e.target && e.target.name === 'dispense-origine') { _appliquerVisibiliteOrigine(); }
-        if (e.target && e.target.id === 'sc-dispense-date') { _verifierQ2(); }
+        if (e.target && e.target.id === 'sc-dispense-date') { _verifierQ2(); _verifierEcheance(); }
+        if (e.target && e.target.id === 'sc-dispense-echeance') { _verifierEcheance(); }
     });
 });
 
@@ -405,6 +406,25 @@ function _dateFr(iso) {
     var p = String(iso).split('-');
     if (p.length !== 3) return iso;
     return p[2] + '/' + p[1] + '/' + p[0];
+}
+
+function _dateMoinsUnJour(y, m, d) {
+    var dt;
+    try {
+        dt = new Date(y, m - 1, d);
+        if (dt.getMonth() !== (m - 1)) { dt = new Date(y, 2, 1); }
+    } catch (e) { dt = new Date(y, 2, 1); }
+    dt.setDate(dt.getDate() - 1);
+    return dt;
+}
+function _bornesEcheance(dateBaseIso) {
+    var N = (window.SESSION_FAMILLE === 'R482') ? 10 : 5;
+    var parts = dateBaseIso.split('-');
+    var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10), d = parseInt(parts[2], 10);
+    return {
+        haute: _dateMoinsUnJour(y + N, m, d),
+        basse: _dateMoinsUnJour(y + (N - 1), m, d),
+    };
 }
 
 function _selectionnerCandidatStagiaire(id, label) {
@@ -861,6 +881,7 @@ function _appliquerVisibiliteOrigine() {
     var champEcheanceWrap = document.getElementById('field-dispense-echeance');
     if (champEcheanceWrap) champEcheanceWrap.style.display = estExterne ? 'block' : 'none';
     _verifierQ2();
+    _verifierEcheance();
 }
 
 function _verifierQ2() {
@@ -875,6 +896,39 @@ function _verifierQ2() {
         warn.style.display = 'none';
         warn.innerHTML = '';
     }
+}
+
+function _verifierEcheance() {
+    var warn = document.getElementById('dispense-echeance-warning');
+    var radioExt = document.getElementById('dispense-origine-externe');
+    if (!warn || !radioExt) return;
+    var baseVal = document.getElementById('sc-dispense-date').value;
+    var echVal = document.getElementById('sc-dispense-echeance').value;
+    if (!radioExt.checked || !baseVal || !echVal) { warn.style.display = 'none'; return; }
+    var ech = new Date(echVal + 'T00:00:00');
+    var base = new Date(baseVal + 'T00:00:00');
+    var b = _bornesEcheance(baseVal);
+    if (ech <= base) {
+        warn.style.display = 'block';
+        warn.style.background = '#fde8e8'; warn.style.border = '1px solid #e0a0a0'; warn.style.color = '#a33';
+        warn.innerHTML = '⛔ L\'echeance (' + _dateFr(echVal) + ') doit etre posterieure a la date de base (' + _dateFr(baseVal) + '). Le serveur refusera l\'enregistrement.';
+    } else if (ech > b.haute) {
+        warn.style.display = 'block';
+        warn.style.background = '#fde8e8'; warn.style.border = '1px solid #e0a0a0'; warn.style.color = '#a33';
+        warn.innerHTML = '⛔ L\'echeance (' + _dateFr(echVal) + ') depasse la duree maximale du CACES (jusqu\'au ' + _dateFr(_isoFromDate(b.haute)) + ' max). Le serveur refusera l\'enregistrement.';
+    } else if (ech < b.basse) {
+        warn.style.display = 'block';
+        warn.style.background = '#fff7e6'; warn.style.border = '1px solid #e0c080'; warn.style.color = '#8a6d3b';
+        warn.innerHTML = '⚠️ L\'echeance (' + _dateFr(echVal) + ') est plus courte que prevu (attendu apres le ' + _dateFr(_isoFromDate(b.basse)) + '). Verifiez le justificatif externe — non bloquant.';
+    } else {
+        warn.style.display = 'none';
+    }
+}
+
+function _isoFromDate(dt) {
+    var mm = String(dt.getMonth() + 1).padStart(2, '0');
+    var dd = String(dt.getDate()).padStart(2, '0');
+    return dt.getFullYear() + '-' + mm + '-' + dd;
 }
 
 function _appliquerRoleModaleCandidat() {
@@ -921,6 +975,7 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('sc-dispense-date').value = dispenseDate || '';
     document.getElementById('sc-dispense-echeance').value = dispenseEcheance || '';
     document.getElementById('field-dispense-echeance').style.display = (theorie_dispensee && origine === 'externe') ? 'block' : 'none';
+    _verifierEcheance();
     document.getElementById('field-stagiaire').style.display = 'none';
     _majAffichageJustif(fichierNom || '');
     if (theorie_dispensee) {
