@@ -10,6 +10,7 @@ from app.models.testeur import Testeur
 from app.models.session import Session as SessionModel
 from app.models.session_epreuve import SessionEpreuve
 from app.models.jour_test import JourTest, ResultatTheorie
+from app.models.session_candidat import SessionCandidat
 from app.services.caces_obtenus import calculer_et_synchroniser
 from app.config_utils import get_pin_admin
 
@@ -156,6 +157,25 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
         sess_theorie = db.query(SessionModel).filter(SessionModel.id == sess_theorie_id).first()
     ref_theorie = _ref(sess_theorie)
 
+    # --- Bloc dispense (affichage CACES obtenus) ---
+    dispense_info = None
+    sc_disp = (
+        db.query(SessionCandidat)
+        .filter(
+            SessionCandidat.session_id == co.session_id,
+            SessionCandidat.stagiaire_id == co.stagiaire_id,
+            SessionCandidat.actif == True,
+        )
+        .first()
+    )
+    if sc_disp and sc_disp.theorie_dispensee and sc_disp.dispense_origine in ("interne", "externe"):
+        dispense_info = {
+            "origine":   sc_disp.dispense_origine,
+            "date_base": sc_disp.dispense_date.isoformat() if sc_disp.dispense_date else None,
+            "echeance":  sc_disp.dispense_echeance.isoformat() if sc_disp.dispense_echeance else None,
+            "justif":    bool(sc_disp.dispense_fichier_cle),
+        }
+
     return {
         "date_pratique": date_pratique,
         "session_id_pratique": co.session_id,
@@ -167,6 +187,7 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
         "session_id_theorie": sess_theorie_id,
         "session_ref_theorie": ref_theorie,
         "post_cloture": sess_theorie_id != co.session_id,
+        "dispense": dispense_info,
     }
 
 
