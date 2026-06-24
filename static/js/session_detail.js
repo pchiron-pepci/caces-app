@@ -952,7 +952,21 @@ function ouvrirAjoutCandidat() {
     document.getElementById('sc-theorie').value = 'normal';
     document.getElementById('sc-dispense-note').value = '';
     document.getElementById('sc-dispense-date').value = '';
+    document.getElementById('sc-dispense-echeance').value = '';
+    var _ri = document.getElementById('dispense-origine-interne');
+    var _re = document.getElementById('dispense-origine-externe');
+    if (_ri) _ri.checked = false;
+    if (_re) _re.checked = false;
     document.getElementById('field-dispense-note').style.display = 'none';
+    document.getElementById('field-dispense-date').style.display = 'none';
+    document.getElementById('field-dispense-origine').style.display = 'none';
+    document.getElementById('field-dispense-echeance').style.display = 'none';
+    document.getElementById('field-dispense-fichier').style.display = 'none';
+    var _wq = document.getElementById('dispense-q2-warning');
+    if (_wq) { _wq.style.display = 'none'; _wq.innerHTML = ''; }
+    var _we = document.getElementById('dispense-echeance-warning');
+    if (_we) { _we.style.display = 'none'; _we.innerHTML = ''; }
+    window._dispenseDateInterne = null;
     document.getElementById('field-stagiaire').style.display = 'block';
     if (window.USER_ROLE === 'terrain') {
         afficherErreur('L\'inscription d\'un candidat est reservee au back-office.');
