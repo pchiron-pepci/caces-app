@@ -4,6 +4,7 @@ from app.models.jour_test import JourTest, ResultatTheorie
 from app.models.session_epreuve import SessionEpreuve
 from app.models.session import Session as SessionModel
 from app.models.caces_obtenu import CacesObtenu
+from app.models.session_candidat import SessionCandidat
 
 
 def _date_echeance(famille: str, date_obt: date) -> date:
@@ -70,6 +71,29 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
                 → date_obtention = date_prat
                 → date_echeance = None (déterminée en passe 2 via caces_initial)
     """
+    # --- Cas DISPENSE EXTERNE : dates saisies par l'operateur, pas de theorie interne ---
+    sc = (
+        db.query(SessionCandidat)
+        .filter(
+            SessionCandidat.session_id == ep.session_id,
+            SessionCandidat.stagiaire_id == ep.stagiaire_id,
+            SessionCandidat.actif == True,
+        )
+        .first()
+    )
+    if sc and sc.theorie_dispensee and sc.dispense_origine == "externe":
+        if not sc.dispense_echeance:
+            return None  # securite : echeance non saisie (ne devrait pas arriver, garde-fou au save)
+        return {
+            "date_obtention":         ep.date,
+            "date_echeance":          sc.dispense_echeance,
+            "options_obtenues":       ep.options_obtenues,
+            "post_cloture":           False,
+            "resultat_theorie_id":    None,
+            "theorie_source_id":      None,
+            "dispense_externe_sc_id": sc.id,
+        }
+
     rt = (
         db.query(ResultatTheorie)
         .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
@@ -121,12 +145,13 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
         echeance = _date_echeance(ep.famille, date_prat)
 
     return {
-        "date_obtention":      date_obtention,
-        "date_echeance":       echeance,
-        "options_obtenues":    ep.options_obtenues,
-        "post_cloture":        post_cloture,
-        "resultat_theorie_id": (rt.id if (rt and not post_cloture) else None),
-        "theorie_source_id":   (rt.id if rt else None),
+        "date_obtention":         date_obtention,
+        "date_echeance":          echeance,
+        "options_obtenues":       ep.options_obtenues,
+        "post_cloture":           post_cloture,
+        "resultat_theorie_id":    (rt.id if (rt and not post_cloture) else None),
+        "theorie_source_id":      (rt.id if rt else None),
+        "dispense_externe_sc_id": None,
     }
 
 
@@ -138,21 +163,23 @@ def _appliquer_caces(db, ep, calc, caces_initial_id=None):
     ).first()
     if existing:
         if existing.statut == "a_valider":
-            existing.date_obtention      = calc["date_obtention"]
-            existing.date_echeance       = calc["date_echeance"]
-            existing.options_obtenues    = calc["options_obtenues"]
-            existing.post_cloture        = calc["post_cloture"]
-            existing.resultat_theorie_id = calc["resultat_theorie_id"]
-            existing.caces_initial_id    = caces_initial_id
+            existing.date_obtention         = calc["date_obtention"]
+            existing.date_echeance          = calc["date_echeance"]
+            existing.options_obtenues       = calc["options_obtenues"]
+            existing.post_cloture           = calc["post_cloture"]
+            existing.resultat_theorie_id    = calc["resultat_theorie_id"]
+            existing.caces_initial_id       = caces_initial_id
+            existing.dispense_externe_sc_id = calc["dispense_externe_sc_id"]
         elif existing.statut == "annule":
-            existing.statut              = "a_valider"
-            existing.numero_ordre        = None
-            existing.date_obtention      = calc["date_obtention"]
-            existing.date_echeance       = calc["date_echeance"]
-            existing.options_obtenues    = calc["options_obtenues"]
-            existing.post_cloture        = calc["post_cloture"]
-            existing.resultat_theorie_id = calc["resultat_theorie_id"]
-            existing.caces_initial_id    = caces_initial_id
+            existing.statut                 = "a_valider"
+            existing.numero_ordre           = None
+            existing.date_obtention         = calc["date_obtention"]
+            existing.date_echeance          = calc["date_echeance"]
+            existing.options_obtenues       = calc["options_obtenues"]
+            existing.post_cloture           = calc["post_cloture"]
+            existing.resultat_theorie_id    = calc["resultat_theorie_id"]
+            existing.caces_initial_id       = caces_initial_id
+            existing.dispense_externe_sc_id = calc["dispense_externe_sc_id"]
         return
     db.add(CacesObtenu(
         stagiaire_id=ep.stagiaire_id,
@@ -166,6 +193,7 @@ def _appliquer_caces(db, ep, calc, caces_initial_id=None):
         post_cloture=calc["post_cloture"],
         resultat_theorie_id=calc["resultat_theorie_id"],
         caces_initial_id=caces_initial_id,
+        dispense_externe_sc_id=calc["dispense_externe_sc_id"],
     ))
 
 
