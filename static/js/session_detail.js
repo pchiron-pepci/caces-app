@@ -847,9 +847,12 @@ function _appliquerVisibiliteOrigine() {
     var champDate = document.getElementById('sc-dispense-date');
     if (champDate) {
         if (estExterne) {
+            // base externe : saisie volontaire assumee → vider la date heritee de l'interne
+            if (champDate.disabled) champDate.value = '';   // ne vide que si on ARRIVE depuis interne (champ etait grise)
             champDate.disabled = false;
         } else {
-            if (window._dispenseDateInterne) champDate.value = window._dispenseDateInterne;
+            // base interne : date detectee, grisee
+            champDate.value = window._dispenseDateInterne || '';
             champDate.disabled = true;
         }
     }
