@@ -1576,7 +1576,7 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Règle confirmée :** en interne, la date est INFORMATIVE (le serveur utilise la source détectée, jamais `dispense_date` du client). En externe, date saisie + garde-fous serveur.
 
-**RESTE : C2-moteur** — la dispense externe (date saisie + justif) devient une 4e source que `caces_obtenus.py` sait utiliser comme base théorique pour calculer les dates du futur CACES. Dernier morceau, touche au moteur refondu.
+**C2 (moteur + socle) → voir section dédiée ci-dessous.**
 
 ### ✅ Chantier terminé : modale candidat en lecture seule pour le terrain (2026-06-24)
 
@@ -1607,7 +1607,29 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Notice utilisateur "Dispense de théorie" générée (.docx, charte NORYX)** : 8 points (règle 12 mois, proposition, origine interne/externe + override, date, avertissement Q2, justificatif + pastille, verrou CACES délivré, tableau récap). Rôles corrigés : back-office paramètre tout, terrain consulte + justificatif seul.
 
-**RESTE : C2-moteur** — la dispense externe (date saisie + justif) devient une 4e source que `caces_obtenus.py` sait utiliser comme base théorique pour calculer les dates du futur CACES. Dernier morceau, touche au moteur refondu.
+### ✅ Chantier en cours : dispense externe comme base de calcul CACES (C2) — socle C2a + C2b faits, C2c (moteur) à venir
+
+**Principe métier validé :** pour une dispense EXTERNE, l'humain RECOPIE les dates du CACES externe (il ne calcule pas). Le candidat obtient la catégorie CHEZ NOUS :
+- date d'obtention = date de la pratique réussie chez nous (le moteur la connaît : `SessionEpreuve.date`) — RIEN à saisir.
+- date d'échéance = celle qui figure sur le CACES externe, SAISIE à la main par l'opérateur (cas extension ET primo confondus, puisqu'on saisit l'échéance).
+- Pas de recherche de théorie interne ; pas de mécanisme deux passes (les dates ne sont pas héritées d'un CACES initial interne).
+
+**C2a — 2 champs (faits, en prod) :**
+- `SessionCandidat.dispense_echeance` (Date) — échéance reportée du CACES externe.
+- `CacesObtenu.dispense_externe_sc_id` (Integer, FK `session_candidats.id`) — traçabilité POSITIVE : ce CACES est fondé sur la dispense externe de ce `SessionCandidat` (pendant de `resultat_theorie_id` pour l'interne). FK ORM seulement, ALTER SQL = INTEGER sans contrainte (comme `caces_initial_id`).
+- Migrations startup `_MIGRATIONS`, vérifiées en prod.
+
+**C2b — saisie échéance (faite) :**
+- Schéma `SessionCandidatCreate` : `+dispense_echeance (Optional[date])`.
+- `add_candidat` + `update_candidat` : écriture `sc.dispense_echeance = data.dispense_echeance` SI (`theorie_dispensee` ET `origine=='externe'`), sinon `None` (nullifie hors externe).
+- Garde-fou serveur : si `origine=='externe'` et pas de `dispense_echeance` → HTTPException 400 (à côté des contrôles date + 12 mois). OBLIGATOIRE comme date+justif.
+- Verrou D0 étendu : `dispense_echeance` ajouté à `_dispense_change` (modifier l'échéance d'un candidat à CACES délivré = bloqué 409).
+- UI : champ `#field-dispense-echeance` "Date d'échéance (reportée du CACES externe)" visible UNIQUEMENT en mode externe (`_appliquerVisibiliteOrigine` : `block` si externe, `none` si interne ; `_syncDispenseNote` : masque si pas dispense). Transmis au payload `sauvegarderCandidat`. Grisé pour le terrain (`_appliquerRoleModaleCandidat`). Pré-rempli en édition (`editerCandidat` 8e param, `data-dispense-echeance` sur le bouton).
+
+**C2c — À FAIRE : intégration moteur (`caces_obtenus.py`) :**
+- Dans `_calculer_pour_epreuve`, AVANT la recherche de théorie interne : si le `SessionCandidat` (`session_id`+`stagiaire_id`, actif) est `theorie_dispensee` + `origine=='externe'` → retourner directement : `date_obtention=ep.date`, `date_echeance=sc.dispense_echeance`, `post_cloture=False`, `resultat_theorie_id=None`, `theorie_source_id=None`, `dispense_externe_sc_id=sc.id`. Si `dispense_echeance` manquante → `return None` (sécurité).
+- Ajouter `"dispense_externe_sc_id"` au dict de retour de TOUS les cas (`None` pour les internes) pour éviter `KeyError`.
+- `_appliquer_caces` : écrire `sc.dispense_externe_sc_id = calc["dispense_externe_sc_id"]` (création + màj `a_valider` + màj `annule`).
 
 ---
 
