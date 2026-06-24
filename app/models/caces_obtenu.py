@@ -17,6 +17,7 @@ class CacesObtenu(Base):
     post_cloture = Column(Boolean, default=False, nullable=True)
     resultat_theorie_id = Column(Integer, ForeignKey("resultats_theorie.id"), nullable=True)
     caces_initial_id    = Column(Integer, ForeignKey("caces_obtenus.id"), nullable=True)
+    dispense_externe_sc_id = Column(Integer, ForeignKey("session_candidats.id"), nullable=True)  # CACES fonde sur la dispense externe de ce SessionCandidat
     numero_ordre = Column(Integer, unique=True, nullable=True)
     statut = Column(String(20), nullable=False, default="a_valider")
     motif_annulation = Column(Text, nullable=True)

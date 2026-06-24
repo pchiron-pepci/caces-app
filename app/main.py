@@ -135,6 +135,7 @@ def _run_startup_migrations():
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS post_cloture BOOLEAN DEFAULT FALSE",
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS resultat_theorie_id INTEGER",
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS caces_initial_id INTEGER",
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS dispense_externe_sc_id INTEGER",
         # carte_caces
         "ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS caces_json TEXT",
         "ALTER TABLE carte_caces ADD COLUMN IF NOT EXISTS token_verification VARCHAR(36)",
@@ -157,6 +158,7 @@ def _run_startup_migrations():
         "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_origine VARCHAR(20)",
         "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_source_type VARCHAR(20)",
         "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_source_id INTEGER",
+        "ALTER TABLE session_candidats ADD COLUMN IF NOT EXISTS dispense_echeance DATE",
         # utilisations_themes
         "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS date_tirage TIMESTAMP",
         "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS declenche_par_id INTEGER",

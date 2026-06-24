@@ -23,6 +23,7 @@ class SessionCandidat(Base):
     dispense_origine     = Column(String(20), nullable=True)   # 'interne' | 'externe'
     dispense_source_type = Column(String(20), nullable=True)   # 'theorie' | 'caces'
     dispense_source_id   = Column(Integer, nullable=True)      # id ResultatTheorie ou CacesObtenu (NULL si externe)
+    dispense_echeance    = Column(Date, nullable=True)         # echeance reportee du CACES externe (saisie operateur si origine='externe')
     theorie_date = Column(Date, nullable=True)
     theorie_note_totale = Column(Integer, nullable=True)
     theorie_obtenue = Column(Boolean, nullable=True)
