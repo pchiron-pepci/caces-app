@@ -323,7 +323,7 @@ python init_questions_r482.py
 | Haute | Brancher dispense externe au moteur caces_obtenus.py | ✅ fait |
 | Haute | Affichage origine dispense dans CACES obtenus (ligne + badge + justif cliquable) | ✅ fait |
 | Haute | Stabilisation parcours dispense en ajout (3 fixes : reset, externe forcé, écheance prématurée) | ✅ fait |
-| Haute | Module REPRISE D'HISTORIQUE (H1-H5 : CacesObtenu repris, théories/pratiques orphelines) | à faire |
+| Haute | Module REPRISE D'HISTORIQUE (H1-H5 : CacesObtenu repris, théories/pratiques orphelines) | H1+H2+H5 ✅ / H3-H4 à faire |
 | Moyenne | Convergence justificatif dispense → table Justificatif (fichier seulement) | ÉCARTÉ (non-convergence assumée) |
 | Moyenne | Corrections couleur pastille FORM. ardoise + footer Actions en ligne | à faire |
 | Haute | Migration justificatif théorie base64 → R2 | ✅ fait |
@@ -1898,27 +1898,40 @@ Le champ apparaissait dès la sélection du stagiaire (hors mode dispense) car `
 
 ---
 
-### 🔜 CADRAGE À FAIRE : module REPRISE D'HISTORIQUE (migration sans reprise auto)
+### ✅ Module REPRISE D'HISTORIQUE — H1+H2+H5 terminés (H3/H4 à venir)
 
-**Problème :** à la bascule NORYX, l'historique PEPCI (CACES, théories, pratiques) n'est pas en base. Le système ne détecte rien → forçait l'usage de la "dispense externe" (impasse pour une théorie PEPCI sans échéance externe). De plus, la réédition de carte (doc PEPCI §6) exige que TOUS les CACES du titulaire existent en base — pas juste soient "dispensés".
+**Besoin :** à la bascule vers NORYX sans reprise auto de l'historique, permettre de saisir les CACES déjà obtenus chez PEPCI pour qu'ils soient exploités par le moteur (dispense interne, extension) et figurent sur les cartes rééditées (doc PEPCI §6).
 
-**Décision : reprise structurée EN BASE ("vision vivante").** Les enregistrements repris sont traités par le moteur comme des natifs : dispense interne détecte les théories reprises, extension via `caces_initial_id` fonctionne.
+**Principe : historique "vivant" en base.** Un CACES repris = un CacesObtenu réel que le moteur traite comme un natif.
 
-**Principes tranchés :**
-- Un CACES repris = `CacesObtenu` statut `valide` créé à la main, dates historiques saisies. Le moteur ne le recalcule jamais (les `valide` sont intouchables) mais l'utilise comme `caces_initial` pour les extensions.
-- **Numéros d'ordre :** on ne reprend PAS les anciens numéros PEPCI dans la séquence NORYX. Le CACES repris reçoit un numéro NORYX normal (séquence intacte, zéro collision). L'ancien numéro PEPCI est stocké dans une colonne dédiée `ancien_numero` (TEXT libre, ex. `"PEPCI-2023-0042"`), purement informative. L'`ancien_numero` S'AFFICHE SUR LA CARTE pour les repris ; le numéro NORYX pour les natifs. Le moteur lit les dates, jamais les numéros.
-- **Marqueur repris :** flag dédié `repris=True` OU déduit de `ancien_numero IS NOT NULL` — à trancher en H1.
-- Théorie orpheline reprise = `ResultatTheorie` `obtenue=True` créée à la main → détectée par le moteur comme base de dispense interne. Pratique orpheline = `SessionEpreuve` `obtenue=True` créée à la main.
-- Saisie sous PIN admin.
-- La "dispense externe" reste réservée aux AUTRES organismes uniquement. La reprise d'historique REMPLACE l'usage détourné de l'externe pour les acquis PEPCI.
+**Décisions clés verrouillées :**
+- **Numéro** : un CACES repris N'A PAS de numéro NORYX (`numero_ordre` reste NULL pour TOUJOURS). Il a son `ancien_numero` PEPCI (audité, déjà sur le certificat du titulaire). Règle d'affichage PARTOUT : `ancien_numero` si présent, sinon `numero_ordre` formaté. Le moteur lit les DATES, jamais le numéro.
+- **Session technique** : les enregistrements repris sont rattachés à une `Session` `type='reprise'` (1 par candidat, référence `"REPRISE-{stagiaire_id}"`, `famille="REPRISE"` sentinelle, `lieu_id=0`, `statut="terminee"`). Invisible des listes opérationnelles (filtre `(type != 'reprise') | (type IS NULL)` — le OR NULL est OBLIGATOIRE car les anciennes sessions ont `type NULL`, sinon elles disparaîtraient).
+- **Marqueur repris** = `ancien_numero` rempli + rattachement session technique (pas de flag dédié).
+- Le moteur `calculer_et_synchroniser` est PUREMENT ADDITIF (ne supprime rien) → un CACES repris `valide` survit sans risque.
 
-**Point technique délicat :** `ResultatTheorie` a `jour_test_id` FK obligatoire ; `SessionEpreuve` idem. Créer une orpheline reprise sans `JourTest`/`Session` réels pose question (session technique "reprise" ? FK nullable ?) → à trancher en H1/H3/H4. Vérifier aussi que le CACES repris (sans `SessionEpreuve` native) survit aux passes du moteur (ne soit pas nettoyé faute d'épreuve source).
+**H1 — fondation (commit c10c15d) :**
+- `CacesObtenu.ancien_numero` (String(50), nullable) + migration startup.
+- `app/services/reprise_historique.py` : `get_or_create_session_reprise(stagiaire_id, db)` → cherche/crée la session technique du candidat (idempotent).
+- Filtres `(type != 'reprise') | (type IS NULL)` dans `main.py` l.1165 (liste sessions), `sessions.py` l.183 (search) + l.191 (liste API).
 
-**Découpages H1-H5 :**
-| Chantier | Périmètre |
-|---|---|
-| H1 | Modèle : colonne `ancien_numero` TEXT + marqueur repris + création `CacesObtenu valide` direct ; règle affichage carte (`ancien_numero` pour repris, numéro NORYX pour natifs) |
-| H2 | Saisie manuelle des CACES en cours sous PIN (besoin n°1 : réédition carte + extension) |
-| H3 | Théories orphelines reprises (`ResultatTheorie` sans session réelle) |
-| H4 | Pratiques orphelines reprises (`SessionEpreuve` sans session réelle) |
-| H5 | Intégration : carte affiche repris + `ancien_numero` + pastille ; extension via `caces_initial_id` ; vérif moteur survive aux repris ; "dispense externe" réservée aux autres organismes |
+**H2a — backend (commit ab811c7, `app/routers/stagiaires.py`) :**
+- `GET /{id}/reprises` : liste les CACES repris du candidat (lookup session technique SANS création → `[]` si absente).
+- `POST /{id}/reprises` : crée un CACES repris sous PIN admin. Schéma `CacesRepriseCreate` (famille, catégorie, options, date_obtention, date_echeance, ancien_numero, testeur_id, pin). Crée DEUX enregistrements : `CacesObtenu(statut='valide', numero_ordre=None, ancien_numero rempli, session technique)` + `SessionEpreuve(obtenue=True, testeur_id)` — la SE porte le testeur (lu via SE comme pour un natif). Gardes : PIN (403), `date_echeance > date_obtention` (400), 409 si catégorie déjà reprise (contrainte UNIQUE stagiaire+session+catégorie → 1 repris par catégorie).
+
+**H2b — UI (commit 4b1ef5f) :**
+- `stagiaires.js` : section "🪪 Historique repris" dans l'accordéon (`renderReprisesHistorique`, 4e fetch `/reprises`) + bouton "+ Ajouter".
+- Modale `#modal-reprise` (`stagiaires.html`) : selects famille (injectée via `data-familles` depuis le contexte `page_stagiaires` → `familles_reprise`) + catégorie (cascade fetch `/admin/categories/{fam}`) + testeur (fetch `/api/testeurs/` tous actifs, PAS filtre habilités car historique) + dates + `ancien_numero` + PIN. `ouvrirModalReprise` / `confirmerAjoutReprise`. Après ajout : invalide `body.dataset.loaded` + retoggle l'accordéon.
+- `page_stagiaires` (`main.py`) : charge les familles actives → contexte `familles_reprise`.
+
+**H5 — affichage `ancien_numero` partout (commits 28c99d5, 46c36ab, 56c69b7) :**
+Règle appliquée : `ancien_numero` sinon `numero_ordre` formaté. Zones :
+- Tableau sélection carte : `cartes_caces.py` `get_caces_valides` (`+ancien_numero` au dict) + `cartes_caces.js` l.350.
+- Historique stagiaire : `stagiaires.py` `get_caces_valides_stagiaire` (`+ancien_numero`) + `stagiaires.js` `renderCacesValides` (l.364) + `chargerCacesCarteStag` (l.492).
+- Carte imprimée : snapshot `caces_json` d'`emettre_carte` (`+ancien_numero` figé → carte émise garde le bon numéro pour toujours, rétrocompat : vieux snapshots sans `ancien_numero` retombent sur `numero_ordre`) + `_render_cr80_html` recto (l.512, filtre ÉLARGI à `ancien_numero OR numero_ordre` pour ne pas exclure les repris) + verso (l.555) + `cartes_caces.js` 4 points (l.522 réimpression, l.572 recto `numsCaces` `.map` avant `.filter(Boolean)`, l.601 verso, l.812 vue A5).
+
+**RESTE (H3/H4/divers) :**
+- H3 : théories orphelines reprises (`ResultatTheorie` créé à la main → POINT DÉLICAT : `jour_test_id` + `session_id` obligatoires → rattacher à la session technique, mais `ResultatTheorie` a besoin d'un `jour_test_id` → créer un `JourTest` technique dans la session reprise ?).
+- H4 : pratiques orphelines reprises (`SessionEpreuve` seule, sans CACES — pour les pratiques en attente de théorie).
+- Vérifier autres vues affichant le numéro d'un CACES (page CACES obtenus : un repris valide y montrerait-il `'—'` ? à contrôler).
+- Suppression d'un CACES repris (DELETE) : non encore fait — règle : supprimable seulement si pas sur une carte émise ET pas référencé comme `caces_initial_id` par une extension.
