@@ -396,6 +396,7 @@ function _selectionnerCandidatStagiaire(id, label) {
     if (inp) inp.value = label;
     var liste = document.getElementById('sc-stagiaire-liste');
     if (liste) liste.style.display = 'none';
+    _detecterDispense();
 }
 
 function _resetStagiaireSearch() {
@@ -771,7 +772,7 @@ function _detecterDispense() {
     var stagId = window._scStagiaireId;
     var famille = window.SESSION_FAMILLE;
     var sessionId = window.SESSION_ID;
-    if (!isDispense || !stagId || !famille) {
+    if (!stagId || !famille) {
         box.style.display = 'none';
         box.innerHTML = '';
         return;
@@ -820,6 +821,7 @@ function ouvrirAjoutCandidat() {
 }
 
 function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichierNom, dispenseDate) {
+    window._scStagiaireId = stagiaireId;
     document.getElementById('candidat-title').textContent = 'Modifier candidat';
     document.getElementById('sc-id').value = id;
     document.getElementById('sc-stagiaire').value = stagiaireId;
@@ -832,6 +834,7 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('field-stagiaire').style.display = 'none';
     _majAffichageJustif(fichierNom || '');
     document.getElementById('modal-candidat').style.display = 'flex';
+    _detecterDispense();
 }
 
 function fermerModalCandidat() { document.getElementById('modal-candidat').style.display = 'none'; }
