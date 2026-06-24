@@ -1607,7 +1607,7 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 
 **Notice utilisateur "Dispense de théorie" générée (.docx, charte NORYX)** : 8 points (règle 12 mois, proposition, origine interne/externe + override, date, avertissement Q2, justificatif + pastille, verrou CACES délivré, tableau récap). Rôles corrigés : back-office paramètre tout, terrain consulte + justificatif seul.
 
-### ✅ Chantier en cours : dispense externe comme base de calcul CACES (C2) — socle C2a + C2b faits, C2c (moteur) à venir
+### ✅ Chantier terminé : dispense externe comme base de calcul CACES (C2) — complet (C2a + C2b + C2c + contrôle date)
 
 **Principe métier validé :** pour une dispense EXTERNE, l'humain RECOPIE les dates du CACES externe (il ne calcule pas). Le candidat obtient la catégorie CHEZ NOUS :
 - date d'obtention = date de la pratique réussie chez nous (le moteur la connaît : `SessionEpreuve.date`) — RIEN à saisir.
@@ -1626,10 +1626,20 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - Verrou D0 étendu : `dispense_echeance` ajouté à `_dispense_change` (modifier l'échéance d'un candidat à CACES délivré = bloqué 409).
 - UI : champ `#field-dispense-echeance` "Date d'échéance (reportée du CACES externe)" visible UNIQUEMENT en mode externe (`_appliquerVisibiliteOrigine` : `block` si externe, `none` si interne ; `_syncDispenseNote` : masque si pas dispense). Transmis au payload `sauvegarderCandidat`. Grisé pour le terrain (`_appliquerRoleModaleCandidat`). Pré-rempli en édition (`editerCandidat` 8e param, `data-dispense-echeance` sur le bouton).
 
-**C2c — À FAIRE : intégration moteur (`caces_obtenus.py`) :**
-- Dans `_calculer_pour_epreuve`, AVANT la recherche de théorie interne : si le `SessionCandidat` (`session_id`+`stagiaire_id`, actif) est `theorie_dispensee` + `origine=='externe'` → retourner directement : `date_obtention=ep.date`, `date_echeance=sc.dispense_echeance`, `post_cloture=False`, `resultat_theorie_id=None`, `theorie_source_id=None`, `dispense_externe_sc_id=sc.id`. Si `dispense_echeance` manquante → `return None` (sécurité).
-- Ajouter `"dispense_externe_sc_id"` au dict de retour de TOUS les cas (`None` pour les internes) pour éviter `KeyError`.
-- `_appliquer_caces` : écrire `sc.dispense_externe_sc_id = calc["dispense_externe_sc_id"]` (création + màj `a_valider` + màj `annule`).
+**C2c — intégration moteur (fait, en prod) :**
+- `app/services/caces_obtenus.py` : import `SessionCandidat`.
+- Dans `_calculer_pour_epreuve`, AVANT la recherche de théorie interne : si le `SessionCandidat` (`session_id`+`stagiaire_id`, actif) est `theorie_dispensee` + `dispense_origine=='externe'` → retourne directement `{date_obtention: ep.date` (pratique chez nous), `date_echeance: sc.dispense_echeance` (saisie), `options_obtenues: ep.options_obtenues`, `post_cloture: False`, `resultat_theorie_id: None`, `theorie_source_id: None`, `dispense_externe_sc_id: sc.id}`. Si `dispense_echeance` manquante → `return None` (sécurité, ne devrait pas arriver vu le garde-fou au save).
+- Clé `"dispense_externe_sc_id": None` ajoutée au dict de retour des cas INTERNES (anti-`KeyError` dans `_appliquer_caces`).
+- `_appliquer_caces` : écrit `existing/new.dispense_externe_sc_id = calc["dispense_externe_sc_id"]` aux 3 endroits (màj `a_valider`, màj `annule`, création).
+- L'externe a `post_cloture=False` → traité en PASSE 1, jamais en passe 2, aucune interaction avec l'héritage d'échéance interne. Cas test validé : base externe 10/01/2026, échéance saisie 14/03/2030, pratique R489 cat5 20/06/2026 → CACES obtention=20/06/2026, échéance=14/03/2030, `dispense_externe_sc_id` rempli.
+
+**C-date — contrôle de cohérence de l'échéance externe (fait, en prod) :**
+Référence = `dispense_date` (date de la base externe). N = 10 ans (R482) / 5 ans sinon. Réutilise `_date_echeance(famille, dispense_date)` qui calcule exactement date + N ans − 1 jour (= borne haute).
+- **Borne haute (BLOQUANTE, serveur + UI)** : `dispense_echeance` ≤ `dispense_date + N ans − 1 jour`. Au-delà → impossible.
+  - Serveur (`sessions.py`, `add_candidat` + `update_candidat`, dans le bloc `origine=='externe'`, après le contrôle échéance obligatoire) : `_borne_haute = _date_echeance(s.famille, data.dispense_date)` ; if `dispense_echeance <= dispense_date` → 400 "doit être postérieure à la date de base" ; if `dispense_echeance > _borne_haute` → 400 "dépasse la durée maximale".
+- **Borne basse (AVERTISSEMENT, UI seulement)** : `dispense_echeance` ≥ `dispense_date + (N-1) ans − 1 jour`. En-dessous → suspect non bloquant.
+- UI (`session_detail.js`) : helpers `_dateMoinsUnJour(y,m,d)` (gère 29 fév) + `_bornesEcheance(dateBaseIso)` `{haute, basse}` (N selon `SESSION_FAMILLE`). Fonction `_verifierEcheance()` : rouge si ≤ base ou > haute (le serveur refusera), orange si < basse (non bloquant), masque sinon ; actif en mode externe uniquement. Div `#dispense-echeance-warning` sous `#sc-dispense-echeance`. Listeners `change` sur `sc-dispense-date` (+ `_verifierQ2`) et `sc-dispense-echeance` ; appel aussi dans `_appliquerVisibiliteOrigine` et `editerCandidat`. `_isoFromDate(dt)` pour formater les bornes affichées.
+- Cohérence : la borne haute UI utilise la MÊME formule que le serveur → l'avertissement rouge apparaît pile quand le serveur rejette.
 
 ---
 
