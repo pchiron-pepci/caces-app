@@ -273,7 +273,7 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
                 "reference": f"CACES {c.famille} cat {c.categorie}" + (f" n°{c.numero_ordre}" if c.numero_ordre else ""),
                 "source": "R1",
                 "source_id": c.id,
-                "lien": "/cartes-caces",
+                "lien": "/caces-obtenus",
             })
 
     # --- Source R2-a : theorie de la SESSION COURANTE (si session_id fourni) ---
