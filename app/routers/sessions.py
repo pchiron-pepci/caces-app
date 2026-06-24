@@ -35,6 +35,30 @@ from typing import Optional, List, Dict
 import json
 import math
 
+
+def _appliquer_tracabilite_dispense(sc, data, db, stagiaire_id, famille, session_id):
+    if not data.theorie_dispensee:
+        sc.dispense_origine = None
+        sc.dispense_source_type = None
+        sc.dispense_source_id = None
+        return
+    if data.dispense_origine_choisie == "externe":
+        sc.dispense_origine = "externe"
+        sc.dispense_source_type = None
+        sc.dispense_source_id = None
+        return
+    from app.services.caces_obtenus import detecter_base_theorique
+    _base = detecter_base_theorique(db, stagiaire_id, famille, session_id)
+    if _base.get("possible"):
+        sc.dispense_origine = "interne"
+        sc.dispense_source_type = _base.get("type")
+        sc.dispense_source_id = _base.get("source_id")
+    else:
+        sc.dispense_origine = "externe"
+        sc.dispense_source_type = None
+        sc.dispense_source_id = None
+
+
 router = APIRouter(prefix="/api/sessions", tags=["Sessions"])
 
 class JourModifData(BaseModel):
@@ -74,6 +98,7 @@ class SessionCandidatCreate(BaseModel):
     theorie_dispensee: bool = False
     dispense_note: Optional[str] = None
     dispense_date: Optional[date] = None
+    dispense_origine_choisie: Optional[str] = None
 
 class EquipementCreate(BaseModel):
     session_id: int
@@ -273,18 +298,8 @@ def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = D
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Candidat deja inscrit")
-    sc = SessionCandidat(**data.model_dump())
-    if data.theorie_dispensee:
-        from app.services.caces_obtenus import detecter_base_theorique
-        _base = detecter_base_theorique(db, data.stagiaire_id, s.famille, session_id)
-        if _base.get("possible"):
-            sc.dispense_origine     = "interne"
-            sc.dispense_source_type = _base.get("type")
-            sc.dispense_source_id   = _base.get("source_id")
-        else:
-            sc.dispense_origine     = "externe"
-            sc.dispense_source_type = None
-            sc.dispense_source_id   = None
+    sc = SessionCandidat(**data.model_dump(exclude={"dispense_origine_choisie"}))
+    _appliquer_tracabilite_dispense(sc, data, db, data.stagiaire_id, s.famille, session_id)
     if sc.dispense_origine == "externe":
         from app.services.caces_obtenus import limite_12_mois
         if not data.dispense_date:
@@ -325,21 +340,7 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
     sc.theorie_dispensee = data.theorie_dispensee
     sc.dispense_note = data.dispense_note if data.theorie_dispensee else None
     sc.dispense_date = data.dispense_date if data.theorie_dispensee else None
-    if data.theorie_dispensee:
-        from app.services.caces_obtenus import detecter_base_theorique
-        _base = detecter_base_theorique(db, sc.stagiaire_id, s.famille, sc.session_id)
-        if _base.get("possible"):
-            sc.dispense_origine     = "interne"
-            sc.dispense_source_type = _base.get("type")
-            sc.dispense_source_id   = _base.get("source_id")
-        else:
-            sc.dispense_origine     = "externe"
-            sc.dispense_source_type = None
-            sc.dispense_source_id   = None
-    else:
-        sc.dispense_origine     = None
-        sc.dispense_source_type = None
-        sc.dispense_source_id   = None
+    _appliquer_tracabilite_dispense(sc, data, db, sc.stagiaire_id, s.famille, sc.session_id)
     if sc.dispense_origine == "externe":
         from app.services.caces_obtenus import limite_12_mois
         if not data.dispense_date:
