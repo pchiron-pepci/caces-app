@@ -358,6 +358,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var liste = document.getElementById('sc-stagiaire-liste');
         if (liste && liste.style.display !== 'none' && wrap && !wrap.contains(e.target)) liste.style.display = 'none';
     });
+    try {
+        var _savedTab = sessionStorage.getItem('sessionDetailTab');
+        if (_savedTab) {
+            var _btn = document.querySelector('.tab-btn[data-tab="' + _savedTab + '"]');
+            if (_btn) showTab(_savedTab, _btn);
+        }
+    } catch(e) {}
 });
 
 // ── Source des résultats candidats — remplacer le CORPS de cette fonction
@@ -389,6 +396,13 @@ function _afficherResultatsCandidats(resultats) {
     liste.style.display = 'block';
 }
 
+function _dateFr(iso) {
+    if (!iso) return '';
+    var p = String(iso).split('-');
+    if (p.length !== 3) return iso;
+    return p[2] + '/' + p[1] + '/' + p[0];
+}
+
 function _selectionnerCandidatStagiaire(id, label) {
     document.getElementById('sc-stagiaire').value = id;
     window._scStagiaireId = id;
@@ -414,6 +428,7 @@ function showTab(name, btn) {
     document.getElementById('tab-' + name).style.display = 'block';
     document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active-tab'));
     btn.classList.add('active-tab');
+    try { sessionStorage.setItem('sessionDetailTab', name); } catch(e) {}
 }
 
 function _syncIncludesForStag(stagiaireId) {
@@ -796,7 +811,7 @@ function _detecterDispense() {
             box.innerHTML =
                 '<strong>ℹ️ Dispense possible (à valider par vous)</strong><br>' +
                 'Base : ' + typeLib + ' — ' + (data.reference || '') + '<br>' +
-                'Date d\'origine : ' + data.date_origine + ' · Dispense valable jusqu\'au ' + data.date_limite_dispense +
+                'Date d\'origine : ' + _dateFr(data.date_origine) + ' · Dispense valable jusqu\'au ' + _dateFr(data.date_limite_dispense) +
                 lienHtml +
                 '<br><span style="color:#666;">Le système propose, vous décidez : cochez la dispense et renseignez les champs si vous validez.</span>';
         })
