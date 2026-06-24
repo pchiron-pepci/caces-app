@@ -310,6 +310,12 @@ def add_candidat(session_id: int, data: SessionCandidatCreate, db: DBSession = D
             raise HTTPException(status_code=400, detail="Dispense externe : la base invoquee a plus de 12 mois (theorie perimee).")
         if not data.dispense_echeance:
             raise HTTPException(status_code=400, detail="Dispense externe : la date d'echeance (reportee du CACES externe) est obligatoire.")
+        from app.services.caces_obtenus import _date_echeance
+        _borne_haute = _date_echeance(s.famille, data.dispense_date)
+        if data.dispense_echeance <= data.dispense_date:
+            raise HTTPException(status_code=400, detail="Date d'echeance incoherente : elle doit etre posterieure a la date de base externe.")
+        if data.dispense_echeance > _borne_haute:
+            raise HTTPException(status_code=400, detail="Date d'echeance incoherente : elle depasse la duree maximale du CACES a partir de la date de base externe (verifiez le justificatif).")
     db.add(sc)
     db.commit()
     db.refresh(sc)
@@ -355,6 +361,12 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
             raise HTTPException(status_code=400, detail="Dispense externe : la base invoquee a plus de 12 mois (theorie perimee).")
         if not data.dispense_echeance:
             raise HTTPException(status_code=400, detail="Dispense externe : la date d'echeance (reportee du CACES externe) est obligatoire.")
+        from app.services.caces_obtenus import _date_echeance
+        _borne_haute = _date_echeance(s.famille, data.dispense_date)
+        if data.dispense_echeance <= data.dispense_date:
+            raise HTTPException(status_code=400, detail="Date d'echeance incoherente : elle doit etre posterieure a la date de base externe.")
+        if data.dispense_echeance > _borne_haute:
+            raise HTTPException(status_code=400, detail="Date d'echeance incoherente : elle depasse la duree maximale du CACES a partir de la date de base externe (verifiez le justificatif).")
     db.commit()
     return {"message": "Candidat mis a jour"}
 
