@@ -213,6 +213,7 @@ def get_caces_valides(stagiaire_id: int, famille: str, db: DBSession = Depends(g
                 "categorie": co.categorie,
                 "categorie_libelle": libelles.get(co.categorie, ""),
                 "numero_ordre": co.numero_ordre,
+                "ancien_numero": co.ancien_numero,
                 "options_obtenues": co.options_obtenues or "",
                 "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
                 "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
