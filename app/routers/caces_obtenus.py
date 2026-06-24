@@ -50,6 +50,7 @@ def _enrich_base(co: CacesObtenu, stagiaires: dict, sessions: dict) -> dict:
         "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
         "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
         "numero_ordre": co.numero_ordre,
+        "ancien_numero": co.ancien_numero,
         "statut": co.statut,
         "motif_annulation": co.motif_annulation or "",
     }

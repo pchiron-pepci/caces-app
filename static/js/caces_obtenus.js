@@ -531,7 +531,7 @@ function renderCarteAValider(co) {
 function _renderLigne(co, idx) {
     const annule = co.statut === 'annule';
     const nomComplet = _nomDdn(co);
-    const noFormate = co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—';
+    const noFormate = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
     const bg = annule ? '#f7f7f7' : (idx % 2 === 0 ? '#fff' : '#f5f7ff');
 
     const noBadge = annule
