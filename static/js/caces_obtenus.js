@@ -300,6 +300,40 @@ function fmtDate(iso) {
     return d + '/' + m + '/' + y;
 }
 
+function ligneDispense(co) {
+    if (!co.dispense) return '';
+    const d = co.dispense;
+    const estExt = d.origine === 'externe';
+    const libelle = estExt ? 'externe' : 'interne';
+    const couleur = estExt ? '#e65100' : '#2e7d32';
+    let detail = libelle + (d.date_base ? ' · base du ' + fmtDate(d.date_base) : '');
+    if (estExt && d.echeance) detail += ' · éch. ' + fmtDate(d.echeance);
+    let justif = '';
+    if (estExt) {
+        justif = d.justif
+            ? '<span style="color:#2e7d32;" title="Justificatif joint">📎</span>'
+            : '<span style="color:#e65100;" title="Justificatif manquant">⚠️</span>';
+    }
+    return `
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px;">
+                <span style="width:64px;flex-shrink:0;color:#666;font-weight:600;white-space:nowrap;">🪪 Dispense</span>
+                <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;">
+                    <span style="color:${couleur};font-weight:700;white-space:nowrap;">${detail}</span>
+                    ${justif}
+                </div>
+            </div>`;
+}
+
+function badgeDispense(co) {
+    if (!co.dispense) return '';
+    const estExt = co.dispense.origine === 'externe';
+    const txt = estExt ? 'Disp. ext.' : 'Disp. int.';
+    const bg = estExt ? '#fff3e0' : '#e8f5e9';
+    const fg = estExt ? '#e65100' : '#2e7d32';
+    const warn = (estExt && !co.dispense.justif) ? ' ⚠️' : '';
+    return `<span title="Dispense ${estExt ? 'externe' : 'interne'}${warn ? ' — justificatif manquant' : ''}" style="background:${bg};color:${fg};border-radius:3px;padding:0 5px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:6px;">${txt}${warn}</span>`;
+}
+
 function badgeStatut(statut) {
     if (statut === 'valide') return '<span class="badge" style="background:#e8f5e9;color:#2e7d32;">Validé</span>';
     if (statut === 'annule') return '<span class="badge" style="background:#fde8e8;color:#c62828;">Annulé</span>';
@@ -448,6 +482,7 @@ function renderCarteAValider(co) {
                     ${co.testeur_nom_theorie ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${_abrevTesteur(co.testeur_nom_theorie)}</span>` : ''}
                 </div>
             </div>
+            ${ligneDispense(co)}
 
             <!-- Pratique -->
             <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;">
@@ -505,7 +540,7 @@ function _renderLigne(co, idx) {
          style="display:flex;align-items:center;padding:9px 16px;background:${bg};${annule ? 'opacity:0.65;' : ''}border-bottom:1px solid #eef0f6;gap:0;">
         <div style="width:68px;min-width:68px;">${noBadge}</div>
         <div style="width:82px;min-width:82px;">${badgeStatut(co.statut)}</div>
-        <div style="flex:1;min-width:130px;font-size:13px;font-weight:700;color:#1a237e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:10px;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</div>
+        <div style="flex:1;min-width:130px;font-size:13px;font-weight:700;color:#1a237e;display:flex;align-items:center;padding-right:10px;${annule ? 'text-decoration:line-through;' : ''}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nomComplet}</span>${badgeDispense(co)}</div>
         <div style="width:116px;min-width:116px;display:flex;flex-direction:row;align-items:center;gap:5px;padding-right:6px;flex-wrap:nowrap;">
             <span style="font-size:11px;color:#555;font-weight:700;white-space:nowrap;">${co.famille}</span>
             <span style="font-size:10px;color:#bbb;">·</span>
