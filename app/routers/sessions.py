@@ -305,6 +305,23 @@ def update_candidat(session_id: int, id: int, data: SessionCandidatCreate, db: D
     sc = db.query(SessionCandidat).filter(SessionCandidat.id == id).first()
     if not sc:
         raise HTTPException(status_code=404, detail="Candidat non trouve")
+    # --- Verrou reglementaire : un CACES delivre (valide) gele la dispense ---
+    _caces_valide = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == sc.stagiaire_id,
+        CacesObtenu.session_id == sc.session_id,
+        CacesObtenu.statut == "valide",
+    ).first()
+    if _caces_valide:
+        _dispense_change = (
+            bool(data.theorie_dispensee) != bool(sc.theorie_dispensee)
+            or (data.dispense_date or None) != (sc.dispense_date or None)
+            or ((data.dispense_note or None) != (sc.dispense_note or None))
+        )
+        if _dispense_change:
+            raise HTTPException(
+                status_code=409,
+                detail="Un CACES delivre repose sur cette base de dispense. Annulez d'abord le CACES (page CACES obtenus) avant de modifier la dispense de ce candidat.",
+            )
     sc.theorie_dispensee = data.theorie_dispensee
     sc.dispense_note = data.dispense_note if data.theorie_dispensee else None
     sc.dispense_date = data.dispense_date if data.theorie_dispensee else None
