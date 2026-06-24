@@ -836,6 +836,7 @@ function _detecterDispense() {
                 if (radioInt) { radioInt.disabled = true; }
                 if (radioExt) { radioExt.disabled = false; if (!radioInt || !radioInt.checked) radioExt.checked = true; }
                 if (radioInt && radioInt.checked) { radioInt.checked = false; if (radioExt) radioExt.checked = true; }
+                _appliquerVisibiliteOrigine();
                 return;
             }
             var typeLib = data.type === 'caces' ? 'CACES' : 'Théorie';
