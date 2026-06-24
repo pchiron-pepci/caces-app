@@ -1589,6 +1589,26 @@ Détails : id conteneur QR = qr-box (alignement fait, pas qr-container). data-a-
 - Bouton 👥 "ajouter candidat" (`data-action="ouvrir-ajout-candidat"`) enveloppé dans `{% if user_role != 'terrain' %}`.
 - Le bouton 📎 "Joindre justificatif" reste actif (route `POST /dispense-fichier` whitelistée terrain).
 
+### ✅ Chantier terminé : ergonomie date dispense + droits terrain (2026-06-24)
+
+**Ergonomie du champ date (`session_detail.js`, `_appliquerVisibiliteOrigine`) :**
+- Base interne : champ date GRISÉ (`disabled`) + pré-rempli avec la date détectée (`window._dispenseDateInterne`). Informatif uniquement (le serveur utilise la source détectée, jamais `dispense_date` du client).
+- Base externe : champ ACTIF. En basculant interne→externe, le champ se VIDE (la garde `if (champDate.disabled)` ne vide qu'à la transition, pas à chaque refresh → ne détruit pas une saisie en cours). Saisie volontaire assumée : sans date, rejet serveur 400.
+- Retour externe→interne : re-grise + re-rempli avec la date détectée.
+- Avertissement Q2 (`_verifierQ2`) : si externe coché ET date saisie ANTÉRIEURE à `_dispenseDateInterne` → message orange non bloquant. Réactif (`change` radio OU date).
+
+**Droits TERRAIN sur la dispense (UI uniquement — le serveur protège déjà) :**
+- Constat : `POST/PUT` candidat sont DÉJÀ 403 pour terrain (catch-all `_verifier_role`) ; `POST dispense-fichier` est whitelisté terrain ; `DELETE dispense-fichier` réservé back-office. La garantie serveur existait déjà — seule l'UI était incohérente (terrain voyait des champs éditables puis 403 au save).
+- Règle métier : le terrain CONSULTE la dispense en lecture seule (voit le "pourquoi") et peut UNIQUEMENT joindre un justificatif manquant. Il ne peut ni inscrire un candidat, ni paramétrer/modifier la dispense.
+- `_appliquerRoleModaleCandidat()` (`session_detail.js`) : si `USER_ROLE==='terrain'` → grise `sc-stagiaire-search`, `sc-theorie`, `dispense-origine-interne/externe`, `sc-dispense-date`, `sc-dispense-note` ; masque le bouton Sauvegarder ; renomme Annuler→Fermer. Le bouton 📎 Joindre reste actif (route whitelistée, fonctionne en mode édition car `sc_id` connu → pas de POST candidat). Appelée en fin de `editerCandidat`.
+- Garde dans `ouvrirAjoutCandidat` : terrain → message "inscription réservée au back-office" + ne pas ouvrir la modale.
+- Bouton 👥 "ajouter candidat" masqué pour terrain (`{% if user_role != 'terrain' %}` dans `session_detail.html`).
+- **IMPORTANT :** le 📎 marche pour le terrain UNIQUEMENT en mode édition (`sc_id` existant → saute le POST candidat bloqué, va direct sur `dispense-fichier` whitelistée). En mode ajout le terrain est de toute façon bloqué (inscription back-office only).
+
+**Notice utilisateur "Dispense de théorie" générée (.docx, charte NORYX)** : 8 points (règle 12 mois, proposition, origine interne/externe + override, date, avertissement Q2, justificatif + pastille, verrou CACES délivré, tableau récap). Rôles corrigés : back-office paramètre tout, terrain consulte + justificatif seul.
+
+**RESTE : C2-moteur** — la dispense externe (date saisie + justif) devient une 4e source que `caces_obtenus.py` sait utiliser comme base théorique pour calculer les dates du futur CACES. Dernier morceau, touche au moteur refondu.
+
 ---
 
 ### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
