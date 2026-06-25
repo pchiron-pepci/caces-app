@@ -481,21 +481,28 @@ def creer_reprise_theorie(id: int, data: TheorieRepriseCreate, db: Session = Dep
     # session receptacle de la famille (creee si besoin) — sert aussi a detecter les orphelines existantes
     sess = get_or_create_session_reprise(id, db, famille=data.famille)
 
-    # 2) Theorie orpheline deja saisie pour cette famille (ResultatTheorie dans la session receptacle)
-    theorie_existante = db.query(ResultatTheorie).filter(
-        ResultatTheorie.stagiaire_id == id,
-        ResultatTheorie.session_id == sess.id,
-    ).first()
+    # 2) Theorie deja obtenue dans cette famille (NATIVE NORYX ou REPRISE) → doublon interdit
+    theorie_existante = (
+        db.query(ResultatTheorie)
+        .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
+        .filter(
+            ResultatTheorie.stagiaire_id == id,
+            ResultatTheorie.obtenue == True,
+            SessionModel.famille == data.famille,
+        )
+        .first()
+    )
     if theorie_existante:
-        raise HTTPException(status_code=409, detail=f"Une theorie reprise existe deja en {data.famille}.")
+        raise HTTPException(status_code=409, detail=f"Une theorie est deja enregistree pour ce candidat en {data.famille} (interne NORYX ou reprise). Pas de doublon possible.")
 
-    # 3) Pratique orpheline reprise dans cette famille (SessionEpreuve dans la session receptacle)
-    pratique_orpheline = db.query(SessionEpreuve).filter(
+    # 3) Pratique deja obtenue dans cette famille SANS theorie (orpheline native ou reprise) → exclusivite
+    pratique_existante = db.query(SessionEpreuve).filter(
         SessionEpreuve.stagiaire_id == id,
-        SessionEpreuve.session_id == sess.id,
+        SessionEpreuve.famille == data.famille,
+        SessionEpreuve.obtenue == True,
     ).first()
-    if pratique_orpheline:
-        raise HTTPException(status_code=409, detail=f"Une pratique orpheline reprise existe deja en {data.famille} — theorie + pratique reprises = CACES complet (a saisir comme CACES repris).")
+    if pratique_existante:
+        raise HTTPException(status_code=409, detail=f"Une pratique est deja enregistree en {data.famille} pour ce candidat. Theorie + pratique = CACES complet (a saisir comme CACES repris).")
 
     # ── Creation : JourTest technique (theorie) + ResultatTheorie ──
     jt = JourTest(
@@ -539,22 +546,29 @@ def creer_reprise_pratique(id: int, data: PratiqueRepriseCreate, db: Session = D
 
     sess = get_or_create_session_reprise(id, db, famille=data.famille)
 
-    # 2) Theorie orpheline reprise dans cette famille → bloque (theorie + pratique reprises = CACES complet)
-    theorie_orpheline = db.query(ResultatTheorie).filter(
-        ResultatTheorie.stagiaire_id == id,
-        ResultatTheorie.session_id == sess.id,
-    ).first()
-    if theorie_orpheline:
-        raise HTTPException(status_code=409, detail=f"Une theorie orpheline reprise existe deja en {data.famille} — theorie + pratique reprises = CACES complet (a saisir comme CACES repris).")
+    # 2) Theorie deja obtenue dans cette famille (NATIVE NORYX ou REPRISE) → theorie + pratique = CACES complet
+    theorie_existante = (
+        db.query(ResultatTheorie)
+        .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
+        .filter(
+            ResultatTheorie.stagiaire_id == id,
+            ResultatTheorie.obtenue == True,
+            SessionModel.famille == data.famille,
+        )
+        .first()
+    )
+    if theorie_existante:
+        raise HTTPException(status_code=409, detail=f"Une theorie est deja enregistree pour ce candidat en {data.famille} (interne NORYX ou reprise) — theorie + pratique = CACES complet (a saisir comme CACES repris).")
 
-    # 3) Meme categorie deja saisie en pratique orpheline → doublon
+    # 3) Pratique deja obtenue dans la meme categorie (NATIVE NORYX ou REPRISE) → doublon interdit
     pratique_existante = db.query(SessionEpreuve).filter(
         SessionEpreuve.stagiaire_id == id,
-        SessionEpreuve.session_id == sess.id,
+        SessionEpreuve.famille == data.famille,
         SessionEpreuve.categorie == data.categorie,
+        SessionEpreuve.obtenue == True,
     ).first()
     if pratique_existante:
-        raise HTTPException(status_code=409, detail=f"Une pratique orpheline reprise existe deja pour {data.famille} {data.categorie}.")
+        raise HTTPException(status_code=409, detail=f"Une pratique est deja enregistree pour ce candidat en {data.categorie} (interne NORYX ou reprise). Pas de doublon possible.")
 
     # ── Creation : SessionEpreuve (obtenue=True, testeur obligatoire) ──
     ep = SessionEpreuve(
