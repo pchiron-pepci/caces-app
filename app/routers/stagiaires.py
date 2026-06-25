@@ -573,6 +573,68 @@ def creer_reprise_pratique(id: int, data: PratiqueRepriseCreate, db: Session = D
     return {"message": "Pratique reprise ajoutee", "id": ep.id}
 
 
+@router.get("/{id}/reprises/orphelines")
+def get_reprises_orphelines(id: int, db: Session = Depends(get_db)):
+    from app.models.testeur import Testeur
+    from app.models.jour_test import JourTest, ResultatTheorie
+
+    # Sessions receptacles orphelines : reference "REPRISE-{id}-{famille}" (avec tiret + famille).
+    # PAS la sentinelle "REPRISE-{id}" (CACES complets).
+    prefixe = "REPRISE-" + str(id) + "-"
+    sessions = db.query(SessionModel).filter(
+        SessionModel.type == "reprise",
+        SessionModel.reference.like(prefixe + "%"),
+    ).all()
+    if not sessions:
+        return {"theories": [], "pratiques": []}
+
+    sess_ids = [s.id for s in sessions]
+
+    # cache testeurs (anti N+1)
+    def _testeur_nom(tid):
+        if not tid:
+            return ""
+        t = db.query(Testeur).filter(Testeur.id == tid).first()
+        return f"{t.nom} {t.prenom}" if t else ""
+
+    # --- Theories orphelines (ResultatTheorie dans les sessions receptacles) ---
+    theories = []
+    rts = db.query(ResultatTheorie).filter(
+        ResultatTheorie.stagiaire_id == id,
+        ResultatTheorie.session_id.in_(sess_ids),
+    ).all()
+    for rt in rts:
+        jt = db.query(JourTest).filter(JourTest.id == rt.jour_test_id).first()
+        sess = next((s for s in sessions if s.id == rt.session_id), None)
+        theories.append({
+            "id": rt.id,
+            "famille": sess.famille if sess else "",
+            "date_obtention": jt.date.isoformat() if (jt and jt.date) else None,
+            "testeur_nom": _testeur_nom(rt.testeur_id),
+            "testeur_id": rt.testeur_id,
+        })
+
+    # --- Pratiques orphelines (SessionEpreuve dans les sessions receptacles) ---
+    pratiques = []
+    eps = db.query(SessionEpreuve).filter(
+        SessionEpreuve.stagiaire_id == id,
+        SessionEpreuve.session_id.in_(sess_ids),
+        SessionEpreuve.obtenue == True,
+    ).all()
+    for ep in eps:
+        pratiques.append({
+            "id": ep.id,
+            "famille": ep.famille,
+            "categorie": ep.categorie,
+            "options_obtenues": ep.options_obtenues or "",
+            "date_obtention": ep.date.isoformat() if ep.date else None,
+            "testeur_nom": _testeur_nom(ep.testeur_id),
+            "testeur_id": ep.testeur_id,
+        })
+
+    return {"theories": theories, "pratiques": pratiques}
+
+
 @router.get("/{stag_id}/base-theorique")
 def base_theorique_dispense(stag_id: int, famille: str, session_id: int | None = None, db: Session = Depends(get_db)):
     from app.services.caces_obtenus import detecter_base_theorique
