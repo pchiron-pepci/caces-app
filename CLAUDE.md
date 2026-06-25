@@ -1937,7 +1937,24 @@ Règle appliquée : `ancien_numero` sinon `numero_ordre` formaté. Zones :
 - Vérifier autres vues affichant le numéro d'un CACES (page CACES obtenus : un repris valide y montrerait-il `'—'` ? à contrôler).
 - Suppression d'un CACES repris (DELETE) : non encore fait — règle : supprimable seulement si pas sur une carte émise ET pas référencé comme `caces_initial_id` par une extension.
 
-### CADRAGE VERROUILLÉ : H3/H4 — orphelines reprises (théorie seule / pratiques seules)
+### ✅ Chantier terminé : amélioration moteur — source R1 de detecter_base_theorique (2026-06-25)
+
+**Fichier :** `app/services/caces_obtenus.py`
+
+**Nouvelle fonction `_date_initiale_depuis_echeance(famille, date_ech)` (l.18–32) :**
+Miroir exact de `_date_echeance` : `echeance = date_obt + N ans − 1j` ↔ `date_obt = echeance − N ans + 1j`. Même N par famille (10 ans R482, 5 ans sinon), même gestion 29 février (fallback 1er mars année−N). Permet de remonter à la date de théorie initiale depuis n'importe quel CACES (initial ou extension, les deux ayant la même échéance si liés).
+
+**Modification source R1 de `detecter_base_theorique` :**
+- Avant : filtre `post_cloture == False` (extensions exclues) + test `limite_12_mois(c.date_obtention)` + candidate.date = `date_obtention`.
+- Après : filtre `post_cloture` supprimé (initiaux ET extensions inclus) + `date_initiale = _date_initiale_depuis_echeance(c.famille, c.date_echeance)` + test `limite_12_mois(date_initiale)` + candidate.date = `date_initiale`. Skip si `date_echeance` NULL.
+
+**Pourquoi :** une extension hérite l'échéance de son CACES initial → `_date_initiale_depuis_echeance(echeance_extension)` retombe exactement sur la date du CACES initial, qui est la vraie date de théorie. Exclure les extensions de R1 était donc FAUX : un candidat avec une extension récente (théorie < 12 mois) ne voyait pas de base proposée.
+
+**Invariant :** `post_cloture == False` subsiste uniquement à la l.256 (passe 2 de `calculer_et_synchroniser`, recherche du CACES initial pour hériter l'échéance — légitime et non touché).
+
+---
+
+### ✅ H3/H4 — orphelines reprises (TERMINÉ)
 
 **Besoin :** candidat ayant passé UNE seule épreuve chez PEPCI (théorie OU pratique), vient passer l'AUTRE chez NORYX → le moteur recombine en CACES (flux normal).
 
@@ -1973,3 +1990,30 @@ La recombinaison se fait TOUJOURS avec une brique NORYX, JAMAIS entre deux briqu
 - `SessionEpreuve` obligatoires : `session_id`, `stagiaire_id`, `testeur_id`, `date`, `famille`, `categorie`.
 
 **Séquençage :** helper évolué → H3 backend → H4 backend → interface commune → tests recombinaison.
+
+**ÉTAT : code poussé en prod.**
+
+Backend (`app/routers/stagiaires.py`) :
+- Schémas `TheorieRepriseCreate` (famille, date_obtention, testeur_id, pin) et `PratiqueRepriseCreate` (+ categorie, options_obtenues).
+- `POST /{id}/reprises/theorie` : PIN admin → 3 gardes 409 (CACES complet famille / théorie déjà saisie / pratique orpheline famille) → `get_or_create_session_reprise(id, db, famille)` → `JourTest` technique (type='theorie', date, testeur) + `db.flush()` + `ResultatTheorie(obtenue=True, mode='degrade', testeur_id)`.
+- `POST /{id}/reprises/pratique` : PIN admin → 3 gardes 409 (CACES complet famille / théorie orpheline famille / doublon même catégorie) → `SessionEpreuve(obtenue=True, testeur_id, date, famille, categorie, options)`.
+- `GET /{id}/reprises/orphelines` : liste `{theories, pratiques}` des sessions réceptacles (filtre `reference.like("REPRISE-{id}-%")` — tiret final = ne capte QUE les réceptacles par famille, jamais la sentinelle `"REPRISE-{id}"`).
+
+Helper (`app/services/reprise_historique.py`) :
+- `get_or_create_session_reprise(stagiaire_id, db, famille="REPRISE")` : famille optionnelle. Défaut `"REPRISE"` → sentinelle CACES complets (H2 inchangé). Famille réelle → réceptacle orphelines `"REPRISE-{id}-{famille}"`, `Session.famille=famille` réelle (le moteur filtre par famille).
+
+Moteur (`app/services/caces_obtenus.py`) — amélioration R1 (cas 1-4 intacts) :
+- Nouvelle fonction `_date_initiale_depuis_echeance(famille, date_ech)` : miroir exact de `_date_echeance`. `echeance = date_obt + N ans − 1j  ⟹  date_obt = echeance − N ans + 1j` (N=10 R482, sinon 5). Retrouve la date du CACES INITIAL aussi bien pour un initial que pour une extension (qui hérite de l'échéance de l'initial).
+- `detecter_base_theorique` source R1 : filtre `post_cloture==False` RETIRÉ (extensions incluses) ; dispense testée sur `date_initiale = _date_initiale_depuis_echeance(c.famille, c.date_echeance)` au lieu de `date_obtention`. Permet de dispenser à partir d'un CACES (initial OU extension) si la théorie initiale calculée est < 12 mois.
+- `post_cloture==False` subsiste UNIQUEMENT en passe 2 de `calculer_et_synchroniser` (recherche du CACES initial) — légitime, non touché.
+
+Frontend (`static/js/stagiaires.js` + `templates/stagiaires.html`) :
+- UI-1 : 5e fetch `/reprises/orphelines` dans `toggleHistorique` ; `renderOrphelinesReprises` (section "🧩 Orphelines reprises" ambre `#e65100`, sous-blocs 🎓 Théories / 🔧 Pratiques, mentions "en attente d'une pratique/théorie", bouton "+ Ajouter une orpheline").
+- UI-2 : modale `#modal-orpheline` (2 étapes : choix théorie/pratique puis formulaire adapté — catégorie+options masqués pour théorie). `ouvrirModalOrpheline` / `orphChoisirType` / `confirmerAjoutOrpheline`. Cascade `orph-famille→categories` ajoutée au listener `change` (coexiste avec `rep-famille`). POST vers `/reprises/theorie` ou `/reprises/pratique` selon le type. Rechargement accordéon après ajout.
+
+**RESTE :**
+- Tests de recombinaison approfondis (théorie orpheline + pratique NORYX → CACES flux normal ; pratique orpheline + théorie NORYX → CACES).
+- Suppression d'une orpheline (DELETE) : non codé (règle : supprimable si pas recombinée en CACES).
+- Responsivité : reportée à la toute fin (après reprise complète).
+
+Commits : H3 (20c8f34, c9245d1), H4 (2520e55), moteur R1 (60de332), GET orphelines (ff5baa6), UI-1/UI-2 (f06f731, b8328e4).
