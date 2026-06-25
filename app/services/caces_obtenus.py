@@ -15,6 +15,23 @@ def _date_echeance(famille: str, date_obt: date) -> date:
         return date(date_obt.year + ans, 3, 1) - timedelta(days=1)
 
 
+def _date_initiale_depuis_echeance(famille: str, date_ech: date) -> date:
+    """
+    Inverse exact de _date_echeance : retrouve la date d'obtention du CACES INITIAL
+    a partir de la date d'echeance. Vrai pour un initial (retombe sur sa date d'obtention)
+    comme pour une extension (retombe sur la date du CACES initial, car l'extension herite
+    de l'echeance de l'initial). Permet de tester la dispense des 12 mois sans distinguer
+    initial/extension.
+    miroir de _date_echeance : echeance = date_obt + N ans - 1j  =>  date_obt = echeance - N ans + 1j
+    """
+    ans = 10 if famille == "R482" else 5
+    try:
+        return date(date_ech.year - ans, date_ech.month, date_ech.day) + timedelta(days=1)
+    except ValueError:
+        # 29 fevrier inexistant en (annee - ans) → 1er mars
+        return date(date_ech.year - ans, 3, 1)
+
+
 def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famille, date_pratique, statut_filtre):
     """
     Cherche un ResultatTheorie.obtenue=True hors de la session de pratique,
@@ -282,21 +299,23 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
     candidates = []  # liste de dicts {date, type, reference, source, lien, source_id}
     today = date.today()
 
-    # --- Source R1 : CACES non-extension, meme famille, valide/a_valider, < 12 mois ---
+    # --- Source R1 : CACES (initial OU extension), meme famille, valide/a_valider, theorie initiale < 12 mois ---
     caces_list = (
         db.query(CacesObtenu)
         .filter(
             CacesObtenu.stagiaire_id == stagiaire_id,
             CacesObtenu.famille == famille,
             CacesObtenu.statut.in_(["valide", "a_valider"]),
-            CacesObtenu.post_cloture == False,
         )
         .all()
     )
     for c in caces_list:
-        if c.date_obtention and limite_12_mois(c.date_obtention) >= today:
+        if not c.date_echeance:
+            continue
+        date_initiale = _date_initiale_depuis_echeance(c.famille, c.date_echeance)
+        if limite_12_mois(date_initiale) >= today:
             candidates.append({
-                "date": c.date_obtention,
+                "date": date_initiale,
                 "type": "caces",
                 "reference": f"CACES {c.famille} cat {c.categorie}" + (f" n°{c.numero_ordre}" if c.numero_ordre else ""),
                 "source": "R1",
