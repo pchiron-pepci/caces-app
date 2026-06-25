@@ -1929,9 +1929,47 @@ Règle appliquée : `ancien_numero` sinon `numero_ordre` formaté. Zones :
 - Tableau sélection carte : `cartes_caces.py` `get_caces_valides` (`+ancien_numero` au dict) + `cartes_caces.js` l.350.
 - Historique stagiaire : `stagiaires.py` `get_caces_valides_stagiaire` (`+ancien_numero`) + `stagiaires.js` `renderCacesValides` (l.364) + `chargerCacesCarteStag` (l.492).
 - Carte imprimée : snapshot `caces_json` d'`emettre_carte` (`+ancien_numero` figé → carte émise garde le bon numéro pour toujours, rétrocompat : vieux snapshots sans `ancien_numero` retombent sur `numero_ordre`) + `_render_cr80_html` recto (l.512, filtre ÉLARGI à `ancien_numero OR numero_ordre` pour ne pas exclure les repris) + verso (l.555) + `cartes_caces.js` 4 points (l.522 réimpression, l.572 recto `numsCaces` `.map` avant `.filter(Boolean)`, l.601 verso, l.812 vue A5).
+- Page CACES obtenus (H5-1c) : `caces_obtenus.py` `_enrich_base` (`+ancien_numero`, partagé a-valider+valides) + `caces_obtenus.js` `_renderLigne`. Affichage du numéro repris correct PARTOUT : sélection carte, historique stagiaire, carte imprimée (snapshot+recto/verso), CACES obtenus.
 
 **RESTE (H3/H4/divers) :**
 - H3 : théories orphelines reprises (`ResultatTheorie` créé à la main → POINT DÉLICAT : `jour_test_id` + `session_id` obligatoires → rattacher à la session technique, mais `ResultatTheorie` a besoin d'un `jour_test_id` → créer un `JourTest` technique dans la session reprise ?).
 - H4 : pratiques orphelines reprises (`SessionEpreuve` seule, sans CACES — pour les pratiques en attente de théorie).
 - Vérifier autres vues affichant le numéro d'un CACES (page CACES obtenus : un repris valide y montrerait-il `'—'` ? à contrôler).
 - Suppression d'un CACES repris (DELETE) : non encore fait — règle : supprimable seulement si pas sur une carte émise ET pas référencé comme `caces_initial_id` par une extension.
+
+### CADRAGE VERROUILLÉ : H3/H4 — orphelines reprises (théorie seule / pratiques seules)
+
+**Besoin :** candidat ayant passé UNE seule épreuve chez PEPCI (théorie OU pratique), vient passer l'AUTRE chez NORYX → le moteur recombine en CACES (flux normal).
+
+**INVARIANT D'EXCLUSIVITÉ TOTALE (règle cardinale) :**
+Pour un (candidat, catégorie), il existe AU PLUS UNE origine reprise, parmi trois mutuellement exclusives :
+- soit un CACES complet repris (H2)
+- soit une théorie orpheline reprise (en attente d'une pratique NORYX)
+- soit une/des pratique(s) orpheline(s) reprise(s) (en attente d'une théorie NORYX)
+La recombinaison se fait TOUJOURS avec une brique NORYX, JAMAIS entre deux briques reprises (si les deux briques sont reprises = CACES complet → saisi en H2, pas en orphelines).
+**Garde-fou serveur (409)** : toute saisie reprise refusée si une autre origine reprise existe déjà pour la catégorie (CACES bloque les 2 orphelines ; chaque orpheline bloque le CACES + l'autre orpheline). La théorie est au niveau FAMILLE, CACES et pratique au niveau CATÉGORIE — le blocage théorie s'évalue sur la famille.
+
+**Architecture — session réceptacle PAR (candidat, famille) :**
+- Le moteur de détection théorie filtre `SessionModel.famille == famille` (P2/P3 dans `_chercher_theorie_autre_session`). Une théorie reprise doit donc être dans une session portant la VRAIE famille (pas la sentinelle "REPRISE").
+- Helper ÉVOLUÉ : `get_or_create_session_reprise(stagiaire_id, db, famille="REPRISE")`. Famille OPTIONNELLE, défaut `"REPRISE"` → H2 (CACES complets) INCHANGÉ. H3/H4 passent la vraie famille → référence `"REPRISE-{stag}-{famille}"`, `Session.famille=famille` réelle.
+- H2 (CACES complets repris) : NON TOUCHÉ. Reste dans la session sentinelle "REPRISE". Pas de collision P1 (un CACES complet n'a pas besoin de recombinaison).
+
+**H3 — théorie orpheline reprise :**
+- Saisie : famille + date + testeur (testeur pour TRAÇABILITÉ, pas pour le calcul).
+- Crée un `JourTest` technique dans la session réceptacle (`type='theorie'`, `date=date saisie`, `testeur_id`, `grille_id=None`) + un `ResultatTheorie(jour_test_id=jt.id, session_id=session réceptacle, stagiaire_id, obtenue=True, mode='degrade', note conventionnelle)`. Le moteur lit `JourTest.date` pour la fenêtre 12 mois.
+- `ResultatTheorie` n'a PAS de champ famille → la famille vient de `Session.famille` (d'où la session par famille).
+
+**H4 — pratique orpheline reprise :**
+- Saisie : famille + catégorie + options + date + testeur (testeur OBLIGATOIRE, `SessionEpreuve.testeur_id nullable=False`).
+- Crée une `SessionEpreuve(obtenue=True, session_id=session réceptacle, testeur_id, date, famille, categorie, options)` — sans CACES (formé par le moteur quand la théorie NORYX arrive).
+
+**Recombinaison :** le moteur (`calculer_et_synchroniser`, additif) forme le `CacesObtenu` au FLUX NORMAL — numéro NORYX à la validation (PAS d'`ancien_numero` : vrai CACES NORYX dont une brique vient d'avant). Zéro modif moteur.
+
+**Interface :** section "Orphelines reprises" dans l'accordéon stagiaire, à côté de "Historique repris" (CACES complets H2).
+
+**Modèles (rappel) :**
+- `JourTest` obligatoires : `session_id`, `date`, `type`. Nullables : `testeur_id`, `grille_id`.
+- `ResultatTheorie` obligatoires : `jour_test_id`, `session_id`, `stagiaire_id`, `mode`. PAS de champ famille.
+- `SessionEpreuve` obligatoires : `session_id`, `stagiaire_id`, `testeur_id`, `date`, `famille`, `categorie`.
+
+**Séquençage :** helper évolué → H3 backend → H4 backend → interface commune → tests recombinaison.
