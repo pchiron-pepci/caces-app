@@ -495,14 +495,14 @@ def creer_reprise_theorie(id: int, data: TheorieRepriseCreate, db: Session = Dep
     if theorie_existante:
         raise HTTPException(status_code=409, detail=f"Une theorie est deja enregistree pour ce candidat en {data.famille} (interne NORYX ou reprise). Pas de doublon possible.")
 
-    # 3) Pratique deja obtenue dans cette famille SANS theorie (orpheline native ou reprise) → exclusivite
-    pratique_existante = db.query(SessionEpreuve).filter(
+    # 3) Pratique orpheline REPRISE dans cette famille (session receptacle UNIQUEMENT, pas les natives) → exclusivite
+    pratique_orpheline = db.query(SessionEpreuve).filter(
         SessionEpreuve.stagiaire_id == id,
-        SessionEpreuve.famille == data.famille,
+        SessionEpreuve.session_id == sess.id,
         SessionEpreuve.obtenue == True,
     ).first()
-    if pratique_existante:
-        raise HTTPException(status_code=409, detail=f"Une pratique est deja enregistree en {data.famille} pour ce candidat. Theorie + pratique = CACES complet (a saisir comme CACES repris).")
+    if pratique_orpheline:
+        raise HTTPException(status_code=409, detail=f"Une pratique orpheline reprise existe deja en {data.famille} — theorie + pratique reprises = CACES complet (a saisir comme CACES repris).")
 
     # ── Creation : JourTest technique (theorie) + ResultatTheorie ──
     jt = JourTest(
@@ -535,30 +535,26 @@ def creer_reprise_pratique(id: int, data: PratiqueRepriseCreate, db: Session = D
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
 
     # ── Garde-fou EXCLUSIVITE ──
-    # 1) CACES complet repris dans la FAMILLE → bloque toute orpheline (theorie + pratique)
+    # 1) CACES complet repris dans cette CATEGORIE → bloque la pratique orpheline
     caces_complet = db.query(CacesObtenu).filter(
         CacesObtenu.stagiaire_id == id,
         CacesObtenu.famille == data.famille,
+        CacesObtenu.categorie == data.categorie,
         CacesObtenu.ancien_numero.isnot(None),
     ).first()
     if caces_complet:
-        raise HTTPException(status_code=409, detail=f"Un CACES complet repris existe deja en {data.famille} — pas d'orpheline (les extensions repartent des dates du CACES).")
+        raise HTTPException(status_code=409, detail=f"Un CACES complet repris existe deja en {data.categorie} — pas d'orpheline (les extensions repartent des dates du CACES).")
 
     sess = get_or_create_session_reprise(id, db, famille=data.famille)
 
-    # 2) Theorie deja obtenue dans cette famille (NATIVE NORYX ou REPRISE) → theorie + pratique = CACES complet
-    theorie_existante = (
-        db.query(ResultatTheorie)
-        .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
-        .filter(
-            ResultatTheorie.stagiaire_id == id,
-            ResultatTheorie.obtenue == True,
-            SessionModel.famille == data.famille,
-        )
-        .first()
-    )
-    if theorie_existante:
-        raise HTTPException(status_code=409, detail=f"Une theorie est deja enregistree pour ce candidat en {data.famille} (interne NORYX ou reprise) — theorie + pratique = CACES complet (a saisir comme CACES repris).")
+    # 2) Theorie orpheline REPRISE dans cette famille (session receptacle UNIQUEMENT, pas les natives) → exclusivite
+    theorie_orpheline = db.query(ResultatTheorie).filter(
+        ResultatTheorie.stagiaire_id == id,
+        ResultatTheorie.session_id == sess.id,
+        ResultatTheorie.obtenue == True,
+    ).first()
+    if theorie_orpheline:
+        raise HTTPException(status_code=409, detail=f"Une theorie orpheline reprise existe deja en {data.famille} — theorie + pratique reprises = CACES complet (a saisir comme CACES repris).")
 
     # 3) Pratique deja obtenue dans la meme categorie (NATIVE NORYX ou REPRISE) → doublon interdit
     pratique_existante = db.query(SessionEpreuve).filter(
