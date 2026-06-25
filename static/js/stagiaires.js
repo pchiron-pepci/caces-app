@@ -239,15 +239,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         body.innerHTML = '<em style="color:#888;">Chargement...</em>';
         try {
-            const [rHisto, rCaces, rCartes, rReprises] = await Promise.all([
+            const [rHisto, rCaces, rCartes, rReprises, rOrph] = await Promise.all([
                 fetch('/stagiaires/' + id + '/historique'),
                 fetch('/stagiaires/' + id + '/caces-valides'),
                 fetch('/stagiaires/' + id + '/cartes-emises'),
                 fetch('/stagiaires/' + id + '/reprises'),
+                fetch('/stagiaires/' + id + '/reprises/orphelines'),
             ]);
-            if (!rHisto.ok || !rCaces.ok || !rCartes.ok || !rReprises.ok) throw new Error();
-            const [sessions, caces, cartes, reprises] = await Promise.all([rHisto.json(), rCaces.json(), rCartes.json(), rReprises.json()]);
-            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces) + renderCartesEmises(cartes) + renderReprisesHistorique(reprises, id);
+            if (!rHisto.ok || !rCaces.ok || !rCartes.ok || !rReprises.ok || !rOrph.ok) throw new Error();
+            const [sessions, caces, cartes, reprises, orphelines] = await Promise.all([rHisto.json(), rCaces.json(), rCartes.json(), rReprises.json(), rOrph.json()]);
+            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces) + renderCartesEmises(cartes) + renderReprisesHistorique(reprises, id) + renderOrphelinesReprises(orphelines, id);
             body.dataset.loaded = '1';
         } catch (_) {
             body.innerHTML = '<em style="color:red;">Erreur de chargement.</em>';
@@ -416,6 +417,54 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!iso) return '—';
         var p = iso.split('-');
         return p[2] + '/' + p[1] + '/' + p[0];
+    }
+
+    function renderOrphelinesReprises(data, stagiaireId) {
+        var theories = (data && data.theories) ? data.theories : [];
+        var pratiques = (data && data.pratiques) ? data.pratiques : [];
+
+        // sous-bloc theories
+        var blocTheo = '';
+        if (theories.length > 0) {
+            blocTheo = '<div style="font-size:12px;font-weight:700;color:#b26a00;margin:6px 0 2px;">🎓 Théories orphelines</div>'
+                + theories.map(function(t) {
+                    return '<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid #fdf0e0;font-size:12px;flex-wrap:wrap;">'
+                        + '<span style="font-weight:700;color:#555;">' + t.famille + '</span>'
+                        + '<span style="color:#b26a00;font-weight:700;">' + _fmtDateRep(t.date_obtention) + '</span>'
+                        + (t.testeur_nom ? '<span style="color:#888;font-size:11px;">' + t.testeur_nom + '</span>' : '')
+                        + '<span style="margin-left:auto;color:#b26a00;font-size:10px;font-style:italic;">en attente d\'une pratique</span>'
+                        + '</div>';
+                }).join('');
+        }
+
+        // sous-bloc pratiques
+        var blocPrat = '';
+        if (pratiques.length > 0) {
+            blocPrat = '<div style="font-size:12px;font-weight:700;color:#b26a00;margin:8px 0 2px;">🔧 Pratiques orphelines</div>'
+                + pratiques.map(function(p) {
+                    var opts = p.options_obtenues
+                        ? p.options_obtenues.split(',').map(function(o){ return '<span style="background:#fff3e0;color:#b26a00;border-radius:3px;padding:1px 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>'; }).join(' ')
+                        : '';
+                    return '<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid #fdf0e0;font-size:12px;flex-wrap:wrap;">'
+                        + '<span style="font-weight:700;color:#555;">' + p.famille + '</span>'
+                        + '<span style="background:#e65100;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + p.categorie + '</span>'
+                        + '<span style="display:flex;gap:2px;">' + opts + '</span>'
+                        + '<span style="color:#b26a00;font-weight:700;">' + _fmtDateRep(p.date_obtention) + '</span>'
+                        + (p.testeur_nom ? '<span style="color:#888;font-size:11px;">' + p.testeur_nom + '</span>' : '')
+                        + '<span style="margin-left:auto;color:#b26a00;font-size:10px;font-style:italic;">en attente d\'une théorie</span>'
+                        + '</div>';
+                }).join('');
+        }
+
+        var corps = (blocTheo + blocPrat) || '<div style="color:#888;font-size:13px;padding:6px 0;">Aucune orpheline.</div>';
+
+        return '<div style="margin-top:14px;border-top:2px solid #ffe0b2;padding-top:10px;">'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+            + '<strong style="color:#e65100;font-size:13px;">🧩 Orphelines reprises</strong>'
+            + '<button data-action="ajouter-orpheline" data-id="' + stagiaireId + '" style="background:#e65100;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">+ Ajouter une orpheline</button>'
+            + '</div>'
+            + corps
+            + '</div>';
     }
 
     function renderCartesEmises(cartes) {
