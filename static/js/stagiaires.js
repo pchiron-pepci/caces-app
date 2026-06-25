@@ -91,6 +91,12 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (action === 'ajouter-reprise') { ouvrirModalReprise(btn.dataset.id); return; }
         else if (action === 'fermer-modal-reprise') { document.getElementById('modal-reprise').style.display = 'none'; return; }
         else if (action === 'confirmer-ajout-reprise') { confirmerAjoutReprise(); return; }
+        else if (action === 'ajouter-orpheline') { ouvrirModalOrpheline(btn.dataset.id); return; }
+        else if (action === 'fermer-modal-orpheline') { document.getElementById('modal-orpheline').style.display = 'none'; return; }
+        else if (action === 'orph-type-theorie') { orphChoisirType('theorie'); return; }
+        else if (action === 'orph-type-pratique') { orphChoisirType('pratique'); return; }
+        else if (action === 'orph-retour') { orphRetourChoix(); return; }
+        else if (action === 'confirmer-ajout-orpheline') { confirmerAjoutOrpheline(); return; }
         else if (action === 'toggle-caces-carte') {
             const carteId = btn.dataset.carteId;
             const detail = document.getElementById('stag-caces-detail-' + carteId);
@@ -602,10 +608,153 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modal-reprise').style.display = 'flex';
     }
 
+    var _orphStagiaireId = null;
+    var _orphType = null;  // 'theorie' | 'pratique'
+
+    function ouvrirModalOrpheline(stagiaireId) {
+        _orphStagiaireId = stagiaireId;
+        _orphType = null;
+        document.getElementById('orph-choix').style.display = 'flex';
+        document.getElementById('orph-form').style.display = 'none';
+        document.getElementById('modal-orpheline').style.display = 'flex';
+    }
+
+    function orphRetourChoix() {
+        _orphType = null;
+        document.getElementById('orph-choix').style.display = 'flex';
+        document.getElementById('orph-form').style.display = 'none';
+    }
+
+    function orphChoisirType(type) {
+        _orphType = type;
+        document.getElementById('orph-choix').style.display = 'none';
+        document.getElementById('orph-form').style.display = 'flex';
+
+        var titre = document.getElementById('orph-form-titre');
+        var catWrap = document.getElementById('orph-categorie-wrap');
+        var optWrap = document.getElementById('orph-options-wrap');
+        if (type === 'theorie') {
+            titre.textContent = '🎓 Théorie orpheline';
+            catWrap.style.display = 'none';
+            optWrap.style.display = 'none';
+        } else {
+            titre.textContent = '🔧 Pratique orpheline';
+            catWrap.style.display = 'block';
+            optWrap.style.display = 'block';
+        }
+
+        document.getElementById('orph-categorie').innerHTML = '<option value="">— Choisir une famille d\'abord —</option>';
+        document.getElementById('orph-categorie').disabled = true;
+        document.getElementById('orph-options').value = '';
+        document.getElementById('orph-date').value = '';
+        document.getElementById('orph-pin').value = '';
+        var err = document.getElementById('orph-error');
+        err.style.display = 'none'; err.textContent = '';
+
+        var sFam = document.getElementById('orph-famille');
+        sFam.innerHTML = '<option value="">— Choisir —</option>';
+        try {
+            var familles = JSON.parse(document.getElementById('reprise-data').dataset.familles || '[]');
+            familles.forEach(function(f) {
+                var o = document.createElement('option');
+                o.value = f.code; o.textContent = f.code + ' — ' + f.libelle;
+                sFam.appendChild(o);
+            });
+        } catch (e) {}
+        sFam.value = '';
+
+        var sTest = document.getElementById('orph-testeur');
+        sTest.innerHTML = '<option value="">— Chargement… —</option>';
+        fetch('/api/testeurs/', { credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(testeurs){
+                sTest.innerHTML = '<option value="">— Choisir —</option>';
+                (testeurs || []).forEach(function(t){
+                    var o = document.createElement('option');
+                    o.value = t.id; o.textContent = t.nom + ' ' + t.prenom;
+                    sTest.appendChild(o);
+                });
+            })
+            .catch(function(){ sTest.innerHTML = '<option value="">— Erreur chargement —</option>'; });
+    }
+
+    function confirmerAjoutOrpheline() {
+        var err = document.getElementById('orph-error');
+        err.style.display = 'none'; err.textContent = '';
+
+        var famille = document.getElementById('orph-famille').value;
+        var dateObt = document.getElementById('orph-date').value;
+        var testeurId = parseInt(document.getElementById('orph-testeur').value, 10);
+        var pin = document.getElementById('orph-pin').value;
+
+        if (!famille || !dateObt || !testeurId || !pin) {
+            err.textContent = 'Famille, date, testeur et PIN sont obligatoires.'; err.style.display = 'block'; return;
+        }
+
+        var url, payload;
+        if (_orphType === 'theorie') {
+            url = '/stagiaires/' + _orphStagiaireId + '/reprises/theorie';
+            payload = { famille: famille, date_obtention: dateObt, testeur_id: testeurId, pin: pin };
+        } else {
+            var categorie = document.getElementById('orph-categorie').value;
+            if (!categorie) { err.textContent = 'La categorie est obligatoire pour une pratique.'; err.style.display = 'block'; return; }
+            url = '/stagiaires/' + _orphStagiaireId + '/reprises/pratique';
+            payload = {
+                famille: famille,
+                categorie: categorie,
+                options_obtenues: document.getElementById('orph-options').value.trim() || null,
+                date_obtention: dateObt,
+                testeur_id: testeurId,
+                pin: pin,
+            };
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        })
+        .then(function(r){
+            if (r.ok) return r.json().then(function(){
+                document.getElementById('modal-orpheline').style.display = 'none';
+                var sid = _orphStagiaireId;
+                var bodyEl = document.getElementById('hist-body-' + sid);
+                var btn = document.querySelector('[data-action="historique"][data-id="' + sid + '"]');
+                if (bodyEl) { delete bodyEl.dataset.loaded; }
+                var row = document.getElementById('hist-' + sid);
+                if (row) { row.style.display = 'none'; if (btn) btn.textContent = '▶'; }
+                if (btn) toggleHistorique(String(sid), btn);
+            });
+            return r.json().then(function(d){
+                err.textContent = '❌ ' + (d.detail || 'Erreur'); err.style.display = 'block';
+            });
+        })
+        .catch(function(){ err.textContent = '❌ Erreur reseau.'; err.style.display = 'block'; });
+    }
+
     document.addEventListener('change', function(e){
         if (e.target && e.target.id === 'rep-famille') {
             var fam = e.target.value;
             var sCat = document.getElementById('rep-categorie');
+            if (!fam) { sCat.innerHTML = '<option value="">— Choisir une famille d\'abord —</option>'; sCat.disabled = true; return; }
+            sCat.innerHTML = '<option value="">— Chargement… —</option>'; sCat.disabled = true;
+            fetch('/admin/categories/' + encodeURIComponent(fam), { credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(cats){
+                    sCat.innerHTML = '<option value="">— Choisir —</option>';
+                    (cats || []).forEach(function(c){
+                        var o = document.createElement('option');
+                        o.value = c.code; o.textContent = c.code + ' — ' + c.libelle;
+                        sCat.appendChild(o);
+                    });
+                    sCat.disabled = false;
+                })
+                .catch(function(){ sCat.innerHTML = '<option value="">— Erreur —</option>'; sCat.disabled = true; });
+        }
+        if (e.target && e.target.id === 'orph-famille') {
+            var fam = e.target.value;
+            var sCat = document.getElementById('orph-categorie');
             if (!fam) { sCat.innerHTML = '<option value="">— Choisir une famille d\'abord —</option>'; sCat.disabled = true; return; }
             sCat.innerHTML = '<option value="">— Chargement… —</option>'; sCat.disabled = true;
             fetch('/admin/categories/' + encodeURIComponent(fam), { credentials: 'same-origin' })

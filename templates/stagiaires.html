@@ -300,6 +300,64 @@
   </div>
 </div>
 
+<div id="modal-orpheline" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:12px; padding:24px; width:460px; max-width:95%; max-height:90vh; overflow-y:auto;">
+    <h3 style="margin:0 0 16px; color:#e65100;">🧩 Ajouter une orpheline reprise</h3>
+
+    <!-- Etape 1 : choix du type -->
+    <div id="orph-choix" style="display:flex; flex-direction:column; gap:10px;">
+      <p style="font-size:13px; color:#555; margin:0 0 4px;">Quel type d'épreuve reprise ?</p>
+      <button data-action="orph-type-theorie" style="background:#fff; border:2px solid #e65100; color:#e65100; border-radius:8px; padding:12px; font-size:14px; font-weight:700; cursor:pointer; text-align:left;">🎓 Théorie seule<br><span style="font-weight:400; font-size:12px; color:#888;">Le candidat a passé sa théorie ailleurs, vient passer la pratique chez nous</span></button>
+      <button data-action="orph-type-pratique" style="background:#fff; border:2px solid #e65100; color:#e65100; border-radius:8px; padding:12px; font-size:14px; font-weight:700; cursor:pointer; text-align:left;">🔧 Pratique seule<br><span style="font-weight:400; font-size:12px; color:#888;">Le candidat a passé une/des pratiques ailleurs, vient passer la théorie chez nous</span></button>
+      <button data-action="fermer-modal-orpheline" style="background:#eee; border:none; border-radius:6px; padding:8px 16px; cursor:pointer; margin-top:6px;">Annuler</button>
+    </div>
+
+    <!-- Etape 2 : formulaire (cache au depart, affiche apres choix) -->
+    <div id="orph-form" style="display:none; flex-direction:column; gap:12px;">
+      <div id="orph-form-titre" style="font-size:13px; font-weight:700; color:#e65100;"></div>
+
+      <div>
+        <label style="font-weight:600; font-size:13px;">Famille</label>
+        <select id="orph-famille" style="width:100%; padding:8px;"><option value="">— Choisir —</option></select>
+      </div>
+
+      <!-- Categorie : visible uniquement pour pratique -->
+      <div id="orph-categorie-wrap" style="display:none;">
+        <label style="font-weight:600; font-size:13px;">Catégorie</label>
+        <select id="orph-categorie" style="width:100%; padding:8px;" disabled><option value="">— Choisir une famille d'abord —</option></select>
+      </div>
+
+      <!-- Options : visible uniquement pour pratique -->
+      <div id="orph-options-wrap" style="display:none;">
+        <label style="font-weight:600; font-size:13px;">Options (codes separes par virgule, optionnel)</label>
+        <input type="text" id="orph-options" placeholder="ex: PE,TEL" style="width:100%; padding:8px;">
+      </div>
+
+      <div>
+        <label style="font-weight:600; font-size:13px;">Date d'obtention</label>
+        <input type="date" id="orph-date" style="width:100%; padding:8px;">
+      </div>
+
+      <div>
+        <label style="font-weight:600; font-size:13px;">Testeur</label>
+        <select id="orph-testeur" style="width:100%; padding:8px;"><option value="">— Chargement… —</option></select>
+      </div>
+
+      <div>
+        <label style="font-weight:600; font-size:13px;">Code PIN administrateur</label>
+        <input type="password" id="orph-pin" style="width:100%; padding:8px;">
+      </div>
+
+      <div id="orph-error" style="display:none; color:#c62828; font-size:13px;"></div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+        <button data-action="orph-retour" style="background:#eee; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;">← Retour</button>
+        <button data-action="confirmer-ajout-orpheline" style="background:#e65100; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-weight:700; cursor:pointer;">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <link rel="stylesheet" href="/static/vendor/cropperjs/cropper.min.css">
 <script src="/static/vendor/cropperjs/cropper.min.js"></script>
 <script src="/static/js/stagiaires.js"></script>
