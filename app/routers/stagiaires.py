@@ -4,7 +4,7 @@ from app.database import get_db
 from app.config_utils import get_pin_admin
 from app.models.stagiaire import Stagiaire
 from app.models.session_candidat import SessionCandidat
-from app.models.jour_test import JourTestCandidat, ResultatTheorie
+from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
 from app.models.session_epreuve import SessionEpreuve
 from app.models.caces_obtenu import CacesObtenu
 from app.models.carte_caces import CarteCaces
@@ -31,6 +31,12 @@ class CacesRepriseCreate(BaseModel):
     date_obtention: date
     date_echeance: date
     ancien_numero: str
+    testeur_id: int
+    pin: str
+
+class TheorieRepriseCreate(BaseModel):
+    famille: str
+    date_obtention: date
     testeur_id: int
     pin: str
 
@@ -447,6 +453,65 @@ def creer_reprise_caces(id: int, data: CacesRepriseCreate, db: Session = Depends
     db.commit()
     db.refresh(co)
     return {"message": "CACES repris ajoute", "id": co.id}
+
+
+@router.post("/{id}/reprises/theorie")
+def creer_reprise_theorie(id: int, data: TheorieRepriseCreate, db: Session = Depends(get_db)):
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+
+    # ── Garde-fou EXCLUSIVITE TOTALE (au niveau famille pour la theorie) ──
+    # 1) CACES complet repris dans cette famille (CacesObtenu avec ancien_numero non NULL)
+    caces_complet = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == id,
+        CacesObtenu.famille == data.famille,
+        CacesObtenu.ancien_numero.isnot(None),
+    ).first()
+    if caces_complet:
+        raise HTTPException(status_code=409, detail=f"Un CACES complet repris existe deja en {data.famille} — une theorie orpheline est inutile (les extensions repartent des dates du CACES).")
+
+    # session receptacle de la famille (creee si besoin) — sert aussi a detecter les orphelines existantes
+    sess = get_or_create_session_reprise(id, db, famille=data.famille)
+
+    # 2) Theorie orpheline deja saisie pour cette famille (ResultatTheorie dans la session receptacle)
+    theorie_existante = db.query(ResultatTheorie).filter(
+        ResultatTheorie.stagiaire_id == id,
+        ResultatTheorie.session_id == sess.id,
+    ).first()
+    if theorie_existante:
+        raise HTTPException(status_code=409, detail=f"Une theorie reprise existe deja en {data.famille}.")
+
+    # 3) Pratique orpheline reprise dans cette famille (SessionEpreuve dans la session receptacle)
+    pratique_orpheline = db.query(SessionEpreuve).filter(
+        SessionEpreuve.stagiaire_id == id,
+        SessionEpreuve.session_id == sess.id,
+    ).first()
+    if pratique_orpheline:
+        raise HTTPException(status_code=409, detail=f"Une pratique orpheline reprise existe deja en {data.famille} — theorie + pratique reprises = CACES complet (a saisir comme CACES repris).")
+
+    # ── Creation : JourTest technique (theorie) + ResultatTheorie ──
+    jt = JourTest(
+        session_id=sess.id,
+        type="theorie",
+        date=data.date_obtention,
+        testeur_id=data.testeur_id,
+        grille_id=None,
+    )
+    db.add(jt)
+    db.flush()
+
+    rt = ResultatTheorie(
+        jour_test_id=jt.id,
+        session_id=sess.id,
+        stagiaire_id=id,
+        obtenue=True,
+        mode="degrade",
+        testeur_id=data.testeur_id,
+    )
+    db.add(rt)
+    db.commit()
+    db.refresh(rt)
+    return {"message": "Theorie reprise ajoutee", "id": rt.id}
 
 
 @router.get("/{stag_id}/base-theorique")
