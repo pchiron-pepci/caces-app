@@ -97,6 +97,17 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (action === 'orph-type-pratique') { orphChoisirType('pratique'); return; }
         else if (action === 'orph-retour') { orphRetourChoix(); return; }
         else if (action === 'confirmer-ajout-orpheline') { confirmerAjoutOrpheline(); return; }
+        else if (action === 'toggle-historique-reprise') {
+            var rid = btn.dataset.id;
+            var rbody = document.getElementById('hist-reprise-body-' + rid);
+            var rarrow = document.getElementById('hist-reprise-arrow-' + rid);
+            if (rbody) {
+                var open = rbody.style.display !== 'none';
+                rbody.style.display = open ? 'none' : 'block';
+                if (rarrow) rarrow.textContent = open ? '▶' : '▼';
+            }
+            return;
+        }
         else if (action === 'toggle-caces-carte') {
             const carteId = btn.dataset.carteId;
             const detail = document.getElementById('stag-caces-detail-' + carteId);
@@ -254,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ]);
             if (!rHisto.ok || !rCaces.ok || !rCartes.ok || !rReprises.ok || !rOrph.ok) throw new Error();
             const [sessions, caces, cartes, reprises, orphelines] = await Promise.all([rHisto.json(), rCaces.json(), rCartes.json(), rReprises.json(), rOrph.json()]);
-            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces) + renderCartesEmises(cartes) + renderReprisesHistorique(reprises, id) + renderOrphelinesReprises(orphelines, id);
+            body.innerHTML = renderHistorique(sessions) + renderCacesValides(caces) + renderCartesEmises(cartes) + renderHistoriqueDeReprise(reprises, orphelines, id);
             body.dataset.loaded = '1';
         } catch (_) {
             body.innerHTML = '<em style="color:red;">Erreur de chargement.</em>';
@@ -390,6 +401,19 @@ document.addEventListener('DOMContentLoaded', function () {
         return html;
     }
 
+    function renderHistoriqueDeReprise(reprises, orphelines, stagiaireId) {
+        var contenu = renderReprisesHistorique(reprises, stagiaireId) + renderOrphelinesReprises(orphelines, stagiaireId);
+        return '<div style="margin-top:16px;border-top:2px solid #e0e0e0;padding-top:10px;">'
+            + '<div data-action="toggle-historique-reprise" data-id="' + stagiaireId + '" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">'
+            + '<span id="hist-reprise-arrow-' + stagiaireId + '" style="color:#2d2d2d;font-size:12px;">▶</span>'
+            + '<strong style="color:#2d2d2d;font-size:14px;">🗂️ Historique de reprise</strong>'
+            + '</div>'
+            + '<div id="hist-reprise-body-' + stagiaireId + '" style="display:none;padding-left:4px;">'
+            + contenu
+            + '</div>'
+            + '</div>';
+    }
+
     function renderReprisesHistorique(reprises, stagiaireId) {
         var lignes = '';
         if (!reprises || reprises.length === 0) {
@@ -410,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     + '</div>';
             }).join('');
         }
-        return '<div style="margin-top:14px;">'
+        return '<div style="margin-top:10px;">'
             + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">'
             + '<strong style="color:#7b1fa2;font-size:13px;">🪪 Historique repris</strong>'
             + '<button data-action="ajouter-reprise" data-id="' + stagiaireId + '" style="background:#7b1fa2;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">+ Ajouter</button>'
@@ -464,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var corps = (blocTheo + blocPrat) || '<div style="color:#888;font-size:13px;padding:6px 0;">Aucune orpheline.</div>';
 
-        return '<div style="margin-top:14px;border-top:2px solid #ffe0b2;padding-top:10px;">'
+        return '<div style="margin-top:14px;border-top:1px solid #ffe0b2;padding-top:10px;">'
             + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">'
             + '<strong style="color:#e65100;font-size:13px;">🧩 Orphelines reprises</strong>'
             + '<button data-action="ajouter-orpheline" data-id="' + stagiaireId + '" style="background:#e65100;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">+ Ajouter une orpheline</button>'
