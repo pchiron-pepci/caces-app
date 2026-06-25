@@ -40,6 +40,14 @@ class TheorieRepriseCreate(BaseModel):
     testeur_id: int
     pin: str
 
+class PratiqueRepriseCreate(BaseModel):
+    famille: str
+    categorie: str
+    options_obtenues: Optional[str] = None
+    date_obtention: date
+    testeur_id: int
+    pin: str
+
 class StagiaireCreate(BaseModel):
     nom: str
     prenom: str
@@ -512,6 +520,57 @@ def creer_reprise_theorie(id: int, data: TheorieRepriseCreate, db: Session = Dep
     db.commit()
     db.refresh(rt)
     return {"message": "Theorie reprise ajoutee", "id": rt.id}
+
+
+@router.post("/{id}/reprises/pratique")
+def creer_reprise_pratique(id: int, data: PratiqueRepriseCreate, db: Session = Depends(get_db)):
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+
+    # ── Garde-fou EXCLUSIVITE ──
+    # 1) CACES complet repris dans la FAMILLE → bloque toute orpheline (theorie + pratique)
+    caces_complet = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == id,
+        CacesObtenu.famille == data.famille,
+        CacesObtenu.ancien_numero.isnot(None),
+    ).first()
+    if caces_complet:
+        raise HTTPException(status_code=409, detail=f"Un CACES complet repris existe deja en {data.famille} — pas d'orpheline (les extensions repartent des dates du CACES).")
+
+    sess = get_or_create_session_reprise(id, db, famille=data.famille)
+
+    # 2) Theorie orpheline reprise dans cette famille → bloque (theorie + pratique reprises = CACES complet)
+    theorie_orpheline = db.query(ResultatTheorie).filter(
+        ResultatTheorie.stagiaire_id == id,
+        ResultatTheorie.session_id == sess.id,
+    ).first()
+    if theorie_orpheline:
+        raise HTTPException(status_code=409, detail=f"Une theorie orpheline reprise existe deja en {data.famille} — theorie + pratique reprises = CACES complet (a saisir comme CACES repris).")
+
+    # 3) Meme categorie deja saisie en pratique orpheline → doublon
+    pratique_existante = db.query(SessionEpreuve).filter(
+        SessionEpreuve.stagiaire_id == id,
+        SessionEpreuve.session_id == sess.id,
+        SessionEpreuve.categorie == data.categorie,
+    ).first()
+    if pratique_existante:
+        raise HTTPException(status_code=409, detail=f"Une pratique orpheline reprise existe deja pour {data.famille} {data.categorie}.")
+
+    # ── Creation : SessionEpreuve (obtenue=True, testeur obligatoire) ──
+    ep = SessionEpreuve(
+        session_id=sess.id,
+        stagiaire_id=id,
+        testeur_id=data.testeur_id,
+        date=data.date_obtention,
+        famille=data.famille,
+        categorie=data.categorie,
+        options_obtenues=data.options_obtenues or None,
+        obtenue=True,
+    )
+    db.add(ep)
+    db.commit()
+    db.refresh(ep)
+    return {"message": "Pratique reprise ajoutee", "id": ep.id}
 
 
 @router.get("/{stag_id}/base-theorique")
