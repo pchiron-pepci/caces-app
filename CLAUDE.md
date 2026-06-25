@@ -1954,66 +1954,48 @@ Miroir exact de `_date_echeance` : `echeance = date_obt + N ans − 1j` ↔ `dat
 
 ---
 
-### ✅ H3/H4 — orphelines reprises (TERMINÉ)
+### ✅ H3/H4 — orphelines reprises + exclusivite affinee (TERMINE, en prod)
 
 **Besoin :** candidat ayant passé UNE seule épreuve chez PEPCI (théorie OU pratique), vient passer l'AUTRE chez NORYX → le moteur recombine en CACES (flux normal).
 
-**INVARIANT D'EXCLUSIVITÉ TOTALE (règle cardinale) :**
-Pour un (candidat, catégorie), il existe AU PLUS UNE origine reprise, parmi trois mutuellement exclusives :
-- soit un CACES complet repris (H2)
-- soit une théorie orpheline reprise (en attente d'une pratique NORYX)
-- soit une/des pratique(s) orpheline(s) reprise(s) (en attente d'une théorie NORYX)
-La recombinaison se fait TOUJOURS avec une brique NORYX, JAMAIS entre deux briques reprises (si les deux briques sont reprises = CACES complet → saisi en H2, pas en orphelines).
-**Garde-fou serveur (409)** : toute saisie reprise refusée si une autre origine reprise existe déjà pour la catégorie (CACES bloque les 2 orphelines ; chaque orpheline bloque le CACES + l'autre orpheline). La théorie est au niveau FAMILLE, CACES et pratique au niveau CATÉGORIE — le blocage théorie s'évalue sur la famille.
+**Architecture :**
+- Sessions receptacles orphelines : reference "REPRISE-{id}-{famille}" (tiret + famille), Session.type='reprise', Session.famille=famille reelle (le moteur filtre par famille). DISTINCTE de la sentinelle CACES complets "REPRISE-{id}" (sans famille).
+- helper get_or_create_session_reprise(stagiaire_id, db, famille="REPRISE") : famille optionnelle. Defaut → sentinelle H2. famille reelle → receptacle orpheline.
 
-**Architecture — session réceptacle PAR (candidat, famille) :**
-- Le moteur de détection théorie filtre `SessionModel.famille == famille` (P2/P3 dans `_chercher_theorie_autre_session`). Une théorie reprise doit donc être dans une session portant la VRAIE famille (pas la sentinelle "REPRISE").
-- Helper ÉVOLUÉ : `get_or_create_session_reprise(stagiaire_id, db, famille="REPRISE")`. Famille OPTIONNELLE, défaut `"REPRISE"` → H2 (CACES complets) INCHANGÉ. H3/H4 passent la vraie famille → référence `"REPRISE-{stag}-{famille}"`, `Session.famille=famille` réelle.
-- H2 (CACES complets repris) : NON TOUCHÉ. Reste dans la session sentinelle "REPRISE". Pas de collision P1 (un CACES complet n'a pas besoin de recombinaison).
+**Backend (app/routers/stagiaires.py) :**
+- Schemas TheorieRepriseCreate (famille, date_obtention, testeur_id, pin), PratiqueRepriseCreate (+ categorie, options_obtenues).
+- POST /{id}/reprises/theorie : PIN admin → 3 gardes → JourTest technique (type='theorie', grille_id=None) + flush + ResultatTheorie(obtenue=True, mode='degrade', testeur_id).
+- POST /{id}/reprises/pratique : PIN admin → 3 gardes → SessionEpreuve(obtenue=True, testeur_id, famille, categorie, options).
+- GET /{id}/reprises/orphelines : {theories, pratiques} des receptacles (filtre reference.like("REPRISE-{id}-%")).
 
-**H3 — théorie orpheline reprise :**
-- Saisie : famille + date + testeur (testeur pour TRAÇABILITÉ, pas pour le calcul).
-- Crée un `JourTest` technique dans la session réceptacle (`type='theorie'`, `date=date saisie`, `testeur_id`, `grille_id=None`) + un `ResultatTheorie(jour_test_id=jt.id, session_id=session réceptacle, stagiaire_id, obtenue=True, mode='degrade', note conventionnelle)`. Le moteur lit `JourTest.date` pour la fenêtre 12 mois.
-- `ResultatTheorie` n'a PAS de champ famille → la famille vient de `Session.famille` (d'où la session par famille).
+**REGLE D'EXCLUSIVITE — tableau des 6 gardes (VERROUILLE, ne pas re-elargir) :**
 
-**H4 — pratique orpheline reprise :**
-- Saisie : famille + catégorie + options + date + testeur (testeur OBLIGATOIRE, `SessionEpreuve.testeur_id nullable=False`).
-- Crée une `SessionEpreuve(obtenue=True, session_id=session réceptacle, testeur_id, date, famille, categorie, options)` — sans CACES (formé par le moteur quand la théorie NORYX arrive).
+Principe directeur : theorie = par FAMILLE (commune a toute la famille), pratique = par CATEGORIE. L'exclusivite croisee (theorie<->pratique) ne joue QU'ENTRE DEUX REPRISES (sessions receptacles, sess.id), JAMAIS contre une epreuve NATIVE NORYX (une orpheline reprise doit pouvoir se recombiner avec une epreuve native — c'est le but). Les doublons (theorie<->theorie, pratique<->pratique meme cat) couvrent native ET reprise.
 
-**Recombinaison :** le moteur (`calculer_et_synchroniser`, additif) forme le `CacesObtenu` au FLUX NORMAL — numéro NORYX à la validation (PAS d'`ancien_numero` : vrai CACES NORYX dont une brique vient d'avant). Zéro modif moteur.
+| Route | Garde | Filtre | Portee |
+|---|---|---|---|
+| theorie | 1 | CacesObtenu.famille + ancien_numero | CACES complet repris (famille) → bloque |
+| theorie | 2 | JOIN SessionModel.famille == famille, obtenue=True | doublon theorie (native OU reprise) → bloque |
+| theorie | 3 | SessionEpreuve.session_id == sess.id, obtenue=True | pratique orpheline REPRISE seulement (croise) → bloque |
+| pratique | 1 | CacesObtenu.famille + categorie + ancien_numero | CACES complet repris (MEME categorie) → bloque |
+| pratique | 2 | ResultatTheorie.session_id == sess.id | theorie orpheline REPRISE seulement (croise) → bloque |
+| pratique | 3 | SessionEpreuve.famille + categorie + obtenue | doublon pratique MEME categorie (native OU reprise) → bloque |
 
-**Interface :** section "Orphelines reprises" dans l'accordéon stagiaire, à côté de "Historique repris" (CACES complets H2).
+Cas legitimes qui DOIVENT passer (ne jamais re-bloquer) : theorie native R482 + pratique cat F → ajouter pratique orpheline cat A (la theorie famille couvre toutes les categories) ; pratique native + theorie orpheline meme famille. Seul vrai blocage croise : theorie orpheline REPRISE + pratique orpheline REPRISE meme categorie = CACES complet deguise (a saisir en H2).
 
-**Modèles (rappel) :**
-- `JourTest` obligatoires : `session_id`, `date`, `type`. Nullables : `testeur_id`, `grille_id`.
-- `ResultatTheorie` obligatoires : `jour_test_id`, `session_id`, `stagiaire_id`, `mode`. PAS de champ famille.
-- `SessionEpreuve` obligatoires : `session_id`, `stagiaire_id`, `testeur_id`, `date`, `famille`, `categorie`.
+Regle reglementaire sous-jacente : une epreuve SEULE passee dans un autre organisme n'est JAMAIS reconnue/transferable (seul un CACES complet l'est). Donc une orpheline reprise est TOUJOURS de l'historique INTERNE pre-NORYX → pas de condition de date dans les gardes.
 
-**Séquençage :** helper évolué → H3 backend → H4 backend → interface commune → tests recombinaison.
+**Moteur (app/services/caces_obtenus.py) — amelioration R1 :**
+- _date_initiale_depuis_echeance(famille, date_ech) : miroir EXACT de _date_echeance. date_obt = echeance - N ans + 1j (N=10 R482 sinon 5). Retrouve la date du CACES INITIAL (initial OU extension qui herite de l'echeance de l'initial).
+- detecter_base_theorique source R1 : post_cloture==False RETIRE (extensions incluses) ; dispense testee sur date_initiale calculee. Reste informatif (l'operateur tranche les cas limites). post_cloture==False subsiste seulement en passe 2 de calculer_et_synchroniser (non touche).
 
-**ÉTAT : code poussé en prod.**
-
-Backend (`app/routers/stagiaires.py`) :
-- Schémas `TheorieRepriseCreate` (famille, date_obtention, testeur_id, pin) et `PratiqueRepriseCreate` (+ categorie, options_obtenues).
-- `POST /{id}/reprises/theorie` : PIN admin → 3 gardes 409 (CACES complet famille / théorie déjà saisie / pratique orpheline famille) → `get_or_create_session_reprise(id, db, famille)` → `JourTest` technique (type='theorie', date, testeur) + `db.flush()` + `ResultatTheorie(obtenue=True, mode='degrade', testeur_id)`.
-- `POST /{id}/reprises/pratique` : PIN admin → 3 gardes 409 (CACES complet famille / théorie orpheline famille / doublon même catégorie) → `SessionEpreuve(obtenue=True, testeur_id, date, famille, categorie, options)`.
-- `GET /{id}/reprises/orphelines` : liste `{theories, pratiques}` des sessions réceptacles (filtre `reference.like("REPRISE-{id}-%")` — tiret final = ne capte QUE les réceptacles par famille, jamais la sentinelle `"REPRISE-{id}"`).
-
-Helper (`app/services/reprise_historique.py`) :
-- `get_or_create_session_reprise(stagiaire_id, db, famille="REPRISE")` : famille optionnelle. Défaut `"REPRISE"` → sentinelle CACES complets (H2 inchangé). Famille réelle → réceptacle orphelines `"REPRISE-{id}-{famille}"`, `Session.famille=famille` réelle (le moteur filtre par famille).
-
-Moteur (`app/services/caces_obtenus.py`) — amélioration R1 (cas 1-4 intacts) :
-- Nouvelle fonction `_date_initiale_depuis_echeance(famille, date_ech)` : miroir exact de `_date_echeance`. `echeance = date_obt + N ans − 1j  ⟹  date_obt = echeance − N ans + 1j` (N=10 R482, sinon 5). Retrouve la date du CACES INITIAL aussi bien pour un initial que pour une extension (qui hérite de l'échéance de l'initial).
-- `detecter_base_theorique` source R1 : filtre `post_cloture==False` RETIRÉ (extensions incluses) ; dispense testée sur `date_initiale = _date_initiale_depuis_echeance(c.famille, c.date_echeance)` au lieu de `date_obtention`. Permet de dispenser à partir d'un CACES (initial OU extension) si la théorie initiale calculée est < 12 mois.
-- `post_cloture==False` subsiste UNIQUEMENT en passe 2 de `calculer_et_synchroniser` (recherche du CACES initial) — légitime, non touché.
-
-Frontend (`static/js/stagiaires.js` + `templates/stagiaires.html`) :
-- UI-1 : 5e fetch `/reprises/orphelines` dans `toggleHistorique` ; `renderOrphelinesReprises` (section "🧩 Orphelines reprises" ambre `#e65100`, sous-blocs 🎓 Théories / 🔧 Pratiques, mentions "en attente d'une pratique/théorie", bouton "+ Ajouter une orpheline").
-- UI-2 : modale `#modal-orpheline` (2 étapes : choix théorie/pratique puis formulaire adapté — catégorie+options masqués pour théorie). `ouvrirModalOrpheline` / `orphChoisirType` / `confirmerAjoutOrpheline`. Cascade `orph-famille→categories` ajoutée au listener `change` (coexiste avec `rep-famille`). POST vers `/reprises/theorie` ou `/reprises/pratique` selon le type. Rechargement accordéon après ajout.
+**Frontend (static/js/stagiaires.js + templates/stagiaires.html) :**
+- renderHistoriqueDeReprise(reprises, orphelines, id) : bloc repliable "🗂️ Historique de reprise" (anthracite #2d2d2d, fleche ▶, replie par defaut, data-action="toggle-historique-reprise") enveloppant les 2 sous-sections : "🪪 Historique repris" (CACES complets, violet #7b1fa2) + "🧩 Orphelines reprises" (ambre #e65100, sous-blocs 🎓 Theories / 🔧 Pratiques).
+- Modale #modal-orpheline : choix theorie/pratique puis formulaire adapte (categorie+options masques pour theorie). Boutons "+ Ajouter" harmonises.
 
 **RESTE :**
-- Tests de recombinaison approfondis (théorie orpheline + pratique NORYX → CACES flux normal ; pratique orpheline + théorie NORYX → CACES).
-- Suppression d'une orpheline (DELETE) : non codé (règle : supprimable si pas recombinée en CACES).
-- Responsivité : reportée à la toute fin (après reprise complète).
+- Tests de recombinaison approfondis (theorie orpheline + pratique NORYX → CACES flux normal ; et inverse). Pas encore fait de bout en bout.
+- DELETE orpheline : non code.
+- Responsivite : reportee a la toute fin.
 
-Commits : H3 (20c8f34, c9245d1), H4 (2520e55), moteur R1 (60de332), GET orphelines (ff5baa6), UI-1/UI-2 (f06f731, b8328e4).
+Commits : H3 (20c8f34, c9245d1), H4 (2520e55), moteur R1 (60de332), GET orphelines (ff5baa6), UI-1/UI-2, gardes elargis puis affines (33fcbe3, 5308acf), UI groupee (ca07e8a), libelle bouton (53af4c2).
