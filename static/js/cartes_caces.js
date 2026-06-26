@@ -1,5 +1,6 @@
 var _emiseData = [];
 var _emiseSort = { col: 4, asc: false }; // par défaut : date desc
+var _emiseFilter = '';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -111,6 +112,14 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btn-motif-carte-annuler').addEventListener('click', _fermerMotif);
     document.getElementById('modal-motif-carte').addEventListener('click', function (e) {
         if (e.target === this) _fermerMotif();
+    });
+
+    // --- Recherche cartes émises ---
+    document.addEventListener('input', function (e) {
+        if (e.target && e.target.id === 'recherche-emises') {
+            _emiseFilter = e.target.value;
+            _renderTableEmises();
+        }
     });
 
     // --- Délégation clics ---
@@ -434,11 +443,17 @@ function _renderTableEmises() {
     const el = document.getElementById('liste-emises');
     if (!el) return;
 
+    const _q = _emiseFilter.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
     const sorted = _emiseData.slice().sort(function (a, b) {
         const va = _emiseSortKey(a, _emiseSort.col);
         const vb = _emiseSortKey(b, _emiseSort.col);
         const cmp = va < vb ? -1 : va > vb ? 1 : 0;
         return _emiseSort.asc ? cmp : -cmp;
+    }).filter(function (c) {
+        if (!_q) return true;
+        const s = ((c.stagiaire_nom || '') + ' ' + (c.stagiaire_prenom || '') + ' ' + (c.famille || '') + ' ' + (c.numero_carte || ''))
+            .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        return s.includes(_q);
     });
 
     const defs = [
