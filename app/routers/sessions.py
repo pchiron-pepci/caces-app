@@ -1142,6 +1142,19 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
     s = db.query(Session).filter(Session.id == session_id).first()
     _check_modifiable(s)
     assert_modifiable_terrain(s, current_user.role)
+    # G1 : bloquer si épreuve antérieure à un CACES déjà délivré (statut valide) dans la même famille
+    caces_valide_posterieur = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == data.stagiaire_id,
+        CacesObtenu.famille == data.famille,
+        CacesObtenu.statut == "valide",
+        CacesObtenu.date_obtention > data.date,
+    ).first()
+    if caces_valide_posterieur:
+        raise HTTPException(status_code=409, detail=(
+            "epreuve anterieure a un CACES deja delivre "
+            "- annulez d'abord le CACES concerne. "
+            "NORYX ne rattrape jamais automatiquement."
+        ))
     famille = db.query(Famille).filter(Famille.code == data.famille).first()
     cat = db.query(Categorie).filter(
         Categorie.famille_id == (famille.id if famille else 0),
