@@ -83,80 +83,28 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
         t = db.query(Testeur).filter(Testeur.id == ep.testeur_id).first()
         testeur_nom = f"{t.nom} {t.prenom}" if t else ""
 
-    # --- Théorie : 3 priorités identiques au service ---
+    # --- Théorie : on AFFICHE la decision du moteur (resultat_theorie_id stocke), pas de recalcul ---
     rt = None
-    sess_theorie_id = co.session_id
-
-    # Priorité 1 : même session
-    rt = (
-        db.query(ResultatTheorie)
-        .filter(
-            ResultatTheorie.stagiaire_id == co.stagiaire_id,
-            ResultatTheorie.session_id == co.session_id,
-            ResultatTheorie.obtenue == True,
-        )
-        .order_by(ResultatTheorie.id.asc())
-        .first()
-    )
-
-    # Priorité 2 : autre session ouverte, même famille, ±365 j
-    if not rt and ep and ep.date:
-        lim_av = ep.date - timedelta(days=365)
-        lim_ap = ep.date + timedelta(days=365)
-        rt = (
-            db.query(ResultatTheorie)
-            .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
-            .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
-            .filter(
-                ResultatTheorie.stagiaire_id == co.stagiaire_id,
-                ResultatTheorie.obtenue == True,
-                ResultatTheorie.session_id != co.session_id,
-                SessionModel.famille == co.famille,
-                SessionModel.statut != "terminee",
-                JourTest.date >= lim_av,
-                JourTest.date <= lim_ap,
-            )
-            .order_by(ResultatTheorie.id.asc())
-            .first()
-        )
+    date_theorie = None
+    sess_theorie_id = None
+    ref_theorie = None
+    testeur_nom_theorie = None
+    if co.resultat_theorie_id is not None:
+        rt = db.query(ResultatTheorie).filter(
+            ResultatTheorie.id == co.resultat_theorie_id
+        ).first()
         if rt:
+            _jt = db.query(JourTest).filter(JourTest.id == rt.jour_test_id).first()
+            date_theorie = _jt.date if _jt and _jt.date else None
             sess_theorie_id = rt.session_id
-
-    # Priorité 3 : session clôturée, même famille, ±365 j
-    if not rt and ep and ep.date:
-        lim_av = ep.date - timedelta(days=365)
-        lim_ap = ep.date + timedelta(days=365)
-        rt = (
-            db.query(ResultatTheorie)
-            .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
-            .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
-            .filter(
-                ResultatTheorie.stagiaire_id == co.stagiaire_id,
-                ResultatTheorie.obtenue == True,
-                ResultatTheorie.session_id != co.session_id,
-                SessionModel.famille == co.famille,
-                SessionModel.statut == "terminee",
-                JourTest.date >= lim_av,
-                JourTest.date <= lim_ap,
-            )
-            .order_by(ResultatTheorie.id.asc())
-            .first()
-        )
-        if rt:
-            sess_theorie_id = rt.session_id
-
-    jour_theo = db.query(JourTest).filter(JourTest.id == rt.jour_test_id).first() if rt else None
-    date_theorie = jour_theo.date.isoformat() if jour_theo and jour_theo.date else None
-    testeur_nom_theorie = ""
-    testeur_theo_id = (rt.testeur_id if rt else None) or (jour_theo.testeur_id if jour_theo else None)
-    if testeur_theo_id:
-        t_theo = db.query(Testeur).filter(Testeur.id == testeur_theo_id).first()
-        testeur_nom_theorie = f"{t_theo.nom} {t_theo.prenom}" if t_theo else ""
-
-    sess_theorie = sessions.get(sess_theorie_id)
-    if not sess_theorie and sess_theorie_id != co.session_id:
-        sess_theorie = db.query(SessionModel).filter(SessionModel.id == sess_theorie_id).first()
-    ref_theorie = _ref(sess_theorie)
+            _sess_t = sessions.get(rt.session_id)
+            ref_theorie = (_sess_t.reference if _sess_t else None) or (f"Session {rt.session_id}" if rt.session_id else None)
+            _tid = getattr(rt, "testeur_id", None)
+            if _tid:
+                _t = db.query(Testeur).filter(Testeur.id == _tid).first()
+                testeur_nom_theorie = (f"{_t.prenom[0]}. {_t.nom}" if _t and _t.prenom else (_t.nom if _t else None))
+    # post_cloture reel = celui stocke sur le CACES (decision du moteur), pas un recalcul
+    _post_cloture_aff = bool(getattr(co, "post_cloture", False))
 
     # --- Bloc dispense (affichage CACES obtenus) ---
     dispense_info = None
@@ -188,7 +136,7 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
         "date_theorie": date_theorie,
         "session_id_theorie": sess_theorie_id,
         "session_ref_theorie": ref_theorie,
-        "post_cloture": sess_theorie_id != co.session_id,
+        "post_cloture": _post_cloture_aff,
         "dispense": dispense_info,
     }
 
