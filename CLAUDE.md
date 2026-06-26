@@ -1938,5 +1938,11 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - SÉLECTION THÉORIE — la plus récente toutes sources (P1 même session / P2 autre ouverte / P3 autre clôturée) + portier 12 mois appliqué AUSSI à la même-session : FAIT — commit f4f1c27 (`_calculer_pour_epreuve`, arbitrage par date inter-branches).
 - ARBITRAGE théorie-vs-CACES : SANS OBJET — un CACES de base ne peut avoir une origine plus récente qu'une théorie vivante (il en découle). Le greffe séquentiel (théorie d'abord, CACES sinon) est correct. Pas de chantier à ouvrir.
 - AFFICHAGE — `_get_theorie_pratique` (router) lit `resultat_theorie_id` stocké au lieu de recalculer : FAIT — commit e6286c6 (fin de la cascade dupliquée, convergence dispense/théorie).
+- CHANTIER 5 — suppression reprises (3 routes POST + UI) : FAIT — commits a666f69, b0cccef, 354fd57, 4ed7102.
+  - `POST /stagiaires/{id}/reprises/pratique/{ep_id}/supprimer` — supprime `SessionEpreuve` orpheline (session REPRISE-{id}-{famille}) ; bloqué si CACES valide associé.
+  - `POST /stagiaires/{id}/reprises/theorie/{rt_id}/supprimer` — supprime `ResultatTheorie` orpheline (+ `JourTest` si dernier) ; bloqué si CACES valide lié à ce résultat théorie.
+  - `POST /stagiaires/{id}/reprises/caces/{co_id}/supprimer` — supprime CACES repris (`ancien_numero` requis, session sentinelle REPRISE-{id}) + ses `SessionEpreuve` ; bloqué si extension valide dérivée.
+  - UI : modal `#modal-suppr-reprise` (PIN, erreur inline) ; bouton "Supprimer" sur chaque ligne CACES repris + théorie orpheline + pratique orpheline ; 3 handlers dans listener délégué (`ouvrir-suppr-reprise`, `suppr-reprise-annuler`, `suppr-reprise-confirmer`).
+  - Sécurité : PIN jamais dans l'URL (body JSON `{ pin }`), `SuppressionData(BaseModel)`.
 - RESTE À FAIRE — Options (cas 9 / chap. 6bis) : règles verrouillées dans la spec, implémentation NON CODÉE.
 - `detecter_base_theorique` (suggestion UI) : R1 amélioré FAIT — commit 60de332.
