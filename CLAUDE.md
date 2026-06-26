@@ -2002,54 +2002,60 @@ Commits : H3 (20c8f34, c9245d1), H4 (2520e55), moteur R1 (60de332), GET orphelin
 
 ---
 
-### 📐 SPEC MOTEUR CACES — algorithme complet (VERROUILLE 2026-06-26, cadrage dense — NE PAS RE-DEBATTRE)
+### 📐 SPEC MOTEUR CACES — modèle unifié (VERROUILLÉ 2026-06-26, NE PAS RE-DÉBATTRE)
 
-**Principe cardinal : NORYX ne valide jamais automatiquement. Le moteur PROPOSE (a_valider), l'operateur VALIDE (valide, numero attribue, fige).**
+> **SOURCE DE VÉRITÉ = document confidentiel « Spécification du moteur de calcul CACES® » v1.0** (hors repo, charte NORYX, 15 p.). En cas de divergence, **le document fait foi**. Ce bloc est le condensé opérationnel pour coder et vérifier sans rouvrir le document.
 
-**Formule magique (auto-coherente, inverse de l'echeance) :**
-date_origine = date_echeance − N ans + 1j. Inverse exact de : echeance = date_obtention + N ans − 1j. N = 10 (R482) / 5 (autres).
-USAGE UNIQUE : tester la regle des 12 mois (la base est-elle vivante ?). Ne calcule AUCUNE date d'affichage.
+**PRINCIPE CARDINAL** : NORYX propose (`a_valider`), l'opérateur valide (`valide`, figé). Aucune émission automatique.
 
-**BASCULE RACINE — le moteur tranche d'abord : EXTENSION ou INITIAL ?**
-Question : existe-t-il un CACES de base valide < 12 mois, d'un AUTRE cycle (autre session), pour ce candidat/famille ?
+**LA BRIQUE** : toute catégorie = couple (théorie × pratique), même implicite.
+- Brique pratique = pratique réussie LA PLUS RÉCENTE de CETTE catégorie (catégories indépendantes).
+- Brique théorique = base LA PLUS FAVORABLE (= origine la plus récente) parmi les bases VIVANTES.
+- date_obtention = max(date pratique retenue, date origine de la brique théorique).
+- date_echeance = **héritée** si base = CACES (zéro calcul) ; **calculée** `origine + N − 1j` si base = théorie.
+- N = 10 (R.482) / 5 (autres). Inverse : `origine = échéance − N ans + 1j` (miroir strict, gestion 29 fév identique).
 
-═══ BRANCHE EXTENSION (oui, base valide trouvee) ═══
-- date d'echeance = HERITEE du CACES de base (ZERO calcul — on connait deja l'expiration)
-- date d'obtention = date de la nouvelle pratique (notre systeme)
-- la base peut etre un CACES initial OU une extension, natif OU repris (la formule retrouve toujours la date de l'initial d'origine ; on n'a jamais besoin de saisir l'initial d'origine si on a une extension reprise)
-- condition anti-incoherence : date nouvelle pratique >= date d'obtention du CACES base
+**INVARIANT N°0 — PORTIER DES 12 MOIS (surplombe tout, zéro exception)** :
+Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que soit l'ordre. Sinon brique morte, couple refusé. Vaut PARTOUT, même en session unique (une session de 2 ans ne dispense JAMAIS du délai). Le portier conditionne UNIQUEMENT le rôle de base, JAMAIS la présence d'un CACES valide sur la carte.
 
-═══ BRANCHE INITIAL/INITIAUX (non, pas de base valide) ═══
-- on reunit theorie + pratique(s), que ce soit la MEME session ou des sessions DIFFERENTES (meme regle)
-- date d'obtention PAR CATEGORIE = max(date de SA pratique, date de la theorie)
-  - theorie AVANT pratiques → chaque cat a la date de SA pratique (dates differentes — ex doc Q8.1 : 1B 04/11, 5 05/11)
-  - theorie APRES pratiques → toutes a la date de la theorie (date commune — ex doc Q8.3 : tout le 06/03)
-  - meme jour → trivial
-- date d'echeance = CALCULEE : date d'obtention + N ans − 1j
-- condition pour reunir une theorie d'une AUTRE session : theorie < 12 mois
+**ARBITRAGE BASE THÉORIQUE** : (1) filtrer = ne garder que les bases vivantes (théorie < 12 mois de la pratique ; CACES dont origine reconstituée < 12 mois). (2) arbitrer = origine la plus récente gagne. Gagnante théorie → échéance calculée ; gagnante CACES → échéance héritée. Théories empilées → la plus récente.
 
-**DISPENSE = mecanique UNIQUE de proposition (non obligatoire) :**
-Propose a l'operateur d'utiliser une base "venue d'ailleurs" : soit un CACES existant (extension), soit une theorie d'une autre session. Meme mecanique dans les deux cas. Jamais imposee.
+**TABLEAU DES CAS** :
+| # | Situation | Obtention | Échéance | Réf PEPCI |
+|---|---|---|---|---|
+| 1 | Théorie + pratique même jour (même session) | date pratique | calculée | Q7 |
+| 2 | Même session, théorie AVANT pratiques | date de chaque pratique | calculée par cat | Q8.1 |
+| 3 | Même session, théorie APRÈS pratiques | date théorie (commune) | calculée depuis théorie | Q8.3 |
+| 4 | Sessions diff., théorie antérieure, 1 pratique | date pratique | calculée depuis pratique | Q8.2 |
+| 4bis | Sessions diff., pratique antérieure, théorie postérieure | date théorie (dernière brique) | calculée depuis théorie | sym. Q8.3 |
+| 5 | Sessions diff., théorie antérieure, PLUSIEURS pratiques | date de chaque pratique | 1er calculé → suivants HÉRITENT | Q8.1+Q9 |
+| 6 | Extension via CACES de base (autre cycle, vivant) | date nouvelle pratique | héritée du CACES de base | Q9 |
+| 8 | Théorie + récente orpheline ET vivante dispo | max(pratique, théorie) | recalculée sur théorie récente (favorable) | principe |
+| 9 | Ajout d'une OPTION à une catégorie déjà possédée | héritée de la cat support | héritée de la cat support | chap. 6bis |
 
-**CAS 0 — Dispense externe (manuel, hors algo auto) :**
-Candidat venu d'un AUTRE organisme avec un CACES COMPLET reconnu. Echeance saisie par l'operateur. La formule VERIFIE la coherence des dates a la saisie. (Rappel reglementaire : une epreuve SEULE d'un autre organisme n'est jamais reconnue ; seul un CACES complet l'est.)
+**SOUS-CAS ABSORBÉ (ex-cas 7)** : repassage pratique d'une cat déjà couverte = cas 6 (extension sur base éligible). Obtention màj, échéance héritée (« ne pousse pas la date »). N'arrivera jamais mais NE DOIT PAS PLANTER.
 
-**EXCEPTION meme session non cloturee :**
-PAS d'extension entre categories d'une MEME session. Toutes les pratiques + theorie de la session = initiaux groupes (regle max ci-dessus). L'extension ne concerne QUE les CACES d'un AUTRE cycle/session.
+**PRIORITÉ** : cas 8 (théorie orpheline récente vivante) l'emporte TOUJOURS sur l'héritage 5/6, sous réserve du portier.
 
-**GARDE-FOU 1 — anti-incoherence a la SAISIE :**
-Bloquer (409) la saisie d'une epreuve datee AVANT un CACES deja forme dans la famille, UNIQUEMENT si ce CACES est VALIDE (fige). Si seulement PROPOSE (a_valider) → autoriser, le moteur recalcule (initial + extension). Pas de blocage a l'interieur d'une meme session ouverte (ajout legitime = recalcul des initiaux groupes).
-Message si blocage : "epreuve anterieure a un CACES deja delivre — annulez d'abord le CACES concerne. NORYX ne rattrape jamais automatiquement."
+**PREMIER CRÉE / SUIVANTS HÉRITENT** (cœur cas 5) : 1er CACES du paquet (obtention la + ancienne) = échéance calculée → suivants héritent de SON échéance. SAUF si théorie + récente orpheline et vivante déplace la base (cas 8). C'est ce qui impose le garde-fou 2.
 
-**GARDE-FOU 2 — ordre de validation (GENERAL, pas que extension) :**
-Interdire la VALIDATION (emission) d'un CACES tant qu'un CACES ANTERIEUR (obtention plus ancienne) du meme candidat/famille, reposant sur la meme base theorique, est encore a_valider. Validation forcee du plus ancien au plus recent. Couvre l'extension qui attend son initial ET les sessions differentes.
-Concretement : bouton Emettre bloque, message "validez d'abord le CACES cat X (plus ancien)".
+**OPTIONS (chap. 6bis)** : attribut d'une catégorie, jamais autonome. (1) rattachement obligatoire à une cat support préexistante (CACES de base ou pratique validée). (2) AUCUNE date propre → hérite obtention+échéance de la cat support. (3) preuve = épreuve pratique passée AVEC l'option (jamais administratif). (4) si différée, portier 12 mois sur le CACES support. Le moteur de dates ne calcule rien de spécifique : il vérifie la légitimité du rattachement.
 
-**REDUCTION CONCEPTUELLE : 2 mecaniques seulement — INITIAL (echeance calculee, date = max(pratique,theorie) par cat) et EXTENSION (echeance heritee, zero calcul) — + dispense externe manuelle (cas 0). Les anciens "cas 1/2/3/4" (theorie avant/apres/meme jour/session cloturee) etaient de FAUSSES distinctions absorbees par la regle max et la bascule extension/initial.**
+**PROVENANCE (3 types, 2 droits)** :
+- NORYX natif → sur carte OUI ; base OUI si portier.
+- Repris d'avant-NORYX, MÊME OF → sur carte OUI (c'est son CACES) ; base OUI si portier ; traité comme natif.
+- Externe, AUTRE OF (cas 0) → sur carte **JAMAIS** (on ne certifie pas ce qu'on n'a pas testé, Q3) ; base OUI si portier ET **acceptation opérateur obligatoire**. Base potentielle INVISIBLE.
 
-**ETAT IMPLEMENTATION (a coder, nouveau chantier) :**
-- detecter_base_theorique (suggestion UI) : R1 ameliore FAIT (commit 60de332).
-- Moteur FORMATION (_calculer_pour_epreuve) : branche EXTENSION via CACES existant PAS CODEE (ne cherche que des ResultatTheorie). → CHANTIER 1.
-- Garde-fou 1 (anti-incoherence saisie, si CACES valide) : PAS code → CHANTIER 2.
-- Garde-fou 2 (ordre validation, du plus ancien au plus recent) : PAS code → CHANTIER 3.
-- A VERIFIER : recalcul des CACES PROPOSES (a_valider) quand on ajoute une epreuve oubliee (reformer initial+extension sans cache obsolete) → CHANTIER 4 / test.
+**GARDE-FOUS** :
+- **G1 saisie** : bloquer (409) épreuve datée AVANT un CACES VALIDÉ/figé de la famille. Autoriser si `a_valider` (recompose). Pas de blocage en session unique ouverte. Msg : « épreuve antérieure à un CACES déjà délivré — annulez d'abord le CACES concerné. NORYX ne rattrape jamais automatiquement. »
+- **G2 émission** : sessions différentes → émission forcée du + ancien au + récent. Bloquer validation tant qu'un CACES antérieur (même candidat/famille/base) est `a_valider` (les suivants héritent du 1er). Msg : « validez d'abord le CACES catégorie X (plus ancien). »
+- **Même session ouverte** : recomposition libre, rien figé, recalcul initiaux groupés. Pas d'ordre forcé.
+- **Émis = intouchable** : correction = annulation + réémission nouveau numéro (Q5/Q6).
+
+**ÉTAT IMPLÉMENTATION (chantiers à coder)** :
+- CHANTIER 1 — bascule arbitrage-par-origine dans `_calculer_pour_epreuve` : chercher base théorique la plus favorable (théorie OU CACES via inverse), avant la recherche théorie actuelle. Remplace l'ancien déclencheur « théorie session clôturée ». PAS CODÉ.
+- CHANTIER 2 — Garde-fou 1 (anti-incohérence saisie, si CACES valide). PAS CODÉ.
+- CHANTIER 3 — Garde-fou 2 (ordre validation, + ancien au + récent). PAS CODÉ.
+- CHANTIER 4 — vérif recalcul des CACES proposés (a_valider) sans cache obsolète. À VÉRIFIER.
+- Options (cas 9 / chap. 6bis) : règles verrouillées, implémentation à scoper.
+- `detecter_base_theorique` (suggestion UI) : R1 amélioré FAIT (commit 60de332).
