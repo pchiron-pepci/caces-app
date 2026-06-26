@@ -614,6 +614,41 @@ def supprimer_reprise_pratique(id: int, ep_id: int, data: SuppressionData, db: S
     return {"ok": True, "message": "Pratique reprise supprimee"}
 
 
+@router.post("/{id}/reprises/theorie/{rt_id}/supprimer")
+def supprimer_reprise_theorie(id: int, rt_id: int, data: SuppressionData, db: Session = Depends(get_db)):
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    rt = db.query(ResultatTheorie).filter(ResultatTheorie.id == rt_id).first()
+    if not rt:
+        raise HTTPException(status_code=404, detail="Theorie introuvable")
+    # Securite : la theorie doit appartenir a une session receptacle de CE stagiaire
+    sess = db.query(SessionModel).filter(SessionModel.id == rt.session_id).first()
+    if not sess or not (sess.reference or "").startswith(f"REPRISE-{id}-"):
+        raise HTTPException(status_code=403, detail="Theorie hors perimetre reprise de ce stagiaire")
+    # VERROU REGLEMENTAIRE : aucun CACES valide ne doit reposer sur cette theorie
+    bloquant = db.query(CacesObtenu).filter(
+        CacesObtenu.resultat_theorie_id == rt.id,
+        CacesObtenu.statut == "valide",
+    ).first()
+    if bloquant:
+        raise HTTPException(status_code=409, detail=(
+            "suppression impossible : un CACES valide repose sur cette theorie reprise. "
+            "Annulez d'abord le CACES concerne. NORYX ne rattrape jamais automatiquement."
+        ))
+    # Supprimer le JourTest associe SEULEMENT s'il n'est pas partage par un autre ResultatTheorie
+    jt_id = rt.jour_test_id
+    db.delete(rt)
+    db.flush()  # pour que le COUNT suivant ne compte plus rt
+    if jt_id is not None:
+        autres = db.query(ResultatTheorie).filter(ResultatTheorie.jour_test_id == jt_id).count()
+        if autres == 0:
+            jt = db.query(JourTest).filter(JourTest.id == jt_id).first()
+            if jt:
+                db.delete(jt)
+    db.commit()
+    return {"ok": True, "message": "Theorie reprise supprimee"}
+
+
 @router.get("/{id}/reprises/orphelines")
 def get_reprises_orphelines(id: int, db: Session = Depends(get_db)):
     from app.models.testeur import Testeur
