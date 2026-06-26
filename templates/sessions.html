@@ -43,7 +43,7 @@
                 <td class="ses-statut">
                     {% set sa = statuts_affichage[s.id] %}
                     {% if sa == 'Clôturée' %}<span class="badge green">Clôturée</span>
-                    {% elif sa == 'Validée terrain' %}<span class="badge violet" title="Validée terrain le {{ s.date_cloture_terrain.strftime('%d/%m/%Y') }}">Validée terrain</span><span class="cloture-terrain-date">clôturée terrain le {{ s.date_cloture_terrain.strftime('%d/%m/%Y') }}</span>
+                    {% elif sa == 'Validée terrain' %}<span class="badge violet" title="Validée terrain le {{ s.date_cloture_terrain.strftime('%d/%m/%Y') }}">🔒 terrain</span><span class="cloture-terrain-date">clôturée terrain le {{ s.date_cloture_terrain.strftime('%d/%m/%Y') }}</span>
                     {% elif sa == 'À réutiliser' %}<span class="badge orange">À réutiliser</span>
                     {% else %}<span class="badge blue">Ouverte</span>{% endif %}
                 </td>
