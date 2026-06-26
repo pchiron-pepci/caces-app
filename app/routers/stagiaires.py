@@ -48,6 +48,9 @@ class PratiqueRepriseCreate(BaseModel):
     testeur_id: int
     pin: str
 
+class SuppressionData(BaseModel):
+    pin: str
+
 class StagiaireCreate(BaseModel):
     nom: str
     prenom: str
@@ -581,6 +584,34 @@ def creer_reprise_pratique(id: int, data: PratiqueRepriseCreate, db: Session = D
     db.commit()
     db.refresh(ep)
     return {"message": "Pratique reprise ajoutee", "id": ep.id}
+
+
+@router.post("/{id}/reprises/pratique/{ep_id}/supprimer")
+def supprimer_reprise_pratique(id: int, ep_id: int, data: SuppressionData, db: Session = Depends(get_db)):
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    ep = db.query(SessionEpreuve).filter(SessionEpreuve.id == ep_id).first()
+    if not ep:
+        raise HTTPException(status_code=404, detail="Epreuve introuvable")
+    # Securite : l'epreuve doit appartenir a une session receptacle de CE stagiaire
+    sess = db.query(SessionModel).filter(SessionModel.id == ep.session_id).first()
+    if not sess or not (sess.reference or "").startswith(f"REPRISE-{id}-"):
+        raise HTTPException(status_code=403, detail="Epreuve hors perimetre reprise de ce stagiaire")
+    # VERROU REGLEMENTAIRE : aucun CACES valide ne doit reposer sur cette pratique
+    bloquant = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == ep.stagiaire_id,
+        CacesObtenu.session_id == ep.session_id,
+        CacesObtenu.categorie == ep.categorie,
+        CacesObtenu.statut == "valide",
+    ).first()
+    if bloquant:
+        raise HTTPException(status_code=409, detail=(
+            "suppression impossible : un CACES valide repose sur cette pratique reprise. "
+            "Annulez d'abord le CACES concerne. NORYX ne rattrape jamais automatiquement."
+        ))
+    db.delete(ep)
+    db.commit()
+    return {"ok": True, "message": "Pratique reprise supprimee"}
 
 
 @router.get("/{id}/reprises/orphelines")
