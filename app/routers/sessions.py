@@ -1148,6 +1148,7 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
         CacesObtenu.famille == data.famille,
         CacesObtenu.statut == "valide",
         CacesObtenu.date_obtention > data.date,
+        CacesObtenu.session_id != data.session_id,
     ).first()
     if caces_valide_posterieur:
         raise HTTPException(status_code=409, detail=(
