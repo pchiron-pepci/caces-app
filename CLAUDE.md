@@ -1931,9 +1931,9 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - **Émis = intouchable** : correction = annulation + réémission nouveau numéro (Q5/Q6).
 
 **ÉTAT IMPLÉMENTATION (chantiers à coder)** :
-- CHANTIER 1 — bascule arbitrage-par-origine dans `_calculer_pour_epreuve` : chercher base théorique la plus favorable (théorie OU CACES via inverse), avant la recherche théorie actuelle. Remplace l'ancien déclencheur « théorie session clôturée ». PAS CODÉ.
-- CHANTIER 2 — Garde-fou 1 (anti-incohérence saisie, si CACES valide). PAS CODÉ.
-- CHANTIER 3 — Garde-fou 2 (ordre validation, + ancien au + récent). PAS CODÉ.
+- CHANTIER 1 — bascule arbitrage-par-origine dans `_calculer_pour_epreuve` : cas 6 extension via `CacesObtenu` existant (écheance héritée). FAIT — commit 42ea39f (`app/services/caces_obtenus.py`).
+- CHANTIER 2 — Garde-fou G1 (anti-incohérence saisie) : bloque `add_epreuve` si épreuve antérieure à un CACES valide inter-sessions, même famille. FAIT — commits 92a2527 + e634c3c (`app/routers/sessions.py`).
+- CHANTIER 3 — Garde-fou G2 (ordre validation chronologique sur base théorique partagée) : bloque `valider_caces` si un `a_valider` antérieur partage la même théorie fondatrice ou le même `caces_initial_id`. FAIT — commit 61ec4ee (`app/routers/caces_obtenus.py`).
 - CHANTIER 4 — vérif recalcul des CACES proposés (a_valider) sans cache obsolète. À VÉRIFIER.
 - Options (cas 9 / chap. 6bis) : règles verrouillées, implémentation à scoper.
 - `detecter_base_theorique` (suggestion UI) : R1 amélioré FAIT (commit 60de332).
