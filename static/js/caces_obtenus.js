@@ -158,6 +158,15 @@ document.addEventListener('DOMContentLoaded', function () {
             if (sid && scId) window.open('/api/sessions/' + sid + '/candidats/' + scId + '/dispense-fichier', '_blank');
         }
     });
+
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'recherche-valides') {
+            const q = e.target.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+            document.querySelectorAll('#liste-valides [data-search]').forEach(function(row) {
+                row.style.display = (!q || row.dataset.search.includes(q)) ? '' : 'none';
+            });
+        }
+    });
 });
 
 // ===== ÉTAT =====
@@ -559,7 +568,14 @@ function _renderLigne(co, idx, wNo) {
         : `<button data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}" data-categorie="${co.categorie}" data-famille="${co.famille}"
                 style="background:none;border:none;cursor:pointer;font-size:11px;color:#e65100;font-weight:600;padding:0;white-space:nowrap;">↩ Annuler</button>`;
 
-    return `<div data-caces-id="${co.id}"
+    const _search = (
+        (co.stagiaire_nom || '') + ' ' + (co.stagiaire_prenom || '') + ' ' +
+        (co.famille || '') + ' ' + (co.categorie || '') + ' ' +
+        _formatNo(co) + ' ' +
+        (co.date_obtention || '') + ' ' + (co.date_echeance || '')
+    ).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+    return `<div data-caces-id="${co.id}" data-search="${_search}"
          style="display:flex;align-items:center;padding:9px 16px;background:${bg};${annule ? 'opacity:0.65;' : ''}border-bottom:1px solid #eef0f6;gap:0;">
         <div style="width:${wNo};min-width:${wNo};">${noBadge}</div>
         <div style="width:82px;min-width:82px;">${badgeStatut(co.statut)}</div>
