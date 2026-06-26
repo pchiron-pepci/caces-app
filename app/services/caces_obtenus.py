@@ -209,8 +209,41 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
         date_obtention = date_prat
         echeance = None
     else:
-        # Cas 1/2 : théorie ≤ pratique, non-extension → date pratique
+        # Cas 1/2/5 : theorie <= pratique. Chercher un CACES de base d'une AUTRE session
+        # (natif ou reprise) dont l'origine reconstituee est dans les 12 mois ET non posterieure
+        # a la theorie native -> alors EXTENSION (echeance heritee, cas 5/6). Sinon calcul (cas 2).
         date_obtention = date_prat
+        _caces_base = None
+        for _c in (
+            db.query(CacesObtenu)
+            .filter(
+                CacesObtenu.stagiaire_id == ep.stagiaire_id,
+                CacesObtenu.famille == ep.famille,
+                CacesObtenu.statut.in_(["valide", "a_valider"]),
+                CacesObtenu.date_echeance.isnot(None),
+                CacesObtenu.session_id != ep.session_id,
+            )
+            .order_by(CacesObtenu.date_echeance.desc())
+            .all()
+        ):
+            _orig = _date_initiale_depuis_echeance(_c.famille, _c.date_echeance)
+            # origine du CACES de base dans la fenetre 12 mois ET non posterieure a la theorie native
+            if _limite <= _orig <= ep.date and _orig <= date_theo:
+                _caces_base = _c
+                break
+        if _caces_base is not None:
+            # EXTENSION : echeance heritee (resolue en passe 2 via caces_source_id)
+            return {
+                "date_obtention":         date_prat,
+                "date_echeance":          _caces_base.date_echeance,
+                "options_obtenues":       ep.options_obtenues,
+                "post_cloture":           True,
+                "resultat_theorie_id":    None,
+                "theorie_source_id":      rt.id if rt else None,
+                "dispense_externe_sc_id": None,
+                "caces_source_id":        _caces_base.id,
+            }
+        # Cas 2 pur : pas de CACES de base autre session -> calcul normal
         echeance = _date_echeance(ep.famille, date_prat)
 
     return {
