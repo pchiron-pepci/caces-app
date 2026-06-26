@@ -1,22 +1,32 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── Recherche ──────────────────────────────────────────────────────────
-    const searchInput = document.getElementById('search');
-    if (searchInput) {
-        searchInput.addEventListener('input', function () {
-            const q = this.value.toLowerCase();
-            document.querySelectorAll('#tbody tr:not(.hist-row)').forEach(function (tr) {
-                const sid = tr.dataset.stagiaireId;
-                const visible = tr.textContent.toLowerCase().includes(q);
-                tr.style.display = visible ? '' : 'none';
-                // hide hist row when stagiaire row is hidden
-                if (sid) {
-                    const histRow = document.getElementById('hist-' + sid);
-                    if (histRow && !visible) histRow.style.display = 'none';
-                }
-            });
+    // ── Recherche + filtre inactifs ────────────────────────────────────────
+    function filtrer() {
+        var q = ((document.getElementById('search') || {}).value || '').toLowerCase();
+        var showInactifs = !!(document.getElementById('chk-inactifs') || {}).checked;
+        var lbl = document.getElementById('lbl-inactifs');
+        if (lbl) {
+            lbl.style.background = showInactifs ? '#e3f2fd' : '#f0f2f7';
+            lbl.style.borderColor = showInactifs ? '#1565c0' : '#c8d8f0';
+        }
+        document.querySelectorAll('#tbody tr:not(.hist-row)').forEach(function (tr) {
+            var sid = tr.dataset.stagiaireId;
+            if (tr.dataset.inactif && !showInactifs) {
+                tr.style.display = 'none';
+                if (sid) { var h = document.getElementById('hist-' + sid); if (h) h.style.display = 'none'; }
+                return;
+            }
+            var visible = tr.textContent.toLowerCase().includes(q);
+            tr.style.display = visible ? '' : 'none';
+            if (sid) { var h = document.getElementById('hist-' + sid); if (h && !visible) h.style.display = 'none'; }
         });
     }
+
+    var searchInput = document.getElementById('search');
+    if (searchInput) searchInput.addEventListener('input', filtrer);
+    var chkInactifs = document.getElementById('chk-inactifs');
+    if (chkInactifs) chkInactifs.addEventListener('change', filtrer);
+    filtrer();
 
     // ── Tri colonnes ──────────────────────────────────────────────────────
     let sortColIdx = null;

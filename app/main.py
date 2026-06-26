@@ -958,6 +958,13 @@ def page_stagiaires(request: Request):
         liste = db.query(Stagiaire).filter(Stagiaire.actif == 1).order_by(Stagiaire.nom, Stagiaire.prenom).all()
         familles = db.query(Famille).filter(Famille.actif == True).order_by(Famille.code).all()
         familles_data = [{"code": f.code, "libelle": f.libelle} for f in familles]
+        actifs_ids = set(
+            row[0] for row in db.query(SessionCandidat.stagiaire_id)
+            .join(Session, Session.id == SessionCandidat.session_id)
+            .filter(Session.statut.notin_(["terminee", "annulee"]))
+            .distinct()
+            .all()
+        )
         return templates.TemplateResponse(
             request=request,
             name="stagiaires.html",
@@ -965,6 +972,7 @@ def page_stagiaires(request: Request):
                 "page": "stagiaires",
                 "stagiaires": liste,
                 "familles_reprise": familles_data,
+                "stagiaires_actifs": actifs_ids,
             }
         )
     finally:

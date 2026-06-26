@@ -6,6 +6,10 @@
 <div class="toolbar">
     <div class="toolbar-left">
         <input type="text" id="search" value="" placeholder="🔍 Rechercher un stagiaire..." class="search-input" autocomplete="new-password" data-lpignore="true" data-1p-ignore data-bwignore>
+        <label for="chk-inactifs" id="lbl-inactifs" title="Afficher tous les stagiaires" style="display:inline-flex; align-items:center; cursor:pointer; background:#f0f2f7; border:1.5px solid #c8d8f0; border-radius:8px; padding:6px 11px; font-size:15px; user-select:none;">
+            <input type="checkbox" id="chk-inactifs" style="position:absolute; opacity:0; width:0; height:0;">
+            👁
+        </label>
     </div>
     <div class="toolbar-right">
         <button style="background:none; border:none; font-size:22px; cursor:pointer; padding:4px 6px; line-height:1;" data-action="nouveau-stagiaire" title="Ajouter un stagiaire">🧑‍🎓</button>
@@ -27,7 +31,7 @@
         </thead>
         <tbody id="tbody">
             {% for s in stagiaires %}
-            <tr data-stagiaire-id="{{ s.id }}">
+            <tr data-stagiaire-id="{{ s.id }}"{% if s.id not in stagiaires_actifs %} data-inactif="1"{% endif %}>
                 <td class="stag-photo" style="text-align:center; vertical-align:middle; width:56px;">
                     <div class="photo-cell photo-cell-round" data-stag-id="{{ s.id }}" data-stag-nom="{{ s.nom }} {{ s.prenom }}" style="width:48px; height:48px;">
                         {% if s.photo_base64 %}
