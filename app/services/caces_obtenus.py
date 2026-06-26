@@ -322,6 +322,18 @@ def calculer_et_synchroniser(db: Session) -> list:
 
     db.commit()
 
+    # --- NETTOYAGE : supprimer les CACES a_valider ORPHELINS ---
+    # Un a_valider est orphelin si son (stagiaire, session, categorie) ne correspond
+    # plus a aucune epreuve obtenue (ex : epreuve repassee en echec = erreur de saisie).
+    # On ne touche JAMAIS les 'valide' ni les 'annule'.
+    triplets_ok = {
+        (e.stagiaire_id, e.session_id, e.categorie) for e in epreuves_ok
+    }
+    for co in db.query(CacesObtenu).filter(CacesObtenu.statut == "a_valider").all():
+        if (co.stagiaire_id, co.session_id, co.categorie) not in triplets_ok:
+            db.delete(co)
+    db.commit()
+
     return (
         db.query(CacesObtenu)
         .filter(CacesObtenu.statut == "a_valider")
