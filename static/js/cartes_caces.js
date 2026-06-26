@@ -1,6 +1,7 @@
 var _emiseData = [];
 var _emiseSort = { col: 4, asc: false }; // par défaut : date desc
 var _emiseFilter = '';
+var _emiseShowAll = false;
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -114,10 +115,21 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.target === this) _fermerMotif();
     });
 
-    // --- Recherche cartes émises ---
+    // --- Recherche + toggle statut cartes émises ---
     document.addEventListener('input', function (e) {
         if (e.target && e.target.id === 'recherche-emises') {
             _emiseFilter = e.target.value;
+            _renderTableEmises();
+        }
+    });
+    document.addEventListener('change', function (e) {
+        if (e.target && e.target.id === 'chk-emises-all') {
+            _emiseShowAll = e.target.checked;
+            var lbl = document.getElementById('lbl-emises-all');
+            if (lbl) {
+                lbl.style.background = _emiseShowAll ? '#e3f2fd' : '#f0f2f7';
+                lbl.style.borderColor = _emiseShowAll ? '#1565c0' : '#c8d8f0';
+            }
             _renderTableEmises();
         }
     });
@@ -450,6 +462,7 @@ function _renderTableEmises() {
         const cmp = va < vb ? -1 : va > vb ? 1 : 0;
         return _emiseSort.asc ? cmp : -cmp;
     }).filter(function (c) {
+        if (!_emiseShowAll && c.statut !== 'emise') return false;
         if (!_q) return true;
         const s = ((c.stagiaire_nom || '') + ' ' + (c.stagiaire_prenom || '') + ' ' + (c.famille || '') + ' ' + (c.numero_carte || ''))
             .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
