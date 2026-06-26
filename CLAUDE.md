@@ -1930,10 +1930,13 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - **Même session ouverte** : recomposition libre, rien figé, recalcul initiaux groupés. Pas d'ordre forcé.
 - **Émis = intouchable** : correction = annulation + réémission nouveau numéro (Q5/Q6).
 
-**ÉTAT IMPLÉMENTATION (chantiers à coder)** :
-- CHANTIER 1 — bascule arbitrage-par-origine dans `_calculer_pour_epreuve` : cas 6 extension via `CacesObtenu` existant (écheance héritée). FAIT — commit 42ea39f (`app/services/caces_obtenus.py`).
-- CHANTIER 2 — Garde-fou G1 (anti-incohérence saisie) : bloque `add_epreuve` si épreuve antérieure à un CACES valide inter-sessions, même famille. FAIT — commits 92a2527 + e634c3c (`app/routers/sessions.py`).
-- CHANTIER 3 — Garde-fou G2 (ordre validation chronologique sur base théorique partagée) : bloque `valider_caces` si un `a_valider` antérieur partage la même théorie fondatrice ou le même `caces_initial_id`. FAIT — commit 61ec4ee (`app/routers/caces_obtenus.py`).
-- CHANTIER 4 — vérif recalcul des CACES proposés (a_valider) sans cache obsolète. À VÉRIFIER.
-- Options (cas 9 / chap. 6bis) : règles verrouillées, implémentation à scoper.
-- `detecter_base_theorique` (suggestion UI) : R1 amélioré FAIT (commit 60de332).
+**ÉTAT IMPLÉMENTATION** :
+- CHANTIER 1 — extension via CACES existant (échéance héritée) : FAIT + testé OK — commit 42ea39f (`app/services/caces_obtenus.py`).
+- CHANTIER 2 — G1 anti-incohérence saisie (épreuve antérieure à un CACES valide inter-sessions, même famille) : FAIT — commits 92a2527 + e634c3c (`app/routers/sessions.py`).
+- CHANTIER 3 — G2 ordre de validation (base théorique partagée : même théorie fondatrice ou même `caces_initial_id`) : FAIT + testé OK — commit 61ec4ee (`app/routers/caces_obtenus.py`).
+- CHANTIER 4 — fiabilité liens `caces_initial_id` / `resultat_theorie_id` : vérifié par lecture (3 branches `_appliquer_caces`, réécriture systématique sur `a_valider`, pas de cache obsolète). Inspection des données réelles non faite (base dev jetable).
+- SÉLECTION THÉORIE — la plus récente toutes sources (P1 même session / P2 autre ouverte / P3 autre clôturée) + portier 12 mois appliqué AUSSI à la même-session : FAIT — commit f4f1c27 (`_calculer_pour_epreuve`, arbitrage par date inter-branches).
+- ARBITRAGE théorie-vs-CACES : SANS OBJET — un CACES de base ne peut avoir une origine plus récente qu'une théorie vivante (il en découle). Le greffe séquentiel (théorie d'abord, CACES sinon) est correct. Pas de chantier à ouvrir.
+- AFFICHAGE — `_get_theorie_pratique` (router) lit `resultat_theorie_id` stocké au lieu de recalculer : FAIT — commit e6286c6 (fin de la cascade dupliquée, convergence dispense/théorie).
+- RESTE À FAIRE — Options (cas 9 / chap. 6bis) : règles verrouillées dans la spec, implémentation NON CODÉE.
+- `detecter_base_theorique` (suggestion UI) : R1 amélioré FAIT — commit 60de332.
