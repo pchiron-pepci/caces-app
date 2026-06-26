@@ -649,6 +649,44 @@ def supprimer_reprise_theorie(id: int, rt_id: int, data: SuppressionData, db: Se
     return {"ok": True, "message": "Theorie reprise supprimee"}
 
 
+@router.post("/{id}/reprises/caces/{co_id}/supprimer")
+def supprimer_reprise_caces(id: int, co_id: int, data: SuppressionData, db: Session = Depends(get_db)):
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    co = db.query(CacesObtenu).filter(CacesObtenu.id == co_id).first()
+    if not co:
+        raise HTTPException(status_code=404, detail="CACES repris introuvable")
+    # Doit etre une VRAIE reprise CACES complet (ancien_numero rempli)
+    if not co.ancien_numero:
+        raise HTTPException(status_code=400, detail="Ce CACES n'est pas une reprise (pas d'ancien numero)")
+    # Securite : session SENTINELLE EXACTE "REPRISE-{id}" (PAS un receptacle "REPRISE-{id}-famille")
+    sess = db.query(SessionModel).filter(SessionModel.id == co.session_id).first()
+    if not sess or (sess.reference or "") != f"REPRISE-{id}":
+        raise HTTPException(status_code=403, detail="CACES hors perimetre sentinelle de ce stagiaire")
+    # VERROU REGLEMENTAIRE : aucun AUTRE CACES valide ne doit avoir cette reprise pour base d'extension
+    bloquant = db.query(CacesObtenu).filter(
+        CacesObtenu.caces_initial_id == co.id,
+        CacesObtenu.statut == "valide",
+    ).first()
+    if bloquant:
+        raise HTTPException(status_code=409, detail=(
+            "suppression impossible : un CACES valide a ete forme par extension de cette reprise. "
+            "Annulez d'abord le CACES concerne. NORYX ne rattrape jamais automatiquement."
+        ))
+    # Supprimer le CacesObtenu repris ET la SessionEpreuve associee (meme triplet, session sentinelle)
+    _sid, _sess_id, _cat = co.stagiaire_id, co.session_id, co.categorie
+    eps = db.query(SessionEpreuve).filter(
+        SessionEpreuve.stagiaire_id == _sid,
+        SessionEpreuve.session_id == _sess_id,
+        SessionEpreuve.categorie == _cat,
+    ).all()
+    db.delete(co)
+    for ep in eps:
+        db.delete(ep)
+    db.commit()
+    return {"ok": True, "message": "CACES repris supprime"}
+
+
 @router.get("/{id}/reprises/orphelines")
 def get_reprises_orphelines(id: int, db: Session = Depends(get_db)):
     from app.models.testeur import Testeur
