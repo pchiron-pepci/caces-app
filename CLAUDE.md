@@ -1944,5 +1944,11 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
   - `POST /stagiaires/{id}/reprises/caces/{co_id}/supprimer` — supprime CACES repris (`ancien_numero` requis, session sentinelle REPRISE-{id}) + ses `SessionEpreuve` ; bloqué si extension valide dérivée.
   - UI : modal `#modal-suppr-reprise` (PIN, erreur inline) ; bouton "Supprimer" sur chaque ligne CACES repris + théorie orpheline + pratique orpheline ; 3 handlers dans listener délégué (`ouvrir-suppr-reprise`, `suppr-reprise-annuler`, `suppr-reprise-confirmer`).
   - Sécurité : PIN jamais dans l'URL (body JSON `{ pin }`), `SuppressionData(BaseModel)`.
+- CHANTIER 6 — cas 5 : extension avec théorie native (branche `else` de `_calculer_pour_epreuve`) : FAIT — commit 609d81e.
+  - Si théorie ≤ pratique ET pas post_cloture : cherche un CACES de base autre-session dont l'origine reconstituée est dans la fenêtre 12 mois ET ≤ date théorie.
+  - Si trouvé → retourne extension (`post_cloture=True`, `caces_source_id`, échéance héritée). Sinon → cas 2 pur (calcul normal).
+- CHANTIER 7 — affichage dispense implicite pour extensions cas 5/6 : FAIT — commit fc175b0 (`app/routers/caces_obtenus.py`).
+  - Fallback dans `_get_theorie_pratique` : si `dispense_info is None` et `co.caces_initial_id` rempli, construit une dispense `{"origine":"interne", "date_base": base.date_obtention, ...}` à partir du CACES initial.
+  - Affiché par `ligneDispense()` JS comme "🪪 Dispense interne · base du JJ/MM/AAAA".
 - RESTE À FAIRE — Options (cas 9 / chap. 6bis) : règles verrouillées dans la spec, implémentation NON CODÉE.
 - `detecter_base_theorique` (suggestion UI) : R1 amélioré FAIT — commit 60de332.
