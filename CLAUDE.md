@@ -114,7 +114,7 @@ app/
 |---|---|---|
 | `testeurs.py` | `/api/testeurs` | CRUD testeurs |
 | `stagiaires.py` | `/stagiaires` | CRUD stagiaires + GET `/{id}/historique` (sessions + résultats théorie/pratique) + GET `/{id}/caces-valides` (CacesObtenu valides avec testeur) + GET `/{id}/cartes-emises` (CarteCaces statut=emise : numero_carte, famille, date_generation) |
-| `sessions.py` | `/api/sessions` | Gestion sessions CACES® |
+| `sessions.py` | `/api/sessions` | Gestion sessions CACES® + justificatif théorie + justificatif grille pratique (`POST`/`GET /{session_id}/pratique/justificatif/{epreuve_id}`) |
 | `admin.py` | `/admin` | Catégories, habilitations, lieux |
 | `auth.py` | `/auth` | Login JWT |
 | `upload.py` | — | Import fichiers |
@@ -180,6 +180,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `/api/sessions/\d+/theorie/reouvrir/\d+/\d+` | POST | middleware cookie + PIN formateur dans body — terrain+admin+utilisateur (whitelisté _verifier_role) |
 | `/api/sessions/\d+/theorie/reponses-degrade` | POST | middleware cookie + PIN formateur dans body — testeur corrige papier et saisit les notes (whitelisté _verifier_role) |
 | `/api/sessions/\d+/theorie/justificatif/\d+/\d+` | POST | middleware cookie + PIN formateur dans body — upload justificatif PDF (terrain + back-office, whitelisté _verifier_role) |
+| `/api/sessions/\d+/pratique/justificatif/\d+` | POST | middleware cookie + PIN formateur dans body — upload justificatif grille pratique (même whitelist _verifier_role que théorie) |
 
 `rouvrir-terrain` n'est PAS whitelisté — réservé admin/utilisateur.
 
@@ -221,7 +222,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
 | `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
 | `SessionCandidat` | `session_candidats` | Inscription d'un stagiaire à une session ; `stagiaire_id`, `theorie_dispensee` Boolean, `dispense_note` Text, `dispense_fichier_cle` VARCHAR(500) (clé R2, JAMAIS le binaire), `dispense_fichier_nom` VARCHAR(255), `dispense_fichier_type` VARCHAR(100), `dispense_date` DATE (date obtention CACES externe justifiant la dispense — futur calcul validité 12 mois), `actif` Boolean (legacy — hard delete depuis 2026-06-22) |
-| `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` |
+| `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` ; `justificatif_cle` VARCHAR(500) nullable (clé R2) + `justificatif_nom` VARCHAR(255) nullable — grille d'évaluation pratique par candidat/catégorie, 1 fichier (remplacement à chaque upload), multi-format (PDF/Excel/Word/images, 10 Mo max), stocké R2 (préfixe `justificatifs/pratique`), content_type déduit de l'extension, lecture inline pour PDF/images sinon attachment ; ajoutés par migration startup `ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS` |
 | `ResultatTheorie` | `resultats_theorie` | UNIQUE `(jour_test_id, stagiaire_id)` ; `mode` VARCHAR(12) NOT NULL DEFAULT 'numerique' ('numerique'/'degrade') ; `bloque` Boolean défaut False — positionné comme SE, empêche la recherche de théorie dans `calculer_et_synchroniser` ; reprise par écrasement si mode='numerique', 409 si mode='degrade' ; `justificatif_pdf` Text nullable (base64) ; `justificatif_nom` VARCHAR(255) nullable — ajoutés par migration startup + `migrate_justificatif_theorie.py` ; update notes ne touche JAMAIS justificatif (opérations indépendantes) |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete ; `option_pe`/`option_tel` legacy — remplacés par `HabilitationOption` |
 | `OptionCategorie` | `option_categorie` | table de référence des options disponibles par famille/catégorie ; codes : PE=Porte-engins, TEL=Télécommande, CC=Conduite cabine, TR=Translation sur rails, CEC=Circulation en charge ; `incluse` Boolean (défaut False) : option obligatoire incluse dans l'UT de la catégorie (pas de +0.5 UT) vs option facultative ; peuplé par `init_options.py` |
@@ -327,6 +328,7 @@ python init_questions_r482.py
 | Moyenne | Convergence justificatif dispense → table Justificatif (fichier seulement) | ÉCARTÉ (non-convergence assumée) |
 | Moyenne | Corrections couleur pastille FORM. ardoise + footer Actions en ligne | à faire |
 | Haute | Migration justificatif théorie base64 → R2 | ✅ fait |
+| Haute | Justificatif grille d'évaluation pratique par candidat/catégorie (R2 multi-format, badge 📎/⚠ sur la ligne sous l'option, PIN formateur, rappel fixe dans la modale) | ✅ fait |
 | Haute | Export ZIP enrichi (formation + documents + dispense) | ✅ fait |
 | Haute | Moteur CACES — écart A corrigé (théorie la plus récente, date desc) | ✅ fait |
 | Haute | Moteur CACES — écart B (fenêtre 12 mois sens unique) | ✅ fait |
