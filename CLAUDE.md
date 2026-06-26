@@ -1623,116 +1623,17 @@ Référence = `dispense_date` (date de la base externe). N = 10 ans (R482) / 5 a
 
 ---
 
-### 🔍 CADRE DÉFINITIF : détection de dispense de théorie (sert AUSSI au calcul des dates CACES)
+### 🔧 État schéma CacesObtenu (pré-chantier 1 — à ré-arbitrer)
 
-**DÉCOUVERTE MAJEURE :** cette logique ne couvre PAS que la dispense. La même mécanique (trouver la base théorique valable, distinguer extension/non-extension, prendre la plus récente) sert AUSSI à la détermination des dates de CACES. Dispense et calcul de dates = deux usages de la MÊME logique sous-jacente → à terme, source de vérité commune (réutiliser/étendre `caces_obtenus.py`, pas dupliquer).
+> L'ancien cadrage moteur (modèle « post_cloture / extension par session clôturée / deux passes / écart C ») a été **remplacé par la SPEC MOTEUR unifiée** (voir plus bas + document confidentiel v1.0). L'ancien raisonnement reste dans l'historique git.
 
-**PRINCIPE :** système PROPOSE/INFORME, opérateur VALIDE TOUJOURS (jamais auto-cochage). Proposition VÉRIFIABLE (infos source + lien cliquable dans la modale).
+**Colonnes réellement présentes sur `CacesObtenu`** (à confronter à la spec unifiée au CHANTIER 1, pas à réutiliser aveuglément) :
+- `post_cloture` (Boolean) — ancien déclencheur d'extension. Plus utilisé par la spec unifiée (arbitrage par origine). Probablement à abandonner.
+- `resultat_theorie_id` (FK ResultatTheorie, nullable) — théorie ayant fondé le CACES. Utile : détecter une théorie orpheline.
+- `caces_initial_id` (FK CacesObtenu auto-réf, nullable) — CACES initial dont une extension hérite l'échéance. Utile : héritage d'échéance.
+- `dispense_externe_sc_id` (FK SessionCandidat, nullable) — base externe (cas 0).
 
-**RÈGLE 12 MOIS :** théorie réussie valable 12 mois. « < 12 mois » = date_ref + 1 an − 1 jour >= aujourd'hui.
-
-**RÈGLE DE DÉCISION : LA PLUS RÉCENTE GAGNE.** Collecter TOUTES les bases candidates, garder la date la PLUS RÉCENTE (bénéfice candidat). PAS de hiérarchie CACES vs théorie.
-- Source A : `ResultatTheorie` `obtenue==True`, même famille (via `rt.session_id` → `Session.famille`) → date = `JourTest.date` (via `rt.jour_test_id`).
-- Source B : `CacesObtenu` valide, même famille, `post_cloture==False` (NON-extension) → date = `date_obtention`. Extensions (`post_cloture==True`) IGNORÉES.
-
-**5 cas valides :**
-- **Cas 1** : théorie+pratique même jour (théorie 01/04/2026 + cat A même jour ; revient cat F 15/06/2026 → réf 01/04/2026, limite 31/03/2027 → dispense OK).
-- **Cas 2** : théorie avant, pratiques tardives, MÊME session NON clôturée (§8) : théorie 01/11/2024, pratiques R489 1B 15/09/2025 + 5 20/10/2025 → obtentions normales (éch. 2030), PAS extensions même si ~1 an et CACES déjà délivrés. Session ouverte = continuité.
-- **Cas 3** : extension après clôture (§9) : CACES cat A 30/06/2026 (éch 29/06/2036), session clôturée, NOUVELLE session cat F 31/05/2027 → réf CACES cat A (non-ext), limite 29/06/2027 → dispense OK. Cat F délivrée 31/05/2027 mais échéance = CACES initial 29/06/2036. Cat F est `post_cloture==True` → PAS nouvelle référence.
-- **Cas 4** : théorie périmée : déc 2027 veut cat B1, réf 30/06/2026 limite 29/06/2027 dépassée → repasser théorie. Nouveau CACES (`post_cloture==False`) devient nouvelle référence.
-- **Cas 5** : plusieurs bases : vieille théorie 10/01/2026 + CACES non-ext 05/05/2026 → garder le plus récent (05/05/2026), dispense jusqu'au 04/05/2027.
-
-**NOTION EXTENSION (§9) = `post_cloture==True` :** certificat dans famille ou candidat a DÉJÀ un CACES, repasse QUE la pratique, théorie héritée, SESSION DIFFÉRENTE et CLÔTURÉE, échéance = CACES initial. La CLÔTURE de session fait basculer en extension. Session ouverte = continuité (`post_cloture==False`).
-
-**⚠️ PRÉ-REQUIS ÉTAPE 0 :** `post_cloture` PAS persisté aujourd'hui (variable locale éphémère). AJOUTER champ Boolean `post_cloture` sur `CacesObtenu`, écrit au calcul ET recalcul. Sans ça, impossible d'exclure les extensions → dispense FAUSSE. Base dev vidée bientôt → pas de souci anciens.
-
-**FRONTIÈRE :** dispense = donnée brute ; calcul échéance (10 ans R.482 / 5 ans sinon) = moteur CACES uniquement.
-
-**SÉPARATION DES RESPONSABILITÉS :**
-- La dispense capture une DONNÉE BRUTE : date + origine (interne/externe) + pointeur (si interne) ou justificatif PDF (si externe).
-- INTERNE (notre base) : système connaît la date, propose, stocke POINTEUR + trace décision. Pas de justificatif (preuve en base).
-- EXTERNE (autre OTC) : date SAISIE opérateur OBLIGATOIRE (bloquant) + justificatif PDF R2.
-- **Modèle futur (colonnes `SessionCandidat`) :** `dispense_origine`, `dispense_source_type`, `dispense_source_id`, `dispense_date` (obligatoire si externe).
-
-**Comportement modale 3 temps :** (1) sélection stagiaire → recherche base interne → si trouvée INFORME sans cocher ; (2) opérateur coche ; (3) si coché : externe → date + justificatif obligatoires, interne → lie le pointeur.
-
-**Couches du chantier (ordre à définir) :** (a) étape 0 : persister `post_cloture` sur `CacesObtenu` ; (b) étape A : détection + proposition vérifiable ; (c) modèle stockage origine/pointeur ; (d) impact moteur CACES (dispense externe comme 4e source).
-
----
-
-### 🔍 ALGORITHME CONSOLIDÉ : base théorique valable (dispense ET calcul dates CACES)
-
-**Pour un stagiaire + une famille, collecter TOUTES les bases candidates et garder la PLUS RÉCENTE (bénéfice candidat = validité maximale). 3 sources :**
-
-**Source R1 — CACES de référence :** `CacesObtenu` NON-extension (`post_cloture==False`), statut valide, le PLUS RÉCENT par `date_obtention`, `date_obtention` < 12 mois. Plusieurs CACES « initiaux » → le plus récent. Base = `date_obtention`.
-
-**Source R2-a — théorie de la SESSION COURANTE (continuité §8) :** la théorie réussie (`ResultatTheorie` `obtenue==True`) de la session où on inscrit le candidat reste une base, MÊME SI elle a déjà fondé des CACES dans cette session, TANT QUE la session n'est pas clôturée. Base = date du jour de théorie (`JourTest.date`). Pas besoin de lien théorie↔CACES pour cette source.
-
-**Source R2-b — théorie ORPHELINE d'une AUTRE session :** théorie réussie, autre session, SANS AUCUN CACES rattaché dans la famille, < 12 mois. Base = date du jour de théorie. (Cas typique : candidat a repassé sa théorie ailleurs mais pas encore passé de pratique dans la famille.)
-
-**DÉCISION :** base retenue = la PLUS RÉCENTE parmi R1, R2-a, R2-b. Valable/dispensable si base + 1 an − 1 jour >= aujourd'hui.
-
-**POINT CLÉ — une théorie peut fonder PLUSIEURS CACES :** une seule théorie sert à plusieurs catégories (1 théorie + N pratiques → N CACES). Donc « consommée » ne veut PAS dire « ne peut plus servir » : une théorie ayant fondé 3 CACES peut encore dispenser une 4e cat si < 12 mois. La notion d'orpheline (R2-b) = « n'a AUCUN CACES rattaché dans la famille », pas « jamais utilisée ». R2-a (même session) est l'exception : la théorie de la session courante reste base même si elle a fondé des CACES, par continuité §8.
-
-**IMPACT TECHNIQUE — lien théorie↔CACES (pré-requis R0) :** `CacesObtenu` n'a AUCUN lien vers la `ResultatTheorie` qui l'a fondée (vérifié : pas de `resultat_theorie_id`, aucune jointure RT↔CACES). Pour R2-b (savoir si une théorie a un CACES rattaché), il faut soit ajouter un champ `resultat_theorie_id` sur `CacesObtenu` (renseigné au calcul, recalculé comme `post_cloture` — donnée dérivée jamais figée), soit déduire de façon fiable. R2-a ne nécessite PAS ce lien. Décision lien explicite vs déduction : EN COURS (attention : une théorie fonde plusieurs CACES → le lien doit gérer le 1-vers-N ; « orpheline » = AUCUN CACES ne pointe vers cette théorie).
-
-**Dépend AUSSI du pré-requis `post_cloture` persisté (FAIT, étape 0)** pour identifier les CACES non-extension en R1.
-
-**PLAN REFONTE MOTEUR (`caces_obtenus.py`) :** R0 = AJOUTER les DEUX liens (`resultat_theorie_id` + `caces_initial_id`) sur `CacesObtenu`, renseignés au calcul/recalcul (pattern `post_cloture`) ; R1 = fonction « base théorique valable » (3 sources) ; R2 = écart B (fenêtre +1 an −1 jour exact via `relativedelta`, théorie <= pratique) ; R3 = écart C RÉSOLU = `caces_initial` = CACES non-ext partageant la théorie de référence ; R4 = brancher dans `_calculer_pour_epreuve` + tests cas d'école ; puis étape A dispense (proposition s'appuie sur R1).
-
----
-
-### 🔧 ARCHITECTURE FINALE : deux liens sur `CacesObtenu` + résolution écart C
-
-**DEUX LIENS COMPLÉMENTAIRES (mutuellement exclusifs) sur `CacesObtenu` :**
-- `resultat_theorie_id` (FK `ResultatTheorie`, nullable) : la théorie qui FONDE le CACES. Rempli si NON-extension (théorie propre). NULL si extension (pas de théorie propre). Usage : déterminer si une théorie est orpheline (source R2-b) — une théorie est orpheline si AUCUN CACES non-extension ne la pointe.
-- `caces_initial_id` (FK `CacesObtenu`, nullable, auto-référence) : le CACES initial dont l'extension HÉRITE l'échéance. Rempli si extension. NULL si non-extension. Usage : porter l'échéance héritée + résoudre l'écart C.
-
-Un CACES est soit non-extension (`resultat_theorie_id` rempli, `caces_initial_id` NULL), soit extension (`resultat_theorie_id` NULL, `caces_initial_id` rempli). Reflète la réalité métier sans confusion.
-
-**RÉSOLUTION ÉCART C (le bon CACES initial pour une extension) :**
-Une extension hérite de l'échéance du CACES initial ADOSSÉ À LA MÊME THÉORIE DE RÉFÉRENCE que celle qui rend l'extension possible (= la base valable < 12 mois déterminée par l'algorithme consolidé). PAS « le plus ancien » ni « le plus récent » dans l'absolu — celui qui PARTAGE LA THÉORIE. On le retrouve via `resultat_theorie_id` : le CACES initial = celui dont `resultat_theorie_id == la théorie de référence de l'extension`.
-
-**Exemple (plusieurs initiaux) :** R.482 cat A théorie+pratique 01/01/2025 (initial 1, éch 31/12/2034) ; cat F théorie+pratique 15/01/2026 (initial 2, éch 14/01/2036) ; extension B1 le 15/06/2026 → théorie du cat A (01/01/2025) PÉRIMÉE au 15/06/2026 (>12 mois), théorie du cat F (15/01/2026) VALABLE → B1 hérite de l'échéance du cat F = 14/01/2036 (PAS du cat A). Le bon initial = celui qui partage la théorie valable.
-
-**BOUCLE COHÉRENTE :** la théorie de référence (base valable la plus récente, algorithme consolidé) détermine À LA FOIS : (1) la possibilité de dispense, (2) le CACES initial dont l'extension hérite l'échéance. UNE SEULE logique → un seul moteur (vision cible : éviter les dérives).
-
----
-
-### 🔧 ARCHITECTURE « DEUX PASSES » : calcul des extensions (écart C + `caces_initial_id`)
-
-**PROBLÈME :** l'échéance d'une extension = l'échéance du CACES INITIAL (celui qui partage sa théorie de référence), PAS un recalcul depuis la théorie. Donc le CACES initial doit exister en base AVANT de calculer l'extension. Or `calculer_et_synchroniser` parcourt les épreuves SANS ordre garanti (`query.all()` sans `order_by`) → une extension pouvait être traitée avant son initial → échéance fausse.
-
-**TROIS DATES d'une extension (ne pas confondre) :**
-- date théorie héritée (ex 15/01/2026)
-- `date_obtention` de l'extension = date de la PRATIQUE de l'extension (ex 15/06/2026, POSTÉRIEURE à la théorie) — §9
-- `date_echeance` de l'extension = celle du CACES INITIAL (ex 14/01/2036), lue en base, PAS recalculée depuis la théorie
-
-**SOLUTION — DEUX PASSES dans `calculer_et_synchroniser` :**
-- Parcours unique : pour chaque épreuve, appeler `_calculer_pour_epreuve` (donne `post_cloture`). Si `post_cloture==False` → traiter immédiatement (PASSE 1, non-extensions, création/maj + commit). Si `post_cloture==True` → METTRE DE CÔTÉ pour la passe 2 (pas de double calcul de la partie coûteuse).
-- PASSE 2 (extensions, après commit passe 1) : pour chaque extension, le CACES initial = le `CacesObtenu` NON-extension (`post_cloture==False`) dont `resultat_theorie_id == rt.id` (la théorie héritée). Lire son `date_echeance` → l'appliquer à l'extension. Remplir `caces_initial_id`.
-
-**CORRECTIONS ÉCART C apportées :**
-- Avant : `caces_initial` cherché via `statut=="valide"` (excluait `a_valider` → initial non validé = `None` → fallback faux) + `order_by(date_echeance.asc())` (mauvais critère).
-- Après : recherche par `resultat_theorie_id == rt.id` ET `post_cloture==False` ; inclure `statut` `a_valider` ET `valide` ; échéance = `date_echeance` de cet initial.
-
-**PAS DE CHAÎNE :** un CACES initial est TOUJOURS un non-extension (il a une théorie propre). Une extension pointe toujours vers un non-extension, jamais vers une autre extension → 2 passes suffisent (pas de récursion).
-
-**CAS LIMITE (fallback) :** si une extension ne trouve AUCUN CACES initial partageant sa théorie (donnée incohérente, initial annulé) → fallback calcul normal (`_date_echeance` famille/`date_prat`) + idéalement un marqueur/log, JAMAIS de crash.
-
-**Mis à jour plan refonte :** R0-a (liens, `resultat_theorie_id` rempli) FAIT. R0-b = remplir `caces_initial_id` via l'architecture deux passes ci-dessus (= aussi la correction écart C). Puis R1 (fonction base théorique 3 sources), R2 (écart B fenêtre +1 an −1 j), R4 (brancher), cas externe (4e source) en dernier.
-
----
-
-### 🔧 AUDIT moteur `caces_obtenus.py` — écarts vs cadrage (code critique, NON en prod)
-
-Cas 1, 2, 3 globalement justes. Écarts trouvés :
-
-- **ÉCART A (CONFIRMÉ, CORRIGÉ commit 1d8a380)** : `_chercher_theorie_autre_session` (ligne 45) ET priorité 1 même session (ligne 74) triaient par `ResultatTheorie.id.asc()` = théorie la PLUS ANCIENNE. Doit être la PLUS RÉCENTE. Corrigé → `order_by(JourTest.date.desc(), ResultatTheorie.id.desc())`. Priorité 1 : ajout du JOIN JourTest (absent avant).
-- **ÉCART B (CORRIGÉ)** : fenêtre `JourTest.date` unidirectionnelle `[date_prat - 1 an + 1 j ; date_prat]` — pattern maison `date(year-1, month, day) + timedelta(1)` + fallback 29 fév → 1er mars. Plus de `limite_apres` ni de symétrie `±365`. Tri écart A inchangé.
-- **ÉCART C (RÉSOLU par architecture) :** `order_by(CacesObtenu.date_echeance.asc()).first()` (ligne 120) = « le plus ancien » — incorrect si plusieurs initiaux avec théories différentes. Solution : `caces_initial` = CACES non-ext dont `resultat_theorie_id` == théorie de référence de l'extension (voir section ARCHITECTURE FINALE ci-dessus). Attend R0 (liens FK).
-- **ÉCART D** = même bug que A (tri id asc en priorité 1) → corrigé avec A.
-
+**Commits moteur déjà en place** : écart A `1d8a380`, écart B (fenêtre 12 mois sens unique), R1 amélioré `60de332`. À revérifier contre la spec unifiée.
 ### ✅ Chantier terminé : table générique Justificatif — modèle + routes + permissions (2026-06-22)
 
 **Besoin déclencheur :** justificatif de FORMATION préalable par apprenant (feuille de présence). Le document PEPCI-49-01 impose la conservation des émargements 10 ans + preuve de formation au dossier.
