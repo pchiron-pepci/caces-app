@@ -264,6 +264,31 @@ def valider_caces(caces_id: int, pin: str = "", db: DBSession = Depends(get_db))
         raise HTTPException(status_code=404, detail="Non trouvé")
     if co.statut != "a_valider":
         raise HTTPException(status_code=400, detail="Ce CACES® n'est pas en attente de validation")
+    # G2 : bloquer si un ANTERIEUR a_valider partage la MEME BASE (ordre chronologique)
+    _base_q = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == co.stagiaire_id,
+        CacesObtenu.famille == co.famille,
+        CacesObtenu.statut == "a_valider",
+        CacesObtenu.date_obtention < co.date_obtention,
+        CacesObtenu.id != co.id,
+    )
+    # base partagee n.1 : meme theorie fondatrice
+    plus_ancien = None
+    if co.resultat_theorie_id is not None:
+        plus_ancien = _base_q.filter(
+            CacesObtenu.resultat_theorie_id == co.resultat_theorie_id
+        ).order_by(CacesObtenu.date_obtention.asc()).first()
+    # base partagee n.2 : co est une extension qui herite de cet anterieur
+    if plus_ancien is None and co.caces_initial_id is not None:
+        plus_ancien = _base_q.filter(
+            CacesObtenu.id == co.caces_initial_id
+        ).order_by(CacesObtenu.date_obtention.asc()).first()
+    if plus_ancien is not None:
+        raise HTTPException(status_code=409, detail=(
+            "validation hors ordre - validez d'abord le CACES plus ancien "
+            f"(categorie {plus_ancien.categorie}, obtenu le {plus_ancien.date_obtention}) "
+            "qui partage la meme base theorique."
+        ))
     config = db.query(ConfigOrganisme).first()
     if not config:
         config = ConfigOrganisme(prochain_numero_caces=1)
