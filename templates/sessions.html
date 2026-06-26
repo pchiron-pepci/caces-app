@@ -6,6 +6,10 @@
 <div class="toolbar">
     <div class="toolbar-left">
         <input type="text" id="search" placeholder="🔍 Rechercher une session..." class="search-input" autocomplete="new-password">
+        <label for="chk-cloturees" id="lbl-cloturees" title="Sessions Clôturées" style="display:inline-flex; align-items:center; cursor:pointer; background:#f0f2f7; border:1.5px solid #c8d8f0; border-radius:8px; padding:6px 11px; font-size:15px; user-select:none;">
+            <input type="checkbox" id="chk-cloturees" style="position:absolute; opacity:0; width:0; height:0;">
+            👁
+        </label>
     </div>
     <div class="toolbar-right">
         {% if user_role != 'terrain' %}
@@ -28,7 +32,7 @@
         </thead>
         <tbody id="tbody">
             {% for s in sessions %}
-            <tr>
+            <tr{% if statuts_affichage[s.id] == 'Clôturée' %} data-statut="cloturee"{% endif %}>
                 <td class="ses-ref"><a href="/sessions/{{ s.id }}" style="color:inherit; text-decoration:none; font-weight:700;">{{ s.reference or 'N/A' }}</a></td>
                 <td class="ses-famille">{% if s.id in sessions_avec_tirage %}<span class="badge orange" title="Tirage déclenché — famille figée">{{ s.famille }}</span>{% else %}<span class="badge blue">{{ s.famille }}</span>{% endif %}</td>
                 <td class="ses-lieu" data-label="Lieu">
@@ -357,7 +361,12 @@ function fermerPin() {
 
 function filtrer() {
     const q = document.getElementById('search').value.toLowerCase();
+    const showCloturees = document.getElementById('chk-cloturees').checked;
+    const lbl = document.getElementById('lbl-cloturees');
+    lbl.style.background = showCloturees ? '#e3f2fd' : '#f0f2f7';
+    lbl.style.borderColor = showCloturees ? '#1565c0' : '#c8d8f0';
     document.querySelectorAll('#tbody tr').forEach(tr => {
+        if (tr.dataset.statut === 'cloturee' && !showCloturees) { tr.style.display = 'none'; return; }
         tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
 }
@@ -366,6 +375,8 @@ let sortColIdx = null;
 let sortAsc = true;
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('search').addEventListener('input', filtrer);
+    document.getElementById('chk-cloturees').addEventListener('change', filtrer);
+    filtrer();
     document.querySelectorAll('th[data-sort-col]').forEach(function(th) {
         th.addEventListener('click', function() {
             const colIdx = parseInt(this.dataset.sortCol);
