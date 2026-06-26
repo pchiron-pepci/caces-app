@@ -53,7 +53,20 @@
 .btn-note-principal-vide { background: #f5f5f5; box-shadow: 0 0 0 2px #9e9e9e; opacity: .7; }
 .btn-note-admin { background: #fff3e0; box-shadow: 0 0 0 2px #e65100; }
 
-/* Badge résultat pratique cliquable (modifier résultat existant) */
+/* Avertissement clignotant modale pratique */
+@keyframes noryx-blink-warn { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+.noryx-warn-blink {
+    display:flex; align-items:center; gap:10px;
+    background:#fff3cd; border:1px solid #ffe08a;
+    border-left:5px solid #cc0000; border-radius:8px;
+    padding:12px 14px; margin-bottom:20px;
+    font-size:14px; font-weight:700; color:#664d03; line-height:1.35;
+    animation: noryx-blink-warn 1.1s ease-in-out infinite;
+}
+.noryx-warn-blink::before { content:'⚠'; font-size:20px; color:#cc0000; }
+@media (prefers-reduced-motion: reduce) { .noryx-warn-blink { animation:none; } }
+
+    /* Badge résultat pratique cliquable (modifier résultat existant) */
 .badge-result-btn {
     border: none; font-family: inherit; font-weight: 600;
     cursor: pointer; transition: filter 0.15s;
@@ -1932,6 +1945,7 @@
 <div id="modal-pratique" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:32px; width:500px; max-width:95vw;">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:8px;">Resultat pratique</h2>
+        <div class="noryx-warn-blink">N’oubliez pas d’enregistrer vos fichiers d’évaluation dans l’onglet Documents.</div>
         <p style="color:#666; font-size:14px; margin-bottom:24px;" id="pratique-info"></p>
         <input type="hidden" id="pratique-stagiaire-id">
         <input type="hidden" id="pratique-categorie">
