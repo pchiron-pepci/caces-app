@@ -960,6 +960,86 @@ def get_justificatif_theorie(session_id: int, stagiaire_id: int, jour_test_id: i
     )
 
 
+# ── Justificatif grille d'évaluation PRATIQUE (1 fichier, multi-format) ──
+_EXT_AUTORISEES_PRATIQUE = {
+    "pdf": "application/pdf",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "xls": "application/vnd.ms-excel",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "doc": "application/msword",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "heic": "image/heic",
+    "webp": "image/webp",
+}
+# Formats affichables inline dans le navigateur (sinon téléchargement)
+_INLINE_PRATIQUE = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
+_MAX_OCTETS_PRATIQUE = 10 * 1024 * 1024  # 10 Mo
+
+
+@router.post("/{session_id}/pratique/justificatif/{epreuve_id}")
+def upload_justificatif_pratique(session_id: int, epreuve_id: int,
+                                 body: JustificatifBody, db: DBSession = Depends(get_db)):
+    if body.pin != get_pin_formateur(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    ep = db.query(SessionEpreuve).filter(
+        SessionEpreuve.id == epreuve_id,
+        SessionEpreuve.session_id == session_id,
+    ).first()
+    if not ep:
+        raise HTTPException(status_code=404, detail="Épreuve pratique introuvable")
+
+    nom = body.fichier_nom or "justificatif"
+    ext = (nom.rsplit(".", 1)[-1].lower() if "." in nom else "")
+    if ext not in _EXT_AUTORISEES_PRATIQUE:
+        raise HTTPException(status_code=400,
+            detail="Format non autorisé. Acceptés : PDF, Excel, Word, images (jpg, png, heic, webp).")
+    content_type = _EXT_AUTORISEES_PRATIQUE[ext]
+
+    import base64 as _b64
+    contenu = _b64.b64decode(body.fichier_base64)
+    if len(contenu) > _MAX_OCTETS_PRATIQUE:
+        raise HTTPException(status_code=400, detail="Fichier trop volumineux (10 Mo maximum).")
+
+    if ep.justificatif_cle:
+        try: storage.delete_fichier(ep.justificatif_cle)
+        except Exception: pass
+
+    cle = storage.construire_cle("justificatifs/pratique", nom)
+    storage.upload_fichier(contenu, cle, content_type)
+    ep.justificatif_cle = cle
+    ep.justificatif_nom = nom
+    db.commit()
+    return {"ok": True, "fichier_nom": ep.justificatif_nom}
+
+
+@router.get("/{session_id}/pratique/justificatif/{epreuve_id}")
+def get_justificatif_pratique(session_id: int, epreuve_id: int,
+                              request: Request, db: DBSession = Depends(get_db)):
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse as SR
+    ep = db.query(SessionEpreuve).filter(
+        SessionEpreuve.id == epreuve_id,
+        SessionEpreuve.session_id == session_id,
+    ).first()
+    if not ep or not ep.justificatif_cle:
+        raise HTTPException(status_code=404, detail="Aucun justificatif pour cette épreuve")
+    data = storage.get_fichier(ep.justificatif_cle)
+    nom = ep.justificatif_nom or "justificatif"
+    ext = (nom.rsplit(".", 1)[-1].lower() if "." in nom else "")
+    content_type = _EXT_AUTORISEES_PRATIQUE.get(ext, "application/octet-stream")
+    disposition = "inline" if content_type in _INLINE_PRATIQUE else "attachment"
+    return SR(
+        BytesIO(data),
+        media_type=content_type,
+        headers={"Content-Disposition": f'{disposition}; filename="{nom}"'},
+    )
+
+
 @router.post("/{session_id}/theorie/reponses-degrade")
 def soumettre_reponses_theorie_degrade(
     session_id: int,

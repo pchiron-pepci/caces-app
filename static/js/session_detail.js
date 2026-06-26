@@ -2317,6 +2317,86 @@ document.getElementById('justif-file-input').addEventListener('change', function
     reader.readAsDataURL(file);
 });
 
+// ── Justificatif grille pratique (multi-format, 1 fichier, R2) ──
+var _justifPratiqueCtx = null;
+(function() {
+    var inp = document.getElementById('justif-pratique-file-input');
+    if (!inp) {
+        inp = document.createElement('input');
+        inp.type = 'file';
+        inp.id = 'justif-pratique-file-input';
+        inp.accept = '.pdf,.xlsx,.xls,.docx,.doc,.jpg,.jpeg,.png,.heic,.webp';
+        inp.style.display = 'none';
+        document.body.appendChild(inp);
+    }
+    inp.addEventListener('change', function() {
+        var file = this.files && this.files[0];
+        this.value = '';
+        if (!file || !_justifPratiqueCtx) return;
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Fichier trop volumineux (10 Mo maximum).');
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            _justifPratiqueCtx.fichier_base64 = ev.target.result.split(',')[1];
+            _justifPratiqueCtx.fichier_nom = file.name;
+            document.getElementById('pin-message').textContent = "Code PIN formateur — joindre la grille d'évaluation.";
+            document.getElementById('pin-input').value = '';
+            document.getElementById('pin-error').style.display = 'none';
+            document.getElementById('pin-error').textContent = '';
+            document.getElementById('modal-pin').style.display = 'flex';
+            document.getElementById('pin-confirm-btn').onclick = async function() {
+                var pin = document.getElementById('pin-input').value;
+                var tok = localStorage.getItem('token');
+                var h = { 'Content-Type': 'application/json' };
+                if (tok) h['Authorization'] = 'Bearer ' + tok;
+                var ctx = _justifPratiqueCtx;
+                var resp;
+                try {
+                    resp = await fetch(
+                        '/api/sessions/' + ctx.sessionId + '/pratique/justificatif/' + ctx.epreuveId,
+                        { method: 'POST', headers: h, credentials: 'same-origin',
+                          body: JSON.stringify({ pin: pin, fichier_base64: ctx.fichier_base64, fichier_nom: ctx.fichier_nom }) }
+                    );
+                } catch (err) {
+                    document.getElementById('pin-error').textContent = 'Erreur réseau.';
+                    document.getElementById('pin-error').style.display = 'block';
+                    return;
+                }
+                if (resp.status === 403) {
+                    document.getElementById('pin-error').textContent = 'Code PIN incorrect.';
+                    document.getElementById('pin-error').style.display = 'block';
+                    return;
+                }
+                if (!resp.ok) {
+                    var errData = await resp.json().catch(function() { return {}; });
+                    document.getElementById('pin-error').textContent = errData.detail || 'Erreur ' + resp.status;
+                    document.getElementById('pin-error').style.display = 'block';
+                    return;
+                }
+                fermerPin();
+                location.reload();
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+})();
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-action="justif-pratique-voir"]')) {
+        var btn = e.target.closest('[data-action="justif-pratique-voir"]');
+        window.open('/api/sessions/' + btn.dataset.sessionId + '/pratique/justificatif/' + btn.dataset.epreuveId, '_blank');
+        return;
+    }
+    if (e.target.closest('[data-action="justif-pratique-upload"]')) {
+        var btn = e.target.closest('[data-action="justif-pratique-upload"]');
+        _justifPratiqueCtx = { sessionId: btn.dataset.sessionId, epreuveId: btn.dataset.epreuveId };
+        document.getElementById('justif-pratique-file-input').click();
+        return;
+    }
+});
+
 document.addEventListener('click', function(e) {
     if (e.target.closest('[data-action="justif-voir"]')) {
         var btn = e.target.closest('[data-action="justif-voir"]');

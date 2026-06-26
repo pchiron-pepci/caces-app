@@ -48,3 +48,7 @@ class SessionEpreuve(Base):
     note_testeur = Column(Text, nullable=True)
     options_obtenues = Column(String(200), nullable=True)
     bloque = Column(Boolean, default=False, nullable=False)
+
+    # Justificatif grille d'évaluation pratique (1 fichier, multi-format)
+    justificatif_cle = Column(String(500), nullable=True)
+    justificatif_nom = Column(String(255), nullable=True)

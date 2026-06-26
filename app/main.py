@@ -129,6 +129,9 @@ def _run_startup_migrations():
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS justificatif_cle VARCHAR(500)",
         "ALTER TABLE resultats_theorie DROP COLUMN IF EXISTS justificatif_pdf",
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS justificatif_nom VARCHAR(255)",
+        # justificatif grille pratique (SessionEpreuve)
+        "ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS justificatif_cle VARCHAR(500)",
+        "ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS justificatif_nom VARCHAR(255)",
         "ALTER TABLE resultats_theorie ADD COLUMN IF NOT EXISTS testeur_id INTEGER REFERENCES testeurs(id)",
         # caces_obtenus
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS motif_annulation TEXT",
@@ -588,6 +591,9 @@ def _verifier_role(path: str, method: str, role: str):
             return True
         # Exception : upload justificatif PDF — terrain et back-office peuvent attacher le scan (PIN formateur requis)
         if method == "POST" and _re.match(r"^/api/sessions/\d+/theorie/justificatif/\d+/\d+$", base):
+            return True
+        # Exception : upload justificatif grille pratique (PIN formateur requis)
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/justificatif/\d+$", base):
             return True
         # Exception : suppression résultat théorique — terrain peut corriger un mauvais candidat (PIN formateur requis)
         if method == "DELETE" and _re.match(r"^/api/sessions/\d+/theorie/reponses/\d+/\d+$", base):
