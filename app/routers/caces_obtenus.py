@@ -126,6 +126,19 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
             "sc_id":     sc_disp.id,
         }
 
+    # Fallback : pas de dispense saisie MAIS le CACES est une extension (caces_initial_id rempli)
+    # -> construire une dispense implicite "interne" basee sur le CACES de base (cas 5/6).
+    if dispense_info is None and getattr(co, "caces_initial_id", None):
+        _base = db.query(CacesObtenu).filter(CacesObtenu.id == co.caces_initial_id).first()
+        if _base and _base.date_obtention:
+            dispense_info = {
+                "origine":   "interne",
+                "date_base": _base.date_obtention.isoformat(),
+                "echeance":  None,
+                "justif":    False,
+                "sc_id":     None,
+            }
+
     return {
         "date_pratique": date_pratique,
         "session_id_pratique": co.session_id,
