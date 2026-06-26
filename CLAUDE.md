@@ -350,29 +350,6 @@ Variables de contexte passées au template `dashboard.html` :
 
 Carte **⚡ À traiter** (pleine largeur, grid-column 1/-1) regroupe en sections séparées par trait grisé : Sessions non clôturées, CACES® à valider, Non-conformités ouvertes, Alertes testeurs, Candidats sans photo. Chaque section affiche le compteur et "✅ Aucun" si vide. Remplace les anciennes cartes séparées "Sessions non clôturées", "Non-conformités ouvertes" et "Alertes".
 
-### Règles de calcul CACES® Obtenus
-
-Déclencheur : `GET /api/caces-obtenus/a-valider` appelle `calculer_et_synchroniser(db)` qui parcourt tous les `SessionEpreuve.obtenue == True` et crée les `CacesObtenu` manquants en statut `a_valider`.
-
-**Recherche de la théorie (3 priorités) :**
-1. Même session (`ResultatTheorie.session_id == epreuve.session_id AND obtenue == True`)
-2. Autre session **ouverte** (`statut != "terminee"`), même famille, `abs(date_theo - date_prat) ≤ 365j` → **continuité** (`post_cloture = False`)
-3. Autre session **clôturée** (`statut == "terminee"`), même famille, `abs(date_theo - date_prat) ≤ 365j` → **extension** (`post_cloture = True`)
-
-**Calcul date_obtention / date_echeance :**
-| Cas | Condition | date_obtention | date_echeance |
-|---|---|---|---|
-| 1 | Théorie == pratique (même jour) | date pratique | +10 ans −1j (R482) ou +5 ans −1j |
-| 2 | Théorie < pratique | date pratique | idem |
-| 3 | Théorie > pratique (sessions ouvertes, priorités 1 et 2) | date théorie | idem |
-| 4 | Extension — théorie session clôturée (priorité 3) | date pratique | échéance du 1er `CacesObtenu.valide` dans cette famille pour ce stagiaire, sinon calcul normal |
-
-**Numéro d'ordre :** incrémental unique toutes familles confondues (`max(numero_ordre) + 1` au moment de la validation).
-
-**Protection doublon :** UNIQUE(stagiaire_id, session_id, categorie) — un enregistrement annulé bloque la re-création automatique.
-
-**Recalcul à la clôture :** `POST /api/sessions/{id}/cloturer` appelle `calculer_et_synchroniser(db)` après `statut = "terminee"`. Les enregistrements `a_valider` dont la théorie provenait de cette session (mode continuité) voient leurs dates recalculées en mode extension (priorité 3 → `post_cloture = True` → `date_echeance` = échéance CACES® initial). Les records `valide`/`annule` ne sont jamais modifiés.
-
 ### Note : doublons date_habilitation / date_expiration_habilitation
 `Testeur.date_habilitation` et `Testeur.date_expiration_habilitation` sont des doublons avec `HabilitationTesteur` — à supprimer dans une passe de nettoyage ultérieure après vérification qu'ils ne sont utilisés nulle part (modèle, routes, templates, migrations).
 
