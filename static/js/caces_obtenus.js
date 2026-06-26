@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const chevron = btnToggle.querySelector('.co-card-chevron');
             if (!body) return;
             const isOpen = body.style.display !== 'none';
-            body.style.display = isOpen ? 'none' : '';
+            body.style.display = isOpen ? 'none' : 'flex';
             if (chevron) chevron.textContent = isOpen ? '▶' : '▼';
             return;
         }
@@ -458,17 +458,17 @@ function renderCarteAValider(co) {
         <!-- Header (clic pour plier/déplier) -->
         <div data-action="toggle-caces-card" data-id="${co.id}"
              style="background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer;user-select:none;">
+            <span class="co-card-chevron" style="margin-right:8px;font-size:12px;color:#aaa;flex-shrink:0;">▶</span>
             <a href="/stagiaires#${co.stagiaire_id}" target="_blank"
                style="font-size:15px;font-weight:700;color:#1a237e;text-decoration:none;">${co.stagiaire_nom} ${co.stagiaire_prenom}</a>
             ${ddnHtml}
             <span style="font-weight:700;color:#555;font-size:13px;background:#e8eaf6;padding:2px 8px;border-radius:4px;">${co.famille}</span>
             <span style="background:#1a237e;color:#fff;border-radius:6px;padding:2px 10px;font-size:13px;font-weight:800;">${co.categorie}</span>
             ${options}
-            <span class="co-card-chevron" style="margin-left:auto;font-size:12px;color:#aaa;flex-shrink:0;">▼</span>
         </div>
 
         <!-- Body vertical -->
-        <div id="caces-card-body-${co.id}" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+        <div id="caces-card-body-${co.id}" style="padding:14px 16px;display:none;flex-direction:column;gap:10px;">
 
             <!-- Dates en ligne -->
             <div style="display:flex;gap:24px;flex-wrap:wrap;">
