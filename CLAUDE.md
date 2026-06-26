@@ -323,7 +323,7 @@ python init_questions_r482.py
 | Haute | Brancher dispense externe au moteur caces_obtenus.py | ✅ fait |
 | Haute | Affichage origine dispense dans CACES obtenus (ligne + badge + justif cliquable) | ✅ fait |
 | Haute | Stabilisation parcours dispense en ajout (3 fixes : reset, externe forcé, écheance prématurée) | ✅ fait |
-| Haute | Module REPRISE D'HISTORIQUE (H1-H5 : CacesObtenu repris, théories/pratiques orphelines) | H1+H2+H5 ✅ / H3-H4 à faire |
+| Haute | Module REPRISE D'HISTORIQUE (H1-H5 : CacesObtenu repris, théories/pratiques orphelines) | ✅ H1-H5 tous faits (suppression incluse — CHANTIER 5) |
 | Moyenne | Convergence justificatif dispense → table Justificatif (fichier seulement) | ÉCARTÉ (non-convergence assumée) |
 | Moyenne | Corrections couleur pastille FORM. ardoise + footer Actions en ligne | à faire |
 | Haute | Migration justificatif théorie base64 → R2 | ✅ fait |
