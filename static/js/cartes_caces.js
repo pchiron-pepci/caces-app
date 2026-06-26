@@ -39,23 +39,23 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // --- Sélect stagiaire → si homonymes, montrer select DDN, sinon charger familles ---
-    document.getElementById('sel-stagiaire').addEventListener('change', function () {
-        const nomPrenom = this.value;
+    // --- Recherche stagiaire (autocomplete) ---
+    function _selectionnerStagiaire(nomPrenom) {
+        const inp = document.getElementById('sel-stagiaire-input');
+        const list = document.getElementById('sel-stagiaire-list');
+        inp.value = nomPrenom;
+        list.style.display = 'none';
         _resolvedStagId = null;
         _resetFamille();
         document.getElementById('section-caces').style.display = 'none';
         document.getElementById('resultats-placeholder').style.display = 'flex';
         document.getElementById('ddn-section').style.display = 'none';
-
         if (!nomPrenom) return;
-
         const groupe = _stagiairesParNom[nomPrenom] || [];
         if (groupe.length === 1) {
             _resolvedStagId = groupe[0].id;
             _chargerFamilles(_resolvedStagId);
         } else {
-            // Plusieurs homonymes → proposer le choix de la DDN
             const selDdn = document.getElementById('sel-ddn');
             selDdn.innerHTML = '<option value="">— Choisir la date de naissance —</option>';
             groupe.forEach(function (p) {
@@ -70,6 +70,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 selDdn.appendChild(opt);
             });
             document.getElementById('ddn-section').style.display = 'block';
+        }
+    }
+
+    document.getElementById('sel-stagiaire-input').addEventListener('input', function () {
+        const q = this.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+        const list = document.getElementById('sel-stagiaire-list');
+        if (!q) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        const matches = Object.keys(_stagiairesParNom).filter(function (nom) {
+            return nom.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q);
+        }).slice(0, 20);
+        if (!matches.length) { list.style.display = 'none'; list.innerHTML = ''; return; }
+        list.innerHTML = matches.map(function (nom) {
+            return '<div data-nom="' + nom.replace(/"/g, '&quot;') + '" style="padding:8px 12px;font-size:13px;font-weight:600;color:#2d2d2d;cursor:pointer;border-bottom:1px solid #eef0f6;">' + nom + '</div>';
+        }).join('');
+        list.style.display = 'block';
+    });
+
+    document.getElementById('sel-stagiaire-list').addEventListener('click', function (e) {
+        const item = e.target.closest('[data-nom]');
+        if (item) _selectionnerStagiaire(item.dataset.nom);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('#sel-stagiaire-input') && !e.target.closest('#sel-stagiaire-list')) {
+            document.getElementById('sel-stagiaire-list').style.display = 'none';
         }
     });
 
@@ -285,23 +310,14 @@ function _noFormate(n) {
 const _stagiairesParNom = {};
 
 async function chargerStagiaires() {
-    const sel = document.getElementById('sel-stagiaire');
     try {
         const r = await fetch('/api/cartes-caces/stagiaires');
         if (!r.ok) return;
         const data = await r.json();
-        // Construire les groupes
         data.forEach(function (s) {
             const key = s.nom + ' ' + s.prenom;
             if (!_stagiairesParNom[key]) _stagiairesParNom[key] = [];
             _stagiairesParNom[key].push({ id: s.id, ddn: s.date_naissance || null });
-        });
-        // Une seule option par nom unique (la valeur = clé nom+prénom)
-        Object.keys(_stagiairesParNom).sort().forEach(function (nom) {
-            const opt = document.createElement('option');
-            opt.value = nom;
-            opt.textContent = nom;
-            sel.appendChild(opt);
         });
     } catch (_) {}
 }

@@ -20,9 +20,10 @@
             <div style="width:260px; min-width:260px; padding:24px 20px; border-right:2px solid #e8eef8; display:flex; flex-direction:column; gap:20px; background:#fafbff;">
                 <div>
                     <label style="font-size:11px; font-weight:700; color:#888; display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.6px;">Stagiaire</label>
-                    <select id="sel-stagiaire" style="width:100%; border:1.5px solid #c8d8f0; border-radius:8px; padding:9px 12px; font-size:13px; background:#fff; color:#2d2d2d; font-weight:600;">
-                        <option value="">— Choisir —</option>
-                    </select>
+                    <div style="position:relative;">
+                        <input type="text" id="sel-stagiaire-input" class="search-input" placeholder="🔍 Rechercher un stagiaire..." autocomplete="off" style="width:100%; box-sizing:border-box;">
+                        <div id="sel-stagiaire-list" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1.5px solid #c8d8f0; border-radius:8px; max-height:180px; overflow-y:auto; z-index:200; box-shadow:0 4px 12px rgba(0,0,0,0.12); margin-top:2px;"></div>
+                    </div>
                 </div>
                 <!-- Confirmation DDN — apparaît si plusieurs candidats ont le même nom -->
                 <div id="ddn-section" style="display:none;">
