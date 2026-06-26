@@ -111,7 +111,21 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
             "dispense_externe_sc_id": sc.id,
         }
 
-    rt = (
+    # --- Selection de la theorie : la PLUS RECENTE parmi les 3 sources, portier 12 mois partout ---
+    # Borne basse du portier (12 mois avant la pratique)
+    try:
+        _limite = date(ep.date.year - 1, ep.date.month, ep.date.day) + timedelta(days=1)
+    except ValueError:
+        _limite = date(ep.date.year - 1, 3, 1)
+
+    def _date_rt(_rt):
+        if not _rt:
+            return None
+        _jt = db.query(JourTest).filter(JourTest.id == _rt.jour_test_id).first()
+        return _jt.date if _jt and _jt.date else None
+
+    # P1 : meme session (mono-famille), AVEC portier 12 mois
+    rt_p1 = (
         db.query(ResultatTheorie)
         .join(JourTest, JourTest.id == ResultatTheorie.jour_test_id)
         .filter(
@@ -119,24 +133,29 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
             ResultatTheorie.session_id == ep.session_id,
             ResultatTheorie.obtenue == True,
             ResultatTheorie.bloque != True,
+            JourTest.date >= _limite,
+            JourTest.date <= ep.date,
         )
         .order_by(JourTest.date.desc(), ResultatTheorie.id.desc())
         .first()
     )
+    # P2 : autre session ouverte / P3 : autre session clôturee
+    rt_p2 = _chercher_theorie_autre_session(db, ep.stagiaire_id, ep.session_id, ep.famille, ep.date, "ouvert")
+    rt_p3 = _chercher_theorie_autre_session(db, ep.stagiaire_id, ep.session_id, ep.famille, ep.date, "terminee")
 
+    # Arbitrage : la plus recente. Egalite -> P1 puis P2 puis P3.
+    candidats = []
+    if rt_p1: candidats.append((_date_rt(rt_p1), 0, rt_p1, False))  # source 0 = meme session
+    if rt_p2: candidats.append((_date_rt(rt_p2), 1, rt_p2, False))  # source 1 = autre ouverte
+    if rt_p3: candidats.append((_date_rt(rt_p3), 2, rt_p3, True))   # source 2 = autre clôturee (post_cloture)
+    candidats = [c for c in candidats if c[0] is not None]
+
+    rt = None
     post_cloture = False
-
-    if not rt:
-        rt = _chercher_theorie_autre_session(
-            db, ep.stagiaire_id, ep.session_id, ep.famille, ep.date, "ouvert"
-        )
-
-    if not rt:
-        rt = _chercher_theorie_autre_session(
-            db, ep.stagiaire_id, ep.session_id, ep.famille, ep.date, "terminee"
-        )
-        if rt:
-            post_cloture = True
+    if candidats:
+        # tri : date desc, puis priorite source asc (P1<P2<P3) pour departager les egalites
+        candidats.sort(key=lambda c: (c[0], -c[1]), reverse=True)
+        _, _src, rt, post_cloture = candidats[0]
 
     if not rt:
         # Cas 6 (spec unifiee) — CACES existant comme base d'extension (echeance heritee)
