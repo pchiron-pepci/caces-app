@@ -1952,3 +1952,33 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
   - Affiché par `ligneDispense()` JS comme "🪪 Dispense interne · base du JJ/MM/AAAA".
 - RESTE À FAIRE — Options (cas 9 / chap. 6bis) : règles verrouillées dans la spec, implémentation NON CODÉE.
 - `detecter_base_theorique` (suggestion UI) : R1 amélioré FAIT — commit 60de332.
+
+---
+
+### ✅ Chantiers UX terminés (2026-06-25 / 2026-06-26)
+
+#### CACES® Obtenus (`caces_obtenus.js` + `caces_obtenus.html`)
+
+- **Cartes à-valider repliées par défaut** : corps `#caces-card-body-{id}` en `display:none` au rendu initial ; chevron `▶`/`▼` placé en premier enfant du header (`margin-right:8px`) ; toggle via `data-action="toggle-caces-card"` — commit `ece56bd`.
+- **Colonne N° adaptative** : `_formatNo(co)` = `ancien_numero || numero_ordre.padStart(4,'0') || '—'` ; `_wNo = max(56, _noMax*9+20)+'px'` calculé sur le max des valeurs rendues ; signatures `_renderHeaderValides(wNo)` et `_renderLigne(co,idx,wNo)` — commits `20df44d`, `ac595cd`.
+- **Colonne Stagiaire max-width** : `_colBaseStyle` branche flex → `max-width:300px` ; `_renderLigne` div Stagiaire → `max-width:300px;overflow:hidden` — commit `5a20093`.
+- **Champ de recherche CACES validés** : `class="search-input"` + `🔍` dans placeholder, wrap `.toolbar/.toolbar-left` ; listener sur `#recherche-valides` filtre les lignes via `data-search` (nom+prénom+famille+catégorie+n°+dates, normalize NFD) — commits `5a20093`, `9a4abf5`.
+
+#### Cartes CACES® (`cartes_caces.js` + `cartes_caces.html`)
+
+- **Autocomplete stagiaire** : remplace `<select id="sel-stagiaire">` par `input#sel-stagiaire-input` + dropdown `#sel-stagiaire-list` ; `_stagiairesParNom` dict keyed `nom+prenom` → `[{id,ddn}]` (support homonymes avec section DDN) ; listeners `input`/`click`/`document.click` — commit `3b21b7f`.
+- **Champ de recherche Cartes émises** : `class="search-input"` + `🔍` ; `var _emiseFilter` persiste à travers les tris ; filtre dans `_renderTableEmises()` après le sort — commit `5873784`.
+- **Toggle oeil Cartes émises** : `var _emiseShowAll = false` ; par défaut seules les cartes `statut==='emise'` sont affichées ; `#chk-emises-all` + `#lbl-emises-all` ; listener `change` met à jour `_emiseShowAll` + style actif bleu — commit `88537fa`.
+
+#### Sessions (`sessions.html`)
+
+- **Responsive — label STATUT masqué** : retrait de `data-label="Statut"` sur `td.ses-statut` → le pseudo-élément `::before` ne génère plus "STATUT" dans la barre bleue — commit `bb43e9f`.
+- **Responsive — date clôture terrain masquée** : `.table-sessions .cloture-terrain-date { display:none }` dans `@media (max-width:1023px)` — commit `8eb7eb0`.
+- **Badges raccourcis** : "Validée terrain" → "🔒 terrain" (commit `f530242`) puis "fin terrain" (commit `369d46e`) ; "Clôturée" → "Close" — commit `369d46e`.
+- **Toggle sessions Clôturées** : `data-statut="cloturee"` sur les `<tr>` Jinja ; par défaut masquées (`filtrer()` appelé au chargement) ; `#chk-cloturees` + `#lbl-cloturees` (oeil) dans toolbar ; `filtrer()` gère le filtre texte ET l'état oeil — commit `c88696d`.
+- **Responsive toolbar** : `@media (max-width:767px)` → `.toolbar-left { display:flex; gap:8px }` + `#search { flex:1; min-width:0 }` pour garder l'oeil sur la même ligne que la recherche — commit `ea71007`.
+
+#### Stagiaires (`stagiaires.js` + `stagiaires.html` + `main.py`)
+
+- **Toggle stagiaires inactifs** : `main.py/page_stagiaires` calcule `actifs_ids` (stagiaires dans ≥1 session `statut NOT IN ['terminee','annulee']`) via jointure `SessionCandidat⋈Session` ; `data-inactif="1"` sur les `<tr>` hors actifs ; par défaut seuls les actifs sont visibles ; `filtrer()` extrait (remplace le listener inline) gère texte + oeil ; `#chk-inactifs` + `#lbl-inactifs` — commit `be7df80`.
+- **Responsive toolbar** : même correctif `flex:1` sur `#search` — commit `3771034`.
