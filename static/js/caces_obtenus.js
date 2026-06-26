@@ -363,9 +363,11 @@ function _colBaseStyle(col) {
         : 'width:' + col.w + ';min-width:' + col.w + ';';
 }
 
-function _renderHeaderValides() {
+function _renderHeaderValides(wNo) {
     const cells = _SORT_COLS.map(function (col) {
-        const base = _colBaseStyle(col);
+        const base = col.key === 'numero_ordre'
+            ? 'width:' + wNo + ';min-width:' + wNo + ';'
+            : _colBaseStyle(col);
         if (!col.key || !col.label) {
             return '<div style="' + base + 'font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">' + col.label + '</div>';
         }
@@ -414,11 +416,13 @@ function _renderValides() {
     }
 
     const sorted = _sortValides(_validesArray);
+    const _noMax = Math.max(2, ...sorted.map(co => _formatNo(co).length));
+    const _wNo = Math.max(56, _noMax * 9 + 20) + 'px';
     listEl.innerHTML =
         '<div class="co-scroll-wrap">'
         + '<div style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;min-width:910px;">'
-        + _renderHeaderValides()
-        + sorted.map(function (co, i) { return _renderLigne(co, i); }).join('')
+        + _renderHeaderValides(_wNo)
+        + sorted.map(function (co, i) { return _renderLigne(co, i, _wNo); }).join('')
         + '</div>'
         + '</div>';
 }
@@ -528,10 +532,14 @@ function renderCarteAValider(co) {
 
 // ===== RENDU CARTE VALIDÉS =====
 
-function _renderLigne(co, idx) {
+function _formatNo(co) {
+    return co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
+}
+
+function _renderLigne(co, idx, wNo) {
     const annule = co.statut === 'annule';
     const nomComplet = _nomDdn(co);
-    const noFormate = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
+    const noFormate = _formatNo(co);
     const bg = annule ? '#f7f7f7' : (idx % 2 === 0 ? '#fff' : '#f5f7ff');
 
     const noBadge = annule
@@ -553,7 +561,7 @@ function _renderLigne(co, idx) {
 
     return `<div data-caces-id="${co.id}"
          style="display:flex;align-items:center;padding:9px 16px;background:${bg};${annule ? 'opacity:0.65;' : ''}border-bottom:1px solid #eef0f6;gap:0;">
-        <div style="width:68px;min-width:68px;">${noBadge}</div>
+        <div style="width:${wNo};min-width:${wNo};">${noBadge}</div>
         <div style="width:82px;min-width:82px;">${badgeStatut(co.statut)}</div>
         <div style="flex:1;min-width:130px;font-size:13px;font-weight:700;color:#1a237e;display:flex;align-items:center;padding-right:10px;${annule ? 'text-decoration:line-through;' : ''}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nomComplet}</span>${badgeDispense(co)}</div>
         <div style="width:116px;min-width:116px;display:flex;flex-direction:row;align-items:center;gap:5px;padding-right:6px;flex-wrap:nowrap;">
