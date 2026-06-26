@@ -139,7 +139,40 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
             post_cloture = True
 
     if not rt:
-        return None
+        # Cas 6 (spec unifiee) — CACES existant comme base d'extension (echeance heritee)
+        try:
+            limite_avant = date(ep.date.year - 1, ep.date.month, ep.date.day) + timedelta(days=1)
+        except ValueError:
+            limite_avant = date(ep.date.year - 1, 3, 1)
+        caces_source = None
+        for c in (
+            db.query(CacesObtenu)
+            .filter(
+                CacesObtenu.stagiaire_id == ep.stagiaire_id,
+                CacesObtenu.famille == ep.famille,
+                CacesObtenu.statut.in_(["valide", "a_valider"]),
+                CacesObtenu.date_echeance.isnot(None),
+                CacesObtenu.session_id != ep.session_id,
+            )
+            .order_by(CacesObtenu.date_echeance.desc())
+            .all()
+        ):
+            origine = _date_initiale_depuis_echeance(c.famille, c.date_echeance)
+            if limite_avant <= origine <= ep.date:
+                caces_source = c
+                break
+        if caces_source is None:
+            return None
+        return {
+            "date_obtention":         ep.date,
+            "date_echeance":          caces_source.date_echeance,
+            "options_obtenues":       ep.options_obtenues,
+            "post_cloture":           False,
+            "resultat_theorie_id":    None,
+            "theorie_source_id":      None,
+            "dispense_externe_sc_id": None,
+            "caces_source_id":        caces_source.id,
+        }
 
     jour_theo = db.query(JourTest).filter(JourTest.id == rt.jour_test_id).first()
     if not jour_theo or not jour_theo.date:
@@ -243,7 +276,8 @@ def calculer_et_synchroniser(db: Session) -> list:
         if calc["post_cloture"]:
             extensions_differees.append((ep, calc))
             continue
-        _appliquer_caces(db, ep, calc, caces_initial_id=None)
+        caces_init_id = calc.pop("caces_source_id", None)
+        _appliquer_caces(db, ep, calc, caces_initial_id=caces_init_id)
 
     db.commit()  # tous les non-extensions ont leur resultat_theorie_id en base
 
