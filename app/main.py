@@ -50,6 +50,7 @@ from app.routers import cartes_caces
 from app.routers import dev
 from app.routers import consentements
 from app.routers import neutralite
+from app.routers import saisie_pratique
 from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
@@ -598,6 +599,19 @@ def _verifier_role(path: str, method: str, role: str):
         # Exception : upload justificatif grille pratique (PIN formateur requis)
         if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/justificatif/\d+$", base):
             return True
+        # Exceptions : saisie pratique EN LIGNE (terrain testeur, PIN formateur requis)
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/ouvrir$", base):
+            return True
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/enregistrer$", base):
+            return True
+        if method == "GET" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/calculer$", base):
+            return True
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/valider$", base):
+            return True
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/rouvrir$", base):
+            return True
+        if method == "DELETE" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+$", base):
+            return True
         # Exception : suppression résultat théorique — terrain peut corriger un mauvais candidat (PIN formateur requis)
         if method == "DELETE" and _re.match(r"^/api/sessions/\d+/theorie/reponses/\d+/\d+$", base):
             return True
@@ -707,6 +721,7 @@ app.include_router(cartes_caces.router)
 app.include_router(dev.router)
 app.include_router(consentements.router)
 app.include_router(neutralite.router)
+app.include_router(saisie_pratique.router)
 
 
 @app.get("/sessions/{session_id}/projection/{jour_id}")
