@@ -33,6 +33,7 @@ from app.models.config_organisme import ConfigOrganisme
 from app.models.habilitation_option import HabilitationOption
 from app.models.non_conformite import NonConformite
 from app.models.utilisateur import Utilisateur
+from app.models.grille_pratique import (GrillePratique, ThemePratique, ItemPratique, CritereEliminatoire, SaisiePratique, SaisieBloc, SaisieItemNote, SaisieEliminatoire)
 from app.models.option_categorie import OptionCategorie
 from app.models.caces_obtenu import CacesObtenu
 from app.models.carte_caces import CarteCaces
@@ -82,6 +83,7 @@ def _run_startup_migrations():
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_pdf TEXT",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_nom VARCHAR",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS etat VARCHAR(20) DEFAULT 'actif'",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS mode_saisie_pratique VARCHAR(20) DEFAULT 'binaire'",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS utilisateur_id INTEGER REFERENCES utilisateurs(id)",
         # utilisateurs
         "ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS role_referent VARCHAR",
