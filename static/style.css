@@ -480,6 +480,19 @@ a:hover { color: #aa0000; }
     margin-bottom: 8px;
 }
 
+/* Barre toolbar figée au scroll (opt-in via classe .toolbar-sticky) */
+.toolbar-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg, #f5f6fa);
+    margin: 0 -32px;        /* déborde le padding de .content (32px) */
+    padding: 8px 32px;
+}
+@media (max-width: 1023px) {
+    .toolbar-sticky { margin: 0 -16px; padding: 8px 16px; }
+}
+
 .search-input {
     padding: 10px 16px;
     border: 1.5px solid var(--border);
