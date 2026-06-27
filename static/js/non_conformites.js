@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const q = (searchInput ? searchInput.value : '').toLowerCase();
         const tout = !!(chkToutes && chkToutes.checked);
         if (lblToutes) {
-            lblToutes.style.background = tout ? '#1a237e' : '#f0f2f7';
-            lblToutes.style.borderColor = tout ? '#1a237e' : '#c8d8f0';
+            lblToutes.style.background = tout ? '#e3f2fd' : '#f0f2f7';
+            lblToutes.style.borderColor = tout ? '#1565c0' : '#c8d8f0';
         }
         let visibles = 0;
         document.querySelectorAll('.nc-card').forEach(function (card) {

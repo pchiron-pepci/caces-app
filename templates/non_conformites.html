@@ -305,6 +305,9 @@
 .nc-volet-contenu { font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: #333; word-break: break-word; }
 .nc-volet-contenu.nc-vide { color: #bbb; }
 @media (max-width: 767px) {
+    /* Recherche : flex pour garder l'œil sur la même ligne (champ rétréci) */
+    .toolbar-left { display: flex; align-items: center; gap: 8px; }
+    #nc-search { width: auto; flex: 1; min-width: 0; }
     /* En-tête liste : masquer la barre de tri */
     #nc-sort-header { display: none !important; }
     /* En-tête replié : flex 2 lignes */
