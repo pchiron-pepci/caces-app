@@ -29,8 +29,8 @@
             if (!head) return;
             var body  = head.nextElementSibling;
             var arrow = head.querySelector('.dash-arrow');
-            // default = replié (clé absente ou 'true') ; 'false' = déplié
-            var ouvert = localStorage.getItem(clefSection(nom)) === 'false';
+            // Onglet « À traiter » : TOUJOURS replié au démarrage (pas de restauration localStorage)
+            var ouvert = false;
             if (body)  body.style.display = ouvert ? '' : 'none';
             if (arrow) arrow.textContent  = ouvert ? '▼' : '▶';
         });
