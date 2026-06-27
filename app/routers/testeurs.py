@@ -62,7 +62,16 @@ def testeurs_habilites(famille: str, request: Request, db: Session = Depends(get
         raise HTTPException(status_code=401, detail="Non authentifié")
     if not famille:
         raise HTTPException(status_code=422, detail="Paramètre famille requis")
-    q = (
+    # Options = lignes d'habilitation distinctes (categorie 'OPT-PE', 'OPT-TEL').
+    # Testeur valide s'il couvre la categorie ET chaque option requise.
+    req = set(o.strip().upper() for o in (options or "").split(",") if o.strip())
+    cats_requises = set()
+    if categorie:
+        cats_requises.add(categorie)
+    for o in req:
+        cats_requises.add("OPT-" + o)
+
+    rows = (
         db.query(Testeur, HabilitationTesteur)
         .join(HabilitationTesteur, HabilitationTesteur.testeur_id == Testeur.id)
         .filter(
@@ -71,21 +80,21 @@ def testeurs_habilites(famille: str, request: Request, db: Session = Depends(get
             Testeur.actif == True,
             Testeur.etat == "actif",
         )
+        .order_by(Testeur.nom, Testeur.prenom)
+        .all()
     )
-    if categorie:
-        q = q.filter(HabilitationTesteur.categorie == categorie)
-    rows = q.order_by(Testeur.nom, Testeur.prenom).all()
-    req = set(o.strip().upper() for o in (options or "").split(",") if o.strip())
-    out, seen = [], set()
+
+    cats_par_testeur = {}
+    testeur_info = {}
     for t, hab in rows:
-        if "PE" in req and not hab.option_pe:
-            continue
-        if "TEL" in req and not hab.option_tel:
-            continue
-        if t.id in seen:
-            continue
-        seen.add(t.id)
-        out.append({"id": t.id, "nom": t.nom, "prenom": t.prenom})
+        cats_par_testeur.setdefault(t.id, set()).add(hab.categorie)
+        testeur_info[t.id] = t
+
+    out = []
+    for tid, cats in cats_par_testeur.items():
+        if cats_requises.issubset(cats):
+            t = testeur_info[tid]
+            out.append({"id": t.id, "nom": t.nom, "prenom": t.prenom})
     return out
 
 @router.get("/{id}", response_model=TesteurResponse)
