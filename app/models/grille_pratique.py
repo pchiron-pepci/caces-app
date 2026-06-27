@@ -42,23 +42,37 @@ class ThemePratique(Base):
     ordre = Column(Integer, nullable=False, default=0)
 
     grille = relationship("GrillePratique", back_populates="themes")
-    items = relationship("ItemPratique", back_populates="theme",
+    points = relationship("PointEvaluation", back_populates="theme",
+                        cascade="all, delete-orphan", order_by="PointEvaluation.ordre")
+
+
+class PointEvaluation(Base):
+    """Un point d'évaluation (PE). La règle 'note > 0' s'applique au TOTAL du PE."""
+    __tablename__ = "point_evaluation"
+
+    id = Column(Integer, primary_key=True, index=True)
+    theme_id = Column(Integer, ForeignKey("theme_pratique.id"), nullable=False)
+    numero = Column(String(10), nullable=False)             # "1", "2"... (numéro PE)
+    libelle_chapeau = Column(Text, nullable=True)           # intitulé du PE (ex. "Circuler à vide et en charge...")
+    ordre = Column(Integer, nullable=False, default=0)
+
+    theme = relationship("ThemePratique", back_populates="points")
+    items = relationship("ItemPratique", back_populates="pe",
                         cascade="all, delete-orphan", order_by="ItemPratique.ordre")
 
 
 class ItemPratique(Base):
-    """Une ligne de la grille. descriptif_seul=True => sous-puce explicative non notée."""
+    """Une ligne notée (critère) sous un PE. descriptif_seul=True => sous-puce explicative non notée."""
     __tablename__ = "item_pratique"
 
     id = Column(Integer, primary_key=True, index=True)
-    theme_id = Column(Integer, ForeignKey("theme_pratique.id"), nullable=False)
-    numero_pe = Column(String(10), nullable=True)           # "1", "2"... (numéro du point d'évaluation)
+    pe_id = Column(Integer, ForeignKey("point_evaluation.id"), nullable=False)
     libelle = Column(Text, nullable=False)
     bareme_max = Column(Float, nullable=True)               # null si descriptif_seul
     descriptif_seul = Column(Boolean, nullable=False, default=False)
     ordre = Column(Integer, nullable=False, default=0)
 
-    theme = relationship("ThemePratique", back_populates="items")
+    pe = relationship("PointEvaluation", back_populates="items")
 
 
 class CritereEliminatoire(Base):
