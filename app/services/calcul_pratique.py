@@ -3,7 +3,7 @@
 Regle de reussite d'un bloc (base ou option) :
   1. note globale >= note_min (70/100 base, 35/50 option)
   2. ET chaque theme >= bareme_theme / 2 (valeur exacte)
-  3. ET chaque PE >= bareme_PE / 2 (valeur exacte)
+  3. ET chaque PE > 0 (un point d'evaluation nul = echec direct)
   4. ET aucun critere eliminatoire coche
 Le mode de saisie (binaire / partiel_entier / partiel_demi) determine les
 notes atteignables : aucun arrondi n'est applique ici, on compare la valeur reelle.
@@ -53,16 +53,17 @@ def calculer_bloc(bloc: SaisieBloc, db) -> dict:
                     bareme_pe += it.bareme_max
                     note_pe += notes.get(it.id, 0.0)
             note_theme += note_pe
-            seuil_pe = bareme_pe / 2.0
-            pe_ok = note_pe >= seuil_pe
+            # REGLE PE : un PE a 0 = echec direct (pris a l'envers : note_pe > 0 = OK).
+            # Ce n'est PAS un seuil a la moitie (ca, c'est la regle des THEMES).
+            pe_ok = note_pe > 0
             if not pe_ok:
                 tout_ok = False
-                raisons.append("PE %s ('%s') : %s/%s < seuil %s" % (
-                    pe.numero, th.libelle, round(note_pe, 2), round(bareme_pe, 2), round(seuil_pe, 2)))
+                raisons.append("PE %s ('%s') a 0 = echec (un point d'evaluation ne peut pas etre nul)" % (
+                    pe.numero, th.libelle))
             pes_detail.append({
                 "theme": th.libelle, "numero": pe.numero,
                 "note": round(note_pe, 2), "bareme": round(bareme_pe, 2),
-                "seuil": round(seuil_pe, 2), "ok": pe_ok,
+                "seuil": 0, "ok": pe_ok,
             })
 
         note_globale += note_theme
