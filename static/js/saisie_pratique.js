@@ -147,7 +147,7 @@
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
   function chargerTesteurs(options) {
-    var url = "/api/testeurs/habilites?famille=" + encodeURIComponent(FAMILLE) +
+    var url = BASE + state.saisieId + "/testeurs-habilites?famille=" + encodeURIComponent(FAMILLE) +
               "&categorie=" + encodeURIComponent(CATEGORIE);
     if (options && options.length) {
       url += "&options=" + encodeURIComponent(options.join(","));

@@ -607,6 +607,8 @@ def _verifier_role(path: str, method: str, role: str):
             return True
         if method == "GET" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/calculer$", base):
             return True
+        if method == "GET" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/testeurs-habilites$", base):
+            return True
         if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/valider$", base):
             return True
         if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/rouvrir$", base):

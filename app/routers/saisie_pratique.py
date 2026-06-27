@@ -204,6 +204,43 @@ class EnregistrerLot(BaseModel):
     eliminatoires: List[int] = []   # critere_id coches pour ce bloc
 
 
+@router.get("/{session_id}/pratique/saisie/{saisie_id}/testeurs-habilites")
+def testeurs_habilites_saisie(session_id: int, saisie_id: int,
+                              db: DBSession = Depends(get_db),
+                              famille: str = "", categorie: str = None, options: str = None):
+    """Liste des testeurs habilites pour la saisie en ligne (terrain, PIN formateur).
+    Filtre famille + categorie + TOUTES les options requises."""
+    from app.models.testeur import Testeur
+    from app.models.habilitation_testeur import HabilitationTesteur as _HT
+    if not famille:
+        raise HTTPException(422, "Parametre famille requis")
+    q = (
+        db.query(Testeur, _HT)
+        .join(_HT, _HT.testeur_id == Testeur.id)
+        .filter(
+            _HT.famille == famille,
+            _HT.actif == True,
+            Testeur.actif == True,
+            Testeur.etat == "actif",
+        )
+    )
+    if categorie:
+        q = q.filter(_HT.categorie == categorie)
+    rows = q.order_by(Testeur.nom, Testeur.prenom).all()
+    req = set(o.strip().upper() for o in (options or "").split(",") if o.strip())
+    out, seen = [], set()
+    for t, hab in rows:
+        if "PE" in req and not hab.option_pe:
+            continue
+        if "TEL" in req and not hab.option_tel:
+            continue
+        if t.id in seen:
+            continue
+        seen.add(t.id)
+        out.append({"id": t.id, "nom": t.nom, "prenom": t.prenom})
+    return out
+
+
 @router.post("/{session_id}/pratique/saisie/{saisie_id}/enregistrer")
 def enregistrer_lot(session_id: int, saisie_id: int, data: EnregistrerLot,
                     db: DBSession = Depends(get_db)):
