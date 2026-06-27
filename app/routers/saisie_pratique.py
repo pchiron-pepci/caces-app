@@ -249,6 +249,7 @@ def calculer(session_id: int, saisie_id: int, db: DBSession = Depends(get_db)):
 
 
 class ValiderSaisie(BaseModel):
+    testeur_id: int
     testeur_nom: Optional[str] = None
     observations: Optional[str] = None
     justification_ecart: Optional[str] = None
@@ -265,6 +266,30 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
     saisie = db.query(SaisiePratique).filter(SaisiePratique.id == saisie_id).first()
     if not saisie:
         raise HTTPException(404, "Saisie introuvable")
+
+    # Testeur obligatoire et habilite famille + categorie + TOUTES les options du candidat
+    from app.models.habilitation_testeur import HabilitationTesteur as _HT
+    from app.models.session import Session as _Sess
+    _jour = db.query(JourTest).filter(JourTest.id == saisie.jour_test_id).first()
+    _sess = db.query(_Sess).filter(_Sess.id == _jour.session_id).first() if _jour else None
+    _fam = _sess.famille if _sess else ""
+    hab = db.query(_HT).filter(
+        _HT.testeur_id == data.testeur_id,
+        _HT.famille == _fam,
+        _HT.categorie == saisie.categorie,
+        _HT.actif == True,
+    ).first()
+    if not hab:
+        raise HTTPException(422, "Testeur non habilite pour %s %s." % (_fam, saisie.categorie))
+    _codes_opt = set()
+    for _b in db.query(SaisieBloc).filter(SaisieBloc.saisie_id == saisie.id, SaisieBloc.type == "option").all():
+        _g = db.query(GrillePratique).filter(GrillePratique.id == _b.grille_id).first()
+        if _g and _g.code_option:
+            _codes_opt.add(_g.code_option)
+    if "PE" in _codes_opt and not hab.option_pe:
+        raise HTTPException(422, "Testeur non habilite pour l'option Porte-engins (PE).")
+    if "TEL" in _codes_opt and not hab.option_tel:
+        raise HTTPException(422, "Testeur non habilite pour l'option Telecommande (TEL).")
 
     # Calcule et ecrit la synthese dans les SaisieBloc (verdict du moteur)
     res = appliquer_resultats(saisie, db)
@@ -308,6 +333,7 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
             SessionEpreuve.categorie == saisie.categorie,
         ).first()
     if epreuve:
+        epreuve.testeur_id = data.testeur_id
         epreuve.obtenue = data.decision_base
         # options acquises = decisions testeur True ET base obtenue
         codes_acquis = []
@@ -334,6 +360,41 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
         }
         nb_fac = len([c for c in codes_acquis if c not in incluse_codes])
         epreuve.ut = (cat.ut_pratique if cat and cat.ut_pratique else 1.0) + nb_fac * 0.5
+    else:
+        # L'epreuve n'existe pas encore : la creer depuis la planification (comme le manuel)
+        codes_acquis = []
+        if data.decision_base:
+            for code, ok in data.decisions_options.items():
+                if ok:
+                    codes_acquis.append(code)
+        famille_obj = db.query(Famille).filter(Famille.code == _fam).first()
+        cat = db.query(Categorie).filter(
+            Categorie.famille_id == (famille_obj.id if famille_obj else 0),
+            Categorie.code == saisie.categorie).first()
+        incluse_codes = {
+            o.code_option for o in db.query(OptionCategorie).filter(
+                OptionCategorie.famille == _fam,
+                OptionCategorie.categorie == saisie.categorie,
+                OptionCategorie.incluse == True).all()
+        }
+        nb_fac = len([c for c in codes_acquis if c not in incluse_codes])
+        ut = (cat.ut_pratique if cat and cat.ut_pratique else 1.0) + nb_fac * 0.5
+        note_t = None
+        if res["base"]:
+            note_t = "Saisie en ligne - base %s/%s" % (res["base"]["note_globale"], res["base"]["note_max"])
+        epreuve = SessionEpreuve(
+            session_id=(_jour.session_id if _jour else session_id),
+            stagiaire_id=saisie.stagiaire_id,
+            testeur_id=data.testeur_id,
+            date=(_jour.date if _jour else None),
+            famille=_fam,
+            categorie=saisie.categorie,
+            ut=ut,
+            obtenue=data.decision_base,
+            note_testeur=note_t,
+            options_obtenues=",".join(codes_acquis) if codes_acquis else None,
+        )
+        db.add(epreuve)
 
     db.commit()
     return {"message": "Validee", "resultat": res}

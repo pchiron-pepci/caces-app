@@ -6,6 +6,7 @@
   var JOUR_ID = BODY.dataset.jourTestId;
   var STAGIAIRE_ID = BODY.dataset.stagiaireId;
   var CATEGORIE = BODY.dataset.categorie;
+  var FAMILLE = BODY.dataset.famille;
   var BASE = "/api/sessions/" + SESSION_ID + "/pratique/saisie/";
 
   var state = {
@@ -144,6 +145,32 @@
   // expose pour les blocs suivants
   window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt };
 
+  // ─── Testeurs habilites (famille + categorie + options du candidat) ───
+  function chargerTesteurs(options) {
+    var url = "/api/testeurs/habilites?famille=" + encodeURIComponent(FAMILLE) +
+              "&categorie=" + encodeURIComponent(CATEGORIE);
+    if (options && options.length) {
+      url += "&options=" + encodeURIComponent(options.join(","));
+    }
+    fetch(url).then(function (r) { return r.json(); }).then(function (list) {
+      var sel = document.getElementById("sp-testeur-select");
+      if (!sel) return;
+      (list || []).forEach(function (t) {
+        var o = document.createElement("option");
+        o.value = t.id;
+        o.textContent = t.nom + " " + t.prenom;
+        sel.appendChild(o);
+      });
+      if (!list || list.length === 0) {
+        var o = document.createElement("option");
+        o.value = "";
+        o.textContent = "Aucun testeur habilité " + FAMILLE + " " + CATEGORIE + (options && options.length ? " + " + options.join("/") : "");
+        o.disabled = true;
+        sel.appendChild(o);
+      }
+    }).catch(function () {});
+  }
+
   // ─── Chargement initial ───
   api("POST", BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir")
     .then(function (data) {
@@ -159,6 +186,10 @@
       renderAll();
       if (data.reprise) toast("Saisie reprise");
       if (window._SP && typeof window._SP.runCalc === "function") { window._SP.runCalc(); }
+      var optionsCandidat = state.blocs
+        .filter(function (b) { return b.grille && b.grille.type === "option" && b.grille.code_option; })
+        .map(function (b) { return b.grille.code_option; });
+      chargerTesteurs(optionsCandidat);
     })
     .catch(function (e) {
       document.getElementById("sp-progress-txt").textContent = "Erreur : " + e.message;
@@ -519,8 +550,14 @@
       var justif = (document.getElementById("sp-justif").value || "").trim();
       if (echec && !justif) { toast("Justification obligatoire en cas d'échec"); return; }
 
+      var selT = document.getElementById("sp-testeur-select");
+      var testeurId = selT ? selT.value : "";
+      if (!testeurId) { toast("Sélectionnez le testeur habilité (en-tête)"); return; }
+      var testeurNom = selT.options[selT.selectedIndex] ? selT.options[selT.selectedIndex].textContent : "";
+
       api("POST", BASE + state.saisieId + "/valider", {
-        testeur_nom: document.getElementById("sp-testeur").value || null,
+        testeur_id: parseInt(testeurId, 10),
+        testeur_nom: testeurNom || null,
         observations: document.getElementById("sp-obs").value || null,
         justification_ecart: justif || null,
         decision_base: dec.base,

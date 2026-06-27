@@ -107,17 +107,27 @@ body.sp-show-crit .sp-crit { display:block; }
 .sp-pin-actions button { flex:1; height:44px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; border:none; }
 .sp-pin-actions button[data-action="pin-annuler"] { background:#eee; color:#555; }
 #sp-pin-confirm { background:#cc0000; color:#fff; }
+
+#sp-testeur-wrap { margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#sp-testeur-wrap label { font-size:12px; color:#cfcfcf; }
+#sp-testeur-select { font-size:13px; padding:5px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.3); background:#3a3a3a; color:#fff; max-width:230px; }
+#sp-testeur-select:focus { outline:2px solid #cc0000; }
 </style>
 </head>
 <body
   data-session-id="{{ session_id }}"
   data-jour-test-id="{{ jour_test_id }}"
   data-stagiaire-id="{{ stagiaire_id }}"
-  data-categorie="{{ categorie }}">
+  data-categorie="{{ categorie }}"
+  data-famille="{{ recommandation }}">
 
 <div id="sp-header">
     <div class="sp-cand">{{ candidat_nom }} {{ candidat_prenom }}</div>
     <div class="sp-meta">{{ recommandation }} · Catégorie {{ categorie }}{% if candidat_ddn %} · né(e) le {{ candidat_ddn }}{% endif %}</div>
+    <div id="sp-testeur-wrap">
+        <label for="sp-testeur-select">Testeur :</label>
+        <select id="sp-testeur-select"><option value="">— Choisir le testeur habilité —</option></select>
+    </div>
     <span class="sp-mode" id="sp-mode-badge">…</span>
     <button id="sp-eye-btn" data-action="toggle-criteres" type="button"><span id="sp-eye-ic">&#128065;</span> <span id="sp-eye-label">Afficher les critères</span></button>
     <div id="sp-progress-wrap"><div id="sp-progress-bar"></div></div>
