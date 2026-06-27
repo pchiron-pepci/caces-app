@@ -41,7 +41,10 @@
     }
     var bareme = item.bareme_max;
     var note = bloc.notes[item.id];
-    var html = '<div class="sp-item"><div class="sp-item-lib">' + escapeHtml(item.libelle) + '</div>';
+    var critHtml = item.critere_evaluation
+      ? '<div class="sp-crit"><span class="sp-crit-ic">!</span> ' + escapeHtml(item.critere_evaluation) + '</div>'
+      : '';
+    var html = '<div class="sp-item"><div class="sp-item-lib">' + escapeHtml(item.libelle) + '</div>' + critHtml;
     html += '<div class="sp-item-saisie"><span class="sp-item-bareme">/' + fmt(bareme) + '</span>';
 
     if (state.mode === "binaire") {
@@ -311,6 +314,14 @@
 
     if ((t = e.target.closest('[data-action="toggle-theme"]'))) {
       t.closest(".sp-theme").classList.toggle("open"); return;
+    }
+
+    if ((t = e.target.closest('[data-action="toggle-criteres"]'))) {
+      var on = document.body.classList.toggle("sp-show-crit");
+      t.classList.toggle("on", on);
+      var lbl = document.getElementById("sp-eye-label");
+      if (lbl) lbl.textContent = on ? "Masquer les critères" : "Afficher les critères";
+      return;
     }
 
     if ((t = e.target.closest('[data-action="bin"]'))) {

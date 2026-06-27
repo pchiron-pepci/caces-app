@@ -59,6 +59,7 @@ def _grille_dict(grille, db) -> dict:
                 items.append({
                     "id": it.id, "libelle": it.libelle,
                     "bareme_max": it.bareme_max, "descriptif_seul": it.descriptif_seul,
+                    "critere_evaluation": it.critere_evaluation,
                 })
             points.append({
                 "id": pe.id, "numero": pe.numero,
