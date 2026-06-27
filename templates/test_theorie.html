@@ -1086,6 +1086,8 @@ let stagiaireId = null;
 let testeurId = null;
 let timerInterval = null;
 let tempsRestant = 60 * 60;
+let _tempsServeur = null;   // temps restant renvoye par le serveur (inviolable)
+let _testExpire = false;
 let recapDebloque = false;
 
 function demarrerTimer() {
@@ -1434,6 +1436,8 @@ async function reprendreBrouillon() {
         const r = await fetch('/api/sessions/' + SESSION_ID + '/theorie/brouillon/' + JOUR_ID + '/' + stagiaireId);
         if (!r.ok) return;
         const data = await r.json();
+        if (data && typeof data.temps_restant_s === 'number') { _tempsServeur = data.temps_restant_s; }
+        if (data && data.expire) { _testExpire = true; }
         if (data && data.existe && data.reponses && Object.keys(data.reponses).length > 0) {
             questions.forEach((q, idx) => {
                 const k = String(q.theme) + '_' + String(q.numero);
@@ -1464,6 +1468,24 @@ async function demarrerTest() {
     document.getElementById('progress-section').style.display = 'flex';
     const reprise = await reprendreBrouillon();
     sauverBrouillon(true);
+
+    // Chrono serveur (inviolable) : on part du temps restant renvoye par le serveur
+    if (typeof _tempsServeur === 'number' && _tempsServeur !== null) {
+        tempsRestant = _tempsServeur;
+    }
+
+    // Temps deja ecoule a la reprise : test termine, auto-validation
+    if (_testExpire || tempsRestant <= 0) {
+        afficherQuestion(0);
+        const bandeau = document.getElementById('recap-reprise-msg');
+        if (bandeau) {
+            bandeau.textContent = 'Le temps imparti est ecoule. Vos reponses ont ete enregistrees et le test va etre valide.';
+            bandeau.style.display = 'block';
+        }
+        valider(true);
+        return;
+    }
+
     demarrerTimer();
 
     if (reprise) {

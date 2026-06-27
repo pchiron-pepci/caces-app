@@ -803,12 +803,28 @@ def sauver_brouillon_theorie(session_id: int, data: BrouillonCreate, db: DBSessi
             stagiaire_id=data.stagiaire_id,
         )
         db.add(b)
+    DUREE_S = 60 * 60
+    if b.date_debut is not None:
+        ecoule = (datetime.utcnow() - b.date_debut).total_seconds()
+        if ecoule >= DUREE_S and not data.demarrer:
+            raise HTTPException(status_code=409, detail="Temps ecoule")
     b.reponses_json = json.dumps(data.reponses)
     b.date_maj = datetime.utcnow()
     if data.demarrer and b.date_debut is None:
         b.date_debut = datetime.utcnow()
     db.commit()
-    return {"message": "Brouillon enregistre", "date_debut": b.date_debut.isoformat() if b.date_debut else None}
+    temps_restant = None
+    expire = False
+    if b.date_debut:
+        ecoule = (datetime.utcnow() - b.date_debut).total_seconds()
+        temps_restant = int(max(0, DUREE_S - ecoule))
+        expire = ecoule >= DUREE_S
+    return {
+        "message": "Brouillon enregistre",
+        "date_debut": b.date_debut.isoformat() if b.date_debut else None,
+        "temps_restant_s": temps_restant,
+        "expire": expire,
+    }
 
 
 @router.get("/{session_id}/theorie/brouillon/{jour_test_id}/{stagiaire_id}")
@@ -819,11 +835,22 @@ def lire_brouillon_theorie(session_id: int, jour_test_id: int, stagiaire_id: int
         BrouillonTheorie.stagiaire_id == stagiaire_id,
     ).first()
     if not b:
-        return {"existe": False, "reponses": {}, "date_debut": None}
+        return {"existe": False, "reponses": {}, "date_debut": None,
+                "temps_restant_s": None, "expire": False}
+    from datetime import datetime
+    DUREE_S = 60 * 60
+    temps_restant = None
+    expire = False
+    if b.date_debut:
+        ecoule = (datetime.utcnow() - b.date_debut).total_seconds()
+        temps_restant = int(max(0, DUREE_S - ecoule))
+        expire = ecoule >= DUREE_S
     return {
         "existe": True,
         "reponses": json.loads(b.reponses_json) if b.reponses_json else {},
         "date_debut": b.date_debut.isoformat() if b.date_debut else None,
+        "temps_restant_s": temps_restant,
+        "expire": expire,
     }
 
 
