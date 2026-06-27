@@ -55,7 +55,6 @@
         <span class="nc-flag-cell" title="NC liée à une session">{% if nc.session_id %}🚩{% endif %}</span>
         <span class="nc-ref-cell" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.reference or '—' }}</span>
         <span class="nc-date-cell" style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
-        <span class="nc-titre-cell nc-titre-fullrow" style="font-weight:600; color:#1a237e;">{{ nc.titre }}</span>
         <span class="nc-col-origine" style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.origine == 'interne' %}Interne
             {% elif nc.origine == 'reclamation_client' %}Récl. client
@@ -85,6 +84,7 @@
         {% else %}
             <span class="badge" style="background:#f5f5f5;color:#757575;">Sans objet</span>
         {% endif %}
+        <span class="nc-titre-cell nc-titre-fullrow" style="font-weight:600; color:#1a237e;">{{ nc.titre }}</span>
     </div>
 
     <div class="nc-body" id="nc-body-{{ nc.id }}" style="display:none; border-top:1px solid #e8ecf4; padding:20px 24px 24px;">
