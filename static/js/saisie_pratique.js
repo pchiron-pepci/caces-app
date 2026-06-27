@@ -138,7 +138,11 @@
   var _sigState = { canvas: null, ctx: null, drawing: false, hasTrait: false };
   function initSignature() {
     var c = document.getElementById("sp-sig-canvas");
-    if (!c) { return; }
+    console.log("[SIG] initSignature appelee, canvas =", c);
+    if (!c) { console.log("[SIG] CANVAS INTROUVABLE"); return; }
+    var _r = c.getBoundingClientRect();
+    console.log("[SIG] dimensions:", _r.width, "x", _r.height, "| element au centre:",
+      document.elementFromPoint(_r.left + _r.width/2, _r.top + _r.height/2));
     _sigState.canvas = c;
     var ctx = c.getContext("2d");
     var dpr = window.devicePixelRatio || 1;
@@ -158,7 +162,7 @@
       var r = c.getBoundingClientRect();
       return { x: e.clientX - r.left, y: e.clientY - r.top };
     }
-    function startDraw(e) { _sigState.drawing = true; ctx.beginPath(); var p = pos(e); ctx.moveTo(p.x, p.y); }
+    function startDraw(e) { console.log("[SIG] startDraw declenche"); _sigState.drawing = true; ctx.beginPath(); var p = pos(e); ctx.moveTo(p.x, p.y); }
     function draw(e) {
       if (!_sigState.drawing) return;
       var p = pos(e);
