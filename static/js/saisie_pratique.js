@@ -120,8 +120,8 @@
     var box = document.getElementById("sp-blocs");
     box.innerHTML = state.blocs.map(renderBloc).join("");
     document.getElementById("sp-mode-badge").textContent = modeLabel(state.mode);
-    majProgression();
-    majScores();
+    if (window.majProgression) window.majProgression();
+    if (window.majScores) window.majScores();
   }
 
   function modeLabel(m) {
@@ -155,6 +155,7 @@
       });
       renderAll();
       if (data.reprise) toast("Saisie reprise");
+      if (window._SP && typeof window._SP.runCalc === "function") { window._SP.runCalc(); }
     })
     .catch(function (e) {
       document.getElementById("sp-progress-txt").textContent = "Erreur : " + e.message;
@@ -238,6 +239,7 @@
       return api("GET", BASE + state.saisieId + "/calculer");
     }).then(renderPropo).catch(function () {});
   }
+  if (window._SP) { window._SP.runCalc = runCalc; }
 
   function renderPropo(res) {
     var box = document.getElementById("sp-propo");

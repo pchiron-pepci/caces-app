@@ -184,8 +184,6 @@ def enregistrer_lot(session_id: int, saisie_id: int, data: EnregistrerLot,
     saisie = db.query(SaisiePratique).filter(SaisiePratique.id == saisie_id).first()
     if not saisie:
         raise HTTPException(404, "Saisie introuvable")
-    if saisie.statut == "valide":
-        raise HTTPException(409, "Saisie deja validee. Rouvrez-la pour modifier.")
 
     bloc = db.query(SaisieBloc).filter(
         SaisieBloc.id == data.bloc_id, SaisieBloc.saisie_id == saisie_id).first()
