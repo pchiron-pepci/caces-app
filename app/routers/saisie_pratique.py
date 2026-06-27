@@ -19,7 +19,7 @@ from app.models.grille_pratique import (
 )
 from app.models.config_organisme import ConfigOrganisme
 from app.services.calcul_pratique import calculer_saisie, appliquer_resultats
-from app.config_utils import get_pin_formateur
+from app.config_utils import get_pin_formateur, get_pin_admin
 
 router = APIRouter(prefix="/api/sessions", tags=["saisie_pratique"])
 
@@ -358,10 +358,17 @@ def rouvrir(session_id: int, saisie_id: int, db: DBSession = Depends(get_db)):
     return {"message": "Reouverte", "saisie_id": saisie.id}
 
 
+class SupprimerSaisie(BaseModel):
+    pin: str
+
+
 @router.delete("/{session_id}/pratique/saisie/{saisie_id}")
-def supprimer(session_id: int, saisie_id: int, db: DBSession = Depends(get_db)):
+def supprimer(session_id: int, saisie_id: int, data: SupprimerSaisie,
+              db: DBSession = Depends(get_db)):
     """Supprime la saisie (cascade blocs/notes/eliminatoires) et reinitialise
-    le resultat dans SessionEpreuve."""
+    le resultat dans SessionEpreuve. Protege par PIN admin (dans le corps)."""
+    if not data.pin or data.pin != get_pin_admin(db):
+        raise HTTPException(403, "Code PIN administrateur incorrect")
     saisie = db.query(SaisiePratique).filter(SaisiePratique.id == saisie_id).first()
     if not saisie:
         raise HTTPException(404, "Saisie introuvable")

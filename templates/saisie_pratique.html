@@ -93,6 +93,20 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; min-heig
 .sp-crit { display:none; font-size:12px; color:#854f0b; line-height:1.4; margin:6px 0 2px; padding:6px 9px; background:#faeeda; border-left:3px solid #e0a93f; border-radius:0 6px 6px 0; }
 body.sp-show-crit .sp-crit { display:block; }
 .sp-crit-ic { display:inline-block; width:15px; height:15px; line-height:15px; text-align:center; background:#e0a93f; color:#fff; border-radius:50%; font-weight:700; font-size:11px; margin-right:3px; }
+
+#sp-danger-zone { max-width:760px; margin:24px auto 40px; padding:0 14px; text-align:center; }
+#sp-btn-supprimer { background:#fff; color:#a32d2d; border:1px solid #e0a9a9; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; }
+#sp-btn-supprimer:hover { background:#fcebeb; }
+.sp-danger-hint { font-size:11px; color:#999; margin-top:6px; }
+#sp-pin-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px; }
+#sp-pin-modal { background:#fff; border-radius:14px; padding:22px; max-width:380px; width:100%; }
+#sp-pin-modal h3 { margin:0 0 10px; font-size:16px; color:#2d2d2d; }
+#sp-pin-modal p { font-size:13px; color:#555; line-height:1.5; margin:0 0 14px; }
+#sp-pin-input { width:100%; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; }
+.sp-pin-actions { display:flex; gap:8px; margin-top:16px; }
+.sp-pin-actions button { flex:1; height:44px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; border:none; }
+.sp-pin-actions button[data-action="pin-annuler"] { background:#eee; color:#555; }
+#sp-pin-confirm { background:#cc0000; color:#fff; }
 </style>
 </head>
 <body
@@ -118,6 +132,23 @@ body.sp-show-crit .sp-crit { display:block; }
 <div id="sp-actions">
     <button id="sp-btn-enregistrer" data-action="enregistrer">Enregistrer</button>
     <button id="sp-btn-valider" data-action="valider">Valider le résultat</button>
+</div>
+
+<div id="sp-danger-zone">
+    <button id="sp-btn-supprimer" data-action="supprimer-saisie" type="button">Supprimer cette saisie</button>
+    <div class="sp-danger-hint">Action administrateur · efface la saisie et réinitialise le résultat</div>
+</div>
+
+<div id="sp-pin-overlay" style="display:none;">
+    <div id="sp-pin-modal">
+        <h3>Supprimer la saisie</h3>
+        <p>Cette action efface définitivement la saisie et remet le résultat à vide. Saisissez le code PIN administrateur.</p>
+        <input type="password" id="sp-pin-input" inputmode="numeric" placeholder="PIN administrateur" autocomplete="off">
+        <div class="sp-pin-actions">
+            <button data-action="pin-annuler" type="button">Annuler</button>
+            <button data-action="pin-confirmer" type="button" id="sp-pin-confirm">Confirmer la suppression</button>
+        </div>
+    </div>
 </div>
 
 <div id="sp-toast"></div>

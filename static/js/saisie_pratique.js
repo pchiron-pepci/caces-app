@@ -327,6 +327,31 @@
       return;
     }
 
+    if (e.target.closest('[data-action="supprimer-saisie"]')) {
+      var ov = document.getElementById("sp-pin-overlay");
+      if (ov) { ov.style.display = "flex"; var pi = document.getElementById("sp-pin-input"); if (pi) { pi.value = ""; pi.focus(); } }
+      return;
+    }
+    if (e.target.closest('[data-action="pin-annuler"]')) {
+      var ov2 = document.getElementById("sp-pin-overlay");
+      if (ov2) ov2.style.display = "none";
+      return;
+    }
+    if (e.target.closest('[data-action="pin-confirmer"]')) {
+      var pin = (document.getElementById("sp-pin-input").value || "").trim();
+      if (!pin) { toast("Saisissez le PIN administrateur"); return; }
+      if (!state.saisieId) { toast("Aucune saisie à supprimer"); return; }
+      api("DELETE", BASE + state.saisieId, { pin: pin })
+        .then(function () {
+          var ov3 = document.getElementById("sp-pin-overlay");
+          if (ov3) ov3.style.display = "none";
+          toast("Saisie supprimée");
+          setTimeout(function () { window.close(); }, 1000);
+        })
+        .catch(function (err) { toast("Erreur : " + err.message); });
+      return;
+    }
+
     if ((t = e.target.closest('[data-action="bin"]'))) {
       var iid = parseInt(t.dataset.item, 10);
       var def = itemDef(iid);
