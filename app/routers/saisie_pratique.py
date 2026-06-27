@@ -127,8 +127,6 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
             GrillePratique.actif == True,
         ).first()
 
-    options_conflit = []  # options deplanifiees mais ayant deja des notes (non supprimees)
-
     if not saisie:
         saisie = SaisiePratique(
             jour_test_id=jour_test_id, stagiaire_id=stagiaire_id, categorie=categorie,
@@ -167,17 +165,13 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
                 if g_opt:
                     db.add(SaisieBloc(saisie_id=saisie.id, grille_id=g_opt.id, type="option"))
 
-        # (b) Retirer les blocs d'options qui ne sont plus planifies — SAUF s'ils ont des notes
+        # (b) Retirer les blocs d'options qui ne sont plus planifies — la planification prime,
+        # hard delete systematique (notes comprises), sans confirmation.
         for code, b in blocs_opt.items():
             if code not in codes_planif:
-                a_des_notes = db.query(SaisieItemNote).filter(SaisieItemNote.bloc_id == b.id).first() is not None
-                a_des_elim = db.query(SaisieEliminatoire).filter(SaisieEliminatoire.bloc_id == b.id).first() is not None
-                if a_des_notes or a_des_elim:
-                    options_conflit.append(code)
-                else:
-                    db.query(SaisieItemNote).filter(SaisieItemNote.bloc_id == b.id).delete()
-                    db.query(SaisieEliminatoire).filter(SaisieEliminatoire.bloc_id == b.id).delete()
-                    db.delete(b)
+                db.query(SaisieItemNote).filter(SaisieItemNote.bloc_id == b.id).delete()
+                db.query(SaisieEliminatoire).filter(SaisieEliminatoire.bloc_id == b.id).delete()
+                db.delete(b)
         db.commit()
 
     # Construire la reponse : blocs + grilles + notes deja saisies (reprise)
@@ -196,7 +190,6 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
     return {
         "saisie_id": saisie.id, "mode": saisie.mode, "statut": saisie.statut,
         "reprise": reprise, "blocs": blocs_out,
-        "options_conflit": options_conflit,
     }
 
 

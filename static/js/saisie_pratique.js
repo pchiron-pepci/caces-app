@@ -158,9 +158,6 @@
       });
       renderAll();
       if (data.reprise) toast("Saisie reprise");
-      if (data.options_conflit && data.options_conflit.length) {
-        toast("Option(s) déplanifiée(s) avec des notes : " + data.options_conflit.join(", ") + " — conservée(s), à vérifier");
-      }
       if (window._SP && typeof window._SP.runCalc === "function") { window._SP.runCalc(); }
     })
     .catch(function (e) {
