@@ -23,12 +23,11 @@
 </div>
 {% else %}
 
-<div id="nc-sort-header" style="display:grid; grid-template-columns:20px 22px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:7px 16px; background:#f0f2fa; border-radius:8px; margin-bottom:6px; user-select:none;">
+<div id="nc-sort-header" style="display:grid; grid-template-columns:20px 22px 120px 100px 120px 150px 130px 100px; gap:8px; align-items:center; padding:7px 16px; background:#f0f2fa; border-radius:8px; margin-bottom:6px; user-select:none;">
     <span></span>
     <span></span>
     <span class="nc-sort-col" data-col="reference" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Référence <span class="sort-arrow" id="arrow-reference"></span></span>
     <span class="nc-sort-col" data-col="date" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Date <span class="sort-arrow" id="arrow-date"></span></span>
-    <span class="nc-sort-col" data-col="titre" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Titre <span class="sort-arrow" id="arrow-titre"></span></span>
     <span class="nc-sort-col nc-col-origine" data-col="origine" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Origine <span class="sort-arrow" id="arrow-origine"></span></span>
     <span class="nc-sort-col nc-col-type" data-col="type_nc" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Type <span class="sort-arrow" id="arrow-type_nc"></span></span>
     <span class="nc-sort-col nc-col-nature" data-col="nature" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Nature <span class="sort-arrow" id="arrow-nature"></span></span>
@@ -47,12 +46,12 @@
      data-nature="{{ nc.nature or '' }}"
      data-statut="{{ nc.statut }}">
     <div class="nc-toggle-header" data-id="{{ nc.id }}"
-         style="display:grid; grid-template-columns:20px 22px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:14px 16px; cursor:pointer; user-select:none;">
+         style="display:grid; grid-template-columns:20px 22px 120px 100px 120px 150px 130px 100px; gap:8px; align-items:center; padding:14px 16px; cursor:pointer; user-select:none;">
         <span class="nc-arrow" style="color:#1a237e; font-size:12px; transition:transform 0.2s; display:inline-block;">▶</span>
         <span class="nc-flag-cell" title="NC liée à une session">{% if nc.session_id %}🚩{% endif %}</span>
         <span class="nc-ref-cell" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.reference or '—' }}</span>
         <span class="nc-date-cell" style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
-        <span class="nc-titre-cell" style="font-weight:600; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.titre }}</span>
+        <span class="nc-titre-cell nc-titre-fullrow" style="font-weight:600; color:#1a237e;">{{ nc.titre }}</span>
         <span class="nc-col-origine" style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             {% if nc.origine == 'interne' %}Interne
             {% elif nc.origine == 'reclamation_client' %}Récl. client
@@ -341,6 +340,14 @@
 #modal-nc .form-grid { grid-template-columns: 1fr; }
 @media (min-width: 768px) {
     #modal-nc .form-grid { grid-template-columns: 1fr 1fr; }
+    /* NC : titre en pleine largeur sous la 1re ligne (non triable, lisible en entier) */
+    .nc-toggle-header .nc-titre-fullrow {
+        grid-column: 1 / -1;
+        white-space: normal;
+        font-size: 14px;
+        padding-top: 2px;
+        padding-left: 50px;   /* aligné sous la référence (flèche 20 + gap + drapeau 22 + gap) */
+    }
 }
 @media (max-width: 767px) {
     #modal-nc > div { padding: 20px 16px !important; }
