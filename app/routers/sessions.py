@@ -652,6 +652,56 @@ def delete_jour_test(session_id: int, id: int, db: DBSession = Depends(get_db),
     db.commit()
     return {"message": "Jour supprime"}
 
+def _finaliser_brouillons_expires(session_id: int, db: DBSession):
+    """Cree le ResultatTheorie pour les brouillons dont le temps (60 min) est ecoule
+    et qui n'ont pas encore de resultat. Appele par le polling etat-live : un test
+    abandonne (navigateur ferme) est ainsi finalise automatiquement, sans action testeur."""
+    DUREE_S = 60 * 60
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        return
+    brouillons = db.query(BrouillonTheorie).filter(
+        BrouillonTheorie.session_id == session_id,
+        BrouillonTheorie.date_debut.isnot(None),
+    ).all()
+    for b in brouillons:
+        ecoule = (dt.utcnow() - b.date_debut).total_seconds()
+        if ecoule < DUREE_S:
+            continue
+        existe = db.query(ResultatTheorie).filter(
+            ResultatTheorie.jour_test_id == b.jour_test_id,
+            ResultatTheorie.stagiaire_id == b.stagiaire_id,
+        ).first()
+        if existe:
+            continue
+        reponses = json.loads(b.reponses_json) if b.reponses_json else {}
+        try:
+            resultat = calculer_resultat_theorie_phase2(reponses, session_id, session.famille, db)
+        except Exception:
+            continue
+        rt = ResultatTheorie(
+            session_id=session_id,
+            stagiaire_id=b.stagiaire_id,
+            jour_test_id=b.jour_test_id,
+            reponses_json=json.dumps(reponses),
+            note_totale=resultat["note_totale"],
+            note_theme1=resultat["notes_themes"].get("1"),
+            note_theme2=resultat["notes_themes"].get("2"),
+            note_theme3=resultat["notes_themes"].get("3"),
+            note_theme4=resultat["notes_themes"].get("4"),
+            note_theme5=resultat["notes_themes"].get("5"),
+            theme1_ok=resultat["themes_ok"].get("1"),
+            theme2_ok=resultat["themes_ok"].get("2"),
+            theme3_ok=resultat["themes_ok"].get("3"),
+            theme4_ok=resultat["themes_ok"].get("4"),
+            theme5_ok=resultat["themes_ok"].get("5"),
+            obtenue=resultat["obtenue"],
+            mode="numerique",
+        )
+        db.add(rt)
+    db.commit()
+
+
 @router.get("/{session_id}/etat-live")
 def etat_live_session(session_id: int, request: Request, db: DBSession = Depends(get_db)):
     from app.models.attestation_neutralite import AttestationNeutralite
@@ -662,6 +712,12 @@ def etat_live_session(session_id: int, request: Request, db: DBSession = Depends
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session introuvable")
+
+    # Finalisation auto des tests theoriques dont le temps est ecoule (abandon/navigateur ferme)
+    try:
+        _finaliser_brouillons_expires(session_id, db)
+    except Exception:
+        pass
 
     # Candidats actifs — batch JOIN Stagiaire (pas de N+1)
     sc_rows = db.query(SessionCandidat, Stagiaire).join(
