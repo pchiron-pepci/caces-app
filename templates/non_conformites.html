@@ -23,7 +23,8 @@
 </div>
 {% else %}
 
-<div id="nc-sort-header" style="display:grid; grid-template-columns:20px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:7px 16px; background:#f0f2fa; border-radius:8px; margin-bottom:6px; user-select:none;">
+<div id="nc-sort-header" style="display:grid; grid-template-columns:20px 22px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:7px 16px; background:#f0f2fa; border-radius:8px; margin-bottom:6px; user-select:none;">
+    <span></span>
     <span></span>
     <span class="nc-sort-col" data-col="reference" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Référence <span class="sort-arrow" id="arrow-reference"></span></span>
     <span class="nc-sort-col" data-col="date" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#555; cursor:pointer;">Date <span class="sort-arrow" id="arrow-date"></span></span>
@@ -46,8 +47,9 @@
      data-nature="{{ nc.nature or '' }}"
      data-statut="{{ nc.statut }}">
     <div class="nc-toggle-header" data-id="{{ nc.id }}"
-         style="display:grid; grid-template-columns:20px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:14px 16px; cursor:pointer; user-select:none;">
+         style="display:grid; grid-template-columns:20px 22px 120px 100px 1fr 120px 150px 130px 100px; gap:8px; align-items:center; padding:14px 16px; cursor:pointer; user-select:none;">
         <span class="nc-arrow" style="color:#1a237e; font-size:12px; transition:transform 0.2s; display:inline-block;">▶</span>
+        <span class="nc-flag-cell" title="NC liée à une session">{% if nc.session_id %}🚩{% endif %}</span>
         <span class="nc-ref-cell" style="font-family:monospace; font-size:12px; font-weight:700; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.reference or '—' }}</span>
         <span class="nc-date-cell" style="color:#888; font-size:13px; white-space:nowrap;">{{ nc.date.strftime('%d/%m/%Y') }}</span>
         <span class="nc-titre-cell" style="font-weight:600; color:#1a237e; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nc.titre }}</span>
@@ -71,7 +73,6 @@
             {% elif nc.nature %}{{ nc.nature }}
             {% else %}—{% endif %}
         </span>
-        {% if nc.session_id %}<span class="nc-flag-cell" title="NC liée à une session">🚩</span>{% endif %}
         {% if nc.statut == 'ouvert' %}
             <span class="badge" style="background:#ffebee;color:#c62828;">Ouvert</span>
         {% elif nc.statut == 'en_cours' %}
@@ -312,13 +313,12 @@
         padding: 12px 14px !important;
     }
     .nc-col-origine, .nc-col-type, .nc-col-nature { display: none !important; }
-    /* Ligne 1 : chevron + réf + date + flag(→droite) + badge */
+    /* Ligne 1 : chevron + flag + réf + date + badge */
     .nc-toggle-header .nc-ref-cell,
     .nc-toggle-header .nc-date-cell { flex-shrink: 0; }
     .nc-toggle-header .nc-flag-cell {
         display: inline !important;
         flex-shrink: 0;
-        margin-left: auto;
         font-size: 13px;
         line-height: 1;
     }
