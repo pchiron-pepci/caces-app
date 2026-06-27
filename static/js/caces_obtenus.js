@@ -49,6 +49,17 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', function (e) {
 
         // Plier / déplier une carte
+        const btnToggleV = e.target.closest('[data-action="toggle-caces-valide"]');
+        if (btnToggleV && !e.target.closest('a')) {
+            const id = btnToggleV.dataset.id;
+            const body = document.getElementById('caces-valide-body-' + id);
+            const chevron = btnToggleV.querySelector('.co-valide-chevron');
+            if (!body) return;
+            const isOpen = body.style.display !== 'none';
+            body.style.display = isOpen ? 'none' : 'flex';
+            if (chevron) chevron.textContent = isOpen ? '▶' : '▼';
+            return;
+        }
         const btnToggle = e.target.closest('[data-action="toggle-caces-card"]');
         if (btnToggle && !e.target.closest('a')) {
             const id = btnToggle.dataset.id;
@@ -433,6 +444,9 @@ function _renderValides() {
         + _renderHeaderValides(_wNo)
         + sorted.map(function (co, i) { return _renderLigne(co, i, _wNo); }).join('')
         + '</div>'
+        + '</div>'
+        + '<div class="co-cards-wrap">'
+        + _validesArray.map(function (co) { return _renderCarteValide(co); }).join('')
         + '</div>';
 }
 
@@ -543,6 +557,76 @@ function renderCarteAValider(co) {
 
 function _formatNo(co) {
     return co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
+}
+
+function _renderCarteValide(co) {
+    const annule = co.statut === 'annule';
+    const nomComplet = _nomDdn(co);
+    const noFormate = _formatNo(co);
+
+    const noBadge = annule
+        ? `<span style="font-family:monospace;font-size:12px;font-weight:700;text-decoration:line-through;color:#bbb;">${noFormate}</span>`
+        : `<span style="background:#1a237e;color:#fff;border-radius:5px;padding:2px 9px;font-size:12px;font-weight:700;font-family:monospace;">${noFormate}</span>`;
+
+    const statutBadge = annule
+        ? `<span style="background:#fff3e0;color:#e65100;border-radius:5px;padding:2px 9px;font-size:11px;font-weight:700;">Annulé</span>`
+        : `<span style="background:#e8f5e9;color:#2e7d32;border-radius:5px;padding:2px 9px;font-size:11px;font-weight:700;">Validé</span>`;
+
+    const catBg = annule ? '#888' : '#1a237e';
+
+    const options = co.options_obtenues
+        ? co.options_obtenues.split(',').map(o => `<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:700;">${o.trim()}</span>`).join(' ')
+        : '';
+
+    const actionHtml = annule
+        ? `<button data-action="voir-motif" data-id="${co.id}" data-nom="${nomComplet}"
+                title="${co.motif_annulation ? co.motif_annulation.replace(/"/g, '&quot;') : 'Aucun motif'}"
+                style="background:none;border:none;cursor:pointer;font-size:12px;color:#999;font-weight:600;">📝 Motif</button>`
+        : `<button data-action="annuler-caces" data-id="${co.id}" data-nom="${nomComplet}" data-categorie="${co.categorie}" data-famille="${co.famille}"
+                style="background:none;border:none;cursor:pointer;font-size:12px;color:#e65100;font-weight:600;">↩ Annuler</button>`;
+
+    const _search = (
+        (co.stagiaire_nom || '') + ' ' + (co.stagiaire_prenom || '') + ' ' +
+        (co.famille || '') + ' ' + (co.categorie || '') + ' ' +
+        _formatNo(co) + ' ' +
+        (co.date_obtention || '') + ' ' + (co.date_echeance || '')
+    ).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+    return `
+    <div data-caces-id="${co.id}" data-search="${_search}" class="co-valide-card" style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;margin-bottom:12px;background:${annule ? '#f7f7f7' : '#fff'};${annule ? 'opacity:0.7;' : ''}box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+        <div data-action="toggle-caces-valide" data-id="${co.id}"
+             style="background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;user-select:none;">
+            <span class="co-valide-chevron" style="font-size:12px;color:#aaa;flex-shrink:0;">▶</span>
+            ${noBadge}
+            ${statutBadge}
+            <a href="/stagiaires#${co.stagiaire_id}" target="_blank" style="font-size:15px;font-weight:700;color:${annule ? '#888' : '#1a237e'};text-decoration:none;${annule ? 'text-decoration:line-through;' : ''}">${nomComplet}</a>${badgeDispense(co)}
+        </div>
+        <div id="caces-valide-body-${co.id}" style="padding:12px 14px;display:none;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:12px;color:#555;font-weight:700;">${co.famille}</span>
+                <span style="font-size:10px;color:#bbb;">·</span>
+                <span style="font-size:12px;background:${catBg};color:#fff;border-radius:4px;padding:0 6px;font-weight:800;">${co.categorie}</span>
+                ${options ? `<span style="display:flex;gap:3px;margin-left:4px;">${options}</span>` : ''}
+            </div>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+                <div>
+                    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px;">Obtention</div>
+                    <div style="font-size:14px;font-weight:800;color:#1a237e;">${fmtDate(co.date_obtention)}</div>
+                </div>
+                <div>
+                    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px;">Échéance</div>
+                    <div style="font-size:14px;font-weight:700;color:#2e7d32;">${fmtDate(co.date_echeance)}</div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#555;">
+                <span style="color:#666;font-weight:600;">Testeur</span>
+                <span>${co.testeur_nom || '—'}</span>
+            </div>
+            <div style="border-top:1px solid #eef0f6;padding-top:10px;text-align:right;">
+                ${actionHtml}
+            </div>
+        </div>
+    </div>`;
 }
 
 function _renderLigne(co, idx, wNo) {

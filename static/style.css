@@ -314,6 +314,13 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* CACES® validés : tableau (desktop) vs cartes (tablette/mobile <1024px) */
+.co-cards-wrap { display: none; }
+@media (max-width: 1023px) {
+    .co-scroll-wrap { display: none; }
+    .co-cards-wrap { display: block; }
+}
+
 /* Lignes théorie/pratique — se plient si le contenu déborde */
 .co-source-row {
     flex-wrap: wrap;
