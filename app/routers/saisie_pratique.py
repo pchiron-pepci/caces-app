@@ -108,6 +108,27 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
     ).first()
     reprise = saisie is not None
 
+    # Options actuellement planifiees pour CETTE categorie (source de verite)
+    codes_planif = set()
+    if jtc.options_planifiees:
+        try:
+            opts_map = json.loads(jtc.options_planifiees)
+            for code in (opts_map.get(categorie) or []):
+                if code and str(code).strip():
+                    codes_planif.add(str(code).strip())
+        except Exception:
+            pass
+
+    def _grille_option(code):
+        return db.query(GrillePratique).filter(
+            GrillePratique.recommandation == reco,
+            GrillePratique.categorie == categorie,
+            GrillePratique.type == "option", GrillePratique.code_option == code,
+            GrillePratique.actif == True,
+        ).first()
+
+    options_conflit = []  # options deplanifiees mais ayant deja des notes (non supprimees)
+
     if not saisie:
         saisie = SaisiePratique(
             jour_test_id=jour_test_id, stagiaire_id=stagiaire_id, categorie=categorie,
@@ -126,25 +147,37 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
             raise HTTPException(404, "Aucune grille pratique pour %s %s" % (reco, categorie))
         db.add(SaisieBloc(saisie_id=saisie.id, grille_id=grille_base.id, type="base"))
 
-        # Options planifiees pour CETTE categorie (depuis JourTestCandidat.options_planifiees)
-        codes_planif = set()
-        if jtc.options_planifiees:
-            try:
-                opts_map = json.loads(jtc.options_planifiees)
-                for code in (opts_map.get(categorie) or []):
-                    if code and str(code).strip():
-                        codes_planif.add(str(code).strip())
-            except Exception:
-                pass
         for code in codes_planif:
-            g_opt = db.query(GrillePratique).filter(
-                GrillePratique.recommandation == reco,
-                GrillePratique.categorie == categorie,
-                GrillePratique.type == "option", GrillePratique.code_option == code,
-                GrillePratique.actif == True,
-            ).first()
+            g_opt = _grille_option(code)
             if g_opt:
                 db.add(SaisieBloc(saisie_id=saisie.id, grille_id=g_opt.id, type="option"))
+        db.commit()
+    else:
+        # RESYNC a la reprise : la planification prime.
+        blocs_opt = {}
+        for b in db.query(SaisieBloc).filter(SaisieBloc.saisie_id == saisie.id, SaisieBloc.type == "option").all():
+            g = db.query(GrillePratique).filter(GrillePratique.id == b.grille_id).first()
+            if g and g.code_option:
+                blocs_opt[g.code_option] = b
+
+        # (a) Ajouter les options planifiees qui n'ont pas de bloc
+        for code in codes_planif:
+            if code not in blocs_opt:
+                g_opt = _grille_option(code)
+                if g_opt:
+                    db.add(SaisieBloc(saisie_id=saisie.id, grille_id=g_opt.id, type="option"))
+
+        # (b) Retirer les blocs d'options qui ne sont plus planifies — SAUF s'ils ont des notes
+        for code, b in blocs_opt.items():
+            if code not in codes_planif:
+                a_des_notes = db.query(SaisieItemNote).filter(SaisieItemNote.bloc_id == b.id).first() is not None
+                a_des_elim = db.query(SaisieEliminatoire).filter(SaisieEliminatoire.bloc_id == b.id).first() is not None
+                if a_des_notes or a_des_elim:
+                    options_conflit.append(code)
+                else:
+                    db.query(SaisieItemNote).filter(SaisieItemNote.bloc_id == b.id).delete()
+                    db.query(SaisieEliminatoire).filter(SaisieEliminatoire.bloc_id == b.id).delete()
+                    db.delete(b)
         db.commit()
 
     # Construire la reponse : blocs + grilles + notes deja saisies (reprise)
@@ -163,6 +196,7 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
     return {
         "saisie_id": saisie.id, "mode": saisie.mode, "statut": saisie.statut,
         "reprise": reprise, "blocs": blocs_out,
+        "options_conflit": options_conflit,
     }
 
 
