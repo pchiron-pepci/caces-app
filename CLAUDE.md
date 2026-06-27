@@ -120,6 +120,7 @@ app/
 | `upload.py` | — | Import fichiers |
 | `statistiques.py` | — | Stats/rapports |
 | `cartes_caces.py` | `/api/cartes-caces` | Cartes CACES® (préparation, émission, annulation) + `GET /{id}/pdf` (WeasyPrint → PDF CR80 protégé pypdf) |
+| `saisie_pratique.py` | `/api/sessions` | Évaluation pratique en ligne — 6 routes sous `/{jour_test_id}/{stagiaire_id}/{categorie}/` : `POST /ouvrir`, `POST /enregistrer`, `POST /calculer`, `POST /valider`, `POST /rouvrir`, `DELETE /supprimer` |
 | *(main.py)* | `/verifier/{token}` | Page publique de vérification (token = UUID4 `token_verification`, fallback `numero_carte`) — pas de login requis |
 
 ---
@@ -300,6 +301,7 @@ python init_questions_r482.py
 | Haute | Journal non-conformités/réclamations — page /non-conformites + modèle NonConformite + carte dashboard | ✅ fait |
 | Haute | Historique sessions par stagiaire — bouton ▶ dans page stagiaires, lazy load GET /stagiaires/{id}/historique | ✅ fait |
 | Haute | Options CACES® (PE, TEL, CC, TR, CEC) sur épreuves pratiques — planification + résultats | ✅ fait |
+| Haute | Évaluation pratique en ligne (grille INRS sur tablette) — modèles, moteur, router, UI mobile | ✅ fait (init grille prod à exécuter) |
 | Moyenne | Externaliser JS inline de admin.html (contrainte CSP) | à faire |
 | Moyenne | Grilles R486, R489 (scripts init à créer) | à faire |
 | Moyenne | Multi-tenant (subdomain routing, database-per-tenant) | à faire |
@@ -2012,3 +2014,62 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - **Filtre par année** (commit `43537e1`) : toolbar `.toolbar-left` enrichie d'un toggle critère (📅 Obtention / ⏳ Échéance, style radio bouton) et d'un `<select id="filtre-annee">`. État : `_critereValides` + `_anneeValides` (défaut = année en cours). `data-annee-obt` et `data-annee-ech` portés sur les lignes tableau ET les cartes. `_peuplerMenuAnnees()` collecte les années présentes selon le critère actif. `appliquerFiltresValides()` combine recherche texte + filtre année, appelée après chaque render. Hauteurs toolbar uniformisées à 39px (commit `5214660`). Menu année compact sur petit écran `<768px` via `@media` (commit `024b8af`).
 - **Classe `.co-hidden`** (commit `002419c`) : le filtre utilisait `row.style.display='none'` ce qui écrasait le `display:flex` inline des corps de cartes. Corrigé par `row.classList.toggle('co-hidden', !ok)` + règle CSS `.co-hidden { display:none!important }` ajoutée dans `style.css`.
 - **DDN sous le nom** (commit `6557dbd`) : dans `_renderLigne`, la cellule Stagiaire est restructurée en colonne flex (`flex-direction:column`) — ligne 1 : NOM Prénom + badge dispense ; ligne 2 : DDN en `font-size:10px; color:#999` si `co.stagiaire_ddn`. Dans les cartes mobiles, `.co-card-ddn` passe de `display:none` à `display:inline` dans le bloc responsive `@media (max-width:1023px)`.
+
+---
+
+### ✅ Chantier terminé : évaluation pratique en ligne (saisie INRS sur tablette) — commit `50b343f`
+
+**Objectif :** permettre au testeur de remplir la grille d'évaluation INRS directement sur tablette (en ligne), en alternative à la saisie manuelle papier + justificatif scanné.
+
+**Modèles (`app/models/grille_pratique.py`) — 9 entités :**
+- `GrillePratique` — grille par famille (ex. R482/F base, R482/F PE, R482/F TEL)
+- `ThemePratique` — thème (ex. "Prise en main", "Manœuvres")
+- `PointEvaluation` (PE) — unité d'évaluation avec règle de seuil propre
+- `ItemPratique` — item INRS, mode de saisie (`binaire`/`partiel_entier`/`partiel_demi`), barème
+- `CritereEliminatoire` — critères rédhibitoires (coche = éliminé)
+- `SaisiePratique` — ancre `(jour_test_id, stagiaire_id, categorie)` — 1 saisie par candidat/catégorie/jour
+- `SaisieBloc` — résultats calculés par bloc (base/option)
+- `SaisieItemNote` — notes saisies par item
+- `SaisieEliminatoire` — critères éliminatoires cochés
+
+**Décision d'ancrage :** `SaisiePratique` sur `(jour_test_id, stagiaire_id, categorie)` (planification), PAS sur `session_epreuve_id` (résultat). La `SessionEpreuve` n'existe qu'à la validation finale.
+
+**Service de calcul (`app/services/calcul_pratique.py`) :**
+- `calculer_bloc(bloc, db)` : note_globale ≥ note_min AND chaque thème ≥ barème/2 AND chaque PE ≥ barème_PE/2 AND 0 éliminatoires
+- `calculer_saisie(saisie, db)` : calcul global + subordination option (ACQUISE seulement si bloc base réussi)
+- `appliquer_resultats(saisie, db)` : calcule ET écrit dans `SaisieBloc`
+
+**Router (`app/routers/saisie_pratique.py`) — 6 routes sous `/api/sessions/{jour_test_id}/{stagiaire_id}/{categorie}/` :**
+- `POST /ouvrir` — crée ou récupère la `SaisiePratique` + charge la grille
+- `POST /enregistrer` — sauvegarde les notes item + critères éliminatoires (fil de l'eau)
+- `POST /calculer` — calcul live (appelé en debounce 700 ms côté JS)
+- `POST /valider` — crée la `SessionEpreuve` (résultat final), met la saisie en statut `validee`
+- `POST /rouvrir` — repasse en `en_cours` pour corrections
+- `DELETE /supprimer` — supprime la `SaisiePratique` et la `SessionEpreuve` associée (PIN)
+
+**Page dédiée (`main.py`) :** `GET /sessions/{session_id}/pratique/saisie-en-ligne/{jour_test_id}/{stagiaire_id}/{categorie}` — standalone (pas de topbar), auth cookie.
+
+**Template (`templates/saisie_pratique.html`) :** standalone mobile-first, `<body data-session-id data-jour-test-id data-stagiaire-id data-categorie>`, header sticky anthracite, barre de progression, zones blocs/proposition/actions fixes.
+
+**JS (`static/js/saisie_pratique.js`) — 3 IIFEs :**
+- Bloc 1 : init (lit `JOUR_ID`/`STAGIAIRE_ID`/`CATEGORIE` depuis `body.dataset`), fetch `/ouvrir`, `renderBloc`, contrôles par mode (binaire/paliers/stepper)
+- Bloc 2 : `setNote`, `syncBloc` (debounce 600 ms), `syncAll`, `runCalc` (debounce 700 ms), `renderPropo`, `majProgression`, `majScores` ; délégation événements CSP-safe
+- Bloc 3 : `ouvrirModalValidation` (récap + radios réussi/échec + justification + testeur), `POST /valider`
+
+**Intégration `session_detail.html` + `session_detail.js` :**
+- Modale de choix `#modal-choix-pratique` : 2 boutons — "📱 Saisie en ligne" → `window.open` saisie en ligne ; "✍️ Enregistrement manuel" → ancienne modale pratique
+- Boutons `modifier-epreuve-pratique` (vert et rouge) + bouton `+` (nouveau résultat) : tous redirigés vers la modale de choix avec `data-jour-test-id="{{ j.id }}"` — `window._pratiqueCtx.jourTestId` stocké pour construire l'URL
+
+**Middleware `_verifier_role` :** 6 exceptions ajoutées pour les routes `/api/sessions/\d+/\d+/\d+/[a-zA-Z0-9]+/(ouvrir|enregistrer|calculer|valider|rouvrir|supprimer)`.
+
+**Scripts init grille :**
+- `init_grille_pratique_r482f.py` — grille R482/F base (5 thèmes, 8 PE, 100 pts, 5 éliminatoires), idempotent
+- `init_grille_pratique_r482f_options.py` — options PE et TEL (50 pts chacune)
+- À exécuter sur Render avec `DATABASE_URL` réel (pas encore fait en prod)
+
+**Règles métier INRS :**
+- Mode saisie adaptatif : binaire → 2 boutons ✓/✗ ; partiel + barème ≤ 3 → boutons paliers ; partiel + barème > 3 → stepper +/-
+- Bloc réussi : note_globale ≥ note_min ET chaque thème ≥ barème/2 ET chaque PE ≥ barème_PE/2 ET 0 éliminatoires
+- Subordination : option ACQUISE seulement si bloc base réussi
+- Sauvegarde fil de l'eau : auto debounce 600 ms par bloc + bouton Enregistrer manuel
+- Calcul live : debounce 700 ms après chaque changement de note
