@@ -138,38 +138,45 @@
   var _sigState = { canvas: null, ctx: null, drawing: false, hasTrait: false };
   function initSignature() {
     var c = document.getElementById("sp-sig-canvas");
-    if (!c) return;
+    if (!c) { return; }
     _sigState.canvas = c;
+    var ctx = c.getContext("2d");
     var dpr = window.devicePixelRatio || 1;
     var rect = c.getBoundingClientRect();
-    var cssW = rect.width || c.offsetWidth || c.parentElement.clientWidth || 300;
-    var cssH = rect.height || c.offsetHeight || 140;
-    c.width = cssW * dpr;
-    c.height = cssH * dpr;
-    var ctx = c.getContext("2d");
+    c.width = (rect.width || 300) * dpr;
+    c.height = (rect.height || 140) * dpr;
     ctx.scale(dpr, dpr);
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, rect.width || 300, rect.height || 140);
     ctx.strokeStyle = "#1a1a1a";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
     _sigState.ctx = ctx;
     _sigState.hasTrait = false;
-    function pos(ev) {
+
+    function pos(e) {
       var r = c.getBoundingClientRect();
-      var sx = r.width ? (c.width / dpr) / r.width : 1;
-      var sy = r.height ? (c.height / dpr) / r.height : 1;
-      return { x: (ev.clientX - r.left) * sx, y: (ev.clientY - r.top) * sy };
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
     }
-    function start(ev) { _sigState.drawing = true; var p = pos(ev); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
-    function move(ev) { if (!_sigState.drawing) return; var p = pos(ev); ctx.lineTo(p.x, p.y); ctx.stroke(); _sigState.hasTrait = true; }
-    function end() { _sigState.drawing = false; }
-    c.addEventListener("mousedown", start);
-    c.addEventListener("mousemove", move);
-    c.addEventListener("mouseup", end);
-    c.addEventListener("mouseleave", end);
-    c.addEventListener("touchstart", function (e) { e.preventDefault(); start(e.touches[0]); }, { passive: false });
-    c.addEventListener("touchmove", function (e) { e.preventDefault(); move(e.touches[0]); }, { passive: false });
-    c.addEventListener("touchend", end);
+    function startDraw(e) { _sigState.drawing = true; ctx.beginPath(); var p = pos(e); ctx.moveTo(p.x, p.y); }
+    function draw(e) {
+      if (!_sigState.drawing) return;
+      var p = pos(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      _sigState.hasTrait = true;
+    }
+    function stopDraw() { _sigState.drawing = false; }
+
+    c.addEventListener("mousedown", startDraw);
+    c.addEventListener("mousemove", draw);
+    c.addEventListener("mouseup", stopDraw);
+    c.addEventListener("mouseleave", stopDraw);
+    c.addEventListener("touchstart", function (e) { e.preventDefault(); startDraw(e.touches[0]); }, { passive: false });
+    c.addEventListener("touchmove", function (e) { e.preventDefault(); draw(e.touches[0]); }, { passive: false });
+    c.addEventListener("touchend", stopDraw);
   }
+
   function clearSignature() {
     if (_sigState.ctx && _sigState.canvas) {
       _sigState.ctx.clearRect(0, 0, _sigState.canvas.width, _sigState.canvas.height);
@@ -556,11 +563,7 @@
     window._spDecisions = { base: baseReussi, options: {} };
     (res.options || []).forEach(function (o) { window._spDecisions.options[o.code_option] = !!o.acquis; });
 
-    if (window.requestAnimationFrame) {
-      requestAnimationFrame(function () { initSignature(); });
-    } else {
-      setTimeout(initSignature, 30);
-    }
+    initSignature();
   }
 
   function blocRecap(titre, d, key, propAcquis) {
