@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Text, Float
+from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Text, Float, DateTime, func
 from app.database import Base
 
 class JourTest(Base):
@@ -55,3 +55,18 @@ class ResultatTheorie(Base):
     justificatif_cle = Column(String(500), nullable=True)
     justificatif_nom = Column(String(255), nullable=True)
     testeur_id = Column(Integer, ForeignKey("testeurs.id"), nullable=True)
+
+
+class BrouillonTheorie(Base):
+    """Reponses en cours d'un test theorique numerique (brouillon, SANS note ni verdict).
+    Sauve a chaque reponse pour eviter toute perte (rafraichissement/fermeture).
+    date_debut : heure de demarrage (figee), base du chrono serveur (etape 2)."""
+    __tablename__ = "brouillons_theorie"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
+    jour_test_id = Column(Integer, ForeignKey("jours_test.id"), nullable=False)
+    stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
+    reponses_json = Column(Text, nullable=True)
+    date_debut = Column(DateTime, nullable=True)
+    date_maj = Column(DateTime, server_default=func.now())

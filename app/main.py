@@ -525,6 +525,8 @@ _PUBLIC_EXACT = {"/api/auth/token", "/api/auth/logout", "/health"}
 _PUBLIC_PATTERNS = [
     _re.compile(r"^/api/sessions/\d+/jours/\d+/grille$"),
     _re.compile(r"^/api/sessions/\d+/theorie/reponses$"),
+    _re.compile(r"^/api/sessions/\d+/theorie/brouillon$"),
+    _re.compile(r"^/api/sessions/\d+/theorie/brouillon/\d+/\d+$"),
     _re.compile(r"^/admin/config/verifier-pin-formateur$"),
     _re.compile(r"^/api/consentements/"),
     _re.compile(r"^/api/neutralite/"),

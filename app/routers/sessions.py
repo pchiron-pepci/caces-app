@@ -11,7 +11,7 @@ from app.models.equipement import Equipement
 from app.models.stagiaire import Stagiaire
 from app.models.testeur import Testeur
 from app.models.categorie import Categorie, Famille
-from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
+from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie, BrouillonTheorie
 from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant, AffectationTest
 from app.models.caces_obtenu import CacesObtenu
 from app.models.justificatif import Justificatif
@@ -134,6 +134,13 @@ class ReponsesCandidatCreate(BaseModel):
     stagiaire_id: int
     reponses: dict
     testeur_id: Optional[int] = None
+
+
+class BrouillonCreate(BaseModel):
+    jour_test_id: int
+    stagiaire_id: int
+    reponses: dict
+    demarrer: bool = False
 
 class EpreuveCreate(BaseModel):
     session_id: int
@@ -777,6 +784,48 @@ def get_resultat_theorie(session_id: int, stagiaire_id: int, db: DBSession = Dep
         "obtenue": rt.obtenue,
         "reponses": json.loads(rt.reponses_json) if rt.reponses_json else {}
     }
+
+@router.post("/{session_id}/theorie/brouillon")
+def sauver_brouillon_theorie(session_id: int, data: BrouillonCreate, db: DBSession = Depends(get_db)):
+    """Sauvegarde fil de l'eau des reponses en cours (SANS calcul de note ni verdict)."""
+    from datetime import datetime
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvee")
+    b = db.query(BrouillonTheorie).filter(
+        BrouillonTheorie.jour_test_id == data.jour_test_id,
+        BrouillonTheorie.stagiaire_id == data.stagiaire_id,
+    ).first()
+    if not b:
+        b = BrouillonTheorie(
+            session_id=session_id,
+            jour_test_id=data.jour_test_id,
+            stagiaire_id=data.stagiaire_id,
+        )
+        db.add(b)
+    b.reponses_json = json.dumps(data.reponses)
+    b.date_maj = datetime.utcnow()
+    if data.demarrer and b.date_debut is None:
+        b.date_debut = datetime.utcnow()
+    db.commit()
+    return {"message": "Brouillon enregistre", "date_debut": b.date_debut.isoformat() if b.date_debut else None}
+
+
+@router.get("/{session_id}/theorie/brouillon/{jour_test_id}/{stagiaire_id}")
+def lire_brouillon_theorie(session_id: int, jour_test_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
+    """Reprise : renvoie les reponses en cours + date_debut."""
+    b = db.query(BrouillonTheorie).filter(
+        BrouillonTheorie.jour_test_id == jour_test_id,
+        BrouillonTheorie.stagiaire_id == stagiaire_id,
+    ).first()
+    if not b:
+        return {"existe": False, "reponses": {}, "date_debut": None}
+    return {
+        "existe": True,
+        "reponses": json.loads(b.reponses_json) if b.reponses_json else {},
+        "date_debut": b.date_debut.isoformat() if b.date_debut else None,
+    }
+
 
 @router.post("/{session_id}/theorie/reponses")
 def soumettre_reponses_theorie(session_id: int, data: ReponsesCandidatCreate, db: DBSession = Depends(get_db)):
