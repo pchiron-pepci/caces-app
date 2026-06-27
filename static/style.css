@@ -483,7 +483,7 @@ a:hover { color: #aa0000; }
 /* Barre toolbar figée au scroll (opt-in via classe .toolbar-sticky) */
 .toolbar-sticky {
     position: sticky;
-    top: 0;
+    top: 64px;
     z-index: 50;
     background: var(--bg, #f5f6fa);
     margin: 0 -32px;        /* déborde le padding de .content (32px) */
