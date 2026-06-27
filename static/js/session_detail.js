@@ -2055,18 +2055,48 @@ document.addEventListener('DOMContentLoaded', function() {
         var btn = e.target.closest('[data-action="modifier-epreuve-pratique"]');
         if (!btn) return;
         var optsPlanif; try { optsPlanif = JSON.parse(btn.dataset.optsPlanif || '[]'); } catch(e) { optsPlanif = []; }
+        // Stocke le contexte et ouvre la modale de CHOIX (en ligne vs manuel)
+        window._pratiqueCtx = {
+            stagiaireId: parseInt(btn.dataset.stagiaireId),
+            cat: btn.dataset.cat,
+            date: btn.dataset.date,
+            testeurId: btn.dataset.testeurId,
+            identite: btn.dataset.identite === 'true',
+            obtenue: btn.dataset.obtenue === 'true',
+            noteTesteur: btn.dataset.noteTesteur,
+            optsPlanif: optsPlanif,
+            optsObtenues: btn.dataset.optsObtenues,
+            epreuveId: parseInt(btn.dataset.epreuveId)
+        };
+        var mc = document.getElementById('modal-choix-pratique');
+        if (mc) mc.style.display = 'flex';
+    });
+
+    // Fermer la modale de choix
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-action="fermer-choix-pratique"]')) {
+            document.getElementById('modal-choix-pratique').style.display = 'none';
+        }
+    });
+
+    // Choix : enregistrement manuel -> modale existante (comportement d'origine)
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-action="choix-pratique-manuel"]')) return;
+        document.getElementById('modal-choix-pratique').style.display = 'none';
+        var c = window._pratiqueCtx; if (!c) return;
         saisirResultatPratique(
-            parseInt(btn.dataset.stagiaireId),
-            btn.dataset.cat,
-            btn.dataset.date,
-            btn.dataset.testeurId,
-            btn.dataset.identite === 'true',
-            btn.dataset.obtenue === 'true',
-            btn.dataset.noteTesteur,
-            optsPlanif,
-            btn.dataset.optsObtenues,
-            parseInt(btn.dataset.epreuveId)
+            c.stagiaireId, c.cat, c.date, c.testeurId, c.identite,
+            c.obtenue, c.noteTesteur, c.optsPlanif, c.optsObtenues, c.epreuveId
         );
+    });
+
+    // Choix : saisie en ligne -> ecran plein ecran (nouvel onglet)
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-action="choix-pratique-enligne"]')) return;
+        document.getElementById('modal-choix-pratique').style.display = 'none';
+        var c = window._pratiqueCtx; if (!c) return;
+        var sid = (typeof SESSION_ID !== 'undefined') ? SESSION_ID : (document.body.dataset.sessionId || window.location.pathname.split('/')[2]);
+        window.open('/sessions/' + sid + '/pratique/saisie-en-ligne/' + c.epreuveId, '_blank');
     });
 
     // Bouton "+" nouveau résultat pratique (CSP-safe : data-action au lieu de onclick)
