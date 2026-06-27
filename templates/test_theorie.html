@@ -1434,7 +1434,7 @@ async function reprendreBrouillon() {
         const r = await fetch('/api/sessions/' + SESSION_ID + '/theorie/brouillon/' + JOUR_ID + '/' + stagiaireId);
         if (!r.ok) return;
         const data = await r.json();
-        if (data && data.existe && data.reponses) {
+        if (data && data.existe && data.reponses && Object.keys(data.reponses).length > 0) {
             questions.forEach((q, idx) => {
                 const k = String(q.theme) + '_' + String(q.numero);
                 if (k in data.reponses) { reponses[idx] = data.reponses[k]; }
@@ -1445,8 +1445,10 @@ async function reprendreBrouillon() {
                     if (el) el.className = 'recap-q repondue';
                 }
             });
+            return true;
         }
     } catch (_e) {}
+    return false;
 }
 
 async function demarrerTest() {
@@ -1460,10 +1462,25 @@ async function demarrerTest() {
     document.getElementById('ecran-consignes').style.display = 'none';
     document.getElementById('ecran-qcm').style.display = 'block';
     document.getElementById('progress-section').style.display = 'flex';
-    await reprendreBrouillon();
-    afficherQuestion(0);
+    const reprise = await reprendreBrouillon();
     sauverBrouillon(true);
     demarrerTimer();
+
+    if (reprise) {
+        recapDebloque = true;
+        const nbRep = Object.keys(reponses).length;
+        afficherQuestion(0);
+        afficherRecap();
+        const bandeau = document.getElementById('recap-reprise-msg');
+        if (bandeau) {
+            bandeau.textContent = 'Reprise de votre test. Vos ' + nbRep + ' reponses ont ete conservees. Vous pouvez continuer la ou vous vous etiez arrete.';
+            bandeau.style.display = 'block';
+        } else {
+            alert('Reprise de votre test : vos ' + nbRep + ' reponses ont ete conservees.');
+        }
+    } else {
+        afficherQuestion(0);
+    }
 }
 
 function _couperAudioEnCours() {
