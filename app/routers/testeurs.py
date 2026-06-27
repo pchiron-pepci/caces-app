@@ -55,14 +55,15 @@ def liste_testeurs(db: Session = Depends(get_db)):
     return db.query(Testeur).filter(Testeur.actif == True).all()
 
 @router.get("/habilites")
-def testeurs_habilites(famille: str, request: Request, db: Session = Depends(get_db)):
+def testeurs_habilites(famille: str, request: Request, db: Session = Depends(get_db),
+                       categorie: str = None, options: str = None):
     user = getattr(request.state, "user", None)
     if not user:
         raise HTTPException(status_code=401, detail="Non authentifié")
     if not famille:
         raise HTTPException(status_code=422, detail="Paramètre famille requis")
-    testeurs = (
-        db.query(Testeur)
+    q = (
+        db.query(Testeur, HabilitationTesteur)
         .join(HabilitationTesteur, HabilitationTesteur.testeur_id == Testeur.id)
         .filter(
             HabilitationTesteur.famille == famille,
@@ -70,11 +71,22 @@ def testeurs_habilites(famille: str, request: Request, db: Session = Depends(get
             Testeur.actif == True,
             Testeur.etat == "actif",
         )
-        .distinct()
-        .order_by(Testeur.nom, Testeur.prenom)
-        .all()
     )
-    return [{"id": t.id, "nom": t.nom, "prenom": t.prenom} for t in testeurs]
+    if categorie:
+        q = q.filter(HabilitationTesteur.categorie == categorie)
+    rows = q.order_by(Testeur.nom, Testeur.prenom).all()
+    req = set(o.strip().upper() for o in (options or "").split(",") if o.strip())
+    out, seen = [], set()
+    for t, hab in rows:
+        if "PE" in req and not hab.option_pe:
+            continue
+        if "TEL" in req and not hab.option_tel:
+            continue
+        if t.id in seen:
+            continue
+        seen.add(t.id)
+        out.append({"id": t.id, "nom": t.nom, "prenom": t.prenom})
+    return out
 
 @router.get("/{id}", response_model=TesteurResponse)
 def get_testeur(id: int, db: Session = Depends(get_db)):

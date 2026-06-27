@@ -2112,7 +2112,7 @@ def page_saisie_pratique(session_id: int, jour_test_id: int, stagiaire_id: int, 
             "candidat_nom": (stagiaire.nom or "") if stagiaire else "",
             "candidat_prenom": (stagiaire.prenom or "") if stagiaire else "",
             "candidat_ddn": stagiaire.date_naissance.strftime("%d/%m/%Y") if stagiaire and stagiaire.date_naissance else "",
-            "recommandation": jour.famille if jour and hasattr(jour, "famille") else "",
+            "recommandation": session.famille or "",
             "categorie": categorie,
         },
     )
