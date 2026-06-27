@@ -2073,3 +2073,44 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - Subordination : option ACQUISE seulement si bloc base réussi
 - Sauvegarde fil de l'eau : auto debounce 600 ms par bloc + bouton Enregistrer manuel
 - Calcul live : debounce 700 ms après chaque changement de note
+
+---
+
+## ✅ SESSION 2026-06-27/28 — Évaluation pratique en ligne (finalisation) + test théorique numérique robuste
+
+### ✅ Chantier terminé : critères d'évaluation pratique (2026-06-27)
+Champ `ItemPratique.critere_evaluation` (Text nullable) + migration `ADD COLUMN`. Script `patch_criteres_r482f.py` (racine, idempotent, matching libellé désaccentué NFD) → 58 critères en prod (commande nue `python patch_criteres_r482f.py` sur Shell Render). Affichage logique A : critère masqué par défaut (`.sp-crit{display:none}`), bouton oeil global `data-action="toggle-criteres"` dans le header bascule `body.sp-show-crit` (affiche TOUS d'un coup). Bandeau ambre `#faeeda`/lisere `#e0a93f` sous chaque ligne notée. Routeur `_grille_dict` renvoie `critere_evaluation`. Commits `0be0a63`, `f4be80b`, `29414c9`, `49715a8`.
+
+### ✅ Chantier terminé : anti-repêchage validation pratique (2026-06-27)
+Le testeur peut RECALER (forcer échec si moteur=réussite) mais JAMAIS REPÉCHER (forcer réussite si moteur=échec). Front : bouton "Réussi" grisé/disabled dans modale si `echecMoteur`. Serveur : route `valider` calcule `appliquer_resultats` AVANT vérifs, refuse 422 si `res["base"]["reussi"]==False` et `data.decision_base==True` (idem options). Justification testeur OBLIGATOIRE pour TOUT échec (calculé ou décidé). Commit `85a0051`.
+
+### ✅ Chantier terminé : options PE/TEL planifiables sur catégorie F (2026-06-27)
+Catégorie F était ABSENTE de `init_options.py` → ajout ligne `("R482", "F", [("PE", False), ("TEL", False)])` (PE+TEL facultatives +0,5 UT chacune). `init_options.py` fait DELETE global puis recrée (idempotent, source de vérité unique). Relancé en prod (commande nue) → 35 options. Commit `dca1498`.
+
+### ✅ Chantier terminé : resync options à la reprise — planification souveraine (2026-06-27)
+Route `ouvrir` : à la reprise, compare `codes_planif` (depuis `JourTestCandidat.options_planifiees` JSON `{"F":["PE","TEL"]}`) aux blocs existants. Ajoute blocs options manquants, HARD DELETE systématique des blocs options déplanifiés (notes comprises, sans protection). La planification est souveraine. Commits `6ed48d7`, `644196c`.
+
+### ✅ Chantier terminé : bouton supprimer saisie pratique (PIN admin) (2026-06-27)
+Bouton "Supprimer cette saisie" (danger zone), modale PIN admin (`#sp-pin-overlay`), PIN dans le body. Route `DELETE .../{saisie_id}` avec `SupprimerSaisie(pin)`, vérifie `get_pin_admin(db)`. Supprime saisie + cascade + réinitialise résultat SessionEpreuve.
+
+### ✅ Chantier terminé : testeur habilité obligatoire sur la saisie (2026-06-27)
+Sélecteur testeur dans le HEADER de l'écran de saisie (vide au départ, OBLIGATOIRE pour valider, front + back). Modèle `HabilitationTesteur` (`app/models/habilitation_testeur.py`). **Famille stockée sans point** ("R482" = `Famille.code` = `session.famille`). Route page : `recommandation = session.famille` (PAS jour.famille qui n'existe pas). Modèle `ValiderSaisie.testeur_id: int` obligatoire. La branche `else` créant l'épreuve si absente MANQUAIT dans `valider` (expliquait le bug pastille UT) → ajoutée. Commits `23aebbc`, `6b4860b`.
+
+### ✅ Chantier terminé : signature testeur sur la saisie pratique (2026-06-27/28)
+Modèle : `SaisiePratique.signature_testeur` (Text, base64 PNG) + `testeur_id` + migrations `ADD COLUMN`. Modale de validation : champ "Nom du testeur" texte libre RETIRÉ (redondant avec le sélecteur header) → remplacé par encadré ambre avec mention + canvas signature OBLIGATOIRE (bloque Valider si vide, front + serveur 422). Apostrophe dans le JS via entité HTML `&#39;`. Stockée base64, affichée plus tard sur PDF. Commits `d3dccae` et suivants.
+
+**BUG signature résolu (portée JS) :** fonctions `initSignature`/`clearSignature`/`signatureData` étaient dans une IIFE, appelées depuis une AUTRE IIFE (portées hermétiques). Solution : déplacer le bloc dans l'IIFE qui contient les appels. LEÇON : sur ce fichier multi-IIFE, toujours colocaliser définition et appel.
+
+### ✅ Chantier terminé : fix liste testeurs vide + options = lignes distinctes (2026-06-28)
+**Fix 1 (liste vide) :** route dédiée `GET .../testeurs-habilites` dans `saisie_pratique.py`, whitelisée middleware PIN (la route admin était inaccessible depuis le PIN formateur).
+
+**Fix 2 (options) :** les options NE SONT PAS des booléens `option_pe`/`option_tel` (toujours False) mais des **LIGNES d'habilitation distinctes** : `categorie='OPT-PE'`, `categorie='OPT-TEL'`. Logique corrigée : `cats_requises.issubset(cats)` — un testeur est valide s'il a toutes les lignes requises. Commit `35a6c1b`.
+
+### ✅ Chantier terminé : test théorique numérique — anti-perte des réponses (2026-06-27/28)
+Modèle `BrouillonTheorie` (table `brouillons_theorie`) : sauvegarde fil-de-l'eau SANS calcul. Routes `POST/GET /theorie/brouillon` whitelisées publiques. Front : sauvegarde à chaque réponse, reprise sur le récap avec bandeau vert rassurant. Commits `344c408` et suivants.
+
+### ✅ Chantier terminé : chrono serveur inviolable + finalisation auto des tests abandonnés (2026-06-28)
+GET/POST brouillon renvoient `temps_restant_s` (calculé serveur depuis `date_debut`) + `expire`. Front repart du temps serveur. Auto-validation si expiré à la reprise. Finalisation auto via polling `etat-live` : `_finaliser_brouillons_expires` crée le `ResultatTheorie` pour tout brouillon expiré sans résultat. Commits `bdceb65`, `77732dd`.
+
+### Note de cohérence à traiter plus tard
+Interface de création d'habilitation (`HabilitationCreate` dans `admin.py`) propose encore les booléens `option_pe`/`option_tel` — incohérence non bloquante, à nettoyer.
