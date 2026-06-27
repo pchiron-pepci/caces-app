@@ -15,12 +15,35 @@ document.addEventListener('DOMContentLoaded', function () {
             lblToutes.style.background = tout ? '#1a237e' : '#f0f2f7';
             lblToutes.style.borderColor = tout ? '#1a237e' : '#c8d8f0';
         }
+        let visibles = 0;
         document.querySelectorAll('.nc-card').forEach(function (card) {
             const hay = (card.dataset.search || '').toLowerCase();
             const matchSearch = hay.includes(q);
             const matchStatut = tout || NON_SOLDEES.indexOf(card.dataset.statut) !== -1;
-            card.style.display = (matchSearch && matchStatut) ? '' : 'none';
+            const ok = matchSearch && matchStatut;
+            card.style.display = ok ? '' : 'none';
+            if (ok) visibles++;
         });
+
+        // Message si le filtrage vide la liste (sans masquer le cas \"aucune NC en base\")
+        const container = document.getElementById('nc-list');
+        const totalCards = container ? container.querySelectorAll('.nc-card').length : 0;
+        let vide = document.getElementById('nc-filtre-vide');
+        if (visibles === 0 && totalCards > 0) {
+            if (!vide) {
+                vide = document.createElement('div');
+                vide.id = 'nc-filtre-vide';
+                vide.className = 'card';
+                vide.style.cssText = 'text-align:center; padding:40px; color:#888; font-size:0.95rem;';
+                if (container) container.appendChild(vide);
+            }
+            vide.textContent = tout
+                ? 'Aucune non-conformité ne correspond à la recherche.'
+                : 'Aucune non-conformité non soldée. Cliquez sur l’œil pour afficher les clôturées et sans objet.';
+            vide.style.display = '';
+        } else if (vide) {
+            vide.style.display = 'none';
+        }
     }
 
     if (searchInput) searchInput.addEventListener('input', appliquerFiltresNC);
