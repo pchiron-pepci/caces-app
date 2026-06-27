@@ -214,7 +214,16 @@ def testeurs_habilites_saisie(session_id: int, saisie_id: int,
     from app.models.habilitation_testeur import HabilitationTesteur as _HT
     if not famille:
         raise HTTPException(422, "Parametre famille requis")
-    q = (
+    # Les options sont des LIGNES d'habilitation distinctes : categorie 'OPT-PE', 'OPT-TEL'.
+    # Un testeur est valide s'il possede la ligne de la categorie ET la ligne de CHAQUE option requise.
+    req = set(o.strip().upper() for o in (options or "").split(",") if o.strip())
+    cats_requises = set()
+    if categorie:
+        cats_requises.add(categorie)
+    for o in req:
+        cats_requises.add("OPT-" + o)  # PE -> OPT-PE, TEL -> OPT-TEL
+
+    rows = (
         db.query(Testeur, _HT)
         .join(_HT, _HT.testeur_id == Testeur.id)
         .filter(
@@ -223,21 +232,21 @@ def testeurs_habilites_saisie(session_id: int, saisie_id: int,
             Testeur.actif == True,
             Testeur.etat == "actif",
         )
+        .order_by(Testeur.nom, Testeur.prenom)
+        .all()
     )
-    if categorie:
-        q = q.filter(_HT.categorie == categorie)
-    rows = q.order_by(Testeur.nom, Testeur.prenom).all()
-    req = set(o.strip().upper() for o in (options or "").split(",") if o.strip())
-    out, seen = [], set()
+
+    cats_par_testeur = {}
+    testeur_info = {}
     for t, hab in rows:
-        if "PE" in req and not hab.option_pe:
-            continue
-        if "TEL" in req and not hab.option_tel:
-            continue
-        if t.id in seen:
-            continue
-        seen.add(t.id)
-        out.append({"id": t.id, "nom": t.nom, "prenom": t.prenom})
+        cats_par_testeur.setdefault(t.id, set()).add(hab.categorie)
+        testeur_info[t.id] = t
+
+    out = []
+    for tid, cats in cats_par_testeur.items():
+        if cats_requises.issubset(cats):
+            t = testeur_info[tid]
+            out.append({"id": t.id, "nom": t.nom, "prenom": t.prenom})
     return out
 
 
