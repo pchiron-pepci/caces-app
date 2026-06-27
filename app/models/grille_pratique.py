@@ -90,11 +90,15 @@ class CritereEliminatoire(Base):
 # ─────────────────────────────────────────────────────────────
 
 class SaisiePratique(Base):
-    """Une saisie globale (base + options) pour un SessionEpreuve. Un seul en_cours par épreuve."""
+    """Une saisie globale (base + options) ancree sur la PLANIFICATION
+    (jour de test + candidat + categorie), comme le theorique numerique.
+    Le SessionEpreuve (resultat) n'est cree qu'a la validation. Un seul en_cours par (jour, candidat, categorie)."""
     __tablename__ = "saisie_pratique"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_epreuve_id = Column(Integer, ForeignKey("session_epreuves.id"), nullable=False)
+    jour_test_id = Column(Integer, ForeignKey("jours_test.id"), nullable=False)
+    stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
+    categorie = Column(String(10), nullable=False)
     mode = Column(String(20), nullable=False, default="binaire")  # binaire | partiel_entier | partiel_demi
     statut = Column(String(20), nullable=False, default="en_cours")  # en_cours | valide
     testeur_nom = Column(String(120), nullable=True)
