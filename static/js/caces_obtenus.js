@@ -730,7 +730,10 @@ function _renderLigne(co, idx, wNo) {
          style="display:flex;align-items:center;padding:9px 16px;background:${bg};${annule ? 'opacity:0.65;' : ''}border-bottom:1px solid #eef0f6;gap:0;">
         <div style="width:${wNo};min-width:${wNo};">${noBadge}</div>
         <div style="width:82px;min-width:82px;">${badgeStatut(co.statut)}</div>
-        <div style="flex:1;min-width:130px;max-width:300px;overflow:hidden;font-size:13px;font-weight:700;color:#1a237e;display:flex;align-items:center;padding-right:10px;${annule ? 'text-decoration:line-through;' : ''}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nomComplet}</span>${badgeDispense(co)}</div>
+        <div style="flex:1;min-width:130px;max-width:300px;overflow:hidden;padding-right:10px;display:flex;flex-direction:column;justify-content:center;${annule ? 'text-decoration:line-through;' : ''}">
+            <div style="display:flex;align-items:center;font-size:13px;font-weight:700;color:#1a237e;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${co.stagiaire_nom} ${co.stagiaire_prenom}</span>${badgeDispense(co)}</div>
+            ${co.stagiaire_ddn ? `<span style="font-size:10px;color:#999;font-weight:400;line-height:1.1;margin-top:1px;">${co.stagiaire_ddn.split('-').reverse().join('/')}</span>` : ''}
+        </div>
         <div style="width:116px;min-width:116px;display:flex;flex-direction:row;align-items:center;gap:5px;padding-right:6px;flex-wrap:nowrap;">
             <span style="font-size:11px;color:#555;font-weight:700;white-space:nowrap;">${co.famille}</span>
             <span style="font-size:10px;color:#bbb;">·</span>

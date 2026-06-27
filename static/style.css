@@ -349,7 +349,7 @@ body {
 
 @media (max-width: 480px) {
     .co-card-ddn {
-        display: none;
+        display: inline;
     }
     /* Padding réduit pour que les cartes candidat utilisent toute la largeur disponible */
     .co-list-wrap {
