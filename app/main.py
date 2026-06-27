@@ -84,16 +84,6 @@ def _run_startup_migrations():
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_nom VARCHAR",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS etat VARCHAR(20) DEFAULT 'actif'",
         "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS mode_saisie_pratique VARCHAR(20) DEFAULT 'binaire'",
-        # Recréation propre de l'arbre grille pratique (tables vides, item_pratique a changé de FK theme_id->pe_id)
-        "DROP TABLE IF EXISTS saisie_eliminatoire CASCADE",
-        "DROP TABLE IF EXISTS saisie_item_note CASCADE",
-        "DROP TABLE IF EXISTS saisie_bloc CASCADE",
-        "DROP TABLE IF EXISTS saisie_pratique CASCADE",
-        "DROP TABLE IF EXISTS item_pratique CASCADE",
-        "DROP TABLE IF EXISTS point_evaluation CASCADE",
-        "DROP TABLE IF EXISTS critere_eliminatoire CASCADE",
-        "DROP TABLE IF EXISTS theme_pratique CASCADE",
-        "DROP TABLE IF EXISTS grille_pratique CASCADE",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS utilisateur_id INTEGER REFERENCES utilisateurs(id)",
         # utilisateurs
         "ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS role_referent VARCHAR",
