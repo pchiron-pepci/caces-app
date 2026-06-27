@@ -134,6 +134,49 @@
     return "Binaire";
   }
 
+  // ─── Canvas signature testeur ───
+  var _sigState = { canvas: null, ctx: null, drawing: false, hasTrait: false };
+  function initSignature() {
+    var c = document.getElementById("sp-sig-canvas");
+    if (!c) return;
+    _sigState.canvas = c;
+    var dpr = window.devicePixelRatio || 1;
+    var rect = c.getBoundingClientRect();
+    c.width = rect.width * dpr;
+    c.height = rect.height * dpr;
+    var ctx = c.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#1a1a1a";
+    _sigState.ctx = ctx;
+    _sigState.hasTrait = false;
+    function pos(ev) {
+      var r = c.getBoundingClientRect();
+      return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+    }
+    function start(ev) { _sigState.drawing = true; var p = pos(ev); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function move(ev) { if (!_sigState.drawing) return; var p = pos(ev); ctx.lineTo(p.x, p.y); ctx.stroke(); _sigState.hasTrait = true; }
+    function end() { _sigState.drawing = false; }
+    c.addEventListener("mousedown", start);
+    c.addEventListener("mousemove", move);
+    c.addEventListener("mouseup", end);
+    c.addEventListener("mouseleave", end);
+    c.addEventListener("touchstart", function (e) { e.preventDefault(); start(e.touches[0]); }, { passive: false });
+    c.addEventListener("touchmove", function (e) { e.preventDefault(); move(e.touches[0]); }, { passive: false });
+    c.addEventListener("touchend", end);
+  }
+  function clearSignature() {
+    if (_sigState.ctx && _sigState.canvas) {
+      _sigState.ctx.clearRect(0, 0, _sigState.canvas.width, _sigState.canvas.height);
+      _sigState.hasTrait = false;
+    }
+  }
+  function signatureData() {
+    if (!_sigState.canvas || !_sigState.hasTrait) return null;
+    return _sigState.canvas.toDataURL("image/png");
+  }
+
   function escapeHtml(s) {
     return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -485,8 +528,16 @@
     html += '<div style="margin-top:8px;"><label style="font-size:13px;color:#555;">Observations (optionnel)</label>'
       + '<textarea id="sp-obs" rows="2" style="width:100%;margin-top:6px;border:1px solid #d0d4dc;border-radius:8px;padding:8px;font-size:13px;"></textarea></div>';
 
-    html += '<div style="margin-top:8px;"><label style="font-size:13px;color:#555;">Nom du testeur</label>'
-      + '<input id="sp-testeur" type="text" style="width:100%;margin-top:6px;border:1px solid #d0d4dc;border-radius:8px;padding:8px;font-size:13px;"></div>';
+    var selH = document.getElementById("sp-testeur-select");
+    var nomTesteur = (selH && selH.value && selH.options[selH.selectedIndex]) ? selH.options[selH.selectedIndex].textContent : "";
+    html += '<div style="margin-top:16px;border:1px solid #e0a93f;background:#faeeda;border-radius:8px;padding:10px;">'
+      + '<div style="font-size:12px;color:#7a5a12;line-height:1.5;">Je soussigné(e) <strong>' + escapeHtml(nomTesteur || "—") + '</strong>, testeur habilité, certifie avoir vérifié l&#39;identité du candidat et atteste de la sincérité des résultats consignés.</div>'
+      + '</div>';
+    html += '<div style="margin-top:10px;"><label style="font-size:13px;font-weight:700;color:#2d2d2d;">Signature du testeur *</label>'
+      + '<div style="border:1px solid #b0b4bc;border-radius:8px;margin-top:6px;background:#fff;position:relative;">'
+      + '<canvas id="sp-sig-canvas" style="width:100%;height:140px;display:block;touch-action:none;"></canvas>'
+      + '<button type="button" data-action="sig-clear" style="position:absolute;top:6px;right:6px;font-size:11px;padding:3px 8px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;">Effacer</button>'
+      + '</div></div>';
 
     html += '<div style="display:flex;gap:10px;margin-top:16px;">'
       + '<button data-action="annuler-valid" style="flex:1;height:44px;border:1px solid #b0b4bc;background:#fff;border-radius:8px;font-size:14px;cursor:pointer;">Annuler</button>'
@@ -500,6 +551,8 @@
     // pre-cocher les decisions selon la proposition
     window._spDecisions = { base: baseReussi, options: {} };
     (res.options || []).forEach(function (o) { window._spDecisions.options[o.code_option] = !!o.acquis; });
+
+    initSignature();
   }
 
   function blocRecap(titre, d, key, propAcquis) {
@@ -539,6 +592,10 @@
   });
 
   document.addEventListener("click", function (e) {
+    if (e.target.closest('[data-action="sig-clear"]')) {
+      clearSignature();
+      return;
+    }
     if (e.target.closest('[data-action="annuler-valid"]')) {
       var ov = document.getElementById("sp-modal-overlay");
       if (ov) ov.remove();
@@ -555,9 +612,13 @@
       if (!testeurId) { toast("Sélectionnez le testeur habilité (en-tête)"); return; }
       var testeurNom = selT.options[selT.selectedIndex] ? selT.options[selT.selectedIndex].textContent : "";
 
+      var signature = signatureData();
+      if (!signature) { toast("La signature du testeur est obligatoire"); return; }
+
       api("POST", BASE + state.saisieId + "/valider", {
         testeur_id: parseInt(testeurId, 10),
         testeur_nom: testeurNom || null,
+        signature_testeur: signature,
         observations: document.getElementById("sp-obs").value || null,
         justification_ecart: justif || null,
         decision_base: dec.base,

@@ -102,7 +102,9 @@ class SaisiePratique(Base):
     categorie = Column(String(10), nullable=False)
     mode = Column(String(20), nullable=False, default="binaire")  # binaire | partiel_entier | partiel_demi
     statut = Column(String(20), nullable=False, default="en_cours")  # en_cours | valide
+    testeur_id = Column(Integer, nullable=True)
     testeur_nom = Column(String(120), nullable=True)
+    signature_testeur = Column(Text, nullable=True)          # base64 PNG, trace de responsabilite
     observations = Column(Text, nullable=True)
     justification_ecart = Column(Text, nullable=True)        # requise si décision = échec
     resultat_propose = Column(Boolean, nullable=True)        # proposition système (global)

@@ -288,6 +288,7 @@ def calculer(session_id: int, saisie_id: int, db: DBSession = Depends(get_db)):
 class ValiderSaisie(BaseModel):
     testeur_id: int
     testeur_nom: Optional[str] = None
+    signature_testeur: str
     observations: Optional[str] = None
     justification_ecart: Optional[str] = None
     # decision testeur (peut differer de la proposition)
@@ -328,6 +329,10 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
     if "TEL" in _codes_opt and not hab.option_tel:
         raise HTTPException(422, "Testeur non habilite pour l'option Telecommande (TEL).")
 
+    # Signature obligatoire (sceau de responsabilite du testeur)
+    if not (data.signature_testeur or "").strip():
+        raise HTTPException(422, "Signature du testeur obligatoire.")
+
     # Calcule et ecrit la synthese dans les SaisieBloc (verdict du moteur)
     res = appliquer_resultats(saisie, db)
 
@@ -351,7 +356,9 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
     if echec and not (data.justification_ecart or "").strip():
         raise HTTPException(422, "Justification (commentaire testeur) obligatoire en cas d'echec.")
 
+    saisie.testeur_id = data.testeur_id
     saisie.testeur_nom = data.testeur_nom
+    saisie.signature_testeur = data.signature_testeur
     saisie.observations = data.observations
     saisie.justification_ecart = data.justification_ecart
     saisie.resultat_propose = res["base_reussie"] if res["base"] else None
