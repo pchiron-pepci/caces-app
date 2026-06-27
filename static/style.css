@@ -484,7 +484,7 @@ a:hover { color: #aa0000; }
 .toolbar-sticky {
     position: sticky;
     top: 64px;
-    z-index: 50;
+    z-index: 49;
     background: var(--bg, #f5f6fa);
     margin: 0 -32px;        /* déborde le padding de .content (32px) */
     padding: 8px 32px;

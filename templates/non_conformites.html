@@ -6,10 +6,7 @@
 
 <script type="application/json" id="nc-data">{{ nc_json | safe }}</script>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-    <h1 style="font-size:1.5rem; font-weight:700; color:#2d2d2d;">⚠️ Journal des non-conformités</h1>
-</div>
-<div class="toolbar" style="margin-bottom:20px;">
+<div class="toolbar toolbar-sticky" style="margin-bottom:20px;">
     <div class="toolbar-left">
         <input type="text" id="nc-search" value="" placeholder="🔍 Rechercher par référence, titre, origine, type..." class="search-input" autocomplete="new-password" data-lpignore="true" data-1p-ignore data-bwignore>
     </div>
