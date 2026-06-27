@@ -69,6 +69,7 @@ class ItemPratique(Base):
     libelle = Column(Text, nullable=False)
     bareme_max = Column(Float, nullable=True)               # null si descriptif_seul
     descriptif_seul = Column(Boolean, nullable=False, default=False)
+    critere_evaluation = Column(Text, nullable=True)        # consigne d'echec (colonne L Excel)
     ordre = Column(Integer, nullable=False, default=0)
 
     pe = relationship("PointEvaluation", back_populates="items")

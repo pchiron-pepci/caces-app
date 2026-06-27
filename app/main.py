@@ -85,6 +85,7 @@ def _run_startup_migrations():
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS autorisation_conduite_nom VARCHAR",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS etat VARCHAR(20) DEFAULT 'actif'",
         "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS mode_saisie_pratique VARCHAR(20) DEFAULT 'binaire'",
+        "ALTER TABLE item_pratique ADD COLUMN IF NOT EXISTS critere_evaluation TEXT",
         "ALTER TABLE grille_pratique DROP COLUMN IF EXISTS obligatoire",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS utilisateur_id INTEGER REFERENCES utilisateurs(id)",
         # utilisateurs
