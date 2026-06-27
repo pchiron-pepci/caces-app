@@ -13,7 +13,11 @@ from app.models.grille_pratique import (
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./caces.db")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine, tables=[
+    GrillePratique.__table__, ThemePratique.__table__,
+    PointEvaluation.__table__, ItemPratique.__table__,
+    CritereEliminatoire.__table__,
+])
 
 # Structure : themes -> [ (libelle_theme, bareme_theme, [ PE ]) ]
 # PE : (numero, libelle_chapeau_ou_None, [ lignes ])

@@ -14,7 +14,9 @@ db = SessionLocal()
 def norm(t):
     if t is None:
         return ""
-    t = str(t).lower().replace("’", "'").strip()
+    t = str(t).lower().replace("’", "’").replace("…", "...").strip()
+    if t.startswith("* "):
+        t = t[2:]
     t = "".join(c for c in unicodedata.normalize("NFD", t) if unicodedata.category(c) != "Mn")
     while "  " in t:
         t = t.replace("  ", " ")
@@ -22,6 +24,7 @@ def norm(t):
 
 CRITERES = {
     "base": [
+        ("Verifier la presence et la validite des documents reglementaires suivants, et savoir les exploiter :", "Ne presente pas les documents reglementaires ou ne sait pas les exploiter (notice, rapport de verification)"),
         ("* Notice d'instructions (justifier une interdiction d'emploi ou une regle d'utilisation)", "Ne donne pas une justification correcte"),
         ("* Rapport de verification generale periodique, de mise ou de remise en service (verifier l'absence d'observation ou de restriction d'usage)", "Ne comprend pas le rapport / Ne verifie pas la date du rapport / Ne verifie pas la conclusion du rapport"),
         ("Proceder a une verification visuelle de l'engin de chantier", "Ne verifie pas un de ces elements : pneus / chenilles, articulations, axes et goupilles, flexibles hydrauliques, verins"),
@@ -36,6 +39,7 @@ CRITERES = {
         ("Prendre connaissance des abaques de charge et savoir determiner la capacite du chariot en fonction de la hauteur et de la portee, dans les differentes configurations (sur pneumatiques, sur stabilisateurs…)", "N'identifie pas une hauteur, une portee ou une capacite autorisees, selon des conditions proposees par le testeur (avec et sans stabilisateurs) / Ne trouve pas la capacite nominale du chariot"),
         ("S'assurer de l'adequation du chariot a la manutention a realiser (capacite, hauteur, portee…)", "Se trompe ou ne realise pas l'examen d'adequation des charges devant etre chargees sur le vehicule"),
         ("Verifier que la configuration de la charge (support, nature, homogeneite, stabilite…) est compatible avec le levage", "Ne verifie pas l'etat d'une des charges devant etre manutentionnees"),
+        ("Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage", "Donne des a-coups injustifies / Ne parvient pas a adapter ses trajectoires / Heurte un obstacle / Roule en dehors du chemin (talus, fosse...)"),
         ("Effectuer les manoeuvres avec souplesse et precision", "Donne des a-coups injustifies / Ne parvient pas a adapter ses trajectoires / Heurte un obstacle / Roule en dehors du chemin (talus, fosse…)"),
         ("Verifier au prealable l'environnement de travail", "N'identifie pas au prealable les points de vigilance du parcours"),
         ("Garantir la securite des pietons (vision en marche arriere, utilisation correcte de l'avertisseur sonore…)", "Ne prend pas en compte un pieton dans ou a proximite de sa zone de travail (different de la faute eliminatoire, qui est le danger reel occasionne par un pieton proche de l'engin)"),
@@ -80,6 +84,7 @@ CRITERES = {
         ("Se positionner pour avoir la meilleure vision de la manoeuvre et de son environnement, tout en restant hors de la zone de risque", "Ne conserve pas une vision degagee de l'engin et de la zone, en permanence / Se tient dans la zone immediate de manoeuvre de l'engin, ou dans le rayon d'action des equipements"),
         ("Garantir la securite des pietons", "Ne prend pas en compte un pieton dans ou a proximite de sa zone de travail (different de la faute eliminatoire, qui est le danger reel occasionne par un pieton proche de l'engin)"),
         ("Effectuer les manoeuvres avec souplesse et precision", "Donne des a-coups injustifies / Ne parvient pas a adapter ses trajectoires / Heurte un obstacle / Roule en dehors du chemin (talus, fosse…)"),
+        ("Au moyen de la telecommande, circuler en marche avant / en marche arriere, en ligne droite / en virage", "Donne des a-coups injustifies / Ne parvient pas a adapter ses trajectoires / Heurte un obstacle / Roule en dehors du chemin (talus, fosse...)"),
         ("Au moyen de la telecommande, realiser les travaux pour lesquels l'engin est concu", "Se referer aux criteres definis dans la grille d'evaluation de la categorie (PE 4, 5, 6 et 7)"),
     ],
 }
