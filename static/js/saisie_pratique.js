@@ -451,17 +451,25 @@
     var ok = !!propAcquis;
     var color = ok ? "#0f6e56" : "#a32d2d";
     var label = ok ? "Réussi" : "Échec";
+    var echecMoteur = !ok;
+    var reussiDisabled = echecMoteur ? " disabled" : "";
+    var reussiStyle = echecMoteur
+      ? "flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #e0e0e0;background:#f3f3f3;color:#bbb;font-size:13px;font-weight:700;cursor:not-allowed;"
+      : "flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #a5d6a7;background:#e8f5e9;font-size:13px;font-weight:700;cursor:pointer;";
     var radios = ''
       + '<div style="display:flex;gap:8px;margin-top:6px;">'
-      + '<label style="flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #a5d6a7;background:#e8f5e9;font-size:13px;font-weight:700;cursor:pointer;">'
-      + '<input type="radio" name="dec-' + key + '" value="1"' + (ok ? " checked" : "") + ' data-key="' + key + '"> Réussi</label>'
+      + '<label style="' + reussiStyle + '">'
+      + '<input type="radio" name="dec-' + key + '" value="1"' + (ok ? " checked" : "") + reussiDisabled + ' data-key="' + key + '"> Réussi</label>'
       + '<label style="flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #ef9a9a;background:#ffebee;font-size:13px;font-weight:700;cursor:pointer;">'
       + '<input type="radio" name="dec-' + key + '" value="0"' + (!ok ? " checked" : "") + ' data-key="' + key + '"> Échec</label>'
       + '</div>';
+    var blocage = echecMoteur
+      ? '<div style="font-size:11px;color:#a32d2d;margin-top:6px;line-height:1.4;"><strong>Échec au test :</strong> le résultat ne peut pas être transformé en réussite. Un commentaire est obligatoire.</div>'
+      : '';
     return '<div style="border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:8px;">'
       + '<div style="font-size:13px;font-weight:700;color:#2d2d2d;">' + escapeHtml(titre) + '</div>'
       + '<div style="font-size:12px;color:#555;margin-top:2px;">Proposition : <span style="color:' + color + ';font-weight:700;">' + label + '</span> (' + fmt(d.note_globale) + '/' + fmt(d.note_max) + ')</div>'
-      + radios + '</div>';
+      + radios + blocage + '</div>';
   }
 
   // maj des decisions quand le testeur change un radio

@@ -239,13 +239,28 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
     if not saisie:
         raise HTTPException(404, "Saisie introuvable")
 
-    # Justification obligatoire si la decision base est un echec
-    echec = (not data.decision_base) or any(v is False for v in data.decisions_options.values())
-    if echec and not (data.justification_ecart or "").strip():
-        raise HTTPException(422, "Justification obligatoire en cas d'echec.")
-
-    # Calcule et ecrit la synthese dans les SaisieBloc
+    # Calcule et ecrit la synthese dans les SaisieBloc (verdict du moteur)
     res = appliquer_resultats(saisie, db)
+
+    # GARDE REGLEMENTAIRE : pas de repechage. Le testeur ne transforme jamais un echec calcule en reussite.
+    if res["base"] and (not res["base"]["reussi"]) and data.decision_base:
+        raise HTTPException(422,
+            "Echec au test : le resultat ne peut pas etre transforme en reussite. "
+            "NORYX n'autorise jamais le repechage d'un echec calcule.")
+    for opt in res["options"]:
+        code = opt.get("code_option")
+        if code and (not opt["reussi"]) and data.decisions_options.get(code) is True:
+            raise HTTPException(422,
+                "Echec a l'option %s : le resultat ne peut pas etre transforme en reussite." % code)
+
+    # Justification obligatoire pour TOUT echec (calcule ou decide par le testeur)
+    echec = (not data.decision_base) or any(v is False for v in data.decisions_options.values())
+    if res["base"] and not res["base"]["reussi"]:
+        echec = True
+    if any(not o["reussi"] for o in res["options"]):
+        echec = True
+    if echec and not (data.justification_ecart or "").strip():
+        raise HTTPException(422, "Justification (commentaire testeur) obligatoire en cas d'echec.")
 
     saisie.testeur_nom = data.testeur_nom
     saisie.observations = data.observations
