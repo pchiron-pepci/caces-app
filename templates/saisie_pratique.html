@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saisie pratique — {{ candidat_nom }} {{ candidat_prenom }}</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; padding-bottom: 88px; }
+
+#sp-header {
+    background: #2d2d2d; color: #fff; padding: 10px 16px;
+    position: sticky; top: 0; z-index: 20;
+}
+#sp-header .sp-cand { font-size: 17px; font-weight: 700; }
+#sp-header .sp-meta { font-size: 13px; color: #cfcfcf; margin-top: 2px; }
+#sp-header .sp-mode { font-size: 12px; background:#cc0000; color:#fff; padding:3px 10px; border-radius:12px; display:inline-block; margin-top:6px; }
+#sp-progress-wrap { height: 6px; background: rgba(255,255,255,0.18); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+#sp-progress-bar { height: 100%; width: 0%; background: #cc0000; transition: width .2s; }
+#sp-progress-txt { font-size: 12px; color: #cfcfcf; margin-top: 5px; }
+
+#sp-content { max-width: 760px; margin: 0 auto; padding: 14px; }
+
+.sp-bloc-titre {
+    display:flex; align-items:center; gap:10px; margin: 18px 4px 10px;
+    font-size: 13px; font-weight: 700; color:#7a3fb5;
+}
+.sp-bloc-titre .sp-bloc-line { flex:1; height:1px; background:#d8c8ec; }
+.sp-bloc-titre .sp-bloc-label { background:#f0e6fa; color:#7a3fb5; padding:3px 12px; border-radius:12px; white-space:nowrap; }
+
+.sp-theme { background:#fff; border:1px solid #e2e6ee; border-radius:12px; margin-bottom:12px; overflow:hidden; }
+.sp-theme-head {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:12px 14px; cursor:pointer; user-select:none; background:#fafbff;
+}
+.sp-theme-head .sp-theme-titre { font-size:14px; font-weight:700; color:#2d2d2d; display:flex; align-items:center; gap:8px; min-width:0; }
+.sp-theme-head .sp-theme-score { font-size:12px; color:#555; white-space:nowrap; }
+.sp-theme-body { padding:6px 10px 10px; display:none; }
+.sp-theme.open .sp-theme-body { display:block; }
+.sp-chevron { transition: transform .2s; flex-shrink:0; }
+.sp-theme.open .sp-chevron { transform: rotate(90deg); }
+
+.sp-pe { padding:10px 6px; border-top:1px solid #f0f2f6; }
+.sp-pe:first-child { border-top:none; }
+.sp-pe-head { display:flex; align-items:flex-start; gap:8px; margin-bottom:4px; }
+.sp-pe-badge { font-size:11px; font-weight:700; color:#185fa5; background:#e6f1fb; border-radius:4px; padding:1px 7px; white-space:nowrap; }
+.sp-pe-badge.ko { color:#a32d2d; background:#fceaea; }
+.sp-pe-chapeau { font-size:12px; color:#555; font-style:italic; flex:1; line-height:1.4; }
+
+.sp-item { padding:8px 4px; }
+.sp-item-lib { font-size:13px; color:#2d2d2d; line-height:1.4; }
+.sp-item-desc { font-size:12px; color:#999; line-height:1.4; padding:3px 0 3px 12px; border-left:2px solid #e2e6ee; margin:4px 0 4px 4px; }
+.sp-item-saisie { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:6px; }
+.sp-item-bareme { font-size:11px; color:#999; }
+
+.sp-btn-bin { width:40px; height:40px; border-radius:8px; border:1px solid #d0d4dc; background:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer; color:#aaa; }
+.sp-btn-bin.ok-on { border-color:#1d9e75; background:#e1f5ee; color:#0f6e56; }
+.sp-btn-bin.ko-on { border-color:#e24b4a; background:#fceaea; color:#a32d2d; }
+
+.sp-paliers { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
+.sp-palier { min-width:38px; height:38px; padding:0 8px; border-radius:8px; border:1px solid #d0d4dc; background:#fff; color:#555; font-size:13px; cursor:pointer; }
+.sp-palier.on { border:2px solid #185fa5; background:#e6f1fb; color:#185fa5; font-weight:700; }
+
+.sp-step { display:flex; align-items:center; gap:8px; }
+.sp-step button { width:42px; height:42px; border-radius:8px; border:1px solid #c0c4cc; background:#fff; font-size:20px; cursor:pointer; }
+.sp-step .sp-step-val { min-width:60px; height:42px; border:1px solid #d0d4dc; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:700; }
+
+.sp-elim { background:#faeeda; border:1px solid #f0c98a; border-radius:12px; padding:12px; margin:14px 0; }
+.sp-elim-titre { font-size:13px; font-weight:700; color:#854f0b; display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.sp-elim label { display:flex; align-items:center; gap:10px; padding:7px 0; font-size:13px; color:#2d2d2d; cursor:pointer; }
+.sp-elim input { width:20px; height:20px; }
+
+#sp-propo { background:#fff; border:1px solid #e2e6ee; border-radius:12px; padding:14px; margin:14px 0; }
+#sp-propo .sp-propo-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:13px; color:#555; }
+.sp-verdict { border-radius:8px; padding:10px; text-align:center; font-weight:700; font-size:15px; }
+.sp-verdict.ok { background:#e1f5ee; color:#0f6e56; }
+.sp-verdict.ko { background:#fceaea; color:#a32d2d; }
+.sp-raisons { margin-top:8px; font-size:12px; color:#a32d2d; line-height:1.5; }
+
+#sp-actions {
+    position: fixed; bottom: 0; left: 0; right: 0; background:#fff; border-top:1px solid #e2e6ee;
+    padding: 12px 14px; display:flex; gap:10px; z-index: 30;
+}
+#sp-actions button { flex:1; height:46px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; border:none; }
+#sp-btn-enregistrer { background:#fff; border:1px solid #b0b4bc; color:#2d2d2d; }
+#sp-btn-valider { background:#1d9e75; color:#fff; }
+
+#sp-toast { position:fixed; top:70px; left:50%; transform:translateX(-50%); background:#2d2d2d; color:#fff; padding:8px 16px; border-radius:8px; font-size:13px; z-index:50; display:none; }
+.sp-sync { font-size:11px; color:#cfcfcf; }
+</style>
+</head>
+<body
+  data-session-id="{{ session_id }}"
+  data-epreuve-id="{{ epreuve_id }}">
+
+<div id="sp-header">
+    <div class="sp-cand">{{ candidat_nom }} {{ candidat_prenom }}</div>
+    <div class="sp-meta">{{ recommandation }} · Catégorie {{ categorie }}{% if candidat_ddn %} · né(e) le {{ candidat_ddn }}{% endif %}</div>
+    <span class="sp-mode" id="sp-mode-badge">…</span>
+    <div id="sp-progress-wrap"><div id="sp-progress-bar"></div></div>
+    <div id="sp-progress-txt">Chargement…</div>
+</div>
+
+<div id="sp-content">
+    <div id="sp-blocs"></div>
+    <div id="sp-propo" style="display:none;"></div>
+</div>
+
+<div id="sp-actions">
+    <button id="sp-btn-enregistrer" data-action="enregistrer">Enregistrer</button>
+    <button id="sp-btn-valider" data-action="valider">Valider le résultat</button>
+</div>
+
+<div id="sp-toast"></div>
+
+<script src="/static/js/saisie_pratique.js"></script>
+</body>
+</html>

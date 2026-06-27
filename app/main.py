@@ -2086,6 +2086,35 @@ def page_detail_theorie(request: Request, session_id: int, stagiaire_id: int, jo
         db.close()
 
 
+@app.get("/sessions/{session_id}/pratique/saisie-en-ligne/{epreuve_id}")
+def page_saisie_pratique(session_id: int, epreuve_id: int, request: Request, db: DBSession = Depends(get_db)):
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session introuvable")
+    epreuve = db.query(SessionEpreuve).filter(SessionEpreuve.id == epreuve_id).first()
+    if not epreuve:
+        raise HTTPException(status_code=404, detail="Epreuve introuvable")
+    stagiaire = db.query(Stagiaire).filter(Stagiaire.id == epreuve.stagiaire_id).first()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="saisie_pratique.html",
+        context={
+            "session_id": session_id,
+            "epreuve_id": epreuve_id,
+            "session_ref": session.reference if hasattr(session, "reference") else "",
+            "candidat_nom": (stagiaire.nom or "") if stagiaire else "",
+            "candidat_prenom": (stagiaire.prenom or "") if stagiaire else "",
+            "candidat_ddn": stagiaire.date_naissance.strftime("%d/%m/%Y") if stagiaire and stagiaire.date_naissance else "",
+            "recommandation": epreuve.famille,
+            "categorie": epreuve.categorie,
+        },
+    )
+
+
 @app.get("/sessions/{session_id}/theorie/saisie-degrade/{jour_id}")
 def page_saisie_degrade(session_id: int, jour_id: int, request: Request, db: DBSession = Depends(get_db)):
     user = getattr(request.state, "user", None)
