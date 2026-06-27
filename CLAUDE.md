@@ -1984,3 +1984,24 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 
 - **Toggle stagiaires inactifs** : `main.py/page_stagiaires` calcule `actifs_ids` (stagiaires dans ≥1 session `statut NOT IN ['terminee','annulee']`) via jointure `SessionCandidat⋈Session` ; `data-inactif="1"` sur les `<tr>` hors actifs ; par défaut seuls les actifs sont visibles ; `filtrer()` extrait (remplace le listener inline) gère texte + oeil ; `#chk-inactifs` + `#lbl-inactifs` — commit `be7df80`.
 - **Responsive toolbar** : même correctif `flex:1` sur `#search` — commit `3771034`.
+
+### ✅ Chantiers terminés (2026-06-27)
+
+#### Toolbar sticky (recherche/œil/création figée au scroll)
+
+- **Classe opt-in `.toolbar-sticky`** ajoutée dans `static/style.css` (commit `fc6b5e8`) : `position:sticky`, fond `var(--bg, #f5f6fa)`, `margin:0 -32px` (déborde le padding `.content`), `@media (max-width:1023px)` → `margin:0 -16px`.
+- **Correctif calage sous topbar** (commit `16b1720`) : la `.topbar` étant elle-même `sticky top:0 z-index:50`, la toolbar se figeait derrière. Corrigé en `top:64px` (hauteur topbar) + `z-index:49` (sous la topbar).
+- **Activée sur stagiaires + sessions** (`fc6b5e8`), puis **non-conformités** (`30ea201`, qui retire aussi le `<h1>` interne « Journal des non-conformités » faisant doublon avec le titre topbar).
+- `.toolbar` reste partagée par 6 pages : approche opt-in retenue (pas de sticky global) car cartes-caces/caces-obtenus ont une toolbar imbriquée dans une `.card` avec onglets (à cadrer séparément si besoin).
+
+#### Dashboard — onglet « À traiter » toujours replié au démarrage
+
+- `static/js/dashboard.js` (commit `94cb63b`) : boucle SECTIONS force `var ouvert = false` au lieu de lire `localStorage` → les 5 sous-sections sont systématiquement repliées à chaque chargement (déterministe, ignore l'historique). Le toggle au clic reste fonctionnel pour la session. **Boucle CARTES non touchée** (garde sa restauration localStorage).
+
+#### Non-conformités — refonte ligne + filtres (`non_conformites.html` + `non_conformites.js`)
+
+- **Drapeau 🚩 repositionné** (commit `53a6b63`) : déplacé d'entre nature/statut vers une colonne dédiée 22px entre la flèche ▶ et la référence. Grille passée de 8 à 9 colonnes (`20px 22px 120px 100px 1fr 120px 150px 130px 100px`) sur header + ligne. `.nc-flag-cell` toujours présent (vide si pas de `session_id`) pour garder l'alignement. Mobile : retrait du `margin-left:auto` qui le poussait à droite.
+- **Titre en pleine largeur** (commits `a8aba07`, `2d46c81`) : colonne « Titre » retirée du header de tri (le champ recherche couvre déjà le titre) → grille à 8 colonnes (`1fr` retiré). La cellule titre (`.nc-titre-fullrow`) est **déplacée en dernier enfant de la grille** (après le badge statut) avec `grid-column:1/-1` → toutes les colonnes restent ligne 1, titre seul ligne 2. CSS dans `@media (min-width:768px)` uniquement (mobile inchangé). `padding-left:50px` pour aligner sous la référence. JS de tri inchangé et défensif (`if (arrowEl)`), `attrMap.titre` devenu inutilisé sans danger.
+- **Œil filtre statut** (commit `a480501`) : `#chk-toutes-nc` + `#lbl-toutes-nc` à côté de la recherche (pattern stagiaires). Œil fermé (défaut) = NC non soldées (`ouvert` + `en_cours`) ; œil ouvert = tout. Fonction unique `appliquerFiltresNC()` combine recherche (`data-search`) ET statut (`data-statut`) — les deux filtres ne se marchent plus dessus. Couleur active harmonisée bleu clair `#e3f2fd`/`#1565c0` (commit `9252227`, identique stagiaires/cartes).
+- **Message liste vide** (commit `02de60c`) : si le filtrage masque toutes les cartes (et qu'il y a des NC en base), affiche `#nc-filtre-vide` contextuel — « Aucune non-conformité non soldée… » (œil fermé) ou « …ne correspond à la recherche » (œil ouvert). Le message serveur `{% if not non_conformites %}` (aucune NC en base) reste indépendant.
+- **Recherche flex responsive** (commit `9252227`) : `@media (max-width:767px)` → `.toolbar-left {display:flex; gap:8px}` + `#nc-search {flex:1; min-width:0}` pour garder l'œil sur la même ligne que la recherche.
