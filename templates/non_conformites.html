@@ -9,6 +9,10 @@
 <div class="toolbar toolbar-sticky" style="margin-bottom:20px;">
     <div class="toolbar-left">
         <input type="text" id="nc-search" value="" placeholder="🔍 Rechercher par référence, titre, origine, type..." class="search-input" autocomplete="new-password" data-lpignore="true" data-1p-ignore data-bwignore>
+        <label for="chk-toutes-nc" id="lbl-toutes-nc" title="Afficher toutes les non-conformités (y compris clôturées et sans objet)" style="display:inline-flex; align-items:center; cursor:pointer; background:#f0f2f7; border:1.5px solid #c8d8f0; border-radius:8px; padding:6px 11px; font-size:15px; user-select:none;">
+            <input type="checkbox" id="chk-toutes-nc" style="position:absolute; opacity:0; width:0; height:0;">
+            👁
+        </label>
     </div>
     <div class="toolbar-right">
         <button id="btn-nouvelle-nc" title="Nouvelle non-conformité"

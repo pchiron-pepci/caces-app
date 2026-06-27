@@ -2,17 +2,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const NC_DATA = JSON.parse(document.getElementById('nc-data').textContent);
 
-    // ── Recherche ──────────────────────────────────────────────────────────
+    // ── Recherche + filtre œil (non soldées par défaut) ─────────────────────
     const searchInput = document.getElementById('nc-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', function () {
-            const q = this.value.toLowerCase();
-            document.querySelectorAll('.nc-card').forEach(function (card) {
-                const hay = (card.dataset.search || '').toLowerCase();
-                card.style.display = hay.includes(q) ? '' : 'none';
-            });
+    const chkToutes = document.getElementById('chk-toutes-nc');
+    const lblToutes = document.getElementById('lbl-toutes-nc');
+    const NON_SOLDEES = ['ouvert', 'en_cours'];
+
+    function appliquerFiltresNC() {
+        const q = (searchInput ? searchInput.value : '').toLowerCase();
+        const tout = !!(chkToutes && chkToutes.checked);
+        if (lblToutes) {
+            lblToutes.style.background = tout ? '#1a237e' : '#f0f2f7';
+            lblToutes.style.borderColor = tout ? '#1a237e' : '#c8d8f0';
+        }
+        document.querySelectorAll('.nc-card').forEach(function (card) {
+            const hay = (card.dataset.search || '').toLowerCase();
+            const matchSearch = hay.includes(q);
+            const matchStatut = tout || NON_SOLDEES.indexOf(card.dataset.statut) !== -1;
+            card.style.display = (matchSearch && matchStatut) ? '' : 'none';
         });
     }
+
+    if (searchInput) searchInput.addEventListener('input', appliquerFiltresNC);
+    if (chkToutes) chkToutes.addEventListener('change', appliquerFiltresNC);
+    appliquerFiltresNC();
 
     // ── Tri colonnes ──────────────────────────────────────────────────────────
     let sortCol = null;
