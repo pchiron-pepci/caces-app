@@ -210,7 +210,7 @@ function appliquerFiltresValides() {
         const matchSearch = !q || (row.dataset.search || '').includes(q);
         const matchAnnee = (_anneeValides === 'toutes') || (row.dataset[dataAttr] === _anneeValides);
         const ok = matchSearch && matchAnnee;
-        row.style.display = ok ? '' : 'none';
+        row.classList.toggle('co-hidden', !ok);
         if (ok) visibles++;
     });
     let vide = document.getElementById('valides-filtre-vide');

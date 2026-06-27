@@ -316,6 +316,7 @@ body {
 
 /* CACES® validés : tableau (desktop) vs cartes (tablette/mobile <1024px) */
 .co-cards-wrap { display: none; }
+.co-hidden { display: none !important; }
 @media (max-width: 1023px) {
     .co-scroll-wrap { display: none; }
     .co-cards-wrap { display: block; }
