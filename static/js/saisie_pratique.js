@@ -142,8 +142,10 @@
     _sigState.canvas = c;
     var dpr = window.devicePixelRatio || 1;
     var rect = c.getBoundingClientRect();
-    c.width = rect.width * dpr;
-    c.height = rect.height * dpr;
+    var cssW = rect.width || c.offsetWidth || c.parentElement.clientWidth || 300;
+    var cssH = rect.height || c.offsetHeight || 140;
+    c.width = cssW * dpr;
+    c.height = cssH * dpr;
     var ctx = c.getContext("2d");
     ctx.scale(dpr, dpr);
     ctx.lineWidth = 2;
@@ -153,7 +155,9 @@
     _sigState.hasTrait = false;
     function pos(ev) {
       var r = c.getBoundingClientRect();
-      return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+      var sx = r.width ? (c.width / dpr) / r.width : 1;
+      var sy = r.height ? (c.height / dpr) / r.height : 1;
+      return { x: (ev.clientX - r.left) * sx, y: (ev.clientY - r.top) * sy };
     }
     function start(ev) { _sigState.drawing = true; var p = pos(ev); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
     function move(ev) { if (!_sigState.drawing) return; var p = pos(ev); ctx.lineTo(p.x, p.y); ctx.stroke(); _sigState.hasTrait = true; }
@@ -552,7 +556,11 @@
     window._spDecisions = { base: baseReussi, options: {} };
     (res.options || []).forEach(function (o) { window._spDecisions.options[o.code_option] = !!o.acquis; });
 
-    initSignature();
+    if (window.requestAnimationFrame) {
+      requestAnimationFrame(function () { initSignature(); });
+    } else {
+      setTimeout(initSignature, 30);
+    }
   }
 
   function blocRecap(titre, d, key, propAcquis) {
