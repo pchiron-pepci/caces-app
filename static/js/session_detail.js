@@ -2058,6 +2058,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Stocke le contexte et ouvre la modale de CHOIX (en ligne vs manuel)
         window._pratiqueCtx = {
             stagiaireId: parseInt(btn.dataset.stagiaireId),
+            jourTestId: btn.dataset.jourTestId,
             cat: btn.dataset.cat,
             date: btn.dataset.date,
             testeurId: btn.dataset.testeurId,
@@ -2096,26 +2097,29 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-choix-pratique').style.display = 'none';
         var c = window._pratiqueCtx; if (!c) return;
         var sid = (typeof SESSION_ID !== 'undefined') ? SESSION_ID : (document.body.dataset.sessionId || window.location.pathname.split('/')[2]);
-        window.open('/sessions/' + sid + '/pratique/saisie-en-ligne/' + c.epreuveId, '_blank');
+        window.open('/sessions/' + sid + '/pratique/saisie-en-ligne/' + c.jourTestId + '/' + c.stagiaireId + '/' + c.cat, '_blank');
     });
 
-    // Bouton "+" nouveau résultat pratique (CSP-safe : data-action au lieu de onclick)
+    // Bouton "+" nouveau résultat pratique -> modale de CHOIX (en ligne vs manuel)
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="nouveau-resultat-pratique"]');
         if (!btn) return;
         var optsPlanifNew; try { optsPlanifNew = JSON.parse(btn.dataset.optsPlanif || '[]'); } catch(e) { optsPlanifNew = []; }
-        saisirResultatPratique(
-            parseInt(btn.dataset.stagiaireId),
-            btn.dataset.cat,
-            btn.dataset.date,
-            '',
-            btn.dataset.identite === 'true',
-            null,
-            '',
-            optsPlanifNew,
-            '',
-            null
-        );
+        window._pratiqueCtx = {
+            stagiaireId: parseInt(btn.dataset.stagiaireId),
+            cat: btn.dataset.cat,
+            date: btn.dataset.date,
+            testeurId: '',
+            identite: btn.dataset.identite === 'true',
+            obtenue: null,
+            noteTesteur: '',
+            optsPlanif: optsPlanifNew,
+            optsObtenues: '',
+            epreuveId: null,
+            jourTestId: parseInt(btn.dataset.jourTestId)
+        };
+        var mc = document.getElementById('modal-choix-pratique');
+        if (mc) mc.style.display = 'flex';
     });
 });
 

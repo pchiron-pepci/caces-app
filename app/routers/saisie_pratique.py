@@ -9,6 +9,8 @@ from datetime import datetime
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
 from app.models.session_epreuve import SessionEpreuve
+from app.models.jour_test import JourTest, JourTestCandidat
+import json
 from app.models.option_categorie import OptionCategorie
 from app.models.categorie import Categorie, Famille
 from app.models.grille_pratique import (
@@ -33,6 +35,14 @@ def _recommandation_from_famille(famille: str) -> str:
 def _mode_saisie(db) -> str:
     cfg = db.query(ConfigOrganisme).first()
     return (cfg.mode_saisie_pratique if cfg and cfg.mode_saisie_pratique else "binaire")
+
+
+
+def jour_session_famille(jour, db) -> str:
+    """Recupere la famille (ex. 'R482') depuis la session du jour de test."""
+    from app.models.session import Session as _S
+    sess = db.query(_S).filter(_S.id == jour.session_id).first()
+    return sess.famille if sess else ""
 
 
 def _grille_dict(grille, db) -> dict:
@@ -69,55 +79,66 @@ def _grille_dict(grille, db) -> dict:
     }
 
 
-@router.post("/{session_id}/pratique/saisie/{epreuve_id}/ouvrir")
-def ouvrir_saisie(session_id: int, epreuve_id: int, db: DBSession = Depends(get_db)):
-    """Cree (ou recupere) la saisie en cours pour une epreuve. Genere les blocs
-    base + options effectivement planifiees pour le candidat."""
-    epreuve = db.query(SessionEpreuve).filter(SessionEpreuve.id == epreuve_id).first()
-    if not epreuve:
-        raise HTTPException(404, "Epreuve introuvable")
+@router.post("/{session_id}/pratique/saisie/{jour_test_id}/{stagiaire_id}/{categorie}/ouvrir")
+def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categorie: str,
+                  db: DBSession = Depends(get_db)):
+    """Ouvre (ou reprend) la saisie pour un test PLANIFIE : jour + candidat + categorie.
+    Le bon adressage : a partir de la categorie programmee, va chercher la grille base
+    + les grilles d'options planifiees (obligatoires ou facultatives) pour ce candidat.
+    Aucun SessionEpreuve cree a ce stade (cree a la validation, comme le manuel)."""
+    jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
+    if not jour:
+        raise HTTPException(404, "Jour de test introuvable")
+    jtc = db.query(JourTestCandidat).filter(
+        JourTestCandidat.jour_test_id == jour_test_id,
+        JourTestCandidat.stagiaire_id == stagiaire_id,
+        JourTestCandidat.actif == True,
+    ).first()
+    if not jtc:
+        raise HTTPException(404, "Candidat non planifie sur ce jour")
 
-    # Garde "une voie" : si un justificatif manuel existe deja, on bloque
-    if epreuve.justificatif_cle:
-        raise HTTPException(409, "Cette epreuve a deja un justificatif manuel. Supprimez-le pour saisir en ligne.")
+    reco = _recommandation_from_famille(jour_session_famille(jour, db))
 
-    reco = _recommandation_from_famille(epreuve.famille)
-
-    # Reprise : saisie en cours existante ?
+    # Reprise : saisie en cours existante pour (jour, candidat, categorie) ?
     saisie = db.query(SaisiePratique).filter(
-        SaisiePratique.session_epreuve_id == epreuve_id).first()
+        SaisiePratique.jour_test_id == jour_test_id,
+        SaisiePratique.stagiaire_id == stagiaire_id,
+        SaisiePratique.categorie == categorie,
+    ).first()
     reprise = saisie is not None
 
     if not saisie:
         saisie = SaisiePratique(
-            session_epreuve_id=epreuve_id, mode=_mode_saisie(db), statut="en_cours",
+            jour_test_id=jour_test_id, stagiaire_id=stagiaire_id, categorie=categorie,
+            mode=_mode_saisie(db), statut="en_cours",
         )
         db.add(saisie)
         db.flush()
 
-        # Bloc base
+        # Bloc base : grille de la categorie programmee
         grille_base = db.query(GrillePratique).filter(
             GrillePratique.recommandation == reco,
-            GrillePratique.categorie == epreuve.categorie,
+            GrillePratique.categorie == categorie,
             GrillePratique.type == "base", GrillePratique.actif == True,
         ).first()
         if not grille_base:
-            raise HTTPException(404, "Aucune grille pratique pour %s %s" % (reco, epreuve.categorie))
+            raise HTTPException(404, "Aucune grille pratique pour %s %s" % (reco, categorie))
         db.add(SaisieBloc(saisie_id=saisie.id, grille_id=grille_base.id, type="base"))
 
-        # Blocs options planifiees pour ce candidat
+        # Options planifiees pour CETTE categorie (depuis JourTestCandidat.options_planifiees)
         codes_planif = set()
-        if epreuve.option_pe:
-            codes_planif.add("PE")
-        if epreuve.option_tel:
-            codes_planif.add("TEL")
-        for code in (epreuve.options_obtenues or "").split(","):
-            if code.strip():
-                codes_planif.add(code.strip())
+        if jtc.options_planifiees:
+            try:
+                opts_map = json.loads(jtc.options_planifiees)
+                for code in (opts_map.get(categorie) or []):
+                    if code and str(code).strip():
+                        codes_planif.add(str(code).strip())
+            except Exception:
+                pass
         for code in codes_planif:
             g_opt = db.query(GrillePratique).filter(
                 GrillePratique.recommandation == reco,
-                GrillePratique.categorie == epreuve.categorie,
+                GrillePratique.categorie == categorie,
                 GrillePratique.type == "option", GrillePratique.code_option == code,
                 GrillePratique.actif == True,
             ).first()
@@ -236,8 +257,15 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
     saisie.date_validation = datetime.utcnow()
 
     # Ecriture dans SessionEpreuve (meme champs que la voie manuelle)
-    epreuve = db.query(SessionEpreuve).filter(
-        SessionEpreuve.id == saisie.session_epreuve_id).first()
+    # Recherche par (session, stagiaire, categorie) — la saisie ne stocke plus d'epreuve_id
+    jour = db.query(JourTest).filter(JourTest.id == saisie.jour_test_id).first()
+    epreuve = None
+    if jour:
+        epreuve = db.query(SessionEpreuve).filter(
+            SessionEpreuve.session_id == jour.session_id,
+            SessionEpreuve.stagiaire_id == saisie.stagiaire_id,
+            SessionEpreuve.categorie == saisie.categorie,
+        ).first()
     if epreuve:
         epreuve.obtenue = data.decision_base
         # options acquises = decisions testeur True ET base obtenue
@@ -290,12 +318,17 @@ def supprimer(session_id: int, saisie_id: int, db: DBSession = Depends(get_db)):
     if not saisie:
         raise HTTPException(404, "Saisie introuvable")
 
-    epreuve = db.query(SessionEpreuve).filter(
-        SessionEpreuve.id == saisie.session_epreuve_id).first()
-    if epreuve:
-        epreuve.obtenue = None
-        epreuve.options_obtenues = None
-        epreuve.note_testeur = None
+    jour = db.query(JourTest).filter(JourTest.id == saisie.jour_test_id).first()
+    if jour:
+        epreuve = db.query(SessionEpreuve).filter(
+            SessionEpreuve.session_id == jour.session_id,
+            SessionEpreuve.stagiaire_id == saisie.stagiaire_id,
+            SessionEpreuve.categorie == saisie.categorie,
+        ).first()
+        if epreuve:
+            epreuve.obtenue = None
+            epreuve.options_obtenues = None
+            epreuve.note_testeur = None
 
     db.delete(saisie)   # cascade sur blocs -> notes / eliminatoires
     db.commit()

@@ -3,7 +3,9 @@
 
   var BODY = document.body;
   var SESSION_ID = BODY.dataset.sessionId;
-  var EPREUVE_ID = BODY.dataset.epreuveId;
+  var JOUR_ID = BODY.dataset.jourTestId;
+  var STAGIAIRE_ID = BODY.dataset.stagiaireId;
+  var CATEGORIE = BODY.dataset.categorie;
   var BASE = "/api/sessions/" + SESSION_ID + "/pratique/saisie/";
 
   var state = {
@@ -137,10 +139,10 @@
   }
 
   // expose pour les blocs suivants
-  window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt, EPREUVE_ID: EPREUVE_ID };
+  window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt };
 
   // ─── Chargement initial ───
-  api("POST", BASE + EPREUVE_ID + "/ouvrir")
+  api("POST", BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir")
     .then(function (data) {
       state.saisieId = data.saisie_id;
       state.mode = data.mode;
@@ -164,7 +166,6 @@
   "use strict";
   var SP = window._SP;
   var state = SP.state, api = SP.api, BASE = SP.BASE, toast = SP.toast, fmt = SP.fmt;
-  var EPREUVE_ID = SP.EPREUVE_ID;
 
   function blocById(id) {
     for (var i = 0; i < state.blocs.length; i++) if (state.blocs[i].bloc_id == id) return state.blocs[i];
