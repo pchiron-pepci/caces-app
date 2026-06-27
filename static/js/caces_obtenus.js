@@ -172,10 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('input', function(e) {
         if (e.target && e.target.id === 'recherche-valides') {
-            const q = e.target.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-            document.querySelectorAll('#liste-valides [data-search]').forEach(function(row) {
-                row.style.display = (!q || row.dataset.search.includes(q)) ? '' : 'none';
-            });
+            appliquerFiltresValides();
         }
     });
 });
@@ -187,6 +184,74 @@ let _motifCategorie = '';
 let _motifFamille = '';
 const _carteData = {};
 const _validesData = {};
+let _critereValides = 'obtention';
+let _anneeValides = String(new Date().getFullYear());
+
+function _peuplerMenuAnnees() {
+    const sel = document.getElementById('filtre-annee');
+    if (!sel) return;
+    const attr = _critereValides === 'obtention' ? 'date_obtention' : 'date_echeance';
+    const annees = [...new Set(_validesArray.map(co => (co[attr] || '').slice(0, 4)).filter(Boolean))].sort().reverse();
+    const courante = String(new Date().getFullYear());
+    if (annees.indexOf(_anneeValides) === -1 && _anneeValides !== 'toutes') {
+        _anneeValides = (annees.indexOf(courante) !== -1) ? courante : 'toutes';
+    }
+    sel.innerHTML = '<option value="toutes">Toutes les années</option>'
+        + annees.map(a => '<option value="' + a + '"' + (a === _anneeValides ? ' selected' : '') + '>' + a + '</option>').join('');
+    sel.value = _anneeValides;
+}
+
+function appliquerFiltresValides() {
+    const input = document.getElementById('recherche-valides');
+    const q = input ? input.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim() : '';
+    const dataAttr = _critereValides === 'obtention' ? 'anneeObt' : 'anneeEch';
+    let visibles = 0;
+    document.querySelectorAll('#liste-valides [data-search]').forEach(function (row) {
+        const matchSearch = !q || (row.dataset.search || '').includes(q);
+        const matchAnnee = (_anneeValides === 'toutes') || (row.dataset[dataAttr] === _anneeValides);
+        const ok = matchSearch && matchAnnee;
+        row.style.display = ok ? '' : 'none';
+        if (ok) visibles++;
+    });
+    let vide = document.getElementById('valides-filtre-vide');
+    const total = document.querySelectorAll('#liste-valides [data-search]').length;
+    if (visibles === 0 && total > 0) {
+        if (!vide) {
+            vide = document.createElement('p');
+            vide.id = 'valides-filtre-vide';
+            vide.style.cssText = 'color:#718096;text-align:center;padding:24px;';
+            document.getElementById('liste-valides').appendChild(vide);
+        }
+        const crit = _critereValides === 'obtention' ? 'délivré' : 'arrivant à échéance';
+        vide.textContent = (_anneeValides === 'toutes')
+            ? 'Aucun CACES® ne correspond à la recherche.'
+            : 'Aucun CACES® ' + crit + ' en ' + _anneeValides + '.';
+        vide.style.display = '';
+    } else if (vide) {
+        vide.style.display = 'none';
+    }
+}
+
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.crit-btn');
+    if (!btn) return;
+    _critereValides = btn.dataset.critere;
+    document.querySelectorAll('.crit-btn').forEach(function (b) {
+        const on = b.dataset.critere === _critereValides;
+        b.style.background = on ? '#1a237e' : '#fff';
+        b.style.color = on ? '#fff' : '#555';
+    });
+    _peuplerMenuAnnees();
+    appliquerFiltresValides();
+});
+
+document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'filtre-annee') {
+        _anneeValides = e.target.value;
+        appliquerFiltresValides();
+    }
+});
+
 let _validesArray = [];
 let _sortKey = 'numero_ordre';
 let _sortDir = -1; // -1 = desc
@@ -448,6 +513,8 @@ function _renderValides() {
         + '<div class="co-cards-wrap">'
         + _validesArray.map(function (co) { return _renderCarteValide(co); }).join('')
         + '</div>';
+    _peuplerMenuAnnees();
+    appliquerFiltresValides();
 }
 
 // ===== RENDU CARTE À VALIDER =====
@@ -593,7 +660,7 @@ function _renderCarteValide(co) {
     ).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
     return `
-    <div data-caces-id="${co.id}" data-search="${_search}" class="co-valide-card" style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;margin-bottom:12px;background:${annule ? '#f7f7f7' : '#fff'};${annule ? 'opacity:0.7;' : ''}box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div data-caces-id="${co.id}" data-search="${_search}" data-annee-obt="${(co.date_obtention || '').slice(0,4)}" data-annee-ech="${(co.date_echeance || '').slice(0,4)}" class="co-valide-card" style="border:1px solid #c8d8f0;border-radius:12px;overflow:hidden;margin-bottom:12px;background:${annule ? '#f7f7f7' : '#fff'};${annule ? 'opacity:0.7;' : ''}box-shadow:0 1px 4px rgba(0,0,0,0.06);">
         <div data-action="toggle-caces-valide" data-id="${co.id}"
              style="background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;user-select:none;">
             <span class="co-valide-chevron" style="font-size:12px;color:#aaa;flex-shrink:0;">▶</span>
@@ -659,7 +726,7 @@ function _renderLigne(co, idx, wNo) {
         (co.date_obtention || '') + ' ' + (co.date_echeance || '')
     ).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-    return `<div data-caces-id="${co.id}" data-search="${_search}"
+    return `<div data-caces-id="${co.id}" data-search="${_search}" data-annee-obt="${(co.date_obtention || '').slice(0,4)}" data-annee-ech="${(co.date_echeance || '').slice(0,4)}"
          style="display:flex;align-items:center;padding:9px 16px;background:${bg};${annule ? 'opacity:0.65;' : ''}border-bottom:1px solid #eef0f6;gap:0;">
         <div style="width:${wNo};min-width:${wNo};">${noBadge}</div>
         <div style="width:82px;min-width:82px;">${badgeStatut(co.statut)}</div>

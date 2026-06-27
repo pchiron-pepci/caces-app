@@ -29,8 +29,13 @@
         </div>
         <div class="co-list-wrap">
             <div class="toolbar" style="padding:10px 16px 0; border-bottom:none;">
-                <div class="toolbar-left">
+                <div class="toolbar-left" style="flex-wrap:wrap; gap:8px;">
                     <input type="text" id="recherche-valides" placeholder="🔍 Rechercher (nom, famille, catégorie, n°...)" class="search-input" autocomplete="off">
+                    <div id="toggle-critere" style="display:inline-flex; border:1.5px solid #c8d8f0; border-radius:8px; overflow:hidden;">
+                        <button type="button" data-critere="obtention" class="crit-btn" style="background:#1a237e; color:#fff; border:none; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer;">📅 Obtention</button>
+                        <button type="button" data-critere="echeance" class="crit-btn" style="background:#fff; color:#555; border:none; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer;">⏳ Échéance</button>
+                    </div>
+                    <select id="filtre-annee" class="search-input" style="width:auto; min-width:120px; cursor:pointer;"></select>
                 </div>
             </div>
             <div id="header-valides"></div>
