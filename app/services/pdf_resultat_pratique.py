@@ -198,7 +198,7 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
     if saisie.observations:
         obs_html += f'<div class="note-block"><div class="nb-titre">Observations du testeur</div><div class="nb-corps">{_esc(saisie.observations)}</div></div>'
     if saisie.justification_ecart:
-        obs_html += f'<div class="note-block warn"><div class="nb-titre">Justification (écart à la proposition système)</div><div class="nb-corps">{_esc(saisie.justification_ecart)}</div></div>'
+        obs_html += f'<div class="note-block warn"><div class="nb-titre">Justification de la décision par le testeur</div><div class="nb-corps">{_esc(saisie.justification_ecart)}</div></div>'
 
     # Signature
     sig_html = ""
@@ -230,7 +230,8 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   .candidat .k {{ color: #666; width: 130px; }}
   .candidat .v {{ font-weight: bold; color: {ANTHRACITE}; }}
   .verdict {{ text-align: center; padding: 12px; border-radius: 6px; margin-bottom: 16px;
-              font-size: 16px; font-weight: bold; letter-spacing: 0.5px; }}
+              font-size: 16px; font-weight: bold; letter-spacing: 0.5px;
+              page-break-after: always; }}
   .verdict.ok {{ background: #e8f5e9; color: #1b5e20; border: 2px solid #66bb6a; }}
   .verdict.ko {{ background: #fcebeb; color: #a32d2d; border: 2px solid #e57373; }}
   .bloc {{ margin-bottom: 16px; page-break-inside: avoid; }}
