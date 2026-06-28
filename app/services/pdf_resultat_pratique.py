@@ -214,7 +214,8 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
 
     return f"""<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><style>
-  @page {{ size: A4; margin: 14mm 14mm 16mm 14mm; }}
+  @page {{ size: A4; margin: 14mm 14mm 20mm 14mm;
+           @bottom-left {{ content: element(pageRef); }} }}
   * {{ box-sizing: border-box; }}
   body {{ font-family: 'Helvetica Neue', Arial, sans-serif; color: #222; font-size: 11px; margin: 0; }}
   .head {{ display: flex; justify-content: space-between; align-items: center;
@@ -246,10 +247,11 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   table.grid td {{ padding: 4px 7px; border: 1px solid #e6e9ef; }}
   table.grid td.c, table.grid th.c {{ text-align: center; }}
   table.grid td.lib {{ width: 55%; }}
-  .th-grp {{ margin: 8px 0 4px; }}
+  .th-grp {{ margin: 8px 0 4px; page-break-inside: avoid; }}
   .th-grp-titre {{ font-size: 10px; font-weight: bold; color: {ANTHRACITE}; background: #eef0f4;
                    border: 1px solid #dfe3ea; padding: 3px 7px; border-radius: 3px 3px 0 0; }}
-  .pe-block {{ border: 1px solid #e6e9ef; border-top: none; padding: 5px 8px; margin-bottom: 2px; }}
+  .pe-block {{ border: 1px solid #e6e9ef; border-top: none; padding: 5px 8px; margin-bottom: 2px;
+               page-break-inside: avoid; }}
   .pe-titre {{ display: flex; justify-content: space-between; align-items: center;
                font-size: 10px; font-weight: bold; color: #444; margin-bottom: 3px; }}
   .pe-chapeau {{ font-size: 9px; color: #666; font-style: italic; margin-bottom: 3px; }}
@@ -276,7 +278,11 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   .sig-box .nom {{ font-size: 10px; font-weight: bold; color: {ANTHRACITE}; margin-top: 3px; }}
   .footer {{ margin-top: 14px; border-top: 1px solid #eee; padding-top: 6px;
              font-size: 8px; color: #999; text-align: center; }}
+  .page-ref {{ position: running(pageRef); font-size: 8px; color: #888;
+               white-space: nowrap; }}
 </style></head><body>
+
+  <div class="page-ref">{_esc(nom_candidat)} — {_esc(famille)} cat. {_esc(categorie)} — Session {_esc(ref)}</div>
 
   <div class="head">
     <div class="org">{_esc(nom_organisme)}<small>Organisme testeur certifié — Évaluation pratique CACES®</small></div>
