@@ -282,6 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('[data-action="ouvrir-fiche-reco"]')) ouvrirFicheReco();
         if (e.target.closest('[data-action="fermer-fiche-reco"]')) { document.getElementById('modal-fiche-reco').style.display = 'none'; }
         if (e.target.closest('[data-action="enregistrer-fiche-reco"]')) enregistrerFicheReco();
+        if (e.target.closest('[data-action="generer-pdf-fiche-reco"]')) genererPdfFicheReco();
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="supprimer-equipement"]')) supprimerEquipement();
@@ -1143,6 +1144,41 @@ function enregistrerFicheReco() {
             else { if (typeof afficherErreur === 'function') afficherErreur('Erreur lors de l\'enregistrement'); }
         })
         .catch(function () { if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; } if (typeof afficherErreur === 'function') afficherErreur('Erreur réseau'); });
+}
+
+function genererPdfFicheReco() {
+    var stagiaireId = window._frStagiaireId;
+    var sessionId = window.SESSION_ID;
+    if (!stagiaireId || !sessionId) return;
+    var btn = document.getElementById('fr-btn-pdf');
+    if (btn) { btn.disabled = true; btn.textContent = 'Génération…'; }
+    var data = window._frData || {};
+    var calcul = data.calcul || {};
+    var saisies = { pratiques: {} };
+    var selTh = document.getElementById('fr-duree-theorie');
+    if (selTh) saisies.theorie = parseFloat(selTh.value) || 0;
+    (calcul.pratiques_echec || []).forEach(function (p) {
+        var inp = document.getElementById('fr-duree-prat-' + p.categorie);
+        if (inp) saisies.pratiques[p.categorie] = { duree_heures: parseFloat(inp.value) || 0 };
+    });
+    var totalEl = document.getElementById('fr-total-heures');
+    if (totalEl) saisies.total_label = totalEl.textContent;
+    var payload = {
+        fraude_theorie: !!(document.getElementById('fr-fraude') && document.getElementById('fr-fraude').checked),
+        difficultes_langue: !!(document.getElementById('fr-langue') && document.getElementById('fr-langue').checked),
+        comportement_dangereux: !!(document.getElementById('fr-comportement') && document.getElementById('fr-comportement').checked),
+        autres_precisions: (document.getElementById('fr-autres') || {}).value || null,
+        saisies: saisies
+    };
+    fetch('/api/fiches-reco/' + sessionId + '/' + stagiaireId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function () {
+            window.open('/api/fiches-reco/' + sessionId + '/' + stagiaireId + '/pdf', '_blank');
+            if (btn) { btn.disabled = false; btn.textContent = '📄 Générer le PDF'; }
+        })
+        .catch(function () {
+            if (btn) { btn.disabled = false; btn.textContent = '📄 Générer le PDF'; }
+            if (typeof afficherErreur === 'function') afficherErreur('Erreur lors de la génération');
+        });
 }
 
 async function sauvegarderCandidat() {

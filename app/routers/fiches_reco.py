@@ -12,6 +12,7 @@ Les saisies du testeur (cases + durées ajustées + autres) sont stockées dans 
 """
 
 import json
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -107,3 +108,31 @@ def enregistrer_brouillon(session_id: int, stagiaire_id: int,
     db.commit()
     db.refresh(fiche)
     return {"ok": True, "fiche_id": fiche.id, "statut": fiche.statut}
+
+
+@router.get("/{session_id}/{stagiaire_id}/pdf")
+def pdf_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession = Depends(get_db)):
+    """Genere le PDF de la fiche et marque la fiche comme finalisee (preuve de recommandation)."""
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    from app.services.pdf_fiche_reco import generer_pdf_fiche_reco
+
+    pdf_bytes = generer_pdf_fiche_reco(session_id, stagiaire_id, db)
+
+    # marquer la fiche finalisee (creer si besoin)
+    fiche = db.query(FicheRecommandation).filter(
+        FicheRecommandation.session_id == session_id,
+        FicheRecommandation.stagiaire_id == stagiaire_id,
+    ).order_by(FicheRecommandation.id.desc()).first()
+    if fiche is None:
+        fiche = FicheRecommandation(session_id=session_id, stagiaire_id=stagiaire_id)
+        db.add(fiche)
+    fiche.statut = "finalisee"
+    fiche.date_finalisation = datetime.utcnow()
+    db.commit()
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=recommandation_{stagiaire_id}.pdf"},
+    )
