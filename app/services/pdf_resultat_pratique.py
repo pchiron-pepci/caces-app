@@ -186,6 +186,19 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
     logo_html = (f'<img src="{logo_data}" style="height:46px; max-width:140px; object-fit:contain;" alt="Logo" />'
                  if logo_data else "")
 
+    # Critères éliminatoires déclenchés (toutes sources : base + options)
+    all_elim = list(calcul["base"].get("eliminatoires_coches", [])) if calcul.get("base") else []
+    for opt in calcul.get("options", []):
+        all_elim += opt.get("eliminatoires_coches", [])
+    elim_html = ""
+    if all_elim:
+        elim_items = "".join(f"<li>{_esc(lib)}</li>" for lib in all_elim)
+        elim_html = f"""
+    <div class="elim-zone">
+      <div class="elim-titre">Critères éliminatoires déclenchés</div>
+      <ul class="elim-list">{elim_items}</ul>
+    </div>"""
+
     # Blocs base + options
     blocs_html = ""
     if calcul.get("base"):
@@ -233,6 +246,11 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
               font-size: 16px; font-weight: bold; letter-spacing: 0.5px; }}
   .verdict.ok {{ background: #e8f5e9; color: #1b5e20; border: 2px solid #66bb6a; }}
   .verdict.ko {{ background: #fcebeb; color: #a32d2d; border: 2px solid #e57373; }}
+  .elim-zone {{ background: #fff3cd; border: 2px solid #f0ad4e; border-radius: 6px;
+                padding: 8px 12px; margin-bottom: 12px; page-break-inside: avoid; }}
+  .elim-titre {{ font-size: 11px; font-weight: bold; color: #7a4a00; margin-bottom: 5px; }}
+  .elim-list {{ margin: 0; padding-left: 18px; }}
+  .elim-list li {{ font-size: 10px; color: #a32d2d; font-weight: bold; padding: 1px 0; }}
   .bloc {{ margin-bottom: 16px; }}
   .bloc-head {{ display: flex; justify-content: space-between; align-items: center;
                 background: {ANTHRACITE}; color: #fff; padding: 6px 10px; border-radius: 5px 5px 0 0; }}
@@ -305,6 +323,8 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   </div>
 
   <div class="verdict {verdict_class}">{_esc(verdict_label)}</div>
+
+  {elim_html}
 
   {blocs_html}
 
