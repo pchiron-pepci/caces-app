@@ -28,6 +28,8 @@ from app.services.pdf_test_theorie import generer_corrige
 from app.services.pdf_recap_session import generer_recap_resultats
 from app.services.pdf_detail_theorie import generer_pdf_detail_theorie
 from app.services.pdf_resultat_pratique import generer_pdf_resultat_pratique
+from app.services.pdf_fiche_reco import generer_pdf_fiche_reco
+from app.services.calcul_fiche_reco import calculer_fiche_reco
 from app.models.grille_pratique import SaisiePratique
 from app.services.pdf_consentement_neutralite import (
     generer_pdf_consentement,
@@ -224,6 +226,18 @@ def generer_zip_session(session_id: int, db: DBSession) -> bytes:
                     zf.writestr(f"resultats_pratiques/{nom}_{cat}.pdf", pdf_bytes)
                 except Exception as e:
                     print(f"[ZIP] resultat_pratique saisie={sp.id} error: {e}", flush=True)
+
+        # ── fiches de recommandation (candidats en echec) ────────────────────
+        for sid in stag_ids:
+            try:
+                calc = calculer_fiche_reco(session_id, sid, db)
+                if not calc.get("a_des_echecs"):
+                    continue
+                pdf_bytes = generer_pdf_fiche_reco(session_id, sid, db)
+                nom = _nom_candidat(sid, stagiaires)
+                zf.writestr(f"recommandations/recommandation_{nom}.pdf", pdf_bytes)
+            except Exception as e:
+                print(f"[ZIP] recommandation stag={sid} error: {e}", flush=True)
 
     buf.seek(0)
     return buf.getvalue()
