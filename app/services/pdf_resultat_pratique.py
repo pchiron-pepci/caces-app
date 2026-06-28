@@ -224,14 +224,13 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   .head .org small {{ display:block; font-size:10px; font-weight:normal; color:#666; margin-top:2px; }}
   h1 {{ font-size: 15px; color: {ANTHRACITE}; margin: 0 0 12px; }}
   .candidat {{ background: #f6f7f9; border: 1px solid #e2e6ee; border-radius: 6px;
-               padding: 10px 12px; margin-bottom: 14px; }}
+               padding: 6px 12px; margin-bottom: 8px; }}
   .candidat table {{ width: 100%; border-collapse: collapse; }}
-  .candidat td {{ padding: 2px 6px; font-size: 11px; vertical-align: top; }}
+  .candidat td {{ padding: 1px 6px; font-size: 11px; vertical-align: top; }}
   .candidat .k {{ color: #666; width: 130px; }}
   .candidat .v {{ font-weight: bold; color: {ANTHRACITE}; }}
-  .verdict {{ text-align: center; padding: 12px; border-radius: 6px; margin-bottom: 16px;
-              font-size: 16px; font-weight: bold; letter-spacing: 0.5px;
-              page-break-after: always; }}
+  .verdict {{ text-align: center; padding: 8px; border-radius: 6px; margin-bottom: 10px;
+              font-size: 16px; font-weight: bold; letter-spacing: 0.5px; }}
   .verdict.ok {{ background: #e8f5e9; color: #1b5e20; border: 2px solid #66bb6a; }}
   .verdict.ko {{ background: #fcebeb; color: #a32d2d; border: 2px solid #e57373; }}
   .bloc {{ margin-bottom: 16px; page-break-inside: avoid; }}
