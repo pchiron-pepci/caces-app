@@ -1155,7 +1155,7 @@ function fermerDocUpload() {
 
 async function confirmerUploadDoc() {
     const pin = document.getElementById('doc-pin-input').value;
-    if (pin !== '1505') {
+    if (!pin) {
         document.getElementById('doc-pin-error').style.display = 'block';
         return;
     }
