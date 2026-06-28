@@ -147,7 +147,7 @@
   window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt };
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
-  function chargerTesteurs(options) {
+  function chargerTesteurs(options, testeurIdPreselect) {
     var url = BASE + state.saisieId + "/testeurs-habilites?famille=" + encodeURIComponent(FAMILLE) +
               "&categorie=" + encodeURIComponent(CATEGORIE);
     if (options && options.length) {
@@ -169,6 +169,9 @@
         o.disabled = true;
         sel.appendChild(o);
       }
+      if (testeurIdPreselect) {
+        sel.value = String(testeurIdPreselect);
+      }
     }).catch(function () {});
   }
 
@@ -184,13 +187,17 @@
           notes: b.notes_saisies || {}, elim: b.eliminatoires_coches || []
         };
       });
+      state.repriseTesteurId = data.testeur_id || null;
+      state.repriseSignature = data.signature_testeur || null;
+      state.repriseObservations = data.observations || null;
+      state.repriseJustification = data.justification_ecart || null;
       renderAll();
       if (data.reprise) toast("Saisie reprise");
       if (window._SP && typeof window._SP.runCalc === "function") { window._SP.runCalc(); }
       var optionsCandidat = state.blocs
         .filter(function (b) { return b.grille && b.grille.type === "option" && b.grille.code_option; })
         .map(function (b) { return b.grille.code_option; });
-      chargerTesteurs(optionsCandidat);
+      chargerTesteurs(optionsCandidat, state.repriseTesteurId);
     })
     .catch(function (e) {
       document.getElementById("sp-progress-txt").textContent = "Erreur : " + e.message;
@@ -609,6 +616,26 @@
     (res.options || []).forEach(function (o) { window._spDecisions.options[o.code_option] = !!o.acquis; });
 
     initSignature();
+
+    // Reprise : pre-remplir observations / justification / signature deja saisies
+    var obsEl = document.getElementById("sp-obs");
+    if (obsEl && state.repriseObservations) obsEl.value = state.repriseObservations;
+    var justifEl = document.getElementById("sp-justif");
+    if (justifEl && state.repriseJustification) justifEl.value = state.repriseJustification;
+    if (state.repriseSignature) {
+      var cv = document.getElementById("sp-sig-canvas");
+      if (cv && _sigState.ctx) {
+        var img = new Image();
+        img.onload = function () {
+          var r = cv.getBoundingClientRect();
+          _sigState.ctx.drawImage(img, 0, 0, r.width || 300, r.height || 140);
+          _sigState.hasTrait = true;
+        };
+        var src = state.repriseSignature;
+        if (src.indexOf("data:") !== 0) src = "data:image/png;base64," + src;
+        img.src = src;
+      }
+    }
   }
 
   function blocRecap(titre, d, key, propAcquis) {

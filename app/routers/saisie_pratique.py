@@ -190,6 +190,11 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
     return {
         "saisie_id": saisie.id, "mode": saisie.mode, "statut": saisie.statut,
         "reprise": reprise, "blocs": blocs_out,
+        "testeur_id": saisie.testeur_id,
+        "testeur_nom": saisie.testeur_nom,
+        "signature_testeur": saisie.signature_testeur,
+        "observations": saisie.observations,
+        "justification_ecart": saisie.justification_ecart,
     }
 
 
