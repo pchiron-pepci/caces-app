@@ -149,6 +149,7 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str) -> dict
         "options_a_repasser": options_a_repasser,
         "categorie_entiere_par_option": categorie_entiere_par_option,
         "observations": (saisie.observations or "").strip(),
+        "justification_ecart": (saisie.justification_ecart or "").strip(),
     }
 
 
@@ -205,9 +206,13 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
 
     obs_parts = []
     for p in pratiques_echec:
-        obs = p.get("observations")
-        if obs:
-            obs_parts.append("[" + str(p["categorie"]) + "] " + obs)
+        morceaux = []
+        if p.get("justification_ecart"):
+            morceaux.append(p["justification_ecart"])
+        if p.get("observations"):
+            morceaux.append(p["observations"])
+        if morceaux:
+            obs_parts.append("[" + str(p["categorie"]) + "] " + " — ".join(morceaux))
     observations_testeur = "\n".join(obs_parts)
 
     return {
