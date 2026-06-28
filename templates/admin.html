@@ -348,6 +348,15 @@
                     <input type="number" id="config-prochain-numero" min="1" step="1" placeholder="1" style="font-size:18px; font-weight:700; font-family:monospace; width:120px;">
                     <small style="color:#888; display:block; margin-top:4px;">Affiché sur 4 chiffres : 0001, 0002…</small>
                 </div>
+                <div class="form-field">
+                    <label>Mode de saisie de l&#39;évaluation pratique</label>
+                    <select id="config-mode-saisie" style="font-size:15px; padding:8px; border:1px solid #d0d4dc; border-radius:8px;">
+                        <option value="binaire">Binaire — réussi / échoué (tout ou rien par point)</option>
+                        <option value="partiel_entier">Partiel entier — notes intermédiaires par pas de 1 point</option>
+                        <option value="partiel_demi">Partiel demi — notes intermédiaires par pas de 0,5 point</option>
+                    </select>
+                    <small style="color:#888; display:block; margin-top:4px;">Détermine la finesse de notation à l&#39;écran de saisie pratique. Le moteur de calcul s&#39;adapte automatiquement.</small>
+                </div>
             </div>
 
             <div style="border-top:1px solid #e8ecf4; margin:20px 0 16px;"></div>
@@ -910,6 +919,7 @@ async function chargerConfigOrganisme() {
     document.getElementById('config-signataire-qualite').value = data.signataire_qualite || '';
     document.getElementById('config-pin-formateur').value = data.pin_formateur || '1234';
     document.getElementById('config-prochain-numero').value = data.prochain_numero_caces || 1;
+    document.getElementById('config-mode-saisie').value = data.mode_saisie_pratique || 'binaire';
     const preview = document.getElementById('config-logo-preview');
     const btnSuppr = document.getElementById('btn-suppr-logo');
     if (data.logo_base64) {
@@ -1002,6 +1012,7 @@ function sauvegarderConfigOrganisme() {
             revue_direction_date: document.getElementById('config-revue-direction').value || null,
             pin_formateur: document.getElementById('config-pin-formateur').value || '1234',
             prochain_numero_caces: parseInt(document.getElementById('config-prochain-numero').value) || 1,
+            mode_saisie_pratique: document.getElementById('config-mode-saisie').value || 'binaire',
         };
         const respNom = await fetch(`/admin/config-organisme?pin=${encodeURIComponent(pin)}`, {
             method: 'PUT',

@@ -195,6 +195,7 @@ class ConfigOrganismeUpdate(BaseModel):
     signataire_prenom: Optional[str] = None
     signataire_qualite: Optional[str] = None
     url_verification_caces: Optional[str] = None
+    mode_saisie_pratique: Optional[str] = None
 
 def _img_data_uri(b64: str, nom: str) -> str:
     if not b64 or not nom:
@@ -227,6 +228,7 @@ def get_config_organisme(db: Session = Depends(get_db)):
         "signataire_qualite": config.signataire_qualite or "",
         "signature_data_uri": _img_data_uri(config.signature_base64, config.signature_nom),
         "url_verification_caces": config.url_verification_caces or "",
+        "mode_saisie_pratique": config.mode_saisie_pratique or "binaire",
         "logo2_base64": config.logo2_base64 or "" if hasattr(config, 'logo2_base64') else "",
         "logo2_data_uri": _img_data_uri(config.logo2_base64, config.logo2_nom) if hasattr(config, 'logo2_base64') else "",
     }
@@ -256,6 +258,8 @@ def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session =
     config.signataire_prenom = data.signataire_prenom
     config.signataire_qualite = data.signataire_qualite
     config.url_verification_caces = data.url_verification_caces
+    if data.mode_saisie_pratique in ("binaire", "partiel_entier", "partiel_demi"):
+        config.mode_saisie_pratique = data.mode_saisie_pratique
     db.commit()
     return {"message": "Configuration mise à jour"}
 
