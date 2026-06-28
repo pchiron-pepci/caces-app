@@ -233,7 +233,7 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
               font-size: 16px; font-weight: bold; letter-spacing: 0.5px; }}
   .verdict.ok {{ background: #e8f5e9; color: #1b5e20; border: 2px solid #66bb6a; }}
   .verdict.ko {{ background: #fcebeb; color: #a32d2d; border: 2px solid #e57373; }}
-  .bloc {{ margin-bottom: 16px; page-break-inside: avoid; }}
+  .bloc {{ margin-bottom: 16px; }}
   .bloc-head {{ display: flex; justify-content: space-between; align-items: center;
                 background: {ANTHRACITE}; color: #fff; padding: 6px 10px; border-radius: 5px 5px 0 0; }}
   .bloc-titre {{ font-weight: bold; font-size: 12px; }}
