@@ -527,6 +527,20 @@
   document.addEventListener("click", function (e) {
     if (!e.target.closest('[data-action="valider"]')) return;
 
+    // Verification AMONT : le testeur habilite doit etre selectionne (en-tete)
+    // AVANT d'ouvrir la fenetre de validation, pour ne pas remplir signature/commentaire
+    // puis se faire bloquer a la derniere etape.
+    var selTesteur = document.getElementById("sp-testeur-select");
+    if (!selTesteur || !selTesteur.value) {
+      toast("Selectionnez d'abord le testeur habilite (en-tete) avant de valider");
+      if (selTesteur) {
+        selTesteur.focus();
+        selTesteur.style.outline = "2px solid #cc0000";
+        setTimeout(function () { selTesteur.style.outline = ""; }, 2500);
+      }
+      return;
+    }
+
     // Avertissement NON bloquant si des points n'ont pas ete evalues
     // (cas legitime : candidat arrete en cours d'epreuve, demotive).
     var manquants = _itemsSansNote();
