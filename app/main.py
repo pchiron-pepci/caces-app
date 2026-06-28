@@ -52,6 +52,7 @@ from app.routers import dev
 from app.routers import consentements
 from app.routers import neutralite
 from app.routers import saisie_pratique
+from app.routers import fiches_reco
 from app.models.utilisateur import Utilisateur
 
 Base.metadata.create_all(bind=engine)
@@ -751,6 +752,7 @@ app.include_router(statistiques.router)
 app.include_router(non_conformites.router)
 app.include_router(caces_obtenus.router)
 app.include_router(cartes_caces.router)
+app.include_router(fiches_reco.router)
 app.include_router(dev.router)
 app.include_router(consentements.router)
 app.include_router(neutralite.router)
