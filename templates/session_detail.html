@@ -2093,7 +2093,25 @@
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" data-action="sauvegarder-candidat">Sauvegarder</button>
+            <button class="btn btn-secondary" data-action="ouvrir-fiche-reco" id="sc-btn-fiche-reco" style="display:none; background:#4a5568; color:#fff;">📋 Fiche de recommandation</button>
             <button class="btn btn-secondary" data-action="fermer-modal-candidat">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL FICHE DE RECOMMANDATION -->
+<div id="modal-fiche-reco" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1100; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:0; width:720px; max-width:96vw; max-height:92vh; display:flex; flex-direction:column;">
+        <div style="padding:20px 28px; border-bottom:3px solid #cc0000; display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0; color:#2d2d2d;">📋 Fiche de recommandation de formation</h2>
+            <button data-action="fermer-fiche-reco" style="background:none; border:none; font-size:24px; cursor:pointer; color:#888; line-height:1;">&times;</button>
+        </div>
+        <div id="fr-contenu" style="padding:24px 28px; overflow-y:auto; flex:1;">
+            <div style="text-align:center; color:#888; padding:40px;">Chargement…</div>
+        </div>
+        <div id="fr-actions" style="padding:16px 28px; border-top:1px solid #eee; display:none; gap:10px; justify-content:flex-end;">
+            <button class="btn btn-secondary" data-action="fermer-fiche-reco">Fermer</button>
+            <button class="btn btn-primary" data-action="enregistrer-fiche-reco" id="fr-btn-enregistrer">Enregistrer</button>
         </div>
     </div>
 </div>

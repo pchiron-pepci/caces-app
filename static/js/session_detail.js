@@ -279,6 +279,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="fermer-modal-candidat"]')) fermerModalCandidat();
+        if (e.target.closest('[data-action="ouvrir-fiche-reco"]')) ouvrirFicheReco();
+        if (e.target.closest('[data-action="fermer-fiche-reco"]')) { document.getElementById('modal-fiche-reco').style.display = 'none'; }
+        if (e.target.closest('[data-action="enregistrer-fiche-reco"]')) enregistrerFicheReco();
     });
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="supprimer-equipement"]')) supprimerEquipement();
@@ -974,6 +977,8 @@ function ouvrirAjoutCandidat() {
         afficherErreur('L\'inscription d\'un candidat est reservee au back-office.');
         return;
     }
+    var btnFrA = document.getElementById('sc-btn-fiche-reco');
+    if (btnFrA) btnFrA.style.display = 'none';
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
@@ -1004,9 +1009,113 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('modal-candidat').style.display = 'flex';
     _detecterDispense();
     _appliquerRoleModaleCandidat();
+    window._frStagiaireId = stagiaireId;
+    var btnFr = document.getElementById('sc-btn-fiche-reco');
+    if (btnFr) btnFr.style.display = 'inline-block';
 }
 
 function fermerModalCandidat() { document.getElementById('modal-candidat').style.display = 'none'; }
+
+function ouvrirFicheReco() {
+    var stagiaireId = window._frStagiaireId;
+    var sessionId = window.SESSION_ID;
+    if (!stagiaireId || !sessionId) { afficherErreur('Candidat introuvable'); return; }
+    var modal = document.getElementById('modal-fiche-reco');
+    var contenu = document.getElementById('fr-contenu');
+    var actions = document.getElementById('fr-actions');
+    contenu.innerHTML = '<div style="text-align:center; color:#888; padding:40px;">Chargement…</div>';
+    actions.style.display = 'none';
+    modal.style.display = 'flex';
+    fetch('/api/fiches-reco/' + sessionId + '/' + stagiaireId)
+        .then(function (r) { return r.json(); })
+        .then(function (data) { construireFormFicheReco(data); })
+        .catch(function () { contenu.innerHTML = '<div style="color:#cc0000; padding:20px;">Erreur de chargement de la fiche.</div>'; });
+}
+
+function _frEsc(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _frSelectDuree(id, possibles, defaut, choisi) {
+    var val = choisi || defaut;
+    var opts = (possibles || []).map(function (d) {
+        var sel = (d === val) ? ' selected' : '';
+        return '<option value="' + _frEsc(d) + '"' + sel + '>' + _frEsc(d) + '</option>';
+    }).join('');
+    return '<select id="' + id + '" style="width:100%; max-width:420px; padding:7px 10px; border:1.5px solid #c8d8f0; border-radius:8px; font-size:13px;">' + opts + '</select>';
+}
+
+function construireFormFicheReco(data) {
+    var contenu = document.getElementById('fr-contenu');
+    var actions = document.getElementById('fr-actions');
+    var calcul = data.calcul || {};
+    var fiche = data.fiche || {};
+    var saisies = (fiche && fiche.saisies) || {};
+    window._frData = data;
+    if (!calcul.a_des_echecs) {
+        contenu.innerHTML = '<div style="text-align:center; padding:40px; color:#1b5e20; background:#e8f5e9; border-radius:10px;"><div style="font-size:40px;">✓</div><div style="font-size:16px; font-weight:600; margin-top:8px;">Aucune recommandation nécessaire</div><div style="font-size:13px; color:#555; margin-top:6px;">Ce candidat n\'a échoué à aucune épreuve dans cette session.</div></div>';
+        actions.style.display = 'none';
+        return;
+    }
+    var c = calcul.candidat || {};
+    var html = '';
+    html += '<div style="background:#f6f7f9; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;"><strong>' + _frEsc(c.nom) + ' ' + _frEsc(c.prenom) + '</strong>' + (c.date_naissance ? ' <span style="color:#888;">né(e) le ' + _frEsc(c.date_naissance) + '</span>' : '') + '</div>';
+    html += '<div style="background:#eef4fb; border:1px solid #bcd; border-radius:8px; padding:10px 14px; margin-bottom:18px; font-size:12px; color:#345; line-height:1.5;">Les épreuves obtenues restent valables un an dans le même organisme. Le candidat se représente uniquement aux épreuves non-obtenues.</div>';
+    if (calcul.theorie_echec) {
+        var th = calcul.theorie_echec;
+        var themesT = (th.themes_echoues || []).map(function (t) { return '<span style="font-size:12px; background:#fcebeb; color:#a32d2d; padding:3px 9px; border-radius:12px; margin:2px;">✓ ' + _frEsc(t.libelle) + '</span>'; }).join(' ');
+        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Épreuve théorique — échouée (' + _frEsc(th.note_totale) + '/100)</div><div style="padding:10px 12px;"><div style="font-size:12px; color:#666; margin-bottom:6px;">Thèmes sous la moyenne :</div><div style="margin-bottom:10px;">' + (themesT || '<span style="color:#888; font-size:12px;">—</span>') + '</div><label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Formation recommandée</label>' + _frSelectDuree('fr-duree-theorie', th.durees_possibles, th.duree_defaut, saisies.theorie) + '</div></div>';
+    }
+    (calcul.pratiques_echec || []).forEach(function (p) {
+        var saisieP = (saisies.pratiques && saisies.pratiques[p.categorie]) || {};
+        var causeTxt = p.cause_label || (p.categorie_entiere_par_option ? 'Option incluse échouée — catégorie entière' : 'Épreuve à repasser');
+        var optHtml = '';
+        if (p.options_a_repasser && p.options_a_repasser.length) {
+            optHtml = '<div style="font-size:12px; color:#7a5a12; background:#faeeda; border-radius:6px; padding:6px 9px; margin-top:8px;">Catégorie obtenue, mais option(s) à repasser : ' + p.options_a_repasser.map(function (o) { return _frEsc(o.libelle); }).join(', ') + '</div>';
+        }
+        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0; display:flex; justify-content:space-between;"><span>✗ Pratique catégorie ' + _frEsc(p.categorie) + ' — échouée</span><span style="font-size:12px;">' + _frEsc(causeTxt) + '</span></div><div style="padding:10px 12px;">';
+        if (p.categorie_echouee) {
+            html += '<label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Formation recommandée</label>' + _frSelectDuree('fr-duree-prat-' + p.categorie, p.durees_possibles, p.duree_defaut, saisieP.duree);
+        }
+        html += optHtml + '</div></div>';
+    });
+    html += '<div style="margin-top:18px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:8px;">Précisions du testeur</div><div style="display:flex; flex-direction:column; gap:7px;"><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-fraude"' + (fiche.fraude_theorie ? ' checked' : '') + '> Fraude ou tentative de fraude pendant l\'épreuve théorique</label><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-langue"' + (fiche.difficultes_langue ? ' checked' : '') + '> Importantes difficultés de compréhension de la langue française</label><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-comportement"' + (fiche.comportement_dangereux ? ' checked' : '') + '> Comportement dangereux incompatible avec la conduite en sécurité</label></div><div style="margin-top:10px;"><label style="font-size:12px; color:#666;">Autres précisions</label><textarea id="fr-autres" rows="2" style="width:100%; margin-top:4px; border:1.5px solid #c8d8f0; border-radius:8px; padding:8px; font-size:13px; box-sizing:border-box;">' + _frEsc(fiche.autres_precisions) + '</textarea></div>';
+    contenu.innerHTML = html;
+    actions.style.display = 'flex';
+}
+
+function enregistrerFicheReco() {
+    var data = window._frData;
+    if (!data) return;
+    var calcul = data.calcul || {};
+    var stagiaireId = window._frStagiaireId;
+    var sessionId = window.SESSION_ID;
+    var saisies = { pratiques: {} };
+    var selTh = document.getElementById('fr-duree-theorie');
+    if (selTh) saisies.theorie = selTh.value;
+    (calcul.pratiques_echec || []).forEach(function (p) {
+        var sel = document.getElementById('fr-duree-prat-' + p.categorie);
+        if (sel) saisies.pratiques[p.categorie] = { duree: sel.value };
+    });
+    var payload = {
+        fraude_theorie: !!(document.getElementById('fr-fraude') && document.getElementById('fr-fraude').checked),
+        difficultes_langue: !!(document.getElementById('fr-langue') && document.getElementById('fr-langue').checked),
+        comportement_dangereux: !!(document.getElementById('fr-comportement') && document.getElementById('fr-comportement').checked),
+        autres_precisions: (document.getElementById('fr-autres') || {}).value || null,
+        saisies: saisies
+    };
+    var btn = document.getElementById('fr-btn-enregistrer');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+    fetch('/api/fiches-reco/' + sessionId + '/' + stagiaireId, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; }
+            if (res && res.ok) { if (typeof toast === 'function') toast('Fiche enregistrée'); else if (typeof afficherSucces === 'function') afficherSucces('Fiche enregistrée'); }
+            else { if (typeof afficherErreur === 'function') afficherErreur('Erreur lors de l\'enregistrement'); }
+        })
+        .catch(function () { if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; } if (typeof afficherErreur === 'function') afficherErreur('Erreur réseau'); });
+}
 
 async function sauvegarderCandidat() {
     const id = document.getElementById('sc-id').value;
