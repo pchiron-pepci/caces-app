@@ -2132,3 +2132,16 @@ Service `app/services/pdf_resultat_pratique.py` (WeasyPrint, charte NORYX), fonc
 **Accès 1 (consultation)** : route `GET /{session_id}/pratique/resultat/{jour_test_id}/{stagiaire_id}/{categorie}/pdf` (retrouve la SaisiePratique validée, auth cookie comme les autres PDF, GET non whitelisté = passe). Bouton « 📄 PDF résultat » dans la modale de choix pratique (`#choix-pratique-pdf-zone`), affiché SEULEMENT sur reclic d'une UT déjà validée (`modifier-epreuve-pratique` montre la zone, `nouveau-resultat-pratique` la cache), ouvre dans un onglet.
 **Accès 2 (ZIP)** : `export_zip_session.py` boucle sur les saisies pratiques validées de la session → sous-dossier `resultats_pratiques/{nom}_{cat}.pdf`, généré à la volée.
 **LEÇON (Claude Code) :** Claude Code a régénéré SON propre service (520 lignes, AVEC critères) au lieu d'utiliser le fichier fourni (302 lignes, sans critères) validé visuellement. Toujours vérifier `wc -l` + présence d'un marqueur (`grep "NE figurent PAS"`) avant commit quand un fichier vient de Claude Code. Commit `5806208`.
+
+### ✅ Chantier terminé : rendu PE groupé par thème avec détail items (2026-06-28)
+Commit `0aa9f00`.
+
+**`app/services/calcul_pratique.py` :** enrichissement de `pes_detail` dans `calculer_bloc` — chaque dict PE contient désormais `libelle_chapeau` (PE.libelle_chapeau ou `""`) et `items` (liste de dicts `{libelle, descriptif_seul, note, bareme}`). Pour chaque item : si `descriptif_seul=True` → pas de note/barème ; si `bareme_max` → note = saisie réelle (0.0 si absent).
+
+**`app/services/pdf_resultat_pratique.py` :** remplacement du rendu PE en table plate (`pe_rows`/`table.grid`) par un rendu hiérarchique :
+- Regroupement des PE par thème (`themes_vus` dict ordered)
+- Pour chaque groupe thème → `<div class="th-grp">` + `<div class="th-grp-titre">`
+- Pour chaque PE → `<div class="pe-block">` avec titre `PE N° + score + badge` + chapeau italique si présent + items en flex `<div class="it-row"><span class="it-lib">/<span class="it-note">` ; items descriptifs seuls en `<div class="it-desc">`
+- 10 nouvelles classes CSS : `.th-grp`, `.th-grp-titre`, `.pe-block`, `.pe-titre`, `.pe-chapeau`, `.it-row`, `.it-row:last-child`, `.it-lib`, `.it-note`, `.it-desc`
+
+**Contrainte respectée :** SANS critères d'évaluation, SANS classes ambre.
