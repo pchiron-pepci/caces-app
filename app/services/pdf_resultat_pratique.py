@@ -280,6 +280,8 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
              font-size: 8px; color: #999; text-align: center; }}
   .page-ref {{ position: running(pageRef); font-size: 8px; color: #888;
                white-space: nowrap; }}
+  .ref-bas {{ border-top: 1px dashed #ccc; margin-top: 14px; padding-top: 5px;
+              font-size: 8px; color: #888; page-break-inside: avoid; }}
 </style></head><body>
 
   <div class="page-ref">{_esc(nom_candidat)} — {_esc(famille)} cat. {_esc(categorie)} — Session {_esc(ref)}</div>
@@ -307,6 +309,8 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   {blocs_html}
 
   {obs_html}
+
+  <div class="ref-bas">Candidat : {_esc(nom_candidat)} — {_esc(famille)} cat. {_esc(categorie)} — Session {_esc(ref)} — Validé le {_esc(date_val)}</div>
 
   <div class="sig-zone">
     <div class="sig-cert">Je soussigné(e) {_esc(testeur_nom)}, testeur habilité, certifie avoir vérifié
