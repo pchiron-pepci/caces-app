@@ -1076,14 +1076,30 @@ function construireFormFicheReco(data) {
         html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Épreuve théorique — échouée (' + _frEsc(th.note_totale) + '/100)</div><div style="padding:10px 12px;"><div style="font-size:12px; color:#666; margin-bottom:4px;">Thèmes à retravailler :</div><ul style="margin:0 0 10px 18px; font-size:13px; color:#333;">' + (themesT || '<li style="color:#888;">—</li>') + '</ul><label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Durée de formation recommandée</label>' + _frInputHeures('fr-duree-theorie', th.duree_heures) + '</div></div>';
     }
     (calcul.pratiques_echec || []).forEach(function (p) {
-        var motifsHtml = (p.motifs || []).map(function (m) { return '<li>' + _frEsc(m) + '</li>'; }).join('');
+        var blocsHtml = (p.themes_blocs || []).map(function (tb) {
+            var inner = '';
+            if (tb.moyenne_insuffisante) {
+                inner += '<div style="font-size:11px; color:#a32d2d; margin:2px 0;">Moyenne du thème insuffisante</div>';
+            }
+            (tb.pe_zero || []).forEach(function (pe) {
+                inner += '<li style="color:#a32d2d;">' + _frEsc(pe.libelle) + ' — <strong>0/' + _frEsc(pe.bareme) + '</strong> (note nulle)</li>';
+            });
+            (tb.pe_sous_moyenne || []).forEach(function (pe) {
+                inner += '<li style="color:#7a5a12;">' + _frEsc(pe.libelle) + ' — ' + _frEsc(pe.note) + '/' + _frEsc(pe.bareme) + ' (sous la moyenne)</li>';
+            });
+            return '<div style="margin-bottom:8px;"><div style="font-size:13px; font-weight:600; color:#2d2d2d;">' + _frEsc(tb.theme) + '</div><ul style="margin:4px 0 0 18px; font-size:12px;">' + (inner || '<li style="color:#888;">—</li>') + '</ul></div>';
+        }).join('');
         var optHtml = '';
         if (p.options_a_repasser && p.options_a_repasser.length) {
             optHtml = '<div style="font-size:12px; color:#7a5a12; background:#faeeda; border-radius:6px; padding:6px 9px; margin-top:8px;">Catégorie obtenue, mais option(s) à repasser : ' + p.options_a_repasser.map(function (o) { return _frEsc(o.libelle); }).join(', ') + '</div>';
         }
         html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Pratique catégorie ' + _frEsc(p.categorie) + ' — échouée</div><div style="padding:10px 12px;">';
         if (p.categorie_echouee) {
-            html += '<div style="font-size:12px; color:#666; margin-bottom:4px;">Motifs (' + (p.nb_points_faibles || 0) + ' point(s) à retravailler) :</div><ul style="margin:0 0 10px 18px; font-size:13px; color:#333;">' + (motifsHtml || '<li style="color:#888;">—</li>') + '</ul><label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Durée de formation recommandée</label>' + _frInputHeures('fr-duree-prat-' + p.categorie, p.duree_heures);
+            html += '<div style="font-size:12px; color:#666; margin-bottom:6px;">Thèmes à retravailler (' + (p.nb_themes || 0) + ') :</div>' + (blocsHtml || '<div style="color:#888; font-size:12px;">—</div>');
+            if (p.fautes_eliminatoires && p.fautes_eliminatoires.length) {
+                html += '<div style="margin-top:8px; background:#fcebeb; border:1px solid #e57373; border-radius:6px; padding:6px 9px;"><div style="font-size:12px; font-weight:600; color:#a32d2d; margin-bottom:3px;">Faute(s) éliminatoire(s) :</div><ul style="margin:0 0 0 18px; font-size:12px; color:#a32d2d;">' + p.fautes_eliminatoires.map(function (f) { return '<li>' + _frEsc(f) + '</li>'; }).join('') + '</ul></div>';
+            }
+            html += '<label style="font-size:12px; color:#666; display:block; margin:8px 0 4px;">Durée de formation recommandée</label>' + _frInputHeures('fr-duree-prat-' + p.categorie, p.duree_heures);
         }
         html += optHtml + '</div></div>';
     });

@@ -23,7 +23,8 @@ from app.services.calcul_pratique import calculer_saisie
 
 # ── Paramètres par défaut (À TERME configurables en admin) ───────────────────
 # Durées exprimées en HEURES. La durée totale est cumulée (pas de plafond figé).
-HEURES_PAR_THEME_PRATIQUE = 1.5   # pratique : par thème échoué OU point d'évaluation à 0
+HEURES_PAR_THEME_PRATIQUE = 1.5   # pratique : par thème qui compte (moyenne KO ou PE à 0)
+HEURES_FAUTE_ELIMINATOIRE = 1.0   # pratique : +1h forfaitaire si >=1 faute éliminatoire
 SEUIL_THEORIE = 50.0              # note_totale >= 50 -> durée courte, sinon longue
 HEURES_THEORIE_COURTE = 2.0       # théorie : note >= 50
 HEURES_THEORIE_LONGUE = 4.0       # théorie : note < 50
@@ -52,9 +53,12 @@ def _duree_theorie_heures(note_totale):
     return HEURES_THEORIE_LONGUE
 
 
-def _duree_pratique_heures(nb_points_faibles):
-    """nb_points_faibles = nb thèmes échoués + nb PE à 0. Cumul, sans plafond figé."""
-    return round(max(nb_points_faibles, 1) * HEURES_PAR_THEME_PRATIQUE, 2)
+def _duree_pratique_heures(nb_themes, a_elimination):
+    """Durée = 1,5h × nb thèmes qui comptent + 1h forfaitaire si >=1 faute éliminatoire."""
+    h = nb_themes * HEURES_PAR_THEME_PRATIQUE
+    if a_elimination:
+        h += HEURES_FAUTE_ELIMINATOIRE
+    return round(h, 2)
 
 
 def _theorie_echec(rt: ResultatTheorie) -> dict:
@@ -75,39 +79,67 @@ def _theorie_echec(rt: ResultatTheorie) -> dict:
 
 
 def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str) -> dict:
-    """Détail de l'échec d'une catégorie pratique : motifs cumulés + durée en heures."""
+    """Détail de l'échec d'une catégorie pratique, regroupé PAR THÈME.
+    Durée = HEURES_PAR_THEME_PRATIQUE × nombre de thèmes qui comptent.
+    Un thème compte si : sa moyenne est insuffisante OU il contient un PE à 0.
+    Sous chaque thème : on liste les PE à 0 et les PE sous leur moyenne (distingués)."""
     calc = calculer_saisie(saisie, db)
     base = calc.get("base") or {}
     base_reussie = bool(calc.get("base_reussie"))
 
-    # thèmes sous la moyenne
-    themes_echoues = [t["libelle"] for t in base.get("themes", []) if not t.get("ok")]
-    # points d'évaluation à 0 (un PE est ok=False uniquement quand sa note vaut 0)
-    pe_zero = []
+    # PE regroupés par thème, avec détection 0 / sous-moyenne
+    pe_par_theme = {}
     for pe in base.get("points_evaluation", []):
-        if not pe.get("ok"):
-            lib = pe.get("libelle_chapeau") or ("PE " + str(pe.get("numero")))
-            pe_zero.append({"theme": pe.get("theme"), "libelle": lib, "numero": pe.get("numero")})
-    # critères éliminatoires cochés
+        th = pe.get("theme") or ""
+        note = pe.get("note")
+        bareme = pe.get("bareme") or 0
+        lib = pe.get("libelle_chapeau") or ("PE " + str(pe.get("numero")))
+        est_zero = (note == 0)
+        sous_moyenne = (bareme > 0 and note is not None and note < (bareme / 2.0) and not est_zero)
+        if th not in pe_par_theme:
+            pe_par_theme[th] = []
+        pe_par_theme[th].append({
+            "libelle": lib, "numero": pe.get("numero"),
+            "note": note, "bareme": bareme,
+            "zero": est_zero, "sous_moyenne": sous_moyenne,
+        })
+
+    # statut "ok" de chaque thème (moyenne du thème)
+    theme_moyenne_ok = {}
+    for t in base.get("themes", []):
+        theme_moyenne_ok[t["libelle"]] = bool(t.get("ok"))
+
+    # construire les blocs thèmes "qui comptent"
+    themes_blocs = []
+    for th_lib, pes in pe_par_theme.items():
+        moyenne_ok = theme_moyenne_ok.get(th_lib, True)
+        a_pe_zero = any(pe["zero"] for pe in pes)
+        compte = (not moyenne_ok) or a_pe_zero
+        if not compte:
+            continue
+        # questions à rappeler : PE à 0 + PE sous moyenne
+        pe_zero = [pe for pe in pes if pe["zero"]]
+        pe_sous = [pe for pe in pes if pe["sous_moyenne"]]
+        themes_blocs.append({
+            "theme": th_lib,
+            "moyenne_insuffisante": not moyenne_ok,
+            "pe_zero": pe_zero,
+            "pe_sous_moyenne": pe_sous,
+        })
+
+    nb_themes = len(themes_blocs)
+
+    # fautes éliminatoires cochées
     elim_coches = base.get("eliminatoires_coches") or []
-
-    # liste des MOTIFS d'échec (cumul, pour affichage détaillé)
-    motifs = []
-    for t in themes_echoues:
-        motifs.append("Thème sous la moyenne : " + t)
-    for pe in pe_zero:
-        motifs.append("Point d'évaluation à 0 : " + pe["libelle"])
+    fautes_eliminatoires = []
     for e in elim_coches:
-        lib = e if isinstance(e, str) else (e.get("libelle") if isinstance(e, dict) else str(e))
-        motifs.append("Critère éliminatoire : " + str(lib))
-    # cas total < 70 sans motif fin identifié
-    if not base_reussie and not motifs:
-        motifs.append("Total inférieur à 70/100")
-
-    # nombre de points faibles pour la durée (thèmes échoués + PE à 0)
-    nb_points_faibles = len(themes_echoues) + len(pe_zero)
-    if nb_points_faibles == 0 and not base_reussie:
-        nb_points_faibles = 1  # total insuffisant : au moins une unité de formation
+        if isinstance(e, str):
+            fautes_eliminatoires.append(e)
+        elif isinstance(e, dict):
+            fautes_eliminatoires.append(e.get("libelle") or e.get("critere") or str(e))
+        else:
+            fautes_eliminatoires.append(str(e))
+    a_elimination = len(fautes_eliminatoires) > 0
 
     # options : facultative échouée (base OK) -> à repasser à part ; incluse -> catégorie entière
     options_a_repasser = []
@@ -129,17 +161,22 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str) -> dict
 
     categorie_echouee = (not base_reussie) or categorie_entiere_par_option
 
-    duree_h = _duree_pratique_heures(nb_points_faibles) if categorie_echouee else None
+    # durée = 1,5h × nb thèmes + 1h forfaitaire si faute éliminatoire.
+    # Si échec sans aucun thème ni élimination (total seul) -> au moins 1 thème.
+    nb_pour_duree = nb_themes
+    if categorie_echouee and nb_pour_duree == 0 and not a_elimination:
+        nb_pour_duree = 1
+    duree_h = _duree_pratique_heures(nb_pour_duree, a_elimination) if categorie_echouee else None
 
     return {
         "type": "pratique",
         "categorie": saisie.categorie,
         "categorie_echouee": categorie_echouee,
         "base_reussie": base_reussie,
-        "motifs": motifs,
-        "themes_echoues": themes_echoues,
-        "pe_zero": pe_zero,
-        "nb_points_faibles": nb_points_faibles,
+        "themes_blocs": themes_blocs,
+        "nb_themes": nb_themes,
+        "fautes_eliminatoires": fautes_eliminatoires,
+        "a_elimination": a_elimination,
         "duree_heures": duree_h,
         "duree_label": _fmt_heures(duree_h) if duree_h is not None else None,
         "options_a_repasser": options_a_repasser,
