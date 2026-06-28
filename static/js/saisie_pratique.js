@@ -506,8 +506,38 @@
   var SP = window._SP;
   var state = SP.state, api = SP.api, BASE = SP.BASE, toast = SP.toast, fmt = SP.fmt;
 
+  function _itemsSansNote() {
+    // Compte UNIQUEMENT les items notables laisses vides (ni OK ni KO).
+    // Les criteres eliminatoires (b.elim, cases a cocher) ne sont PAS dans cette boucle :
+    // une case non cochee = pas de faute = reponse valide, jamais un oubli a signaler.
+    var manquants = 0;
+    state.blocs.forEach(function (b) {
+      b.grille.themes.forEach(function (th) {
+        th.points.forEach(function (pe) {
+          pe.items.forEach(function (it) {
+            if (it.descriptif_seul) return;
+            if (b.notes[it.id] == null) manquants++;
+          });
+        });
+      });
+    });
+    return manquants;
+  }
+
   document.addEventListener("click", function (e) {
     if (!e.target.closest('[data-action="valider"]')) return;
+
+    // Avertissement NON bloquant si des points n'ont pas ete evalues
+    // (cas legitime : candidat arrete en cours d'epreuve, demotive).
+    var manquants = _itemsSansNote();
+    if (manquants > 0) {
+      var msg = (manquants === 1
+        ? "Il reste 1 point d'evaluation sans note."
+        : "Il reste " + manquants + " points d'evaluation sans note.")
+        + "\n\nUn candidat peut s'arreter en cours d'epreuve : vous pouvez valider malgre tout, ou revenir completer."
+        + "\n\nValider quand meme ?";
+      if (!window.confirm(msg)) return;
+    }
 
     // 1) tout synchroniser, 2) calculer, 3) demander decision + justif
     api("GET", BASE + state.saisieId + "/calculer").then(function (res) {
