@@ -1037,13 +1037,22 @@ function _frEsc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function _frSelectDuree(id, possibles, defaut, choisi) {
-    var val = defaut;
-    var opts = (possibles || []).map(function (d) {
-        var sel = (d === val) ? ' selected' : '';
-        return '<option value="' + _frEsc(d) + '"' + sel + '>' + _frEsc(d) + '</option>';
-    }).join('');
-    return '<select id="' + id + '" style="width:100%; max-width:420px; padding:7px 10px; border:1.5px solid #c8d8f0; border-radius:8px; font-size:13px;">' + opts + '</select>';
+function _frInputHeures(id, valeurDefaut) {
+    var v = (valeurDefaut != null) ? valeurDefaut : '';
+    return '<input type="number" id="' + id + '" value="' + v + '" min="0" step="0.5" style="width:90px; padding:6px 8px; border:1.5px solid #c8d8f0; border-radius:8px; font-size:13px;" data-fr-duree="1"> <span style="font-size:13px; color:#666;">heures</span>';
+}
+
+function _frRecalcTotal() {
+    var total = 0;
+    document.querySelectorAll('[data-fr-duree="1"]').forEach(function (inp) {
+        var v = parseFloat(inp.value);
+        if (!isNaN(v)) total += v;
+    });
+    var el = document.getElementById('fr-total-heures');
+    if (el) {
+        var txt = (total === Math.floor(total)) ? String(total) : String(total).replace('.', ',');
+        el.textContent = txt + ' h';
+    }
 }
 
 function construireFormFicheReco(data) {
@@ -1051,7 +1060,6 @@ function construireFormFicheReco(data) {
     var actions = document.getElementById('fr-actions');
     var calcul = data.calcul || {};
     var fiche = data.fiche || {};
-    var saisies = (fiche && fiche.saisies) || {};
     window._frData = data;
     if (!calcul.a_des_echecs) {
         contenu.innerHTML = '<div style="text-align:center; padding:40px; color:#1b5e20; background:#e8f5e9; border-radius:10px;"><div style="font-size:40px;">✓</div><div style="font-size:16px; font-weight:600; margin-top:8px;">Aucune recommandation nécessaire</div><div style="font-size:13px; color:#555; margin-top:6px;">Ce candidat n\'a échoué à aucune épreuve dans cette session.</div></div>';
@@ -1064,25 +1072,27 @@ function construireFormFicheReco(data) {
     html += '<div style="background:#eef4fb; border:1px solid #bcd; border-radius:8px; padding:10px 14px; margin-bottom:18px; font-size:12px; color:#345; line-height:1.5;">Les épreuves obtenues restent valables un an dans le même organisme. Le candidat se représente uniquement aux épreuves non-obtenues.</div>';
     if (calcul.theorie_echec) {
         var th = calcul.theorie_echec;
-        var themesT = (th.themes_echoues || []).map(function (t) { return '<span style="font-size:12px; background:#fcebeb; color:#a32d2d; padding:3px 9px; border-radius:12px; margin:2px;">✓ ' + _frEsc(t.libelle) + '</span>'; }).join(' ');
-        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Épreuve théorique — échouée (' + _frEsc(th.note_totale) + '/100)</div><div style="padding:10px 12px;"><div style="font-size:12px; color:#666; margin-bottom:6px;">Thèmes sous la moyenne :</div><div style="margin-bottom:10px;">' + (themesT || '<span style="color:#888; font-size:12px;">—</span>') + '</div><label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Formation recommandée</label>' + _frSelectDuree('fr-duree-theorie', th.durees_possibles, th.duree_defaut, saisies.theorie) + '</div></div>';
+        var themesT = (th.themes_echoues || []).map(function (t) { return '<li>' + _frEsc(t.libelle) + '</li>'; }).join('');
+        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Épreuve théorique — échouée (' + _frEsc(th.note_totale) + '/100)</div><div style="padding:10px 12px;"><div style="font-size:12px; color:#666; margin-bottom:4px;">Thèmes à retravailler :</div><ul style="margin:0 0 10px 18px; font-size:13px; color:#333;">' + (themesT || '<li style="color:#888;">—</li>') + '</ul><label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Durée de formation recommandée</label>' + _frInputHeures('fr-duree-theorie', th.duree_heures) + '</div></div>';
     }
     (calcul.pratiques_echec || []).forEach(function (p) {
-        var saisieP = (saisies.pratiques && saisies.pratiques[p.categorie]) || {};
-        var causeTxt = p.cause_label || (p.categorie_entiere_par_option ? 'Option incluse échouée — catégorie entière' : 'Épreuve à repasser');
+        var motifsHtml = (p.motifs || []).map(function (m) { return '<li>' + _frEsc(m) + '</li>'; }).join('');
         var optHtml = '';
         if (p.options_a_repasser && p.options_a_repasser.length) {
             optHtml = '<div style="font-size:12px; color:#7a5a12; background:#faeeda; border-radius:6px; padding:6px 9px; margin-top:8px;">Catégorie obtenue, mais option(s) à repasser : ' + p.options_a_repasser.map(function (o) { return _frEsc(o.libelle); }).join(', ') + '</div>';
         }
-        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0; display:flex; justify-content:space-between;"><span>✗ Pratique catégorie ' + _frEsc(p.categorie) + ' — échouée</span><span style="font-size:12px;">' + _frEsc(causeTxt) + '</span></div><div style="padding:10px 12px;">';
+        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Pratique catégorie ' + _frEsc(p.categorie) + ' — échouée</div><div style="padding:10px 12px;">';
         if (p.categorie_echouee) {
-            html += '<label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Formation recommandée</label>' + _frSelectDuree('fr-duree-prat-' + p.categorie, p.durees_possibles, p.duree_defaut, saisieP.duree);
+            html += '<div style="font-size:12px; color:#666; margin-bottom:4px;">Motifs (' + (p.nb_points_faibles || 0) + ' point(s) à retravailler) :</div><ul style="margin:0 0 10px 18px; font-size:13px; color:#333;">' + (motifsHtml || '<li style="color:#888;">—</li>') + '</ul><label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Durée de formation recommandée</label>' + _frInputHeures('fr-duree-prat-' + p.categorie, p.duree_heures);
         }
         html += optHtml + '</div></div>';
     });
-    html += '<div style="margin-top:18px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:8px;">Précisions du testeur</div><div style="display:flex; flex-direction:column; gap:7px;"><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-fraude"' + (fiche.fraude_theorie ? ' checked' : '') + '> Fraude ou tentative de fraude pendant l\'épreuve théorique</label><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-langue"' + (fiche.difficultes_langue ? ' checked' : '') + '> Importantes difficultés de compréhension de la langue française</label><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-comportement"' + (fiche.comportement_dangereux ? ' checked' : '') + '> Comportement dangereux incompatible avec la conduite en sécurité</label></div><div style="margin-top:10px;"><label style="font-size:12px; color:#666;">Autres précisions</label><textarea id="fr-autres" rows="2" style="width:100%; margin-top:4px; border:1.5px solid #c8d8f0; border-radius:8px; padding:8px; font-size:13px; box-sizing:border-box;">' + _frEsc(calcul.observations_testeur || '') + '</textarea></div>';
+    html += '<div style="background:#2d2d2d; color:#fff; border-radius:8px; padding:10px 14px; margin:8px 0 16px; display:flex; justify-content:space-between; align-items:center; font-size:14px;"><span style="font-weight:600;">Durée totale de formation recommandée</span><span id="fr-total-heures" style="font-weight:700; font-size:16px;">' + _frEsc(calcul.duree_totale_label || '0 h') + '</span></div>';
+    html += '<div style="margin-top:8px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#888; margin-bottom:8px;">Précisions du testeur</div><div style="display:flex; flex-direction:column; gap:7px;"><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-fraude"' + (fiche.fraude_theorie ? ' checked' : '') + '> Fraude ou tentative de fraude pendant l\'épreuve théorique</label><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-langue"' + (fiche.difficultes_langue ? ' checked' : '') + '> Importantes difficultés de compréhension de la langue française</label><label style="font-size:13px; display:flex; align-items:center; gap:8px; font-weight:normal;"><input type="checkbox" id="fr-comportement"' + (fiche.comportement_dangereux ? ' checked' : '') + '> Comportement dangereux incompatible avec la conduite en sécurité</label></div><div style="margin-top:10px;"><label style="font-size:12px; color:#666;">Autres précisions</label><textarea id="fr-autres" rows="2" style="width:100%; margin-top:4px; border:1.5px solid #c8d8f0; border-radius:8px; padding:8px; font-size:13px; box-sizing:border-box;">' + _frEsc(calcul.observations_testeur || '') + '</textarea></div>';
     contenu.innerHTML = html;
     actions.style.display = 'flex';
+    contenu.querySelectorAll('[data-fr-duree="1"]').forEach(function (inp) { inp.addEventListener('input', _frRecalcTotal); });
+    _frRecalcTotal();
 }
 
 function enregistrerFicheReco() {
@@ -1093,11 +1103,13 @@ function enregistrerFicheReco() {
     var sessionId = window.SESSION_ID;
     var saisies = { pratiques: {} };
     var selTh = document.getElementById('fr-duree-theorie');
-    if (selTh) saisies.theorie = selTh.value;
+    if (selTh) saisies.theorie = parseFloat(selTh.value) || 0;
     (calcul.pratiques_echec || []).forEach(function (p) {
-        var sel = document.getElementById('fr-duree-prat-' + p.categorie);
-        if (sel) saisies.pratiques[p.categorie] = { duree: sel.value };
+        var inp = document.getElementById('fr-duree-prat-' + p.categorie);
+        if (inp) saisies.pratiques[p.categorie] = { duree_heures: parseFloat(inp.value) || 0 };
     });
+    var totalEl = document.getElementById('fr-total-heures');
+    if (totalEl) saisies.total_label = totalEl.textContent;
     var payload = {
         fraude_theorie: !!(document.getElementById('fr-fraude') && document.getElementById('fr-fraude').checked),
         difficultes_langue: !!(document.getElementById('fr-langue') && document.getElementById('fr-langue').checked),

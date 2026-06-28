@@ -22,21 +22,11 @@ from app.models.option_categorie import OptionCategorie
 from app.services.calcul_pratique import calculer_saisie
 
 # ── Paramètres par défaut (À TERME configurables en admin) ───────────────────
-DUREES_THEORIE = {
-    "courte": "Théorie en groupe - 3 heures minimum",
-    "longue": "Théorie en groupe - 6 heures minimum",
-    "indef": "Théorie en groupe - Durée indéfinissable",
-}
-DUREES_PRATIQUE = {
-    1: "Pratique individuelle - 1 heure minimum (1 exercice)",
-    2: "Pratique individuelle - 2 heures minimum (plusieurs exercices)",
-    4: "Pratique individuelle - 4 heures minimum (plusieurs exercices)",
-    6: "Pratique individuelle - 6 heures minimum (plusieurs exercices)",
-}
-SEUIL_THEORIE_COURTE = 50.0   # note_totale >= 50 -> 3h, sinon 6h
-HEURES_PAR_THEME = 2          # pratique total<70 : 2h par thème échoué
-PLAFOND_PRATIQUE_H = 6        # plafonné à 6h
-HEURES_ELIMINATION = 2        # élimination sur un point -> 2h
+# Durées exprimées en HEURES. La durée totale est cumulée (pas de plafond figé).
+HEURES_PAR_THEME_PRATIQUE = 1.5   # pratique : par thème échoué OU point d'évaluation à 0
+SEUIL_THEORIE = 50.0              # note_totale >= 50 -> durée courte, sinon longue
+HEURES_THEORIE_COURTE = 2.0       # théorie : note >= 50
+HEURES_THEORIE_LONGUE = 4.0       # théorie : note < 50
 
 NOMS_THEMES_THEORIE = {
     1: "Connaissances générales",
@@ -47,27 +37,24 @@ NOMS_THEMES_THEORIE = {
 }
 
 
-def _duree_theorie_defaut(note_totale):
-    if note_totale is not None and note_totale >= SEUIL_THEORIE_COURTE:
-        return DUREES_THEORIE["courte"]
-    return DUREES_THEORIE["longue"]
+def _fmt_heures(h):
+    """Formate une durée en heures : '2 h', '1,5 h', '7,5 h'."""
+    if h is None:
+        return None
+    if float(h) == int(h):
+        return str(int(h)) + " h"
+    return ("%.1f" % h).replace(".", ",") + " h"
 
 
-def _duree_pratique_defaut(nb_themes_echoues, elimination):
-    if elimination:
-        h = HEURES_ELIMINATION
-    else:
-        h = min(max(nb_themes_echoues, 1) * HEURES_PAR_THEME, PLAFOND_PRATIQUE_H)
-    # arrondir à une durée existante (1,2,4,6)
-    if h <= 1:
-        h = 1
-    elif h <= 2:
-        h = 2
-    elif h <= 4:
-        h = 4
-    else:
-        h = 6
-    return DUREES_PRATIQUE[h]
+def _duree_theorie_heures(note_totale):
+    if note_totale is not None and note_totale >= SEUIL_THEORIE:
+        return HEURES_THEORIE_COURTE
+    return HEURES_THEORIE_LONGUE
+
+
+def _duree_pratique_heures(nb_points_faibles):
+    """nb_points_faibles = nb thèmes échoués + nb PE à 0. Cumul, sans plafond figé."""
+    return round(max(nb_points_faibles, 1) * HEURES_PAR_THEME_PRATIQUE, 2)
 
 
 def _theorie_echec(rt: ResultatTheorie) -> dict:
@@ -77,49 +64,57 @@ def _theorie_echec(rt: ResultatTheorie) -> dict:
     for i, ok in enumerate(oks, start=1):
         if ok is False:
             themes_echoues.append({"numero": i, "libelle": NOMS_THEMES_THEORIE[i]})
+    h = _duree_theorie_heures(rt.note_totale)
     return {
         "type": "theorie",
         "note_totale": rt.note_totale,
         "themes_echoues": themes_echoues,
-        "duree_defaut": _duree_theorie_defaut(rt.note_totale),
-        "durees_possibles": list(DUREES_THEORIE.values()),
+        "duree_heures": h,
+        "duree_label": _fmt_heures(h),
     }
 
 
 def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str) -> dict:
-    """Détail de l'échec d'une catégorie pratique : cause + durée + options."""
+    """Détail de l'échec d'une catégorie pratique : motifs cumulés + durée en heures."""
     calc = calculer_saisie(saisie, db)
     base = calc.get("base") or {}
     base_reussie = bool(calc.get("base_reussie"))
 
-    # thèmes échoués de la base
+    # thèmes sous la moyenne
     themes_echoues = [t["libelle"] for t in base.get("themes", []) if not t.get("ok")]
-    # élimination = un PE à 0 ou un éliminatoire coché
-    pe_zero = any(not pe.get("ok") for pe in base.get("points_evaluation", []))
-    elim_coches = bool(base.get("eliminatoires_coches"))
-    elimination = pe_zero or elim_coches
+    # points d'évaluation à 0 (un PE est ok=False uniquement quand sa note vaut 0)
+    pe_zero = []
+    for pe in base.get("points_evaluation", []):
+        if not pe.get("ok"):
+            lib = pe.get("libelle_chapeau") or ("PE " + str(pe.get("numero")))
+            pe_zero.append({"theme": pe.get("theme"), "libelle": lib, "numero": pe.get("numero")})
+    # critères éliminatoires cochés
+    elim_coches = base.get("eliminatoires_coches") or []
 
-    # cause principale
-    if not base_reussie:
-        if elimination:
-            cause = "elimination"
-            cause_label = "Élimination sur un point d'évaluation"
-        elif themes_echoues:
-            cause = "theme"
-            cause_label = "Moyenne d'un thème insuffisante"
-        else:
-            cause = "total"
-            cause_label = "Total inférieur à 70/100"
-    else:
-        cause = None
-        cause_label = None
+    # liste des MOTIFS d'échec (cumul, pour affichage détaillé)
+    motifs = []
+    for t in themes_echoues:
+        motifs.append("Thème sous la moyenne : " + t)
+    for pe in pe_zero:
+        motifs.append("Point d'évaluation à 0 : " + pe["libelle"])
+    for e in elim_coches:
+        lib = e if isinstance(e, str) else (e.get("libelle") if isinstance(e, dict) else str(e))
+        motifs.append("Critère éliminatoire : " + str(lib))
+    # cas total < 70 sans motif fin identifié
+    if not base_reussie and not motifs:
+        motifs.append("Total inférieur à 70/100")
+
+    # nombre de points faibles pour la durée (thèmes échoués + PE à 0)
+    nb_points_faibles = len(themes_echoues) + len(pe_zero)
+    if nb_points_faibles == 0 and not base_reussie:
+        nb_points_faibles = 1  # total insuffisant : au moins une unité de formation
 
     # options : facultative échouée (base OK) -> à repasser à part ; incluse -> catégorie entière
     options_a_repasser = []
     categorie_entiere_par_option = False
     for opt in calc.get("options", []):
         if opt.get("reussi_bloc"):
-            continue  # option réussie
+            continue
         code = opt.get("code_option")
         oc = db.query(OptionCategorie).filter(
             OptionCategorie.famille == famille,
@@ -132,20 +127,21 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str) -> dict
         else:
             options_a_repasser.append({"code_option": code, "libelle": opt.get("libelle") or code})
 
-    # la catégorie est "échouée" si base ratée OU option incluse ratée
     categorie_echouee = (not base_reussie) or categorie_entiere_par_option
+
+    duree_h = _duree_pratique_heures(nb_points_faibles) if categorie_echouee else None
 
     return {
         "type": "pratique",
         "categorie": saisie.categorie,
         "categorie_echouee": categorie_echouee,
         "base_reussie": base_reussie,
-        "cause": cause,
-        "cause_label": cause_label,
+        "motifs": motifs,
         "themes_echoues": themes_echoues,
-        "elimination": elimination,
-        "duree_defaut": _duree_pratique_defaut(len(themes_echoues), elimination) if categorie_echouee else None,
-        "durees_possibles": list(DUREES_PRATIQUE.values()),
+        "pe_zero": pe_zero,
+        "nb_points_faibles": nb_points_faibles,
+        "duree_heures": duree_h,
+        "duree_label": _fmt_heures(duree_h) if duree_h is not None else None,
         "options_a_repasser": options_a_repasser,
         "categorie_entiere_par_option": categorie_entiere_par_option,
         "observations": (saisie.observations or "").strip(),
@@ -215,6 +211,14 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
             obs_parts.append("[" + str(p["categorie"]) + "] " + " — ".join(morceaux))
     observations_testeur = "\n".join(obs_parts)
 
+    # durée totale cumulée (théorie + toutes pratiques échouées)
+    total_h = 0.0
+    if theorie_echec and theorie_echec.get("duree_heures"):
+        total_h += theorie_echec["duree_heures"]
+    for p in pratiques_echec:
+        if p.get("duree_heures"):
+            total_h += p["duree_heures"]
+
     return {
         "candidat": {
             "nom": stagiaire.nom if stagiaire else "",
@@ -228,4 +232,6 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
         "pratiques_obtenues": pratiques_obtenues,
         "a_des_echecs": a_des_echecs,
         "observations_testeur": observations_testeur,
+        "duree_totale_heures": round(total_h, 2),
+        "duree_totale_label": _fmt_heures(round(total_h, 2)) if total_h else None,
     }
