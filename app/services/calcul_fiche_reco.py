@@ -193,6 +193,11 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
     """
     stagiaire = db.query(Stagiaire).filter(Stagiaire.id == stagiaire_id).first()
 
+    # session (reference, dates, famille) - toujours disponible
+    from app.models.session import Session as SessionModel
+    sess = db.query(SessionModel).filter(SessionModel.id == session_id).first()
+    famille = sess.famille if sess else ""
+
     # jours de test de la session
     jours = db.query(JourTest).filter(JourTest.session_id == session_id).all()
     jt_ids = [j.id for j in jours]
@@ -218,10 +223,6 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
             SaisiePratique.stagiaire_id == stagiaire_id,
             SaisiePratique.statut == "valide",
         ).all()
-        # déterminer la famille via la session
-        from app.models.session import Session as SessionModel
-        sess = db.query(SessionModel).filter(SessionModel.id == session_id).first()
-        famille = sess.famille if sess else ""
         # dédupliquer par catégorie : garder la plus récente (id max)
         par_cat = {}
         for s in saisies:
@@ -261,6 +262,14 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
             "nom": stagiaire.nom if stagiaire else "",
             "prenom": stagiaire.prenom if stagiaire else "",
             "date_naissance": stagiaire.date_naissance.isoformat() if stagiaire and stagiaire.date_naissance else None,
+        },
+        "session": {
+            "reference": sess.reference if sess else None,
+            "famille": famille,
+            "date_theorie": sess.date_theorie.isoformat() if sess and sess.date_theorie else None,
+            "date_pratique_debut": sess.date_pratique_debut.isoformat() if sess and sess.date_pratique_debut else None,
+            "date_pratique_fin": sess.date_pratique_fin.isoformat() if sess and sess.date_pratique_fin else None,
+            "categories_echouees": [p["categorie"] for p in pratiques_echec if p.get("categorie_echouee")],
         },
         "session_id": session_id,
         "theorie_obtenue": theorie_obtenue,
