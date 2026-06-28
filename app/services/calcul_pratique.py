@@ -47,11 +47,22 @@ def calculer_bloc(bloc: SaisieBloc, db) -> dict:
             note_pe = 0.0
             bareme_pe = 0.0
             items = db.query(ItemPratique).filter(
-                ItemPratique.pe_id == pe.id).all()
+                ItemPratique.pe_id == pe.id).order_by(ItemPratique.ordre).all()
+            items_detail = []
             for it in items:
+                if it.descriptif_seul:
+                    items_detail.append({
+                        "libelle": it.libelle, "descriptif_seul": True,
+                        "note": None, "bareme": None,
+                    })
+                    continue
                 if it.bareme_max:
                     bareme_pe += it.bareme_max
                     note_pe += notes.get(it.id, 0.0)
+                items_detail.append({
+                    "libelle": it.libelle, "descriptif_seul": False,
+                    "note": notes.get(it.id, 0.0), "bareme": it.bareme_max,
+                })
             note_theme += note_pe
             # REGLE PE : un PE a 0 = echec direct (pris a l'envers : note_pe > 0 = OK).
             # Ce n'est PAS un seuil a la moitie (ca, c'est la regle des THEMES).
@@ -62,8 +73,10 @@ def calculer_bloc(bloc: SaisieBloc, db) -> dict:
                     pe.numero, th.libelle))
             pes_detail.append({
                 "theme": th.libelle, "numero": pe.numero,
+                "libelle_chapeau": pe.libelle_chapeau or "",
                 "note": round(note_pe, 2), "bareme": round(bareme_pe, 2),
                 "seuil": 0, "ok": pe_ok,
+                "items": items_detail,
             })
 
         note_globale += note_theme

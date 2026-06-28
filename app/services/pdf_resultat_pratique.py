@@ -104,26 +104,51 @@ def _bloc_html(bloc: dict, est_base: bool, acquis: bool) -> str:
             f"</tr>\n"
         )
 
-    # Tableau des points d'évaluation (regroupés par thème)
-    pe_rows = ""
+    # Points d'évaluation groupés par thème
+    themes_vus: dict = {}
     for pe in bloc.get("points_evaluation", []):
-        etat = _badge(pe["ok"], "OK" if pe["ok"] else "0 = échec")
-        pe_rows += (
-            f"<tr>"
-            f"<td class='lib'>{_esc(pe['theme'])} — PE {_esc(pe['numero'])}</td>"
-            f"<td class='c'>{_fmt(pe['note'])} / {_fmt(pe['bareme'])}</td>"
-            f"<td class='c'>{etat}</td>"
-            f"</tr>\n"
-        )
+        th_lib = pe.get("theme", "")
+        if th_lib not in themes_vus:
+            themes_vus[th_lib] = []
+        themes_vus[th_lib].append(pe)
+
+    pe_blocks = ""
+    for th_lib, pes in themes_vus.items():
+        pes_html = ""
+        for pe in pes:
+            etat = _badge(pe["ok"], "OK" if pe["ok"] else "0 = échec")
+            chapeau = (f'<div class="pe-chapeau">{_esc(pe["libelle_chapeau"])}</div>'
+                       if pe.get("libelle_chapeau") else "")
+            items_html = ""
+            for it in pe.get("items", []):
+                if it.get("descriptif_seul"):
+                    items_html += f'<div class="it-desc">{_esc(it["libelle"])}</div>'
+                else:
+                    items_html += (
+                        f'<div class="it-row">'
+                        f'<span class="it-lib">{_esc(it["libelle"])}</span>'
+                        f'<span class="it-note">{_fmt(it["note"])} / {_fmt(it["bareme"])}</span>'
+                        f'</div>'
+                    )
+            pes_html += f"""
+            <div class="pe-block">
+              <div class="pe-titre">
+                <span>PE {_esc(pe["numero"])} — {_fmt(pe["note"])} / {_fmt(pe["bareme"])}</span>
+                {etat}
+              </div>
+              {chapeau}{items_html}
+            </div>"""
+        pe_blocks += f"""
+        <div class="th-grp">
+          <div class="th-grp-titre">{_esc(th_lib)}</div>
+          {pes_html}
+        </div>"""
 
     pe_section = ""
-    if pe_rows:
+    if pe_blocks:
         pe_section = f"""
         <div class="sub">Détail des points d'évaluation</div>
-        <table class="grid">
-          <thead><tr><th class="lib">Point d'évaluation</th><th class="c">Note</th><th class="c">État</th></tr></thead>
-          <tbody>{pe_rows}</tbody>
-        </table>"""
+        {pe_blocks}"""
 
     return f"""
     <div class="bloc">
@@ -221,6 +246,19 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   table.grid td {{ padding: 4px 7px; border: 1px solid #e6e9ef; }}
   table.grid td.c, table.grid th.c {{ text-align: center; }}
   table.grid td.lib {{ width: 55%; }}
+  .th-grp {{ margin: 8px 0 4px; }}
+  .th-grp-titre {{ font-size: 10px; font-weight: bold; color: {ANTHRACITE}; background: #eef0f4;
+                   border: 1px solid #dfe3ea; padding: 3px 7px; border-radius: 3px 3px 0 0; }}
+  .pe-block {{ border: 1px solid #e6e9ef; border-top: none; padding: 5px 8px; margin-bottom: 2px; }}
+  .pe-titre {{ display: flex; justify-content: space-between; align-items: center;
+               font-size: 10px; font-weight: bold; color: #444; margin-bottom: 3px; }}
+  .pe-chapeau {{ font-size: 9px; color: #666; font-style: italic; margin-bottom: 3px; }}
+  .it-row {{ display: flex; justify-content: space-between; font-size: 9px;
+             padding: 1px 0; border-bottom: 1px dotted #eee; }}
+  .it-row:last-child {{ border-bottom: none; }}
+  .it-lib {{ color: #333; flex: 1; padding-right: 8px; }}
+  .it-note {{ color: #555; white-space: nowrap; }}
+  .it-desc {{ font-size: 9px; color: #888; font-style: italic; padding: 1px 0; }}
   .badge {{ display: inline-block; border-radius: 3px; padding: 1px 6px; font-size: 9px;
             font-weight: bold; }}
   .badge.ok {{ background: #e8f5e9; color: #1b5e20; border: 1px solid #66bb6a; }}
