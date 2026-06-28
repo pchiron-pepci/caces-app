@@ -294,6 +294,45 @@ def calculer(session_id: int, saisie_id: int, db: DBSession = Depends(get_db)):
     return res
 
 
+@router.get("/{session_id}/pratique/resultat/{jour_test_id}/{stagiaire_id}/{categorie}/pdf")
+def pdf_resultat_pratique(session_id: int, jour_test_id: int, stagiaire_id: int,
+                          categorie: str, request: Request,
+                          db: DBSession = Depends(get_db)):
+    """PDF de resultat pratique (genere a la volee, jamais stocke).
+    Retrouve la SaisiePratique VALIDEE pour (jour, candidat, categorie)."""
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO as _BIO
+    from app.services.pdf_resultat_pratique import generer_pdf_resultat_pratique
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    saisie = (
+        db.query(SaisiePratique)
+        .filter(
+            SaisiePratique.jour_test_id == jour_test_id,
+            SaisiePratique.stagiaire_id == stagiaire_id,
+            SaisiePratique.categorie == categorie,
+            SaisiePratique.statut == "valide",
+        )
+        .order_by(SaisiePratique.id.desc())
+        .first()
+    )
+    if not saisie:
+        raise HTTPException(status_code=404,
+                            detail="Aucun resultat pratique valide en ligne pour ce candidat / cette categorie")
+    try:
+        pdf_bytes = generer_pdf_resultat_pratique(saisie.id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur generation PDF : {e}")
+    return StreamingResponse(
+        _BIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=resultat_pratique_{stagiaire_id}_{categorie}.pdf"},
+    )
+
+
 class ValiderSaisie(BaseModel):
     testeur_id: int
     testeur_nom: Optional[str] = None

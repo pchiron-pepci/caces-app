@@ -27,6 +27,8 @@ from app.services import storage
 from app.services.pdf_test_theorie import generer_corrige
 from app.services.pdf_recap_session import generer_recap_resultats
 from app.services.pdf_detail_theorie import generer_pdf_detail_theorie
+from app.services.pdf_resultat_pratique import generer_pdf_resultat_pratique
+from app.models.grille_pratique import SaisiePratique
 from app.services.pdf_consentement_neutralite import (
     generer_pdf_consentement,
     generer_pdf_neutralite,
@@ -207,6 +209,21 @@ def generer_zip_session(session_id: int, db: DBSession) -> bytes:
                 zf.writestr(f"dispense/{nom_cand}{ext}", data)
             except Exception:
                 pass
+
+        # resultats pratiques valides (saisie en ligne, genere a la volee)
+        if jt_ids:
+            saisies_prat = db.query(SaisiePratique).filter(
+                SaisiePratique.jour_test_id.in_(jt_ids),
+                SaisiePratique.statut == "valide",
+            ).all()
+            for sp in saisies_prat:
+                try:
+                    pdf_bytes = generer_pdf_resultat_pratique(sp.id, db)
+                    nom = _nom_candidat(sp.stagiaire_id, stagiaires)
+                    cat = _sanitize(sp.categorie or "cat")
+                    zf.writestr(f"resultats_pratiques/{nom}_{cat}.pdf", pdf_bytes)
+                except Exception as e:
+                    print(f"[ZIP] resultat_pratique saisie={sp.id} error: {e}", flush=True)
 
     buf.seek(0)
     return buf.getvalue()

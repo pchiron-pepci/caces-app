@@ -2069,6 +2069,8 @@ document.addEventListener('DOMContentLoaded', function() {
             optsObtenues: btn.dataset.optsObtenues,
             epreuveId: parseInt(btn.dataset.epreuveId)
         };
+        var zonePdf = document.getElementById('choix-pratique-pdf-zone');
+        if (zonePdf) zonePdf.style.display = 'block';
         var mc = document.getElementById('modal-choix-pratique');
         if (mc) mc.style.display = 'flex';
     });
@@ -2089,6 +2091,15 @@ document.addEventListener('DOMContentLoaded', function() {
             c.stagiaireId, c.cat, c.date, c.testeurId, c.identite,
             c.obtenue, c.noteTesteur, c.optsPlanif, c.optsObtenues, c.epreuveId
         );
+    });
+
+    // Choix : PDF resultat -> ouvre le PDF dans un onglet (genere a la volee)
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-action="choix-pratique-pdf"]')) return;
+        var c = window._pratiqueCtx; if (!c) return;
+        var sidp = (typeof SESSION_ID !== 'undefined') ? SESSION_ID : (document.body.dataset.sessionId || window.location.pathname.split('/')[2]);
+        document.getElementById('modal-choix-pratique').style.display = 'none';
+        window.open('/api/sessions/' + sidp + '/pratique/resultat/' + c.jourTestId + '/' + c.stagiaireId + '/' + encodeURIComponent(c.cat) + '/pdf', '_blank');
     });
 
     // Choix : saisie en ligne -> ecran plein ecran (nouvel onglet)
@@ -2118,6 +2129,8 @@ document.addEventListener('DOMContentLoaded', function() {
             epreuveId: null,
             jourTestId: parseInt(btn.dataset.jourTestId)
         };
+        var zonePdfN = document.getElementById('choix-pratique-pdf-zone');
+        if (zonePdfN) zonePdfN.style.display = 'none';
         var mc = document.getElementById('modal-choix-pratique');
         if (mc) mc.style.display = 'flex';
     });
