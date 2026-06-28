@@ -2128,7 +2128,7 @@ Colonne `config_organisme.mode_saisie_pratique` (VARCHAR(20) default `binaire`) 
 - **Vérification testeur en amont** : le faux bug « bouton Confirmer inerte » = le garde `if(!testeurId) return` en fin de modale. Ajout vérification du sélecteur testeur (header) AVANT ouverture de la modale (toast + focus + outline rouge 2,5 s), pour ne pas remplir signature/commentaire puis se faire bloquer. Commit `8711dfe`.
 
 ### ✅ Chantier terminé : PDF résultat pratique (2026-06-28)
-Service `app/services/pdf_resultat_pratique.py` (WeasyPrint, charte NORYX), fonction `generer_pdf_resultat_pratique(saisie_id, db)`. Contenu : en-tête candidat + organisme/logo, verdict global (CATÉGORIE ACQUISE/NON ACQUISE, vert/rouge), détail par bloc (base + options) avec note globale/seuil/badge, notes par thème, **détail des points d'évaluation**, observations + justification d'écart, signature testeur (base64), pied de page NORYX. **SANS les critères d'évaluation** (décision produit). **Génération à la volée, JAMAIS stockée** : le PDF est une vue des données vivantes → si la saisie est supprimée, plus de PDF, rien à nettoyer. Signature laissée en base64 dans la saisie.
+Service `app/services/pdf_resultat_pratique.py` (WeasyPrint, charte NORYX), fonction `generer_pdf_resultat_pratique(saisie_id, db)`. Contenu : en-tête candidat + organisme/logo, verdict global (CATÉGORIE ACQUISE/NON ACQUISE, vert/rouge), **encadré critères éliminatoires déclenchés** (si présents), détail par bloc (base + options) avec note globale/seuil/badge, notes par thème, **détail des points d'évaluation**, observations + justification de la décision par le testeur, signature testeur (base64), pied de page NORYX. **Génération à la volée, JAMAIS stockée** : le PDF est une vue des données vivantes → si la saisie est supprimée, plus de PDF, rien à nettoyer. Signature laissée en base64 dans la saisie.
 **Accès 1 (consultation)** : route `GET /{session_id}/pratique/resultat/{jour_test_id}/{stagiaire_id}/{categorie}/pdf` (retrouve la SaisiePratique validée, auth cookie comme les autres PDF, GET non whitelisté = passe). Bouton « 📄 PDF résultat » dans la modale de choix pratique (`#choix-pratique-pdf-zone`), affiché SEULEMENT sur reclic d'une UT déjà validée (`modifier-epreuve-pratique` montre la zone, `nouveau-resultat-pratique` la cache), ouvre dans un onglet.
 **Accès 2 (ZIP)** : `export_zip_session.py` boucle sur les saisies pratiques validées de la session → sous-dossier `resultats_pratiques/{nom}_{cat}.pdf`, généré à la volée.
 **LEÇON (Claude Code) :** Claude Code a régénéré SON propre service (520 lignes, AVEC critères) au lieu d'utiliser le fichier fourni (302 lignes, sans critères) validé visuellement. Toujours vérifier `wc -l` + présence d'un marqueur (`grep "NE figurent PAS"`) avant commit quand un fichier vient de Claude Code. Commit `5806208`.
@@ -2144,4 +2144,16 @@ Commit `0aa9f00`.
 - Pour chaque PE → `<div class="pe-block">` avec titre `PE N° + score + badge` + chapeau italique si présent + items en flex `<div class="it-row"><span class="it-lib">/<span class="it-note">` ; items descriptifs seuls en `<div class="it-desc">`
 - 10 nouvelles classes CSS : `.th-grp`, `.th-grp-titre`, `.pe-block`, `.pe-titre`, `.pe-chapeau`, `.it-row`, `.it-row:last-child`, `.it-lib`, `.it-note`, `.it-desc`
 
-**Contrainte respectée :** SANS critères d'évaluation, SANS classes ambre.
+### ✅ Chantier terminé : critères éliminatoires dans le PDF résultat pratique (2026-06-28)
+Commit `334781d`.
+
+**`app/services/pdf_resultat_pratique.py` :** ajout d'un encadré orange `.elim-zone` affiché juste après le bandeau verdict ACQUISE/NON ACQUISE et avant le détail des blocs. La zone n'est rendue que si `all_elim` est non vide.
+- `all_elim` : agrège `calcul["base"]["eliminatoires_coches"]` + tous `opt["eliminatoires_coches"]` (libelles texte)
+- CSS : `.elim-zone` fond `#fff3cd` + bordure `#f0ad4e`, `.elim-titre` brun, `.elim-list li` rouge gras, `page-break-inside: avoid`
+- Libellés issus du champ `CritereEliminatoire.libelle` (via `calculer_bloc` → `elim_detail`)
+
+### Précision options PE/TC sur la fiche de reco (acté 2026-06-28)
+S'appuie sur `OptionCategorie.incluse` (règle déjà en place, cf. §UT options) :
+- **Option facultative** (`incluse=False`) qui échoue, base réussie → DISTINGUER : « catégorie obtenue, option PE/TC à repasser » (mention à part). Le candidat garde la base.
+- **Option incluse** (`incluse=True`) qui échoue → fait partie intégrante de la catégorie → échec = catégorie entière à repasser, pas de distinction.
+- À l'étape 1 (calcul) : pour chaque catégorie échouée, déterminer si l'échec vient de la base ou d'une option, et si option consulter `incluse` pour l'affichage.
