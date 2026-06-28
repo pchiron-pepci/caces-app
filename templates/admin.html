@@ -397,9 +397,6 @@
                     onclick="supprimerLogo2Organisme()">🗑️ Supprimer le logo 2</button>
             </div>
 
-            <div class="form-actions" style="margin-top:24px;">
-                <button class="btn btn-primary" onclick="sauvegarderConfigOrganisme()">💾 Enregistrer</button>
-            </div>
         </div>
     </div>
 
@@ -420,8 +417,9 @@
                     <input type="date" id="config-revue-direction">
                 </div>
             </div>
-            <div class="form-actions" style="margin-top:20px;">
-                <button class="btn btn-primary" onclick="sauvegarderConfigOrganisme()">💾 Sauvegarder</button>
+            <div class="form-actions" style="margin-top:24px; padding-top:16px; border-top:2px solid #cc0000;">
+                <button class="btn btn-primary" style="font-size:15px; padding:10px 22px;" onclick="sauvegarderConfigOrganisme()">💾 Enregistrer tous les paramètres</button>
+                <p style="font-size:12px; color:#888; margin-top:8px;">Enregistre l'ensemble de la configuration ci-dessus (signataire, mode de saisie, logos, calendrier qualité). Le code PIN administrateur sera demandé.</p>
             </div>
             <p id="config-organisme-msg" style="display:none; margin-top:8px; font-size:13px; color:#2e7d32;"></p>
         </div>
@@ -602,10 +600,11 @@ function demanderPin(message, callback) {
     document.getElementById('modal-pin').style.display = 'flex';
     document.getElementById('pin-confirm-btn').onclick = async () => {
         const pin = document.getElementById('pin-input').value;
-        if (pin !== '1505') {
+        if (!pin) {
             document.getElementById('pin-error').style.display = 'block';
             return;
         }
+        // Validation du PIN cote serveur (PIN admin a jour en base) : 403 si incorrect.
         fermerPin();
         await callback(pin);
     };
@@ -1024,6 +1023,8 @@ function sauvegarderConfigOrganisme() {
             msg.textContent = '✅ Configuration sauvegardée.';
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        } else if (respNom.status === 403) {
+            alert('Code PIN administrateur incorrect — paramètres non enregistrés.');
         } else {
             alert('Erreur lors de la sauvegarde');
         }
