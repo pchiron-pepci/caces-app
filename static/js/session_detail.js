@@ -1082,7 +1082,7 @@ function construireFormFicheReco(data) {
                 inner += '<div style="font-size:11px; color:#a32d2d; margin:2px 0;">Moyenne du thème insuffisante</div>';
             }
             (tb.pe_zero || []).forEach(function (pe) {
-                inner += '<li style="color:#a32d2d;">' + _frEsc(pe.libelle) + ' — <strong>0/' + _frEsc(pe.bareme) + '</strong> (note nulle)</li>';
+                inner += '<li style="color:#a32d2d;">' + _frEsc(pe.libelle) + ' — <strong>0/' + _frEsc(pe.bareme) + '</strong> (note éliminatoire)</li>';
             });
             (tb.pe_sous_moyenne || []).forEach(function (pe) {
                 inner += '<li style="color:#7a5a12;">' + _frEsc(pe.libelle) + ' — ' + _frEsc(pe.note) + '/' + _frEsc(pe.bareme) + ' (sous la moyenne)</li>';
