@@ -148,6 +148,7 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str) -> dict
         "durees_possibles": list(DUREES_PRATIQUE.values()),
         "options_a_repasser": options_a_repasser,
         "categorie_entiere_par_option": categorie_entiere_par_option,
+        "observations": (saisie.observations or "").strip(),
     }
 
 
@@ -202,6 +203,13 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
     a_des_echecs = bool(theorie_echec) or any(p["categorie_echouee"] for p in pratiques_echec) \
         or any(p["options_a_repasser"] for p in pratiques_echec)
 
+    obs_parts = []
+    for p in pratiques_echec:
+        obs = p.get("observations")
+        if obs:
+            obs_parts.append("[" + str(p["categorie"]) + "] " + obs)
+    observations_testeur = "\n".join(obs_parts)
+
     return {
         "candidat": {
             "nom": stagiaire.nom if stagiaire else "",
@@ -214,4 +222,5 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
         "pratiques_echec": pratiques_echec,
         "pratiques_obtenues": pratiques_obtenues,
         "a_des_echecs": a_des_echecs,
+        "observations_testeur": observations_testeur,
     }
