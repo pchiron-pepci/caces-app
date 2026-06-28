@@ -1038,7 +1038,7 @@ function _frEsc(s) {
 }
 
 function _frSelectDuree(id, possibles, defaut, choisi) {
-    var val = choisi || defaut;
+    var val = defaut;
     var opts = (possibles || []).map(function (d) {
         var sel = (d === val) ? ' selected' : '';
         return '<option value="' + _frEsc(d) + '"' + sel + '>' + _frEsc(d) + '</option>';
