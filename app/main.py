@@ -37,6 +37,7 @@ from app.models.grille_pratique import (GrillePratique, ThemePratique, PointEval
 from app.models.option_categorie import OptionCategorie
 from app.models.caces_obtenu import CacesObtenu
 from app.models.carte_caces import CarteCaces
+from app.models.fiche_recommandation import FicheRecommandation
 from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.attestation_neutralite import AttestationNeutralite
 from app.models.jour_formation import JourFormation, AffectationFormation, PlanningApprenant, AffectationTest
@@ -360,6 +361,31 @@ try:
                 date_generation DATE NOT NULL,
                 statut VARCHAR(20) NOT NULL DEFAULT 'en_preparation',
                 motif_annulation VARCHAR(500)
+            )
+        """))
+        _conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS fiche_recommandation (
+                id SERIAL PRIMARY KEY,
+                session_id INTEGER NOT NULL REFERENCES sessions(id),
+                stagiaire_id INTEGER NOT NULL REFERENCES stagiaires(id),
+                statut VARCHAR(20) NOT NULL DEFAULT 'brouillon',
+                fraude_theorie BOOLEAN NOT NULL DEFAULT FALSE,
+                difficultes_langue BOOLEAN NOT NULL DEFAULT FALSE,
+                comportement_dangereux BOOLEAN NOT NULL DEFAULT FALSE,
+                autres_precisions TEXT,
+                saisies_json TEXT,
+                snapshot_json TEXT,
+                testeur_id INTEGER REFERENCES testeurs(id),
+                testeur_nom VARCHAR(120),
+                date_creation TIMESTAMP DEFAULT NOW(),
+                date_maj TIMESTAMP DEFAULT NOW(),
+                date_finalisation TIMESTAMP
             )
         """))
         _conn.commit()
