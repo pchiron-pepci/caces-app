@@ -26,9 +26,13 @@
 <div class="audit-rappel-banner">
     <span class="ico">&#9888;</span>
     <span class="txt">
-        <strong>C'est la date de votre audit externe{% if audit_rappel_date %} ({{ audit_rappel_date.strftime('%d/%m/%Y') }}){% endif %}.</strong>
-        Pensez à réinitialiser les tirages théoriques des familles concernées par cet audit
-        (page <a href="/statistiques#tab-grilles" style="color:#e65100; font-weight:600;">Statistiques → Grilles</a>).
+        <strong>Date de votre audit externe{% if audit_rappel_date %} : le {{ audit_rappel_date.strftime('%d/%m/%Y') }}{% endif %}.</strong>
+        Pensez à réinitialiser les tirages des familles concernées par cet audit.
+        Effectuez ce reset <strong>une fois l'audit terminé</strong> : il fige la période de tirage,
+        et les sessions doivent ensuite être saisies à une date postérieure au reset.
+        <span style="display:block; margin-top:6px;">
+            <a href="/statistiques#tab-grilles" style="color:#e65100; font-weight:600; text-decoration:none;">Réinitialiser maintenant →</a>
+        </span>
     </span>
 </div>
 {% endif %}
