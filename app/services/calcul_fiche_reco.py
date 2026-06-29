@@ -117,64 +117,89 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str, params=
     Un thème compte si : sa moyenne est insuffisante OU il contient un PE à 0.
     Sous chaque thème : on liste les PE à 0 et les PE sous leur moyenne (distingués)."""
     calc = calculer_saisie(saisie, db)
-    base = calc.get("base") or {}
+    bases = calc.get("bases") or ([calc["base"]] if calc.get("base") else [])
     base_reussie = bool(calc.get("base_reussie"))
 
-    # PE regroupés par thème, avec détection 0 / sous-moyenne
-    pe_par_theme = {}
-    for pe in base.get("points_evaluation", []):
-        th = pe.get("theme") or ""
-        note = pe.get("note")
-        bareme = pe.get("bareme") or 0
-        lib = pe.get("libelle_chapeau") or ("PE " + str(pe.get("numero")))
-        est_zero = (note == 0)
-        sous_moyenne = (bareme > 0 and note is not None and note < (bareme / 2.0) and not est_zero)
-        if th not in pe_par_theme:
-            pe_par_theme[th] = []
-        pe_par_theme[th].append({
-            "libelle": lib, "numero": pe.get("numero"),
-            "note": note, "bareme": bareme,
-            "zero": est_zero, "sous_moyenne": sous_moyenne,
-        })
+    ENGIN_LABELS = {
+        "PH": "Pelle hydraulique compacte",
+        "MB": "Motobasculeur compact",
+        "CH": "Chargeuse compacte",
+        "CP": "Compacteur compact",
+    }
+    multi_engin = len([b for b in bases if b and b.get("variante")]) > 1
 
-    # statut "ok" de chaque thème (moyenne du thème)
-    theme_moyenne_ok = {}
-    for t in base.get("themes", []):
-        theme_moyenne_ok[t["libelle"]] = bool(t.get("ok"))
+    def _prefixe_engin(b):
+        var = b.get("variante")
+        if not var or not multi_engin:
+            return ""
+        rang = "N°1" if var == "PH" else "N°2"
+        return "[Engin %s · %s] " % (rang, var)
 
-    # construire les blocs thèmes "qui comptent"
+    # Construire les themes_blocs de TOUS les engins base echoues.
+    # Tag engin pour l'affichage ; deduplication par nom de theme pour la duree.
     themes_blocs = []
-    for th_lib, pes in pe_par_theme.items():
-        moyenne_ok = theme_moyenne_ok.get(th_lib, True)
-        a_pe_zero = any(pe["zero"] for pe in pes)
-        compte = (not moyenne_ok) or a_pe_zero
-        if not compte:
-            continue
-        # questions à rappeler : PE à 0 + PE sous moyenne
-        pe_zero = [pe for pe in pes if pe["zero"]]
-        pe_sous = [pe for pe in pes if pe["sous_moyenne"]]
-        themes_blocs.append({
-            "theme": th_lib,
-            "moyenne_insuffisante": not moyenne_ok,
-            "pe_zero": pe_zero,
-            "pe_sous_moyenne": pe_sous,
-        })
-
-    nb_themes = len(themes_blocs)
-
-    # fautes éliminatoires cochées
-    elim_coches = base.get("eliminatoires_coches") or []
+    themes_pour_duree = set()          # noms de themes distincts (compte 1x meme si 2 engins)
     fautes_eliminatoires = []
-    for e in elim_coches:
-        if isinstance(e, str):
-            fautes_eliminatoires.append(e)
-        elif isinstance(e, dict):
-            fautes_eliminatoires.append(e.get("libelle") or e.get("critere") or str(e))
-        else:
-            fautes_eliminatoires.append(str(e))
-    a_elimination = len(fautes_eliminatoires) > 0
+    a_elimination = False
 
-    # options : facultative échouée (base OK) -> à repasser à part ; incluse -> catégorie entière
+    for base in bases:
+        if not base:
+            continue
+        prefixe = _prefixe_engin(base)
+
+        # PE regroupes par theme, avec detection 0 / sous-moyenne
+        pe_par_theme = {}
+        for pe in base.get("points_evaluation", []):
+            th = pe.get("theme") or ""
+            note = pe.get("note")
+            bareme = pe.get("bareme") or 0
+            lib = pe.get("libelle_chapeau") or ("PE " + str(pe.get("numero")))
+            est_zero = (note == 0)
+            sous_moyenne = (bareme > 0 and note is not None and note < (bareme / 2.0) and not est_zero)
+            pe_par_theme.setdefault(th, []).append({
+                "libelle": lib, "numero": pe.get("numero"),
+                "note": note, "bareme": bareme,
+                "zero": est_zero, "sous_moyenne": sous_moyenne,
+            })
+
+        theme_moyenne_ok = {t["libelle"]: bool(t.get("ok")) for t in base.get("themes", [])}
+
+        for th_lib, pes in pe_par_theme.items():
+            moyenne_ok = theme_moyenne_ok.get(th_lib, True)
+            a_pe_zero = any(pe["zero"] for pe in pes)
+            compte = (not moyenne_ok) or a_pe_zero
+            if not compte:
+                continue
+            pe_zero = [pe for pe in pes if pe["zero"]]
+            pe_sous = [pe for pe in pes if pe["sous_moyenne"]]
+            themes_blocs.append({
+                "theme": prefixe + th_lib,
+                "theme_nu": th_lib,
+                "variante": base.get("variante"),
+                "moyenne_insuffisante": not moyenne_ok,
+                "pe_zero": pe_zero,
+                "pe_sous_moyenne": pe_sous,
+            })
+            themes_pour_duree.add(th_lib)   # dedup : meme competence comptee 1x
+
+        # fautes eliminatoires de cet engin
+        for e in (base.get("eliminatoires_coches") or []):
+            if isinstance(e, str):
+                lib = e
+            elif isinstance(e, dict):
+                lib = e.get("libelle") or e.get("critere") or str(e)
+            else:
+                lib = str(e)
+            pref = _prefixe_engin(base)
+            entry = (pref + lib) if pref else lib
+            if entry not in fautes_eliminatoires:
+                fautes_eliminatoires.append(entry)
+
+    a_elimination = len(fautes_eliminatoires) > 0
+    nb_themes = len(themes_blocs)              # affichage : tous les blocs (par engin)
+    nb_themes_duree = len(themes_pour_duree)   # duree : themes distincts (dedupliques)
+
+    # options : facultative echouee (base OK) -> a repasser ; incluse -> categorie entiere
     options_a_repasser = []
     categorie_entiere_par_option = False
     for opt in calc.get("options", []):
@@ -194,9 +219,8 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str, params=
 
     categorie_echouee = (not base_reussie) or categorie_entiere_par_option
 
-    # durée = 1,5h × nb thèmes + 1h forfaitaire si faute éliminatoire.
-    # Si échec sans aucun thème ni élimination (total seul) -> au moins 1 thème.
-    nb_pour_duree = nb_themes
+    # duree = 1,5h x nb themes DISTINCTS + 1h forfaitaire si faute eliminatoire.
+    nb_pour_duree = nb_themes_duree
     if categorie_echouee and nb_pour_duree == 0 and not a_elimination:
         nb_pour_duree = 1
     duree_h = _duree_pratique_heures(nb_pour_duree, a_elimination, params) if categorie_echouee else None
@@ -206,8 +230,10 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str, params=
         "categorie": saisie.categorie,
         "categorie_echouee": categorie_echouee,
         "base_reussie": base_reussie,
+        "multi_engin": multi_engin,
         "themes_blocs": themes_blocs,
         "nb_themes": nb_themes,
+        "nb_themes_duree": nb_themes_duree,
         "fautes_eliminatoires": fautes_eliminatoires,
         "a_elimination": a_elimination,
         "duree_heures": duree_h,
