@@ -2161,3 +2161,27 @@ S'appuie sur `OptionCategorie.incluse` (règle déjà en place, cf. §UT options
 ### ✅ Fiche reco — ÉTAPE 1 TERMINÉE : service de calcul (2026-06-28, commit 9aba6d0)
 app/services/calcul_fiche_reco.py — fonction calculer_fiche_reco(session_id, stagiaire_id, db) (lecture seule). Agrège théorie + toutes les pratiques du candidat (multi-catégories, dédupliquées par catégorie via id max). Détecte les causes (théorie : thèmes themeN_ok==False ; pratique : élimination via PE à 0 ou éliminatoire coché / thème insuffisant / total < 70). Calcule les durées par défaut (logique TESTÉE conforme : théo >=50->3h sinon 6h ; pratique élim->2h, sinon 2h×nb thèmes plafonné 6h). Gère les options via OptionCategorie.incluse (facultative échouée base OK -> options_a_repasser ; incluse échouée -> categorie_entiere_par_option=catégorie entière). Constantes isolées en tête (DUREES_THEORIE, DUREES_PRATIQUE, SEUIL_THEORIE_COURTE=50, HEURES_PAR_THEME=2, PLAFOND_PRATIQUE_H=6, HEURES_ELIMINATION=2) pour config admin future. Renvoie dict candidat / theorie_obtenue / theorie_echec / pratiques_echec[] / pratiques_obtenues[] / a_des_echecs.
 **Reste : étape 2 (modèle FicheRecommandation + migration), étape 3 (écran onglet candidat), étape 4 (PDF imprimable).**
+
+### ✅ FICHE DE RECOMMANDATION — TERMINÉE (étapes 1 à 4 + ZIP, 2026-06-28)
+Document officiel remis au candidat en échec (théorie et/ou pratiques). Preuve QU'UNE reco a été faite (pas de versionnement, pas de snapshot immuable). Toujours recalculée depuis les résultats à jour.
+
+**Fichiers :**
+- `app/services/calcul_fiche_reco.py` — calculer_fiche_reco(session_id, stagiaire_id, db). Agrège théorie + pratiques multi-catégories (dédup id max). Bloc `session` (reference, famille, dates, categories_echouees). Bloc `candidat`. observations_testeur = justification PUIS observations par catégorie échouée.
+- `app/services/pdf_fiche_reco.py` — generer_pdf_fiche_reco. WeasyPrint, charte NORYX. En-tête + n° INRS (champ ABSENT de ConfigOrganisme à ce jour → à ajouter), bloc session, bloc validité, blocs théorie/pratiques par thème, fautes éliminatoires, total anthracite, cases testeur, rappel CNAM.
+- `app/routers/fiches_reco.py` — GET charger (calcul+brouillon), POST brouillon, GET .../pdf (génère + marque statut="finalisee" + date_finalisation).
+- `app/models/fiche_recommandation.py` — table fiche_recommandation.
+- Écran : modale `#modal-fiche-reco` + bouton `#sc-btn-fiche-reco` (modale candidat, édition) + bouton `#fr-btn-pdf` ; JS construireFormFicheReco/genererPdfFicheReco dans session_detail.js.
+- ZIP : sous-dossier `recommandations/recommandation_{NOM_Prenom}.pdf` par candidat en échec.
+
+**RÈGLE DURÉES (cumul, sans plafond figé) — paramétrable admin (constantes en tête de calcul_fiche_reco.py) :**
+- Théorie : note >= 50 → 2h (HEURES_THEORIE_COURTE) ; < 50 → 4h (HEURES_THEORIE_LONGUE).
+- Pratique : 1,5h × nb thèmes qui comptent (HEURES_PAR_THEME_PRATIQUE) + 1h forfait si >=1 faute éliminatoire (HEURES_FAUTE_ELIMINATOIRE).
+- Un thème "compte" si : moyenne insuffisante OU contient un PE à 0.
+- Affichage par thème : PE à 0 (rouge, "note éliminatoire") + PE sous moyenne (ambre, note < bareme/2) distingués. + encadré fautes éliminatoires.
+- Durées éditables par le testeur (input number) avec total recalculé live.
+- PAS de cumul entre catégories : chaque catégorie a son bloc et sa durée propre.
+
+**RESTE À FAIRE :**
+- Écran ADMIN pour paramétrer les durées (HEURES_PAR_THEME_PRATIQUE=1,5 / HEURES_FAUTE_ELIMINATOIRE=1 / HEURES_THEORIE_COURTE=2 / HEURES_THEORIE_LONGUE=4) — constantes prêtes à migrer vers une table de paramètres.
+- Ajouter un champ n° INRS / numéro d'enregistrement OTC dans ConfigOrganisme (le PDF le cherche déjà, absent à ce jour).
+- Notice : préciser que modifier une évaluation = ROUVRIR + REVALIDER (sinon le calcul lit l'ancien état).
