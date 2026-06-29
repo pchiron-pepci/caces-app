@@ -2228,3 +2228,49 @@ Les 5 paramètres de durée de la fiche de recommandation sont désormais modifi
 **RESTE (fiche reco) :**
 - Champ n° INRS / numéro OTC dans ConfigOrganisme (le PDF le cherche via _get_num_inrs, absent à ce jour → en-tête sans numéro).
 - Notice utilisateur : modifier une évaluation = ROUVRIR + REVALIDER (sinon le calcul lit l'ancien état).
+
+### ✅ CATÉGORIE A R.482 MULTI-ENGINS — TERMINÉ (2026-06-29)
+
+La catégorie A R.482 se déroule sur DEUX engins : Engin N°1 = TOUJOURS la pelle hydraulique compacte (PH, avec thème exclusif "Opération de levage") + Engin N°2 au choix parmi MB (motobasculeur) / CH (chargeuse) / CP (compacteur). **Règle de réussite : les DEUX engins doivent passer** (échec d'un seul = catégorie A échouée). Une seule catégorie cartographiée (1,5 UT), pas de sous-catégories. Engin N°2 choisi À L'OUVERTURE de la saisie (overlay), pas à la planification. Porte-engins INCLUS dans la base ; seule option facultative = TEL (télécommande, +0,5 UT).
+
+**Modèle** : `GrillePratique.variante` (String(10), nullable) = PH/MB/CH/CP pour cat A, NULL sinon. Migration ALTER idempotente dans l'init.
+
+**Grilles (créées en prod via Shell Render)** : 4 grilles base A (PH/MB/CH/CP, 100 pts chacune via `init_grille_pratique_r482a.py`) + option TEL (50 pts via `init_grille_pratique_r482a_options.py`). Thèmes communs : Prise de poste (14), Conduite (PH=22 / autres=38), Travaux de base (24, PE spécifiques par engin), Porte-engins (16), Fin de poste (8) ; PH ajoute Opération de levage (16).
+
+**Critères d'évaluation (bouton œil)** : `patch_criteres_r482a.py` remplit `ItemPratique.critere_evaluation` (colonne L Excel INRS) sur les 4 engins + TEL. Matching par libellé normalisé (gère ligature œ→oe, accents). 200 critères écrits, 0 manquant. **Même mécanisme que F (`patch_criteres_r482f.py`).**
+
+**Moteur** (`calcul_pratique.py` réécrit) : `calculer_saisie` gère N blocs base (clé `bases[]` + compat `base`=1er), `categorie_acquise = all(bases réussis)`. `appliquer_resultats` écrit tous les blocs.
+
+**Saisie** (`saisie_pratique.py` router + `saisie_pratique.js`) : `ouvrir_saisie` reçoit query param `engin2`, crée 2 blocs base (PH + engin2), retourne 422 si engin2 manquant sur saisie neuve cat A. Front : overlay choix engin N°2 (`afficherChoixEngin2`, `ouvrirOuDemander` sonde 422 pour distinguer neuf/reprise) + en-têtes visuels "ENGIN N°1/N°2 — [nom] (variante)" via `ENGIN_LABELS` dans `renderBloc`.
+
+**PDF résultat (`pdf_resultat_pratique.py`) — GABARIT UNIFIÉ pour TOUTES les catégories** : synthèse N colonnes en tête (1 colonne cat F, N colonnes = bases + options pour cat A) avec "—" si thème non applicable, note globale + verdict par colonne, options en teinte bleue. Puis détail PE par PE empilé par engin (titres "ENGIN N°1/N°2" anthracite/rouge). Fonctions `_synthese_html`, `_titre_bloc`, `ENGIN_LABELS`. F et A = deux instances du même gabarit (chaque future catégorie en hérite).
+
+**Fiche de reco (`calcul_fiche_reco.py`)** : `_pratique_echec` boucle sur `bases[]`, préfixe texte "[Engin N°2 · CP]" devant chaque thème. **Durée comptée PAR ENGIN** (un thème raté sur les 2 engins = 2 × 1,5h, PAS de déduplication — décision finale Patrice).
+
+### ✅ RESET DES COMPTEURS DE TIRAGE PAR FAMILLE — TERMINÉ (2026-06-29)
+
+**Remplace le tri par année civile** des statistiques de tirage. Modèle multi-OF : on trie par PÉRIODE ENTRE DEUX RESETS, pas par année. Un OF peut remettre ses compteurs à zéro quand il veut (le jour de son audit externe), tout en conservant les données.
+
+**Principe directeur : ZÉRO suppression de données.** Le reset est seulement une borne temporelle datée. Tous les `UtilisationTheme` sont conservés.
+
+**Reset PAR FAMILLE** (R482, R489 indépendamment). **Le reset borne AUSSI le tirage, pas seulement les stats** : après un reset R482, l'algo de priorité ne compte QUE les tirages postérieurs au reset (fin du perpétuel pour cette famille). Biais de sur-tirage temporaire post-reset accepté ("sur le long terme ça se gomme").
+
+**Critère = `date_tirage` fait foi.** Tous les thèmes d'une session sont tirés en UNE fois (même date) → une session tombe entièrement sur une période, jamais éclatée. Contrainte unique `(session, famille, theme)` → pas de double comptage. Les tirages sans `date_tirage` (anciens) sont EXCLUS après un reset (forcément antérieurs) mais inclus dans "Tout l'historique".
+
+**Modèle `reset_tirage.py`** : `ResetTirage(id, famille, date_reset, declenche_par_id)`, empilable, jamais purgé. Helpers `dernier_reset(famille, db)` et `resets_famille(famille, db)`. Table créée auto par `create_all` (nouvelle table) → IMPORTÉ dans main.py avant create_all.
+
+**Tirage (`tirage_grille.py`)** : `tirer_themes_phase2` borne le comptage de priorité sur `date_tirage > dernier_reset(famille)`. Aucun reset → tout l'historique (comportement initial).
+
+**Stats (`statistiques.py` + `statistiques.html`)** : `_build_stats(famille, debut, fin, db)` filtre sur l'intervalle (debut, fin]. `_periodes_famille` construit les périodes bornées par resets ("Période en cours depuis JJ/MM" / "Période JJ/MM → JJ/MM" / "Depuis le démarrage → JJ/MM" / "Tout l'historique"). Sélecteur de période PAR FAMILLE (chaque bloc R482, R489 a le sien) qui recharge via `?periode_<FAMILLE>=<id>`. Défaut = période en cours.
+
+**Bouton reset (route POST `/statistiques/reset` + modale front) — 3 VERROUS** :
+1. `ConfigOrganisme.audit_externe_date == date.today()` (jour exact, STRICT) sinon blocage "Réinitialisation impossible, modifiez votre date d'audit dans Administration → Calendrier qualité".
+2. PIN admin (dans le corps POST, jamais en URL).
+3. Confirmation explicite + case à cocher "irréversible".
+PIN/confirmation gérés front ; audit + PIN revérifiés serveur. Pas de consommation de la date d'audit après reset (2e reset même jour = sans incidence, compteurs déjà à zéro).
+
+### ✅ HISTORIQUE DE TIRAGE — DOUBLE FILTRE FAMILLE + PÉRIODE (2026-06-29)
+
+L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) — choix ergonomique : un historique par famille décalerait les blocs des autres familles. Mais il gagne DEUX sélecteurs en tête : **Famille** (Toutes / R482 / R489…) + **Période**. Choisir une famille active le sélecteur de période avec les bornes de reset de CETTE famille ; "Toutes les familles" désactive la période. Filtrage côté JS (les lignes portent `data-famille` et `data-date` ISO ; `PERIODES_HIST` = `periodes_json` JSON-safe injecté via `tojson`). Cohérent avec le tri par période des 2 tableaux du haut.
+
+**PIÈGE IDE RÉSOLU** : VS Code avec "organize imports on save" (Pylance/Ruff) supprimait `ConfigOrganisme` et `date` de statistiques.py à chaque Ctrl+S (vus comme inutilisés). → Désactiver `source.organizeImports` dans settings.json. Symptôme : `NameError: name 'ConfigOrganisme' is not defined` au chargement de /statistiques.
