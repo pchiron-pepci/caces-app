@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session as DBSession
-from sqlalchemy import func
+from sqlalchemy import func, extract, or_, and_
 from datetime import datetime
 from collections import defaultdict
 
@@ -40,6 +40,22 @@ THEME_NOMS = {
 }
 
 
+def _filtre_annee_theme(annee):
+    """Construit le critère SQLAlchemy de filtrage par année basé sur date_tirage.
+    annee == "tout" -> pas de filtre (None). Sinon year(date_tirage) == annee,
+    avec repli sur le champ `annee` figé pour les anciens tirages sans date_tirage."""
+    if annee == "tout" or annee is None:
+        return None
+    try:
+        an = int(annee)
+    except (TypeError, ValueError):
+        return None
+    return or_(
+        extract("year", UtilisationTheme.date_tirage) == an,
+        and_(UtilisationTheme.date_tirage.is_(None), UtilisationTheme.annee == an),
+    )
+
+
 def _build_stats(famille, annee, db):
     grilles = (
         db.query(GrilleTheorie)
@@ -56,7 +72,7 @@ def _build_stats(famille, annee, db):
         )
         .filter(
             UtilisationTheme.famille == famille,
-            UtilisationTheme.annee == annee
+            *( [_fa] if (_fa := _filtre_annee_theme(annee)) is not None else [] )
         )
         .group_by(UtilisationTheme.theme, UtilisationTheme.grille_id)
         .all()
@@ -74,7 +90,7 @@ def _build_stats(famille, annee, db):
         db.query(UtilisationTheme.session_id)
         .filter(
             UtilisationTheme.famille == famille,
-            UtilisationTheme.annee == annee
+            *( [_fa2] if (_fa2 := _filtre_annee_theme(annee)) is not None else [] )
         )
         .distinct()
         .count()
@@ -168,7 +184,16 @@ def _build_historique(famille, db):
 
 @router.get("/statistiques", response_class=HTMLResponse)
 async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
-    annee = datetime.now().year
+    annee_courante = datetime.now().year
+    # Filtre periode : "tout" ou une annee. Defaut = annee courante.
+    annee_param = (request.query_params.get("annee") or "").strip()
+    if annee_param == "tout":
+        annee = "tout"
+    else:
+        try:
+            annee = int(annee_param) if annee_param else annee_courante
+        except ValueError:
+            annee = annee_courante
 
     familles = [
         row[0] for row in
@@ -218,11 +243,28 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
         reverse=True
     )
 
+    # Annees disponibles pour le selecteur de periode des 2 tableaux de stats.
+    # On combine year(date_tirage) et le champ annee fige (anciens tirages sans date).
+    annees_rows = db.query(
+        extract("year", UtilisationTheme.date_tirage),
+        UtilisationTheme.annee,
+    ).all()
+    annees_set = set()
+    for y_date, y_champ in annees_rows:
+        if y_date is not None:
+            annees_set.add(int(y_date))
+        elif y_champ is not None:
+            annees_set.add(int(y_champ))
+    annees_set.add(annee_courante)
+    annees_disponibles = sorted(annees_set, reverse=True)
+
     return templates.TemplateResponse(
         request=request,
         name="statistiques.html",
         context={
             "annee": annee,
+            "annee_selection": ("tout" if annee == "tout" else str(annee)),
+            "annees_disponibles": annees_disponibles,
             "stats_par_theme": stats_par_theme,
             "totaux_famille": totaux_famille,
             "theme_noms": THEME_NOMS,

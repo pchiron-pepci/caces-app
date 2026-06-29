@@ -42,11 +42,21 @@
 
 <div id="tab-grilles">
 
-<div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:flex-end;">
+<div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;">
     <div>
         <p style="color:#666; font-size:14px; margin:4px 0 0;">
-            Année {{ annee }} — Tirage par thème (Phase 2 INRS, applicable jan 2029)
+            {% if annee_selection == "tout" %}Tout l'historique{% else %}Année {{ annee }}{% endif %} — Tirage par thème (Phase 2 INRS, applicable jan 2029)
         </p>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+        <label for="filtre-periode-stats" style="font-size:13px; color:#666;">Période :</label>
+        <select id="filtre-periode-stats" data-action="filtrer-periode-stats"
+                style="padding:6px 10px; border:1px solid #cfd6e4; border-radius:6px; font-size:13px; background:#fff;">
+            <option value="tout" {% if annee_selection == "tout" %}selected{% endif %}>Tout l'historique</option>
+            {% for a in annees_disponibles %}
+            <option value="{{ a }}" {% if annee_selection == a|string %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
     </div>
 </div>
 
@@ -271,6 +281,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.addEventListener('change', function(e) {
+        if (e.target.closest('[data-action="filtrer-periode-stats"]')) {
+            var val = e.target.value;
+            var url = new URL(window.location.href);
+            url.searchParams.set('annee', val);
+            window.location.href = url.toString();
+            return;
+        }
         if (!e.target.closest('[data-action="filtrer-historique"]')) return;
         var annee = e.target.value;
         var visible = 0;
