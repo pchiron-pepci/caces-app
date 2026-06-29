@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import func, and_
-from app.models.reset_tirage import resets_famille
+from app.models.reset_tirage import resets_famille, ResetTirage
 from app.models.config_organisme import ConfigOrganisme
 from datetime import datetime, date
 from collections import defaultdict
@@ -304,3 +304,47 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             "peut_reset": peut_reset,
         }
     )
+
+
+
+@router.post("/statistiques/reset")
+def reinitialiser_compteurs(
+    payload: dict = Body(...),
+    db: DBSession = Depends(get_db),
+):
+    """Cree un reset de compteurs pour une famille. Trois verrous :
+    1) la date d'audit externe doit etre AUJOURD'HUI (jour exact) ;
+    2) PIN administrateur valide ;
+    3) la confirmation explicite est exigee cote front avant l'appel.
+    Aucune donnee n'est supprimee : on ajoute seulement une borne datee."""
+    famille = (payload.get("famille") or "").strip()
+    pin = (payload.get("pin") or "").strip()
+
+    if not famille:
+        raise HTTPException(status_code=400, detail="Famille manquante.")
+
+    # Verrou 1 : audit externe == aujourd'hui
+    config = db.query(ConfigOrganisme).first()
+    today = date.today()
+    if not config or config.audit_externe_date != today:
+        raise HTTPException(
+            status_code=403,
+            detail="Réinitialisation impossible : la date du jour ne correspond pas "
+                   "à votre prochain audit externe. Modifiez votre date d'audit dans "
+                   "Administration → Calendrier qualité.",
+        )
+
+    # Verrou 2 : PIN admin
+    if pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN administrateur incorrect.")
+
+    # Creation de la borne de reset (aucune suppression de donnees)
+    reset = ResetTirage(famille=famille, date_reset=datetime.now())
+    db.add(reset)
+    db.commit()
+
+    return {
+        "ok": True,
+        "famille": famille,
+        "date_reset": reset.date_reset.strftime("%d/%m/%Y"),
+    }

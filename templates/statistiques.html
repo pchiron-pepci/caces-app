@@ -287,6 +287,92 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.classList.add('active-tab');
     });
 
+    // ─── Reset des compteurs par famille (3 verrous) ───
+    function ouvrirModaleReset(famille, peutReset) {
+        var ov = document.createElement('div');
+        ov.id = 'reset-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(45,45,45,0.55);z-index:300;'
+            + 'display:flex;align-items:center;justify-content:center;padding:20px;';
+
+        if (peutReset !== '1') {
+            ov.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:440px;width:100%;padding:22px;">'
+                + '<div style="font-size:16px;font-weight:700;color:#a32d2d;margin-bottom:8px;">Réinitialisation impossible</div>'
+                + '<div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:16px;">'
+                + 'La date du jour ne correspond pas à votre prochain audit externe. '
+                + 'Le reset n\'est autorisé que le jour exact de l\'audit. '
+                + 'Modifiez votre date d\'audit dans <b>Administration → Calendrier qualité</b>.</div>'
+                + '<div style="text-align:right;"><button type="button" data-action="reset-fermer" '
+                + 'style="padding:8px 16px;border:1px solid #cfd6e4;background:#fff;border-radius:6px;cursor:pointer;">Fermer</button></div>'
+                + '</div>';
+            document.body.appendChild(ov);
+            return;
+        }
+
+        ov.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:440px;width:100%;padding:22px;">'
+            + '<div style="font-size:17px;font-weight:700;color:#2d2d2d;margin-bottom:6px;">Réinitialiser les compteurs ' + famille + ' ?</div>'
+            + '<div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:14px;">Action <b>irréversible</b>. '
+            + 'Les compteurs de tirage ' + famille + ' repartent à zéro à partir d\'aujourd\'hui. '
+            + 'Les données ne sont pas supprimées : les statistiques restent consultables par période.</div>'
+            + '<div style="background:#f6f7f9;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#444;">'
+            + '✓ Audit externe du jour confirmé</div>'
+            + '<input type="password" id="reset-pin" placeholder="Code PIN administrateur" '
+            + 'style="width:100%;padding:9px 12px;border:1px solid #cfd6e4;border-radius:6px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">'
+            + '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#555;margin-bottom:14px;cursor:pointer;">'
+            + '<input type="checkbox" id="reset-confirm" style="margin-top:2px;">'
+            + '<span>Je confirme vouloir réinitialiser les compteurs ' + famille + '. Action irréversible.</span></label>'
+            + '<div id="reset-err" style="color:#a32d2d;font-size:12px;margin-bottom:10px;display:none;"></div>'
+            + '<div style="display:flex;gap:10px;justify-content:flex-end;">'
+            + '<button type="button" data-action="reset-fermer" style="padding:8px 16px;border:1px solid #cfd6e4;background:#fff;border-radius:6px;cursor:pointer;">Annuler</button>'
+            + '<button type="button" data-action="reset-confirmer" data-famille="' + famille + '" '
+            + 'style="padding:8px 16px;border:none;background:#cc0000;color:#fff;border-radius:6px;font-weight:600;cursor:pointer;">Réinitialiser définitivement</button>'
+            + '</div></div>';
+        document.body.appendChild(ov);
+    }
+
+    function fermerModaleReset() {
+        var ov = document.getElementById('reset-overlay');
+        if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    }
+
+    document.addEventListener('click', function(e) {
+        var btnOuvrir = e.target.closest('[data-action="ouvrir-reset"]');
+        if (btnOuvrir) {
+            ouvrirModaleReset(btnOuvrir.getAttribute('data-famille'), btnOuvrir.getAttribute('data-peut-reset'));
+            return;
+        }
+        if (e.target.closest('[data-action="reset-fermer"]')) { fermerModaleReset(); return; }
+        var btnConf = e.target.closest('[data-action="reset-confirmer"]');
+        if (btnConf) {
+            var fam = btnConf.getAttribute('data-famille');
+            var pin = (document.getElementById('reset-pin') || {}).value || '';
+            var conf = (document.getElementById('reset-confirm') || {}).checked;
+            var err = document.getElementById('reset-err');
+            if (!conf) { err.textContent = 'Veuillez cocher la case de confirmation.'; err.style.display = 'block'; return; }
+            if (!pin) { err.textContent = 'Veuillez saisir le code PIN administrateur.'; err.style.display = 'block'; return; }
+            btnConf.disabled = true; btnConf.textContent = 'Réinitialisation…';
+            fetch('/statistiques/reset', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({famille: fam, pin: pin})
+            }).then(function(r) {
+                return r.json().then(function(d) { return {ok: r.ok, d: d}; });
+            }).then(function(res) {
+                if (!res.ok) {
+                    err.textContent = (res.d && res.d.detail) ? res.d.detail : 'Erreur lors de la réinitialisation.';
+                    err.style.display = 'block';
+                    btnConf.disabled = false; btnConf.textContent = 'Réinitialiser définitivement';
+                    return;
+                }
+                window.location.href = new URL(window.location.href).pathname + '#tab-grilles';
+                window.location.reload();
+            }).catch(function() {
+                err.textContent = 'Erreur réseau.'; err.style.display = 'block';
+                btnConf.disabled = false; btnConf.textContent = 'Réinitialiser définitivement';
+            });
+            return;
+        }
+    });
+
     document.addEventListener('change', function(e) {
         var selPer = e.target.closest('[data-action="filtrer-periode"]');
         if (selPer) {
