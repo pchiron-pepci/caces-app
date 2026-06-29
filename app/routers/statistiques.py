@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session as DBSession
-from sqlalchemy import func, extract, or_, and_
+from sqlalchemy import func, and_
+from app.models.reset_tirage import resets_famille
 from datetime import datetime
 from collections import defaultdict
 
@@ -40,23 +41,22 @@ THEME_NOMS = {
 }
 
 
-def _filtre_annee_theme(annee):
-    """Construit le critère SQLAlchemy de filtrage par année basé sur date_tirage.
-    annee == "tout" -> pas de filtre (None). Sinon year(date_tirage) == annee,
-    avec repli sur le champ `annee` figé pour les anciens tirages sans date_tirage."""
-    if annee == "tout" or annee is None:
+def _filtre_periode(debut, fin):
+    """Critere de filtrage d'UtilisationTheme sur l'intervalle (debut, fin].
+    debut/fin sont des datetime de reset (ou None pour borne ouverte).
+    Tirage rattache a la periode par sa date_tirage. Les tirages sans date
+    (anciens) ne sont rattaches qu'a la periode 'depuis le demarrage' (debut None)."""
+    conds = []
+    if debut is not None:
+        conds.append(UtilisationTheme.date_tirage > debut)
+    if fin is not None:
+        conds.append(UtilisationTheme.date_tirage <= fin)
+    if not conds:
         return None
-    try:
-        an = int(annee)
-    except (TypeError, ValueError):
-        return None
-    return or_(
-        extract("year", UtilisationTheme.date_tirage) == an,
-        and_(UtilisationTheme.date_tirage.is_(None), UtilisationTheme.annee == an),
-    )
+    return and_(*conds)
 
 
-def _build_stats(famille, annee, db):
+def _build_stats(famille, debut, fin, db):
     grilles = (
         db.query(GrilleTheorie)
         .filter(GrilleTheorie.famille == famille, GrilleTheorie.actif == True)
@@ -72,7 +72,7 @@ def _build_stats(famille, annee, db):
         )
         .filter(
             UtilisationTheme.famille == famille,
-            *( [_fa] if (_fa := _filtre_annee_theme(annee)) is not None else [] )
+            *([_fp] if (_fp := _filtre_periode(debut, fin)) is not None else [])
         )
         .group_by(UtilisationTheme.theme, UtilisationTheme.grille_id)
         .all()
@@ -90,7 +90,7 @@ def _build_stats(famille, annee, db):
         db.query(UtilisationTheme.session_id)
         .filter(
             UtilisationTheme.famille == famille,
-            *( [_fa2] if (_fa2 := _filtre_annee_theme(annee)) is not None else [] )
+            *([_fp2] if (_fp2 := _filtre_periode(debut, fin)) is not None else [])
         )
         .distinct()
         .count()
@@ -183,17 +183,46 @@ def _build_historique(famille, db):
 
 
 @router.get("/statistiques", response_class=HTMLResponse)
-async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
-    annee_courante = datetime.now().year
-    # Filtre periode : "tout" ou une annee. Defaut = annee courante.
-    annee_param = (request.query_params.get("annee") or "").strip()
-    if annee_param == "tout":
-        annee = "tout"
+def _periodes_famille(famille, db):
+    """Construit la liste des periodes selectionnables pour une famille,
+    bornees par les resets. Index 0 = periode en cours (depuis dernier reset
+    ou depuis le demarrage). Ajoute toujours une entree 'tout' en fin."""
+    resets = resets_famille(famille, db)  # plus recent d'abord
+    periodes = []
+    if not resets:
+        periodes.append({
+            "id": "0", "label": "Depuis le démarrage",
+            "debut": None, "fin": None,
+        })
     else:
-        try:
-            annee = int(annee_param) if annee_param else annee_courante
-        except ValueError:
-            annee = annee_courante
+        # periode en cours : depuis le dernier reset jusqu'a maintenant
+        periodes.append({
+            "id": "0",
+            "label": "Période en cours (depuis le %s)" % resets[0].date_reset.strftime("%d/%m/%Y"),
+            "debut": resets[0].date_reset, "fin": None,
+        })
+        # periodes intermediaires entre resets consecutifs
+        for i in range(len(resets) - 1):
+            fin = resets[i].date_reset
+            debut = resets[i + 1].date_reset
+            periodes.append({
+                "id": str(i + 1),
+                "label": "Période %s → %s" % (
+                    debut.strftime("%d/%m/%Y"), fin.strftime("%d/%m/%Y")),
+                "debut": debut, "fin": fin,
+            })
+        # premiere periode : du demarrage au plus ancien reset
+        periodes.append({
+            "id": str(len(resets)),
+            "label": "Depuis le démarrage → %s" % resets[-1].date_reset.strftime("%d/%m/%Y"),
+            "debut": None, "fin": resets[-1].date_reset,
+        })
+    periodes.append({"id": "tout", "label": "Tout l'historique", "debut": None, "fin": None})
+    return periodes
+
+
+async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
+    _config = db.query(ConfigOrganisme).first()
 
     familles = [
         row[0] for row in
@@ -203,17 +232,32 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
         .all()
     ]
 
+    # Periode selectionnee par famille via ?periode_<FAMILLE>=<id> (defaut "0" = en cours)
+    today = date.today()
+
     stats_par_theme = {}
     totaux_famille = {}
+    periodes_famille = {}
+    periode_active = {}
+    peut_reset = {}
     all_alertes = []
     historique = []
 
     for famille in sorted(familles):
-        th_stats, alertes, total = _build_stats(famille, annee, db)
+        periodes = _periodes_famille(famille, db)
+        periodes_famille[famille] = periodes
+        sel_id = (request.query_params.get("periode_" + famille) or "0").strip()
+        sel = next((p for p in periodes if p["id"] == sel_id), periodes[0])
+        periode_active[famille] = sel["id"]
+
+        th_stats, alertes, total = _build_stats(famille, sel["debut"], sel["fin"], db)
         stats_par_theme[famille] = th_stats
         totaux_famille[famille] = total
         all_alertes.extend(alertes)
         historique.extend(_build_historique(famille, db))
+
+        # garde-fou reset : autorise uniquement le jour de l'audit externe
+        peut_reset[famille] = (_config and _config.audit_externe_date == today)
 
     recap_occurrences = {}
     for famille in sorted(familles):
@@ -243,28 +287,10 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
         reverse=True
     )
 
-    # Annees disponibles pour le selecteur de periode des 2 tableaux de stats.
-    # On combine year(date_tirage) et le champ annee fige (anciens tirages sans date).
-    annees_rows = db.query(
-        extract("year", UtilisationTheme.date_tirage),
-        UtilisationTheme.annee,
-    ).all()
-    annees_set = set()
-    for y_date, y_champ in annees_rows:
-        if y_date is not None:
-            annees_set.add(int(y_date))
-        elif y_champ is not None:
-            annees_set.add(int(y_champ))
-    annees_set.add(annee_courante)
-    annees_disponibles = sorted(annees_set, reverse=True)
-
     return templates.TemplateResponse(
         request=request,
         name="statistiques.html",
         context={
-            "annee": annee,
-            "annee_selection": ("tout" if annee == "tout" else str(annee)),
-            "annees_disponibles": annees_disponibles,
             "stats_par_theme": stats_par_theme,
             "totaux_famille": totaux_famille,
             "theme_noms": THEME_NOMS,
@@ -272,5 +298,8 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             "historique": historique,
             "annees_historique": annees_historique,
             "recap_occurrences": recap_occurrences,
+            "periodes_famille": periodes_famille,
+            "periode_active": periode_active,
+            "peut_reset": peut_reset,
         }
     )
