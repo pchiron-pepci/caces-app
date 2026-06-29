@@ -173,13 +173,15 @@
         <h2>Historique des tirages</h2>
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <span style="font-size:13px; color:#666;">{{ historique|length }} tirage(s)</span>
-            {% if annees_historique %}
-            <select id="filtre-annee-hist" data-action="filtrer-historique"
+            <select id="hist-famille" data-action="hist-famille"
                     style="font-size:13px; border:1.5px solid #ddd; border-radius:6px; padding:4px 8px; background:#fff;">
-                <option value="">Toutes les années</option>
-                {% for a in annees_historique %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+                <option value="">Toutes les familles</option>
+                {% for famille in periodes_famille.keys() %}<option value="{{ famille }}">{{ famille }}</option>{% endfor %}
             </select>
-            {% endif %}
+            <select id="hist-periode" data-action="hist-periode" disabled
+                    style="font-size:13px; border:1.5px solid #ddd; border-radius:6px; padding:4px 8px; background:#fff; opacity:0.5;">
+                <option value="tout">Toute la période</option>
+            </select>
         </div>
     </div>
     <div style="overflow-x:auto;">
@@ -198,7 +200,7 @@
         </thead>
         <tbody id="hist-tbody">
             {% for h in historique %}
-            <tr data-annee="{{ h.date_tirage.year if h.date_tirage else '' }}">
+            <tr data-annee="{{ h.date_tirage.year if h.date_tirage else '' }}" data-famille="{{ h.famille }}" data-date="{{ h.date_tirage.isoformat() if h.date_tirage else '' }}">
                 <td><strong><a href="/sessions/{{ h.session_id }}" style="color:#1a3a8f; text-decoration:none;">{{ h.session_ref }}</a></strong></td>
                 <td><span class="badge blue">{{ h.famille }}</span></td>
                 {% for t in [1,2,3,4,5] %}
@@ -382,16 +384,79 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = url.toString();
             return;
         }
-        if (!e.target.closest('[data-action="filtrer-historique"]')) return;
-        var annee = e.target.value;
+        // Filtre historique : changement de famille -> rafraichir les periodes puis filtrer
+        if (e.target.closest('[data-action="hist-famille"]')) {
+            rafraichirPeriodesHist();
+            appliquerFiltreHistorique();
+            return;
+        }
+        // changement de periode -> filtrer
+        if (e.target.closest('[data-action="hist-periode"]')) {
+            appliquerFiltreHistorique();
+            return;
+        }
+    });
+
+    // Donnees periodes par famille (JSON-safe) pour le filtrage de l'historique
+    var PERIODES_HIST = {{ periodes_json | tojson }};
+
+    function rafraichirPeriodesHist() {
+        var fam = document.getElementById('hist-famille').value;
+        var selPer = document.getElementById('hist-periode');
+        if (!fam) {
+            // Toutes familles -> periode desactivee
+            selPer.innerHTML = '<option value="tout">Toute la période</option>';
+            selPer.value = 'tout';
+            selPer.disabled = true;
+            selPer.style.opacity = '0.5';
+            return;
+        }
+        var periodes = PERIODES_HIST[fam] || [];
+        selPer.innerHTML = '';
+        periodes.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.label;
+            selPer.appendChild(opt);
+        });
+        selPer.disabled = false;
+        selPer.style.opacity = '1';
+    }
+
+    function appliquerFiltreHistorique() {
+        var fam = document.getElementById('hist-famille').value;
+        var selPer = document.getElementById('hist-periode');
+        var perId = selPer.value;
+
+        // Resoudre les bornes de la periode choisie
+        var debut = null, fin = null;
+        if (fam && perId && perId !== 'tout') {
+            var periodes = PERIODES_HIST[fam] || [];
+            var p = periodes.find(function(x) { return x.id === perId; });
+            if (p) { debut = p.debut ? new Date(p.debut) : null; fin = p.fin ? new Date(p.fin) : null; }
+        }
+
         var visible = 0;
-        document.querySelectorAll('#hist-tbody tr[data-annee]').forEach(function(tr) {
-            var show = !annee || tr.dataset.annee === annee;
+        document.querySelectorAll('#hist-tbody tr[data-famille]').forEach(function(tr) {
+            var show = true;
+            if (fam && tr.dataset.famille !== fam) show = false;
+            if (show && (debut || fin)) {
+                var dstr = tr.dataset.date;
+                if (!dstr) {
+                    // tirage sans date : visible seulement sur 'depuis le demarrage' (debut null)
+                    if (debut) show = false;
+                } else {
+                    var d = new Date(dstr);
+                    if (debut && d <= debut) show = false;
+                    if (fin && d > fin) show = false;
+                }
+            }
             tr.style.display = show ? '' : 'none';
             if (show) visible++;
         });
         document.getElementById('hist-no-match').style.display = visible === 0 ? '' : 'none';
-    });
+    }
+
 });
 
 function demanderConfirmation(message, callback) {

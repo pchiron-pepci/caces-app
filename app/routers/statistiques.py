@@ -3,8 +3,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import func, and_
 from app.models.reset_tirage import resets_famille, ResetTirage
-from app.models.config_organisme import ConfigOrganisme
-from datetime import datetime, date
+from datetime import datetime
 from collections import defaultdict
 
 from app.database import get_db
@@ -239,6 +238,7 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
     stats_par_theme = {}
     totaux_famille = {}
     periodes_famille = {}
+    periodes_json = {}
     periode_active = {}
     peut_reset = {}
     all_alertes = []
@@ -259,6 +259,17 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
 
         # garde-fou reset : autorise uniquement le jour de l'audit externe
         peut_reset[famille] = (_config and _config.audit_externe_date == today)
+
+        # version JSON-safe des periodes (pour le filtrage JS de l'historique commun)
+        periodes_json[famille] = [
+            {
+                "id": p["id"],
+                "label": p["label"],
+                "debut": p["debut"].isoformat() if p["debut"] else None,
+                "fin": p["fin"].isoformat() if p["fin"] else None,
+            }
+            for p in periodes
+        ]
 
     recap_occurrences = {}
     for famille in sorted(familles):
@@ -300,6 +311,7 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             "annees_historique": annees_historique,
             "recap_occurrences": recap_occurrences,
             "periodes_famille": periodes_famille,
+            "periodes_json": periodes_json,
             "periode_active": periode_active,
             "peut_reset": peut_reset,
         }
