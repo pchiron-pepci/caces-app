@@ -27,11 +27,11 @@
     <span class="ico">&#9888;</span>
     <span class="txt">
         <strong>Date de votre audit externe{% if audit_rappel_date %} : le {{ audit_rappel_date.strftime('%d/%m/%Y') }}{% endif %}.</strong>
-        Pensez à réinitialiser les tirages des familles concernées par cet audit.
-        Effectuez ce reset <strong>une fois l'audit terminé</strong> : il fige la période de tirage,
-        et les sessions doivent ensuite être saisies à une date postérieure au reset.
+        Le déclenchement des tirages est <strong>suspendu</strong> jusqu'à la réinitialisation des compteurs.
+        Une fois votre audit terminé, réinitialisez les tirages des familles concernées pour rouvrir le tirage.
+        Si cette date ne correspond pas à un audit, corrigez-la dans Administration → Calendrier qualité.
         <span style="display:block; margin-top:6px;">
-            <a href="/statistiques#tab-grilles" style="color:#e65100; font-weight:600; text-decoration:none;">Réinitialiser maintenant →</a>
+            <a href="/statistiques#tab-grilles" style="color:#e65100; font-weight:600; text-decoration:none;">Réinitialiser les compteurs →</a>
         </span>
     </span>
 </div>
