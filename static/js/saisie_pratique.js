@@ -82,6 +82,14 @@
     return '<button class="' + cls + '" data-action="bin" data-item="' + itemId + '" data-kind="' + kind + '" aria-label="' + (kind === "ok" ? "Acquis" : "Non acquis") + '">' + sym + '</button>';
   }
 
+  // Libelles engins cat A (pour titrer les blocs base multi-engins)
+  var ENGIN_LABELS = {
+    "PH": "Pelle hydraulique compacte",
+    "MB": "Motobasculeur compact",
+    "CH": "Chargeuse compacte",
+    "CP": "Compacteur compact"
+  };
+
   function renderBloc(bloc) {
     var g = bloc.grille;
     var html = "";
@@ -89,6 +97,17 @@
       html += '<div class="sp-bloc-titre"><div class="sp-bloc-line"></div>'
         + '<span class="sp-bloc-label">Option · ' + escapeHtml(g.libelle) + '</span>'
         + '<div class="sp-bloc-line"></div></div>';
+    } else if (g.variante) {
+      // Cat A multi-engins : en-tete d'engin bien visible (N1 = PH, N2 = autre).
+      var rang = (g.variante === "PH") ? "N°1" : "N°2";
+      var nom = ENGIN_LABELS[g.variante] || g.variante;
+      html += '<div class="sp-engin-head" style="background:#2d2d2d;color:#fff;'
+        + 'border-radius:8px;padding:10px 14px;margin:14px 0 8px;display:flex;'
+        + 'align-items:center;gap:10px;border-left:5px solid #cc0000;">'
+        + '<span style="background:#cc0000;color:#fff;font-weight:700;font-size:13px;'
+        + 'padding:3px 9px;border-radius:5px;white-space:nowrap;">ENGIN ' + rang + '</span>'
+        + '<span style="font-weight:700;font-size:15px;">' + escapeHtml(nom)
+        + ' (' + escapeHtml(g.variante) + ')</span></div>';
     }
     g.themes.forEach(function (th, i) {
       var openCls = (i === 0 && g.type === "base") ? " open" : "";
