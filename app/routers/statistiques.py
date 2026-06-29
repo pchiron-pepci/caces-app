@@ -182,7 +182,6 @@ def _build_historique(famille, db):
     return historique
 
 
-@router.get("/statistiques", response_class=HTMLResponse)
 def _periodes_famille(famille, db):
     """Construit la liste des periodes selectionnables pour une famille,
     bornees par les resets. Index 0 = periode en cours (depuis dernier reset
@@ -221,6 +220,7 @@ def _periodes_famille(famille, db):
     return periodes
 
 
+@router.get("/statistiques", response_class=HTMLResponse)
 async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
     _config = db.query(ConfigOrganisme).first()
 
