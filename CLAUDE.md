@@ -2212,3 +2212,19 @@ Document officiel remis au candidat en échec (théorie et/ou pratiques). Preuve
 - Écran ADMIN paramétrage durées (HEURES_PAR_THEME_PRATIQUE, HEURES_FAUTE_ELIMINATOIRE, HEURES_THEORIE_COURTE, HEURES_THEORIE_LONGUE) — constantes prêtes en tête de calcul_fiche_reco.py.
 - Champ n° INRS dans ConfigOrganisme (le PDF le cherche, absent à ce jour).
 - Notice : modifier une évaluation = ROUVRIR + REVALIDER.
+
+### ✅ ÉCRAN ADMIN — DURÉES STANDARDS FICHE RECO — TERMINÉ (2026-06-29)
+
+Les 5 paramètres de durée de la fiche de recommandation sont désormais modifiables en admin (carte "Paramètres système"), persistés en base, et lus par le calcul.
+
+**Chaîne complète (back → front) :**
+- `ConfigOrganisme` : 5 colonnes Float — reco_h_theme_pratique (1.5), reco_h_forfait_elim (1.0), reco_h_theorie_courte (2.0), reco_h_theorie_longue (4.0), reco_seuil_theorie (50.0). Migrations ALTER TABLE ... ADD COLUMN IF NOT EXISTS DOUBLE PRECISION dans main.py.
+- `admin.py` : schéma ConfigOrganismeUpdate (5 champs Optional[float]) + GET /config-organisme (renvoie avec fallback) + PUT (sauvegarde conditionnelle, PIN admin).
+- `calcul_fiche_reco.py` : `_charger_params(db)` lit la config (fallback sur les constantes HEURES_* en tête de fichier). `_params` passé à `_theorie_echec`/`_pratique_echec` → fonctions de durée. Les constantes restent les valeurs par défaut.
+- `templates/admin.html` : section "⏱️ Durées standards — fiche de recommandation" dans la carte "Paramètres système" (5 champs config-reco-*), chargée au GET et envoyée au PUT via sauvegarderConfigOrganisme(). Bouton "Enregistrer tous les paramètres" commun.
+
+**Vérifié :** modification en admin → fiche de reco recalcule avec les nouvelles durées.
+
+**RESTE (fiche reco) :**
+- Champ n° INRS / numéro OTC dans ConfigOrganisme (le PDF le cherche via _get_num_inrs, absent à ce jour → en-tête sans numéro).
+- Notice utilisateur : modifier une évaluation = ROUVRIR + REVALIDER (sinon le calcul lit l'ancien état).
