@@ -10,6 +10,10 @@ notes atteignables : aucun arrondi n'est applique ici, on compare la valeur reel
 
 Subordination : une option n'est ACQUISE que si elle reussit ET que la base reussit.
 
+Multi-base : une categorie peut comporter PLUSIEURS blocs base (ex. R.482 cat A =
+2 engins, N°1 PH + N°2 au choix). La categorie n'est acquise que si TOUS les blocs
+base reussissent. Retrocompatible mono-base (cat F).
+
 NORYX assiste : ce moteur PROPOSE un resultat. La decision reste au testeur.
 """
 from app.models.grille_pratique import (
@@ -124,21 +128,36 @@ def calculer_bloc(bloc: SaisieBloc, db) -> dict:
 
 
 def calculer_saisie(saisie, db) -> dict:
-    """Calcule le resultat GLOBAL d'une saisie (base + options), avec subordination."""
+    """Calcule le resultat GLOBAL d'une saisie, avec subordination.
+
+    Multi-base : une categorie peut avoir PLUSIEURS blocs base (ex. R.482 cat A =
+    2 engins N°1 PH + N°2 au choix). Regle INRS : la categorie n'est acquise que si
+    TOUS les blocs base reussissent. Retrocompatible mono-base (cat F).
+    """
     blocs = db.query(SaisieBloc).filter(SaisieBloc.saisie_id == saisie.id).all()
 
-    res_base = None
+    res_bases = []
     res_options = []
     for bloc in blocs:
         detail = calculer_bloc(bloc, db)
+        detail["_bloc_id"] = bloc.id
         if detail["type"] == "base":
-            res_base = detail
-            res_base["_bloc_id"] = bloc.id
+            res_bases.append(detail)
         else:
-            detail["_bloc_id"] = bloc.id
             res_options.append(detail)
 
-    base_reussie = bool(res_base and res_base["reussi"])
+    # Ordonner les bases par grille.ordre (PH avant N°2) pour un affichage stable
+    grilles_ordre = {}
+    for d in res_bases:
+        g = db.query(GrillePratique).filter(GrillePratique.id == d["grille_id"]).first()
+        d["variante"] = g.variante if g else None
+        grilles_ordre[d["_bloc_id"]] = (g.ordre if g else 0)
+    res_bases.sort(key=lambda d: grilles_ordre.get(d["_bloc_id"], 0))
+
+    base_reussie = bool(res_bases) and all(b["reussi"] for b in res_bases)
+
+    # Premier base (compat ascendante : du code lit encore res["base"])
+    res_base = res_bases[0] if res_bases else None
 
     for opt in res_options:
         opt["reussi_bloc"] = opt["reussi"]
@@ -148,7 +167,8 @@ def calculer_saisie(saisie, db) -> dict:
                 "Option non acquise : la categorie de base n'est pas obtenue.")
 
     return {
-        "base": res_base,
+        "base": res_base,           # compat : 1er bloc base
+        "bases": res_bases,         # nouveau : tous les blocs base (1 pour F, 2 pour A)
         "options": res_options,
         "base_reussie": base_reussie,
         "categorie_acquise": base_reussie,
@@ -156,15 +176,17 @@ def calculer_saisie(saisie, db) -> dict:
 
 
 def appliquer_resultats(saisie, db) -> dict:
-    """Calcule ET ecrit la synthese dans les SaisieBloc. Ne touche pas a SessionEpreuve."""
+    """Calcule ET ecrit la synthese dans les SaisieBloc. Ne touche pas a SessionEpreuve.
+    Multi-base : ecrit chaque bloc base (1 pour F, 2 pour A)."""
     res = calculer_saisie(saisie, db)
 
-    if res["base"]:
-        b = db.query(SaisieBloc).filter(SaisieBloc.id == res["base"]["_bloc_id"]).first()
+    # Tous les blocs base (res["bases"] contient 1 ou N blocs)
+    for bdet in res.get("bases", []):
+        b = db.query(SaisieBloc).filter(SaisieBloc.id == bdet["_bloc_id"]).first()
         if b:
-            b.note_calculee = res["base"]["note_globale"]
-            b.resultat_propose = res["base"]["reussi"]
-            b.resultat_acquis = res["base"]["reussi"]
+            b.note_calculee = bdet["note_globale"]
+            b.resultat_propose = bdet["reussi"]
+            b.resultat_acquis = bdet["reussi"]
 
     for opt in res["options"]:
         b = db.query(SaisieBloc).filter(SaisieBloc.id == opt["_bloc_id"]).first()

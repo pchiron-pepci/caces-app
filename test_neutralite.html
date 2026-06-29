@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { margin: 18mm 15mm 15mm 15mm; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #1a1a1a; margin: 0; }
+
+  .doc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #1a237e; padding-bottom: 8px; margin-bottom: 20px;
+  }
+  .doc-header-left { display: flex; align-items: center; gap: 14px; }
+  h1 { font-size: 15px; color: #1a237e; margin: 0 0 2px 0; }
+  .doc-meta { text-align: right; font-size: 9.5px; color: #555; line-height: 1.7; }
+
+  .section { margin-bottom: 18px; }
+  .section-title {
+    font-size: 10px; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #666; border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 3px; margin-bottom: 10px;
+  }
+  .field-row { display: flex; align-items: baseline; margin-bottom: 7px; gap: 8px; }
+  .field-label { color: #555; font-size: 10px; min-width: 200px; flex-shrink: 0; }
+  .field-value { font-size: 11px; }
+
+  .check-row {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid #e0e0e0; border-radius: 3px;
+    padding: 5px 10px; margin-bottom: 5px; background: #fafafa;
+  }
+  .check-label { flex: 1; font-size: 10.5px; }
+
+  .sig-block { margin-top: 6px; }
+
+  .footer {
+    text-align: center; font-size: 8.5px; color: #aaa;
+    margin-top: 24px; border-top: 1px solid #eee; padding-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="doc-header-left">
+    
+    <div>
+      <h1>Attestation de neutralité</h1>
+      <div style="font-size:9.5px; color:#666;">PEPCI Formation</div>
+    </div>
+  </div>
+  <div class="doc-meta">
+    <div><strong>Session :</strong> SESSION-2026-001</div>
+    <div><strong>Date épreuve :</strong> 18/06/2026</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Candidat</div>
+  <div class="field-row">
+    <span class="field-label">Nom et prénom</span>
+    <span class="field-value" style="font-weight:bold; font-size:13px;">DUPONT Jean</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Vérification d'identité</div>
+  <div class="field-row">
+    <span class="field-label">Vérificateur</span>
+    <span class="field-value">—</span>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Horodatage vérification</span>
+    <span class="field-value">Non signé</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">
+    Attestation sur l'honneur — absence de lien avec l'organisme évaluateur
+  </div>
+  <div style="font-size:10.5px; line-height:1.6; color:#333; margin-bottom:12px;">
+    Le candidat soussigné atteste qu'il n'entretient aucun lien de subordination
+    ou d'intérêt avec l'organisme évaluateur qui pourrait nuire à la neutralité
+    de l'évaluation CACES®.
+  </div>
+  <div class="field-row">
+    <span class="field-label">Horodatage signature</span>
+    <span class="field-value">Non signé</span>
+  </div>
+  <div class="sig-block">
+    <span style="color:#888; font-style:italic;">Non signé</span>
+  </div>
+</div>
+
+<div class="footer">
+  Attestation de neutralité &mdash; DUPONT Jean &mdash; SESSION-2026-001 &mdash; PEPCI Formation
+</div>
+
+</body>
+</html>

@@ -17,6 +17,7 @@ class GrillePratique(Base):
     categorie = Column(String(10), nullable=False)           # "F"
     type = Column(String(10), nullable=False, default="base")  # "base" | "option"
     code_option = Column(String(30), nullable=True)          # "PORTE_ENGINS", "TELECOMMANDE" (si option)
+    variante = Column(String(10), nullable=True)             # PH/MB/CH/CP pour cat A multi-engins (null sinon)
     libelle = Column(String(200), nullable=False)            # "Chariots de manutention tout-terrain" / "Porte-engins"
     ut = Column(Float, nullable=True)                        # unités de test (0.5 pour option)
     note_min = Column(Float, nullable=False, default=70)     # seuil global (70 base / 35 option)

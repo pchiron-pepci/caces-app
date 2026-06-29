@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { margin: 16mm 14mm 14mm 14mm; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5px; color: #1a1a1a; margin: 0; }
+
+  /* En-tête */
+  .doc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #1a237e; padding-bottom: 8px; margin-bottom: 18px;
+  }
+  .doc-header-left { display: flex; align-items: center; gap: 14px; }
+  h1 { font-size: 14px; color: #1a237e; margin: 0 0 3px 0; }
+  .doc-meta { text-align: right; font-size: 9.5px; color: #555; line-height: 1.7; }
+
+  /* Blocs candidats */
+  .candidat-bloc {
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    page-break-inside: avoid;
+    overflow: hidden;
+  }
+  .candidat-nom {
+    background: #1a237e;
+    color: white;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  /* Table résultats */
+  .ep-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .ep-table td {
+    padding: 4px 10px;
+    border-top: 1px solid #eeeeee;
+    vertical-align: middle;
+    font-size: 10px;
+  }
+  .ep-table tr:first-child td { border-top: none; }
+  td.ep-label {
+    width: 68px;
+    color: #666;
+    font-size: 9.5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  td.ep-detail {
+    color: #333;
+  }
+
+  /* Pied de page */
+  .footer {
+    text-align: center; font-size: 8.5px; color: #aaa;
+    margin-top: 20px; border-top: 1px solid #eee; padding-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="doc-header-left">
+    
+    <div>
+      <h1>Récapitulatif des résultats</h1>
+      <div style="font-size:9.5px; color:#666;">PEPCI Formation</div>
+    </div>
+  </div>
+  <div class="doc-meta">
+    <div><strong>Réf. :</strong> SESSION-2026-01</div>
+    <div><strong>Famille :</strong> R482</div>
+    <div>Théorie : 10/06/2026 &nbsp;|&nbsp; Pratique : 01/06/2026 – 10/06/2026</div>
+    
+  </div>
+</div>
+
+
+<div class="candidat-bloc">
+  <div class="candidat-nom">CHIRON Patrice</div>
+  <table class="ep-table">
+    <tbody>
+      
+      <tr><td class='ep-label'>Théorie</td><td><span style="display:inline-block; padding:1px 8px; border-radius:3px; font-size:9px; font-weight:bold; background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a;">Échec</span></td><td class='ep-detail'>51/100 &nbsp;·&nbsp; Numérique &nbsp;<span style='color:#888; font-size:9px;'>02/06/2026&nbsp;·&nbsp;JOSSELIN Sebastien</span></td></tr>
+      <tr><td class='ep-label'>Pratique</td><td><span style="display:inline-block; padding:1px 8px; border-radius:3px; font-size:9px; font-weight:bold; background:#e8f5e9; color:#1b5e20; border:1px solid #4caf50;">Acquis</span></td><td class='ep-detail'><strong>A</strong> &nbsp;<span style='color:#888; font-size:9px;'>06/06/2026&nbsp;·&nbsp;JOSSELIN Sebastien</span></td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="candidat-bloc">
+  <div class="candidat-nom">HOUESSINON Frédéric</div>
+  <table class="ep-table">
+    <tbody>
+      
+      <tr><td class='ep-label'>Théorie</td><td><span style="display:inline-block; padding:1px 8px; border-radius:3px; font-size:9px; font-weight:bold; background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a;">Échec</span></td><td class='ep-detail'>42/100 &nbsp;·&nbsp; Numérique &nbsp;<span style='color:#888; font-size:9px;'>02/06/2026&nbsp;·&nbsp;JOSSELIN Sebastien</span></td></tr>
+      <tr><td class='ep-label'>Pratique</td><td><span style="display:inline-block; padding:1px 8px; border-radius:3px; font-size:9px; font-weight:bold; background:#f5f5f5; color:#757575; border:1px solid #bdbdbd;">En attente</span></td><td class='ep-detail'>—</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  Document généré automatiquement &mdash; PEPCI Formation &mdash; SESSION-2026-01
+</div>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { margin: 18mm 15mm 15mm 15mm; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #1a1a1a; margin: 0; }
+
+  .doc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #1a237e; padding-bottom: 8px; margin-bottom: 20px;
+  }
+  .doc-header-left { display: flex; align-items: center; gap: 14px; }
+  h1 { font-size: 15px; color: #1a237e; margin: 0 0 2px 0; }
+  .doc-meta { text-align: right; font-size: 9.5px; color: #555; line-height: 1.7; }
+
+  .section { margin-bottom: 18px; }
+  .section-title {
+    font-size: 10px; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #666; border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 3px; margin-bottom: 10px;
+  }
+  .field-row { display: flex; align-items: baseline; margin-bottom: 7px; gap: 8px; }
+  .field-label { color: #555; font-size: 10px; min-width: 200px; flex-shrink: 0; }
+  .field-value { font-size: 11px; }
+
+  .check-row {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid #e0e0e0; border-radius: 3px;
+    padding: 5px 10px; margin-bottom: 5px; background: #fafafa;
+  }
+  .check-label { flex: 1; font-size: 10.5px; }
+
+  .sig-block { margin-top: 6px; }
+
+  .footer {
+    text-align: center; font-size: 8.5px; color: #aaa;
+    margin-top: 24px; border-top: 1px solid #eee; padding-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="doc-header-left">
+    
+    <div>
+      <h1>Consentement RGPD</h1>
+      <div style="font-size:9.5px; color:#666;">PEPCI Formation</div>
+    </div>
+  </div>
+  <div class="doc-meta">
+    <div><strong>Session :</strong> SESSION-2026-001</div>
+    <div><strong>Date :</strong> 18/06/2026</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Candidat</div>
+  <div class="field-row">
+    <span class="field-label">Nom et prénom</span>
+    <span class="field-value" style="font-weight:bold; font-size:13px;">DUPONT Jean</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Déclarations du candidat</div>
+
+  <div class="check-row">
+    <span class="check-label">
+      J'ai pris connaissance de la politique de protection des données personnelles
+      et j'accepte le traitement de mes données dans le cadre de cette formation.
+    </span>
+    <span><span style="color:#1b5e20; font-weight:bold;">OUI</span></span>
+  </div>
+
+  <div class="check-row">
+    <span class="check-label">
+      J'autorise l'organisme à utiliser ma photographie à des fins d'identification
+      et d'édition de la carte CACES®.
+    </span>
+    <span><span style="color:#1b5e20; font-weight:bold;">OUI</span></span>
+  </div>
+
+  <div class="check-row">
+    <span class="check-label">
+      J'atteste sur l'honneur ne faire l'objet d'aucune plainte ou condamnation
+      pour conduite dangereuse d'engins ou de véhicules.
+    </span>
+    <span><span style="color:#b71c1c; font-weight:bold;">NON</span></span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Vérification d'identité</div>
+  <div class="field-row">
+    <span class="field-label">Vérificateur</span>
+    <span class="field-value">Martin Sophie</span>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Horodatage vérification</span>
+    <span class="field-value">18/06/2026 09:15</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Signature du candidat</div>
+  <div class="field-row">
+    <span class="field-label">Horodatage signature</span>
+    <span class="field-value">18/06/2026 09:30</span>
+  </div>
+  <div class="sig-block">
+    <img src="data:image/png;base64,iVBORw0KGgo=" style="max-height:80px; max-width:260px; border:1px solid #ddd; border-radius:3px; padding:4px; background:white; display:block;" alt="Signature" />
+  </div>
+</div>
+
+<div class="footer">
+  Consentement RGPD &mdash; DUPONT Jean &mdash; SESSION-2026-001 &mdash; PEPCI Formation
+</div>
+
+</body>
+</html>
