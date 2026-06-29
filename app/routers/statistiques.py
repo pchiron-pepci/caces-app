@@ -3,7 +3,8 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import func, and_
 from app.models.reset_tirage import resets_famille, ResetTirage
-from datetime import datetime
+from app.models.config_organisme import ConfigOrganisme
+from datetime import datetime, date
 from collections import defaultdict
 
 from app.database import get_db
