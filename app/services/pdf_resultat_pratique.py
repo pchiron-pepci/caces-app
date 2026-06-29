@@ -83,8 +83,28 @@ def _badge(ok: bool, label: str) -> str:
     return (f'<span class="badge ko">{_esc(label)}</span>')
 
 
+ENGIN_LABELS = {
+    "PH": "Pelle hydraulique compacte",
+    "MB": "Motobasculeur compact",
+    "CH": "Chargeuse compacte",
+    "CP": "Compacteur compact",
+}
+
+
+def _titre_bloc(bloc: dict, est_base: bool) -> str:
+    """Titre d'un bloc : engin N1/N2 si variante (cat A), sinon base/option."""
+    if est_base:
+        var = bloc.get("variante")
+        if var:
+            rang = "N°1" if var == "PH" else "N°2"
+            nom = ENGIN_LABELS.get(var, var)
+            return f"Engin {rang} — {nom} ({var})"
+        return "Épreuve de base"
+    return f"Option — {_esc(bloc.get('libelle') or bloc.get('code_option') or '')}"
+
+
 def _bloc_html(bloc: dict, est_base: bool, acquis: bool) -> str:
-    titre = "Épreuve de base" if est_base else f"Option — {_esc(bloc.get('libelle') or bloc.get('code_option') or '')}"
+    titre = _titre_bloc(bloc, est_base)
     note_str = f"{_fmt(bloc['note_globale'])} / {_fmt(bloc['note_max'])}"
     seuil_str = f"seuil {_fmt(bloc['note_min'])}"
     verdict = _badge(acquis, "ACQUIS" if acquis else "NON ACQUIS")
@@ -165,6 +185,95 @@ def _bloc_html(bloc: dict, est_base: bool, acquis: bool) -> str:
     </div>"""
 
 
+# ── Synthèse multi-colonnes (gabarit unique : N colonnes = bases + options) ──
+
+def _synthese_html(calcul: dict) -> str:
+    """Tableau de synthèse : une colonne par épreuve (bases + options),
+    une ligne par thème (— si non applicable), notes globales et verdicts.
+    Gabarit unique : 1 colonne (cat F) ou N colonnes (cat A + options)."""
+    colonnes = []
+    for b in calcul.get("bases", []):
+        colonnes.append({
+            "kind": "base",
+            "titre": _titre_bloc(b, True),
+            "acquis": b.get("reussi", False),
+            "note": b.get("note_globale"), "max": b.get("note_max"),
+            "themes": {t["libelle"]: t for t in b.get("themes", [])},
+        })
+    for o in calcul.get("options", []):
+        colonnes.append({
+            "kind": "option",
+            "titre": _esc(o.get("libelle") or o.get("code_option") or "Option"),
+            "acquis": o.get("acquis", False),
+            "note": o.get("note_globale"), "max": o.get("note_max"),
+            "themes": {t["libelle"]: t for t in o.get("themes", [])},
+        })
+    if not colonnes:
+        return ""
+
+    # Liste ordonnée des thèmes (union, dans l'ordre d'apparition)
+    themes_ordre = []
+    for col in colonnes:
+        for lib in col["themes"].keys():
+            if lib not in themes_ordre:
+                themes_ordre.append(lib)
+
+    # En-tête
+    head = '<th class="lib">Thème</th>' + "".join(
+        f'<th class="c{ " col-opt" if col["kind"]=="option" else "" }">{col["titre"]}</th>'
+        for col in colonnes
+    )
+
+    # Lignes thèmes
+    rows = ""
+    for lib in themes_ordre:
+        cells = ""
+        for col in colonnes:
+            t = col["themes"].get(lib)
+            if not t:
+                cells += f'<td class="c na{ " col-opt" if col["kind"]=="option" else "" }">—</td>'
+            else:
+                ko = not t.get("ok", True)
+                style = ' style="color:#a32d2d;font-weight:700;"' if ko else ""
+                extra = " col-opt" if col["kind"] == "option" else ""
+                cells += f'<td class="c{extra}"{style}>{_fmt(t["note"])} / {_fmt(t["bareme"])}</td>'
+        rows += f'<tr><td class="lib">{_esc(lib)}</td>{cells}</tr>'
+
+    # Note globale
+    glob = '<td class="lib"><b>Note globale</b></td>'
+    for col in colonnes:
+        extra = " col-opt" if col["kind"] == "option" else ""
+        ko = (col["note"] is not None and col["max"] is not None and not col["acquis"])
+        style = ' style="color:#a32d2d;"' if (col["kind"]=="base" and not col["acquis"]) else ""
+        glob += f'<td class="c tot{extra}"{style}><b>{_fmt(col["note"])} / {_fmt(col["max"])}</b></td>'
+
+    # Verdict
+    verd = '<td class="lib"><b>Verdict</b></td>'
+    for col in colonnes:
+        extra = " col-opt" if col["kind"] == "option" else ""
+        if col["acquis"]:
+            badge = '<span class="badge ok">ACQUIS</span>'
+        elif col["kind"] == "option":
+            badge = '<span class="badge warn">NON ACQUISE</span>'
+        else:
+            badge = '<span class="badge ko">NON ACQUIS</span>'
+        verd += f'<td class="c tot{extra}">{badge}</td>'
+
+    return f"""
+    <div class="sub">Synthèse par épreuve</div>
+    <table class="synth">
+      <thead><tr>{head}</tr></thead>
+      <tbody>
+        {rows}
+        <tr class="tot-row">{glob}</tr>
+        <tr class="tot-row">{verd}</tr>
+      </tbody>
+    </table>
+    <div class="synth-note">Une colonne par épreuve. — = thème non applicable à cette épreuve.
+      Pour la catégorie A, les DEUX engins doivent être acquis. Une option n'est acquise que si la catégorie de base l'est.</div>
+"""
+
+
 # ── Construction HTML ────────────────────────────────────────────────────────
 
 def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_data: str) -> str:
@@ -187,7 +296,9 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
                  if logo_data else "")
 
     # Critères éliminatoires déclenchés (toutes sources : base + options)
-    all_elim = list(calcul["base"].get("eliminatoires_coches", [])) if calcul.get("base") else []
+    all_elim = []
+    for _b in calcul.get("bases", []):
+        all_elim += _b.get("eliminatoires_coches", [])
     for opt in calcul.get("options", []):
         all_elim += opt.get("eliminatoires_coches", [])
     elim_html = ""
@@ -199,10 +310,13 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
       <ul class="elim-list">{elim_items}</ul>
     </div>"""
 
+    # Synthèse multi-colonnes (gabarit unique)
+    synthese_html = _synthese_html(calcul)
+
     # Blocs base + options
     blocs_html = ""
-    if calcul.get("base"):
-        blocs_html += _bloc_html(calcul["base"], True, calcul.get("base_reussie", False))
+    for b in calcul.get("bases", []):
+        blocs_html += _bloc_html(b, True, b.get("reussi", False))
     for opt in calcul.get("options", []):
         blocs_html += _bloc_html(opt, False, opt.get("acquis", False))
 
@@ -259,6 +373,20 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   .bloc-note .seuil {{ color: #c9c9c9; font-size: 10px; }}
   .sub {{ font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #888;
           margin: 8px 0 3px; }}
+  table.synth {{ width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 4px; }}
+  table.synth th {{ background: #eef0f4; color: #444; padding: 4px 6px; border: 1px solid #dfe3ea;
+                    font-size: 9px; text-transform: uppercase; text-align: center; }}
+  table.synth th.lib {{ text-align: left; width: 32%; }}
+  table.synth td {{ padding: 4px 6px; border: 1px solid #e6e9ef; }}
+  table.synth td.c {{ text-align: center; }}
+  table.synth td.na {{ color: #aaa; }}
+  table.synth td.lib {{ width: 32%; }}
+  table.synth .col-opt {{ background: #f4f8fd; }}
+  table.synth th.col-opt {{ background: #e3edf8; }}
+  table.synth .tot-row td {{ background: #f6f7f9; }}
+  table.synth .tot-row td.col-opt {{ background: #eaf1fa; }}
+  .synth-note {{ font-size: 8px; color: #888; font-style: italic; margin-bottom: 12px; }}
+  .badge.warn {{ background: #fff3cd; color: #7a4a00; border: 1px solid #f0ad4e; }}
   table.grid {{ width: 100%; border-collapse: collapse; font-size: 10px; }}
   table.grid th {{ background: #eef0f4; color: #444; text-align: left; padding: 4px 7px;
                    border: 1px solid #dfe3ea; font-size: 9px; text-transform: uppercase; }}
@@ -323,6 +451,8 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
   </div>
 
   <div class="verdict {verdict_class}">{_esc(verdict_label)}</div>
+
+  {synthese_html}
 
   {elim_html}
 
