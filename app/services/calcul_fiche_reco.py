@@ -47,28 +47,61 @@ def _fmt_heures(h):
     return ("%.1f" % h).replace(".", ",") + " h"
 
 
-def _duree_theorie_heures(note_totale):
-    if note_totale is not None and note_totale >= SEUIL_THEORIE:
-        return HEURES_THEORIE_COURTE
-    return HEURES_THEORIE_LONGUE
+def _charger_params(db):
+    """Charge les paramètres de durée depuis ConfigOrganisme, avec fallback sur les constantes."""
+    p = {
+        "h_theme": HEURES_PAR_THEME_PRATIQUE,
+        "h_elim": HEURES_FAUTE_ELIMINATOIRE,
+        "seuil": SEUIL_THEORIE,
+        "h_theo_courte": HEURES_THEORIE_COURTE,
+        "h_theo_longue": HEURES_THEORIE_LONGUE,
+    }
+    try:
+        from app.models.config_organisme import ConfigOrganisme
+        cfg = db.query(ConfigOrganisme).first()
+        if cfg:
+            if cfg.reco_h_theme_pratique is not None:
+                p["h_theme"] = cfg.reco_h_theme_pratique
+            if cfg.reco_h_forfait_elim is not None:
+                p["h_elim"] = cfg.reco_h_forfait_elim
+            if cfg.reco_seuil_theorie is not None:
+                p["seuil"] = cfg.reco_seuil_theorie
+            if cfg.reco_h_theorie_courte is not None:
+                p["h_theo_courte"] = cfg.reco_h_theorie_courte
+            if cfg.reco_h_theorie_longue is not None:
+                p["h_theo_longue"] = cfg.reco_h_theorie_longue
+    except Exception:
+        pass
+    return p
 
 
-def _duree_pratique_heures(nb_themes, a_elimination):
-    """Durée = 1,5h × nb thèmes qui comptent + 1h forfaitaire si >=1 faute éliminatoire."""
-    h = nb_themes * HEURES_PAR_THEME_PRATIQUE
+def _duree_theorie_heures(note_totale, params=None):
+    p = params or {}
+    seuil = p.get("seuil", SEUIL_THEORIE)
+    courte = p.get("h_theo_courte", HEURES_THEORIE_COURTE)
+    longue = p.get("h_theo_longue", HEURES_THEORIE_LONGUE)
+    if note_totale is not None and note_totale >= seuil:
+        return courte
+    return longue
+
+
+def _duree_pratique_heures(nb_themes, a_elimination, params=None):
+    """Durée = (h/thème) × nb thèmes qui comptent + forfait si >=1 faute éliminatoire."""
+    p = params or {}
+    h = nb_themes * p.get("h_theme", HEURES_PAR_THEME_PRATIQUE)
     if a_elimination:
-        h += HEURES_FAUTE_ELIMINATOIRE
+        h += p.get("h_elim", HEURES_FAUTE_ELIMINATOIRE)
     return round(h, 2)
 
 
-def _theorie_echec(rt: ResultatTheorie) -> dict:
+def _theorie_echec(rt: ResultatTheorie, params=None) -> dict:
     """Détail de l'échec théorique : thèmes sous la moyenne + durée par défaut."""
     themes_echoues = []
     oks = [rt.theme1_ok, rt.theme2_ok, rt.theme3_ok, rt.theme4_ok, rt.theme5_ok]
     for i, ok in enumerate(oks, start=1):
         if ok is False:
             themes_echoues.append({"numero": i, "libelle": NOMS_THEMES_THEORIE[i]})
-    h = _duree_theorie_heures(rt.note_totale)
+    h = _duree_theorie_heures(rt.note_totale, params)
     return {
         "type": "theorie",
         "note_totale": rt.note_totale,
@@ -78,7 +111,7 @@ def _theorie_echec(rt: ResultatTheorie) -> dict:
     }
 
 
-def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str) -> dict:
+def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str, params=None) -> dict:
     """Détail de l'échec d'une catégorie pratique, regroupé PAR THÈME.
     Durée = HEURES_PAR_THEME_PRATIQUE × nombre de thèmes qui comptent.
     Un thème compte si : sa moyenne est insuffisante OU il contient un PE à 0.
@@ -166,7 +199,7 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str) -> dict
     nb_pour_duree = nb_themes
     if categorie_echouee and nb_pour_duree == 0 and not a_elimination:
         nb_pour_duree = 1
-    duree_h = _duree_pratique_heures(nb_pour_duree, a_elimination) if categorie_echouee else None
+    duree_h = _duree_pratique_heures(nb_pour_duree, a_elimination, params) if categorie_echouee else None
 
     return {
         "type": "pratique",
@@ -197,6 +230,7 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
     from app.models.session import Session as SessionModel
     sess = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     famille = sess.famille if sess else ""
+    _params = _charger_params(db)
 
     # jours de test de la session
     jours = db.query(JourTest).filter(JourTest.session_id == session_id).all()
@@ -212,7 +246,7 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
     if rt is not None:
         theorie_obtenue = bool(rt.obtenue)
         if rt.obtenue is False:
-            theorie_echec = _theorie_echec(rt)
+            theorie_echec = _theorie_echec(rt, _params)
 
     # ── Pratiques (multi-catégories) ──
     pratiques_echec = []
@@ -229,7 +263,7 @@ def calculer_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) -> di
             if s.categorie not in par_cat or s.id > par_cat[s.categorie].id:
                 par_cat[s.categorie] = s
         for s in par_cat.values():
-            detail = _pratique_echec(s, db, famille)
+            detail = _pratique_echec(s, db, famille, _params)
             if detail["categorie_echouee"] or detail["options_a_repasser"]:
                 pratiques_echec.append(detail)
             else:
