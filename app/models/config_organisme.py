@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Date
+from sqlalchemy import Column, Integer, String, Text, Date, Float
 from app.database import Base
 
 class ConfigOrganisme(Base):
@@ -26,3 +26,8 @@ class ConfigOrganisme(Base):
     url_verification_caces = Column(String(500), nullable=True)
     logo2_base64 = Column(Text, nullable=True)
     logo2_nom = Column(String(200), nullable=True)
+    reco_h_theme_pratique = Column(Float, nullable=True, default=1.5)
+    reco_h_forfait_elim = Column(Float, nullable=True, default=1.0)
+    reco_h_theorie_courte = Column(Float, nullable=True, default=2.0)
+    reco_h_theorie_longue = Column(Float, nullable=True, default=4.0)
+    reco_seuil_theorie = Column(Float, nullable=True, default=50.0)
