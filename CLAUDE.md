@@ -2185,3 +2185,30 @@ Document officiel remis au candidat en échec (théorie et/ou pratiques). Preuve
 - Écran ADMIN pour paramétrer les durées (HEURES_PAR_THEME_PRATIQUE=1,5 / HEURES_FAUTE_ELIMINATOIRE=1 / HEURES_THEORIE_COURTE=2 / HEURES_THEORIE_LONGUE=4) — constantes prêtes à migrer vers une table de paramètres.
 - Ajouter un champ n° INRS / numéro d'enregistrement OTC dans ConfigOrganisme (le PDF le cherche déjà, absent à ce jour).
 - Notice : préciser que modifier une évaluation = ROUVRIR + REVALIDER (sinon le calcul lit l'ancien état).
+
+### 🔄 FICHE DE RECOMMANDATION — MISE À JOUR FINALE (2026-06-29) — remplace les specs durées précédentes
+
+**RÈGLE DURÉES DÉFINITIVE (durée ajustable PAR THÈME) :**
+- Pratique : un champ modifiable PAR THÈME (1,5h défaut = HEURES_PAR_THEME_PRATIQUE) + un champ forfait éliminatoire modifiable (1h défaut = HEURES_FAUTE_ELIMINATOIRE) si >=1 faute éliminatoire.
+- Un thème "compte" si : moyenne insuffisante OU contient un PE à 0. Sous chaque thème : PE à 0 (rouge "note éliminatoire") + PE sous moyenne (ambre, note < bareme/2).
+- Sous-total par catégorie = somme auto des thèmes + forfait (non éditable, recalcul live). Total général = somme catégories + théorie (non éditable).
+- Théorie : un seul champ modifiable (2h si note>=50, sinon 4h).
+- Le testeur ajuste UNIQUEMENT au niveau thème/forfait ; sous-totaux et total se recalculent.
+- Front : _frInputDuree (champ + data-fr-cat), _frSommeCat, _frRecalcTotal (sous-totaux data-fr-soustotal + total), _frCollectSaisies (enregistre le sous-total par catégorie dans saisies_json).
+
+**COULEURS (écran + PDF) :** rouge réservé aux PE à 0 et à l'encadré fautes éliminatoires. "Moyenne du thème insuffisante" en gris neutre. PE sous moyenne en ambre.
+
+**MODALE de préparation :** PAS d'encadré bleu de rappel (inutile pour le testeur). L'encadré n'est que sur le PDF.
+
+**PDF (pdf_fiche_reco.py) — contenu validé :**
+- En-tête organisme + n° INRS (champ ABSENT de ConfigOrganisme — à ajouter).
+- Bloc session (référence, famille, dates, catégories non obtenues en rouge).
+- Encadré bleu en HAUT : "Validité des épreuves obtenues" (théorie ET pratique = tout ou rien, ajournée = repassée intégralement, options PE/TC = repasser catégorie entière) + "Durée de formation recommandée" (proposée organisme+testeur, ni psychologues ni psychotechniciens, heures effectives pouvant nécessiter plusieurs journées de planning).
+- Blocs par thème, durée PAR CATÉGORIE (sous-total) + total (PAS de détail par thème sur le PDF — épuré pour le candidat).
+- Rappel CNAM en encadré GRIS en BAS (dispositif d'évaluation non de formation, formation préalable obligatoire, responsabilité des commanditaires).
+- PIED DE PAGE RÉCURRENT sur chaque page : "Nom candidat | Session ref (famille) | Recommandation de formation" + numéro de page (identification si feuilles imprimées séparées).
+
+**RESTE À FAIRE :**
+- Écran ADMIN paramétrage durées (HEURES_PAR_THEME_PRATIQUE, HEURES_FAUTE_ELIMINATOIRE, HEURES_THEORIE_COURTE, HEURES_THEORIE_LONGUE) — constantes prêtes en tête de calcul_fiche_reco.py.
+- Champ n° INRS dans ConfigOrganisme (le PDF le cherche, absent à ce jour).
+- Notice : modifier une évaluation = ROUVRIR + REVALIDER.
