@@ -991,11 +991,33 @@ def dashboard(request: Request):
             }
             for co in caces_a_valider_raw
         ]
+        # ── Rappel d'audit externe : reset des tirages a faire ──────────────
+        # S'affiche si la date d'audit est aujourd'hui ou passee ET qu'aucun
+        # reset n'a eu lieu a cette date. S'eteint des qu'un reset est fait
+        # le jour de l'audit. Persiste tant que non regularise (orange clignotant).
+        from app.models.config_organisme import ConfigOrganisme as _Config
+        from app.models.reset_tirage import ResetTirage as _Reset
+        from sqlalchemy import func as _func
+        audit_rappel = False
+        audit_rappel_date = None
+        _cfg = db.query(_Config).first()
+        if _cfg and _cfg.audit_externe_date and _cfg.audit_externe_date <= today:
+            _reset_ce_jour = (
+                db.query(_Reset)
+                .filter(_func.date(_Reset.date_reset) == _cfg.audit_externe_date)
+                .first()
+            )
+            if not _reset_ce_jour:
+                audit_rappel = True
+                audit_rappel_date = _cfg.audit_externe_date
+
         return templates.TemplateResponse(
             request=request,
             name="dashboard.html",
             context={
                 "page": "dashboard",
+                "audit_rappel": audit_rappel,
+                "audit_rappel_date": audit_rappel_date,
                 "stats": stats,
                 "testeurs": testeurs_list,
                 "docs": docs_map,

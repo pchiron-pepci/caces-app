@@ -3,6 +3,35 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
+{% if audit_rappel %}
+<style>
+@keyframes audit-blink {
+    0%, 100% { background: #fff3e0; border-color: #ff9800; }
+    50% { background: #ffe0b2; border-color: #e65100; }
+}
+.audit-rappel-banner {
+    animation: audit-blink 1.2s ease-in-out infinite;
+    border: 2px solid #ff9800;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.audit-rappel-banner .ico { font-size: 26px; line-height: 1; }
+.audit-rappel-banner .txt { font-size: 14px; color: #5d3a00; }
+.audit-rappel-banner .txt strong { color: #e65100; }
+</style>
+<div class="audit-rappel-banner">
+    <span class="ico">&#9888;</span>
+    <span class="txt">
+        <strong>C'est la date de votre audit externe{% if audit_rappel_date %} ({{ audit_rappel_date.strftime('%d/%m/%Y') }}){% endif %}.</strong>
+        Pensez à réinitialiser les tirages théoriques des familles concernées par cet audit
+        (page <a href="/statistiques#tab-grilles" style="color:#e65100; font-weight:600;">Statistiques → Grilles</a>).
+    </span>
+</div>
+{% endif %}
 <style>
 @media (max-width: 1023px) {
     .dash-grid { grid-template-columns: 1fr !important; }
