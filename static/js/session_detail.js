@@ -1038,12 +1038,17 @@ function _frEsc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function _frInputHeures(id, valeurDefaut) {
-    var v = (valeurDefaut != null) ? valeurDefaut : '';
-    return '<input type="number" id="' + id + '" value="' + v + '" min="0" step="0.5" style="width:90px; padding:6px 8px; border:1.5px solid #c8d8f0; border-radius:8px; font-size:13px;" data-fr-duree="1"> <span style="font-size:13px; color:#666;">heures</span>';
-}
-
 function _frRecalcTotal() {
+    document.querySelectorAll('[data-fr-soustotal]').forEach(function (el) {
+        var cat = el.getAttribute('data-fr-soustotal');
+        var st = 0;
+        document.querySelectorAll('[data-fr-cat="' + cat + '"]').forEach(function (inp) {
+            var v = parseFloat(inp.value);
+            if (!isNaN(v)) st += v;
+        });
+        var txt = (st === Math.floor(st)) ? String(st) : String(st).replace('.', ',');
+        el.textContent = txt + ' h';
+    });
     var total = 0;
     document.querySelectorAll('[data-fr-duree="1"]').forEach(function (inp) {
         var v = parseFloat(inp.value);
@@ -1054,6 +1059,32 @@ function _frRecalcTotal() {
         var txt = (total === Math.floor(total)) ? String(total) : String(total).replace('.', ',');
         el.textContent = txt + ' h';
     }
+}
+
+function _frInputDuree(id, cat, valeurDefaut) {
+    var v = (valeurDefaut != null) ? valeurDefaut : '';
+    return '<input type="number" id="' + id + '" value="' + v + '" min="0" step="0.5" style="width:72px; padding:5px 7px; border:1.5px solid #c8d8f0; border-radius:6px; font-size:13px;" data-fr-duree="1" data-fr-cat="' + _frEsc(cat) + '"> <span style="font-size:12px; color:#666;">h</span>';
+}
+
+function _frSommeCat(cat) {
+    var st = 0;
+    document.querySelectorAll('[data-fr-cat="' + cat + '"]').forEach(function (inp) {
+        var v = parseFloat(inp.value);
+        if (!isNaN(v)) st += v;
+    });
+    return st;
+}
+
+function _frCollectSaisies(calcul) {
+    var saisies = { pratiques: {} };
+    var selTh = document.getElementById('fr-duree-theorie');
+    if (selTh) saisies.theorie = parseFloat(selTh.value) || 0;
+    (calcul.pratiques_echec || []).forEach(function (p) {
+        saisies.pratiques[p.categorie] = { duree_heures: _frSommeCat(p.categorie) };
+    });
+    var totalEl = document.getElementById('fr-total-heures');
+    if (totalEl) saisies.total_label = totalEl.textContent;
+    return saisies;
 }
 
 function construireFormFicheReco(data) {
@@ -1074,13 +1105,15 @@ function construireFormFicheReco(data) {
     if (calcul.theorie_echec) {
         var th = calcul.theorie_echec;
         var themesT = (th.themes_echoues || []).map(function (t) { return '<li>' + _frEsc(t.libelle) + '</li>'; }).join('');
-        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Épreuve théorique — échouée (' + _frEsc(th.note_totale) + '/100)</div><div style="padding:10px 12px;"><div style="font-size:12px; color:#666; margin-bottom:4px;">Thèmes à retravailler :</div><ul style="margin:0 0 10px 18px; font-size:13px; color:#333;">' + (themesT || '<li style="color:#888;">—</li>') + '</ul><label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Durée de formation recommandée</label>' + _frInputHeures('fr-duree-theorie', th.duree_heures) + '</div></div>';
+        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Épreuve théorique — échouée (' + _frEsc(th.note_totale) + '/100)</div><div style="padding:10px 12px;"><div style="font-size:12px; color:#666; margin-bottom:4px;">Thèmes à retravailler :</div><ul style="margin:0 0 10px 18px; font-size:13px; color:#333;">' + (themesT || '<li style="color:#888;">—</li>') + '</ul><label style="font-size:12px; color:#666; display:block; margin-bottom:4px;">Durée de formation recommandée</label>' + _frInputDuree('fr-duree-theorie', 'THEO', th.duree_heures) + '</div></div>';
     }
     (calcul.pratiques_echec || []).forEach(function (p) {
+        var cat = p.categorie;
+        var ti = 0;
         var blocsHtml = (p.themes_blocs || []).map(function (tb) {
             var inner = '';
             if (tb.moyenne_insuffisante) {
-                inner += '<div style="font-size:11px; color:#a32d2d; margin:2px 0;">Moyenne du thème insuffisante</div>';
+                inner += '<div style="font-size:11px; color:#555; margin:2px 0;">Moyenne du thème insuffisante</div>';
             }
             (tb.pe_zero || []).forEach(function (pe) {
                 inner += '<li style="color:#a32d2d;">' + _frEsc(pe.libelle) + ' — <strong>0/' + _frEsc(pe.bareme) + '</strong> (note éliminatoire)</li>';
@@ -1088,19 +1121,21 @@ function construireFormFicheReco(data) {
             (tb.pe_sous_moyenne || []).forEach(function (pe) {
                 inner += '<li style="color:#7a5a12;">' + _frEsc(pe.libelle) + ' — ' + _frEsc(pe.note) + '/' + _frEsc(pe.bareme) + ' (sous la moyenne)</li>';
             });
-            return '<div style="margin-bottom:8px;"><div style="font-size:13px; font-weight:600; color:#2d2d2d;">' + _frEsc(tb.theme) + '</div><ul style="margin:4px 0 0 18px; font-size:12px;">' + (inner || '<li style="color:#888;">—</li>') + '</ul></div>';
+            var champThemeId = 'fr-th-' + cat + '-' + ti; ti++;
+            var champ = _frInputDuree(champThemeId, cat, 1.5);
+            return '<div style="margin-bottom:10px; border-bottom:1px dashed #eee; padding-bottom:8px;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:13px; font-weight:600; color:#2d2d2d;">' + _frEsc(tb.theme) + '</div><div>' + champ + '</div></div><ul style="margin:4px 0 0 18px; font-size:12px;">' + (inner || '<li style="color:#888;">—</li>') + '</ul></div>';
         }).join('');
         var optHtml = '';
         if (p.options_a_repasser && p.options_a_repasser.length) {
             optHtml = '<div style="font-size:12px; color:#7a5a12; background:#faeeda; border-radius:6px; padding:6px 9px; margin-top:8px;">Catégorie obtenue, mais option(s) à repasser : ' + p.options_a_repasser.map(function (o) { return _frEsc(o.libelle); }).join(', ') + '</div>';
         }
-        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Pratique catégorie ' + _frEsc(p.categorie) + ' — échouée</div><div style="padding:10px 12px;">';
+        html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Pratique catégorie ' + _frEsc(cat) + ' — échouée</div><div style="padding:10px 12px;">';
         if (p.categorie_echouee) {
-            html += '<div style="font-size:12px; color:#666; margin-bottom:6px;">Thèmes à retravailler (' + (p.nb_themes || 0) + ') :</div>' + (blocsHtml || '<div style="color:#888; font-size:12px;">—</div>');
+            html += '<div style="font-size:12px; color:#666; margin-bottom:6px;">Thèmes à retravailler (' + (p.nb_themes || 0) + ') — durée ajustable par thème :</div>' + (blocsHtml || '<div style="color:#888; font-size:12px;">—</div>');
             if (p.fautes_eliminatoires && p.fautes_eliminatoires.length) {
-                html += '<div style="margin-top:8px; background:#fcebeb; border:1px solid #e57373; border-radius:6px; padding:6px 9px;"><div style="font-size:12px; font-weight:600; color:#a32d2d; margin-bottom:3px;">Faute(s) éliminatoire(s) :</div><ul style="margin:0 0 0 18px; font-size:12px; color:#a32d2d;">' + p.fautes_eliminatoires.map(function (f) { return '<li>' + _frEsc(f) + '</li>'; }).join('') + '</ul></div>';
+                html += '<div style="margin-top:8px; background:#fcebeb; border:1px solid #e57373; border-radius:6px; padding:6px 9px;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:12px; font-weight:600; color:#a32d2d;">Faute(s) éliminatoire(s) :</div><div>' + _frInputDuree('fr-elim-' + cat, cat, 1) + '</div></div><ul style="margin:3px 0 0 18px; font-size:12px; color:#a32d2d;">' + p.fautes_eliminatoires.map(function (f) { return '<li>' + _frEsc(f) + '</li>'; }).join('') + '</ul></div>';
             }
-            html += '<label style="font-size:12px; color:#666; display:block; margin:8px 0 4px;">Durée de formation recommandée</label>' + _frInputHeures('fr-duree-prat-' + p.categorie, p.duree_heures);
+            html += '<div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:#f6f7f9; border-radius:6px; padding:7px 12px;"><span style="font-size:12px; font-weight:600; color:#2d2d2d;">Sous-total catégorie ' + _frEsc(cat) + '</span><span style="font-weight:700; font-size:14px; color:#2d2d2d;" data-fr-soustotal="' + _frEsc(cat) + '">—</span></div>';
         }
         html += optHtml + '</div></div>';
     });
@@ -1118,15 +1153,7 @@ function enregistrerFicheReco() {
     var calcul = data.calcul || {};
     var stagiaireId = window._frStagiaireId;
     var sessionId = window.SESSION_ID;
-    var saisies = { pratiques: {} };
-    var selTh = document.getElementById('fr-duree-theorie');
-    if (selTh) saisies.theorie = parseFloat(selTh.value) || 0;
-    (calcul.pratiques_echec || []).forEach(function (p) {
-        var inp = document.getElementById('fr-duree-prat-' + p.categorie);
-        if (inp) saisies.pratiques[p.categorie] = { duree_heures: parseFloat(inp.value) || 0 };
-    });
-    var totalEl = document.getElementById('fr-total-heures');
-    if (totalEl) saisies.total_label = totalEl.textContent;
+    var saisies = _frCollectSaisies(calcul);
     var payload = {
         fraude_theorie: !!(document.getElementById('fr-fraude') && document.getElementById('fr-fraude').checked),
         difficultes_langue: !!(document.getElementById('fr-langue') && document.getElementById('fr-langue').checked),
@@ -1154,15 +1181,7 @@ function genererPdfFicheReco() {
     if (btn) { btn.disabled = true; btn.textContent = 'Génération…'; }
     var data = window._frData || {};
     var calcul = data.calcul || {};
-    var saisies = { pratiques: {} };
-    var selTh = document.getElementById('fr-duree-theorie');
-    if (selTh) saisies.theorie = parseFloat(selTh.value) || 0;
-    (calcul.pratiques_echec || []).forEach(function (p) {
-        var inp = document.getElementById('fr-duree-prat-' + p.categorie);
-        if (inp) saisies.pratiques[p.categorie] = { duree_heures: parseFloat(inp.value) || 0 };
-    });
-    var totalEl = document.getElementById('fr-total-heures');
-    if (totalEl) saisies.total_label = totalEl.textContent;
+    var saisies = _frCollectSaisies(calcul);
     var payload = {
         fraude_theorie: !!(document.getElementById('fr-fraude') && document.getElementById('fr-fraude').checked),
         difficultes_langue: !!(document.getElementById('fr-langue') && document.getElementById('fr-langue').checked),
