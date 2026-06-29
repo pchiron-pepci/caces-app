@@ -1101,7 +1101,7 @@ function construireFormFicheReco(data) {
     var c = calcul.candidat || {};
     var html = '';
     html += '<div style="background:#f6f7f9; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px;"><strong>' + _frEsc(c.nom) + ' ' + _frEsc(c.prenom) + '</strong>' + (c.date_naissance ? ' <span style="color:#888;">né(e) le ' + _frEsc(c.date_naissance) + '</span>' : '') + '</div>';
-    html += '<div style="background:#eef4fb; border:1px solid #bcd; border-radius:8px; padding:10px 14px; margin-bottom:18px; font-size:12px; color:#345; line-height:1.5;">Les épreuves obtenues restent valables un an dans le même organisme. Le candidat se représente uniquement aux épreuves non-obtenues.</div>';
+
     if (calcul.theorie_echec) {
         var th = calcul.theorie_echec;
         var themesT = (th.themes_echoues || []).map(function (t) { return '<li>' + _frEsc(t.libelle) + '</li>'; }).join('');

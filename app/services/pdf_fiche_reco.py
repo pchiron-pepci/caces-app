@@ -186,7 +186,10 @@ def generer_pdf_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) ->
     inrs_html = f' — N° {_esc(num_inrs)}' if num_inrs else ""
 
     html = f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><style>
-  @page {{ size: A4; margin: 14mm; }}
+  @page {{ size: A4; margin: 14mm 14mm 20mm 14mm;
+    @bottom-center {{ content: element(pieddepage); }}
+    @bottom-right {{ content: "Page " counter(page) "/" counter(pages); font-size: 8px; color: #999; }}
+  }}
   * {{ box-sizing: border-box; }}
   body {{ font-family: 'Helvetica Neue', Arial, sans-serif; color: #222; font-size: 11px; margin: 0; }}
   .head {{ display: flex; justify-content: space-between; align-items: center;
@@ -200,7 +203,10 @@ def generer_pdf_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) ->
               margin-bottom: 12px; font-size: 11px; line-height: 1.6; }}
   .session .cats {{ font-weight: bold; color: {ROUGE}; }}
   .validite {{ background: #eef4fb; border: 1px solid #bcd; border-radius: 6px; padding: 8px 12px;
-               margin-bottom: 16px; font-size: 11px; color: #345; line-height: 1.5; }}
+               margin-bottom: 16px; font-size: 10px; color: #345; line-height: 1.5; }}
+  .validite p {{ margin: 3px 0; }}
+  .validite .vt {{ font-weight: bold; color: {ANTHRACITE}; margin-top: 6px; font-size: 11px; }}
+  .validite .vt:first-child {{ margin-top: 0; }}
   .bloc {{ border: 1px solid #e57373; border-radius: 6px; margin-bottom: 12px; page-break-inside: avoid; }}
   .bloc-head {{ background: #fcebeb; color: #a32d2d; padding: 6px 12px; font-weight: bold; font-size: 12px; border-radius: 6px 6px 0 0; }}
   .bloc-body {{ padding: 8px 12px; }}
@@ -211,7 +217,7 @@ def generer_pdf_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) ->
   li {{ font-size: 11px; margin: 1px 0; }}
   li.zero {{ color: #a32d2d; }}
   li.sous {{ color: #7a5a12; }}
-  .moy {{ font-size: 10px; color: #a32d2d; }}
+  .moy {{ font-size: 10px; color: #555; }}
   .elim {{ background: #fcebeb; border: 1px solid #e57373; border-radius: 5px; padding: 5px 9px; margin: 6px 0; }}
   .elim-titre {{ font-weight: bold; color: #a32d2d; font-size: 11px; }}
   .opt {{ background: #faeeda; border-radius: 5px; padding: 5px 9px; margin: 6px 0; font-size: 11px; color: #7a5a12; }}
@@ -221,7 +227,15 @@ def generer_pdf_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) ->
   .cases {{ margin-bottom: 10px; }}
   .autres {{ white-space: pre-wrap; font-size: 11px; }}
   .footer {{ margin-top: 16px; border-top: 1px solid #eee; padding-top: 8px; font-size: 9px; color: #777; line-height: 1.5; }}
+  .cnam {{ margin-top: 16px; background: #f4f4f2; border: 1px solid #d8d8d2; border-radius: 6px;
+           padding: 10px 12px; font-size: 9.5px; color: #444; line-height: 1.5; page-break-inside: avoid; }}
+  .cnam-t {{ font-weight: bold; color: {ANTHRACITE}; text-transform: uppercase; letter-spacing: 0.4px;
+             font-size: 9.5px; margin-bottom: 4px; }}
+  .cnam p {{ margin: 0; text-align: justify; }}
+  .pieddepage {{ position: running(pieddepage); font-size: 8px; color: #999;
+                 border-top: 0.5px solid #ddd; padding-top: 3px; }}
 </style></head><body>
+  <div class="pieddepage">{_esc(nom)} &nbsp;|&nbsp; Session {_esc(ref)} ({_esc(famille)}) &nbsp;|&nbsp; Recommandation de formation</div>
   <div class="head">
     <div class="org">{_esc(nom_org)}<small>Organisme testeur certifié CACES®{inrs_html}</small></div>
     {logo_html}
@@ -235,16 +249,24 @@ def generer_pdf_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) ->
     <div><b>Dates :</b> {_esc(dates_str)}</div>
     <div><b>Catégorie(s) non obtenue(s) :</b> <span class="cats">{cats_str}</span></div>
   </div>
-  <div class="validite">Les épreuves obtenues restent valables un an dans le même organisme.
-    Le candidat se représente uniquement aux épreuves non-obtenues.</div>
+  <div class="validite">
+    <div class="vt">Validité des épreuves obtenues</div>
+    <p>Une épreuve pratique est obtenue dans sa totalité ou ajournée : il n'existe pas de validation partielle d'une catégorie.</p>
+    <p>Les épreuves obtenues restent valables un an au sein du même organisme. Durant cette période, le candidat se représente uniquement aux épreuves non-obtenues (épreuve théorique ou catégorie pratique), sans avoir à repasser celles qu'il a validées.</p>
+    <p>L'échec à une option (« porte-engins » PE ou « télécommande » TC) implique de repasser la catégorie pratique concernée dans son intégralité si le candidat souhaite tenter à nouveau cette option.</p>
+    <div class="vt">Durée de formation recommandée</div>
+    <p>Les durées indiquées sont proposées d'un commun accord entre l'organisme et le testeur CACES® certifié, en fonction de leur appréciation et de leur expérience. Elles constituent une recommandation pédagogique et ne sauraient garantir la réussite du candidat lors d'une nouvelle évaluation, l'organisme et le testeur n'étant ni psychologues, ni psychotechniciens.</p>
+    <p>Ces durées sont exprimées en heures de formation effectives. Leur organisation au sein du planning de l'organisme, souvent partagé avec d'autres apprenants, peut nécessiter la réservation de plusieurs journées de formation.</p>
+  </div>
   {blocs_html}
   <div class="total"><span>Durée totale de formation recommandée</span><span>{_esc(total_label)}</span></div>
   {cases_html}
   {autres_html}
-  <div class="footer">Document établi le {datetime.now().strftime("%d/%m/%Y")} par {_esc(nom_org)}.
-    Conformément aux recommandations de la CNAM, l'évaluation de la conduite en sécurité relève de la
-    responsabilité du testeur. Cette recommandation est une aide à l'orientation de la formation
-    complémentaire ; elle ne constitue ni une obligation de résultat ni une garantie de réussite.</div>
+  <div class="cnam">
+    <div class="cnam-t">Rappel — Dispositif CACES® de la CNAM</div>
+    <p>Le dispositif CACES® de la CNAM est un dispositif d'évaluation, et non de formation. Ce dispositif s'adresse à des conducteurs dont le niveau de compétences est optimal, du fait d'une formation adaptée en durée et en contenu, voire d'une expérience professionnelle. La formation préalable, toujours obligatoire, doit être organisée en tenant compte du profil de chaque conducteur, en fonction de son expérience et de ses aptitudes présumées à la conduite. Pour pouvoir se présenter à un test CACES®, un candidat doit être parfaitement autonome avec l'engin, et être capable de réaliser les opérations à la vitesse demandée en production réelle, sans risque pour lui, les tiers et l'environnement de travail. Cela nécessite plusieurs heures (parfois plusieurs jours) d'apprentissage individuel, par engin. Il est de la responsabilité des commanditaires de choisir le bon format de formation.</p>
+  </div>
+  <div class="footer">Document établi le {datetime.now().strftime("%d/%m/%Y")} par {_esc(nom_org)}.</div>
 </body></html>"""
 
     from weasyprint import HTML
