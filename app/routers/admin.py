@@ -196,6 +196,11 @@ class ConfigOrganismeUpdate(BaseModel):
     signataire_qualite: Optional[str] = None
     url_verification_caces: Optional[str] = None
     mode_saisie_pratique: Optional[str] = None
+    reco_h_theme_pratique: Optional[float] = None
+    reco_h_forfait_elim: Optional[float] = None
+    reco_h_theorie_courte: Optional[float] = None
+    reco_h_theorie_longue: Optional[float] = None
+    reco_seuil_theorie: Optional[float] = None
 
 def _img_data_uri(b64: str, nom: str) -> str:
     if not b64 or not nom:
@@ -229,6 +234,11 @@ def get_config_organisme(db: Session = Depends(get_db)):
         "signature_data_uri": _img_data_uri(config.signature_base64, config.signature_nom),
         "url_verification_caces": config.url_verification_caces or "",
         "mode_saisie_pratique": config.mode_saisie_pratique or "binaire",
+        "reco_h_theme_pratique": config.reco_h_theme_pratique if config.reco_h_theme_pratique is not None else 1.5,
+        "reco_h_forfait_elim": config.reco_h_forfait_elim if config.reco_h_forfait_elim is not None else 1.0,
+        "reco_h_theorie_courte": config.reco_h_theorie_courte if config.reco_h_theorie_courte is not None else 2.0,
+        "reco_h_theorie_longue": config.reco_h_theorie_longue if config.reco_h_theorie_longue is not None else 4.0,
+        "reco_seuil_theorie": config.reco_seuil_theorie if config.reco_seuil_theorie is not None else 50.0,
         "logo2_base64": config.logo2_base64 or "" if hasattr(config, 'logo2_base64') else "",
         "logo2_data_uri": _img_data_uri(config.logo2_base64, config.logo2_nom) if hasattr(config, 'logo2_base64') else "",
     }
@@ -260,6 +270,16 @@ def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session =
     config.url_verification_caces = data.url_verification_caces
     if data.mode_saisie_pratique in ("binaire", "partiel_entier", "partiel_demi"):
         config.mode_saisie_pratique = data.mode_saisie_pratique
+    if data.reco_h_theme_pratique is not None:
+        config.reco_h_theme_pratique = data.reco_h_theme_pratique
+    if data.reco_h_forfait_elim is not None:
+        config.reco_h_forfait_elim = data.reco_h_forfait_elim
+    if data.reco_h_theorie_courte is not None:
+        config.reco_h_theorie_courte = data.reco_h_theorie_courte
+    if data.reco_h_theorie_longue is not None:
+        config.reco_h_theorie_longue = data.reco_h_theorie_longue
+    if data.reco_seuil_theorie is not None:
+        config.reco_seuil_theorie = data.reco_seuil_theorie
     db.commit()
     return {"message": "Configuration mise à jour"}
 
