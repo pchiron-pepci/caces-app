@@ -2274,3 +2274,26 @@ PIN/confirmation gérés front ; audit + PIN revérifiés serveur. Pas de consom
 L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) — choix ergonomique : un historique par famille décalerait les blocs des autres familles. Mais il gagne DEUX sélecteurs en tête : **Famille** (Toutes / R482 / R489…) + **Période**. Choisir une famille active le sélecteur de période avec les bornes de reset de CETTE famille ; "Toutes les familles" désactive la période. Filtrage côté JS (les lignes portent `data-famille` et `data-date` ISO ; `PERIODES_HIST` = `periodes_json` JSON-safe injecté via `tojson`). Cohérent avec le tri par période des 2 tableaux du haut.
 
 **PIÈGE IDE RÉSOLU** : VS Code avec "organize imports on save" (Pylance/Ruff) supprimait `ConfigOrganisme` et `date` de statistiques.py à chaque Ctrl+S (vus comme inutilisés). → Désactiver `source.organizeImports` dans settings.json. Symptôme : `NameError: name 'ConfigOrganisme' is not defined` au chargement de /statistiques.
+### 🔲 BLOCAGE DU TIRAGE PENDANT L'AUDIT — À FAIRE (spécifié 2026-06-29)
+
+**FAIT :** le bandeau dashboard d'audit (orange clignotant) est en prod. Texte : "Date de votre audit externe : le JJ/MM/AAAA. Le déclenchement des tirages est suspendu jusqu'à la réinitialisation des compteurs. Une fois votre audit terminé, réinitialisez les tirages des familles concernées pour rouvrir le tirage. Si cette date ne correspond pas à un audit, corrigez-la dans Administration → Calendrier qualité." + lien "Réinitialiser les compteurs →" vers /statistiques#tab-grilles.
+
+**RESTE À FAIRE (chantier complet) :** le bandeau annonce "suspendu" mais le blocage du tirage N'EST PAS codé. À implémenter :
+
+1. **Helper partagé** dans `app/models/reset_tirage.py` : `audit_reset_requis(db) -> date | None`. Renvoie la date d'audit si un reset est requis (et donc bandeau affiché + tirage bloqué), sinon None. Règle : reset requis si `ConfigOrganisme.audit_externe_date <= aujourd'hui` ET aucun ResetTirage à cette date (`func.date(date_reset) == audit_externe_date`). Se résout dès qu'un reset est fait le jour de l'audit, OU que l'OF repousse sa date d'audit. Import local de ConfigOrganisme pour éviter les cycles. CE MÊME HELPER doit piloter le bandeau (refactorer le calcul inline du dashboard pour l'utiliser) ET le blocage.
+
+2. **Blocage du tirage** dans `app/routers/sessions.py`, route `POST /{id}/declencher-tirage` (~ligne 1510) : après la vérif "session clôturée", avant le comptage candidats, insérer : si `audit_reset_requis(db)` renvoie une date → `HTTPException(409, "Déclenchement des tirages suspendu : votre date d'audit externe (JJ/MM/AAAA) est atteinte. Réinitialisez les compteurs de tirage (Statistiques → Grilles) une fois l'audit terminé, ou corrigez votre date d'audit dans Administration → Calendrier qualité.")`.
+
+3. **Refactorer `main.py`** (route dashboard `@app.get("/")` ~ligne 875) : remplacer le calcul inline de `audit_rappel` par l'appel au helper `audit_reset_requis(db)` (un seul critère pilote bandeau + blocage).
+
+**DÉCISIONS ACTÉES :**
+- Blocage PORTE SUR TOUT TIRAGE (toutes familles) — on ne peut pas deviner quelle famille est auditée à partir d'une seule date d'audit.
+- DEUX SORTIES pour débloquer : soit l'utilisateur reset (n'importe quelle famille, le message s'éteint et le tirage rouvre), soit il corrige sa date d'audit (s'il n'était pas concerné).
+- Bandeau orange clignotant TOUT LE TEMPS où il est actif (pas de distinction de couleur jour J vs audit passé).
+- "Familles concernées" reste GÉNÉRAL dans le message (l'OF a saisi une seule date d'audit, c'est à lui de savoir ce qui est audité/resetable). Pas de liste de familles.
+
+**POINT 2 ABANDONNÉ (sessions antérieures au reset) :** fausse inquiétude. Le logiciel enregistre chaque tirage à sa `date_tirage` réelle (jour du tirage, donc postérieur au reset), donc les stats sont forcément justes peu importe la date de la session. Aucun garde-fou nécessaire sur les sessions antérieures. Le vrai garde-fou est le blocage du tirage ci-dessus.
+
+**IMPORTS LOCAUX OBLIGATOIRES** (dans les fonctions, pas en tête de fichier) pour `audit_reset_requis` dans main.py et sessions.py → contourne le piège "organize imports on save" de VS Code qui supprime les imports vus comme inutilisés.
+
+**Helper audit_reset_requis testé (logique validée sur 5 cas) :** sans config → None ; audit futur → None ; audit aujourd'hui sans reset → date (BLOQUE) ; audit + reset fait ce jour → None (DÉBLOQUE) ; audit passé sans reset → date (BLOQUE, persiste).
