@@ -281,6 +281,32 @@
                     <small style="color:#888; display:block; margin-top:4px;">Détermine la finesse de notation à l'écran de saisie pratique. Enregistré avec le bouton en bas de page.</small>
                 </div>
             </div>
+            <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e0e0e0;">
+                <h3 style="font-size:16px; color:#2d2d2d; margin-bottom:4px;">⏱️ Durées standards — fiche de recommandation</h3>
+                <p style="font-size:12px; color:#888; margin-bottom:14px;">Durées proposées par défaut sur les fiches de recommandation de formation. Le testeur peut toujours les ajuster au cas par cas. Valeurs en heures. Enregistré avec le bouton en bas de page.</p>
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>Heures par thème (pratique)</label>
+                        <input type="number" id="config-reco-h-theme" min="0" step="0.5" placeholder="1.5" style="width:120px;">
+                    </div>
+                    <div class="form-field">
+                        <label>Forfait faute éliminatoire</label>
+                        <input type="number" id="config-reco-h-elim" min="0" step="0.5" placeholder="1" style="width:120px;">
+                    </div>
+                    <div class="form-field">
+                        <label>Seuil note théorie (sur 100)</label>
+                        <input type="number" id="config-reco-seuil-theorie" min="0" max="100" step="1" placeholder="50" style="width:120px;">
+                    </div>
+                    <div class="form-field">
+                        <label>Théorie — note ≥ seuil</label>
+                        <input type="number" id="config-reco-h-theo-courte" min="0" step="0.5" placeholder="2" style="width:120px;">
+                    </div>
+                    <div class="form-field">
+                        <label>Théorie — note &lt; seuil</label>
+                        <input type="number" id="config-reco-h-theo-longue" min="0" step="0.5" placeholder="4" style="width:120px;">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -412,32 +438,6 @@
                 <div class="form-field">
                     <label>Prochaine revue de direction</label>
                     <input type="date" id="config-revue-direction">
-                </div>
-            </div>
-            <div style="margin-top:24px; padding-top:16px; border-top:1px solid #e0e0e0;">
-                <h3 style="font-size:16px; color:#2d2d2d; margin-bottom:4px;">⏱️ Durées standards — fiche de recommandation</h3>
-                <p style="font-size:12px; color:#888; margin-bottom:14px;">Durées proposées par défaut sur les fiches de recommandation de formation. Le testeur peut toujours les ajuster au cas par cas. Valeurs en heures.</p>
-                <div class="form-grid">
-                    <div class="form-field">
-                        <label>Heures par thème (pratique)</label>
-                        <input type="number" id="config-reco-h-theme" min="0" step="0.5" placeholder="1.5" style="width:120px;">
-                    </div>
-                    <div class="form-field">
-                        <label>Forfait faute éliminatoire</label>
-                        <input type="number" id="config-reco-h-elim" min="0" step="0.5" placeholder="1" style="width:120px;">
-                    </div>
-                    <div class="form-field">
-                        <label>Seuil note théorie (sur 100)</label>
-                        <input type="number" id="config-reco-seuil-theorie" min="0" max="100" step="1" placeholder="50" style="width:120px;">
-                    </div>
-                    <div class="form-field">
-                        <label>Théorie — note ≥ seuil</label>
-                        <input type="number" id="config-reco-h-theo-courte" min="0" step="0.5" placeholder="2" style="width:120px;">
-                    </div>
-                    <div class="form-field">
-                        <label>Théorie — note &lt; seuil</label>
-                        <input type="number" id="config-reco-h-theo-longue" min="0" step="0.5" placeholder="4" style="width:120px;">
-                    </div>
                 </div>
             </div>
             <div class="form-actions" style="margin-top:24px; padding-top:16px; border-top:2px solid #cc0000;">
