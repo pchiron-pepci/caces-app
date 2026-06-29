@@ -176,32 +176,95 @@
   }
 
   // ─── Chargement initial ───
-  api("POST", BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir")
-    .then(function (data) {
-      state.saisieId = data.saisie_id;
-      state.mode = data.mode;
-      state.statut = data.statut;
-      state.blocs = data.blocs.map(function (b) {
-        return {
-          bloc_id: b.bloc_id, grille: b.grille,
-          notes: b.notes_saisies || {}, elim: b.eliminatoires_coches || []
-        };
-      });
-      state.repriseTesteurId = data.testeur_id || null;
-      state.repriseSignature = data.signature_testeur || null;
-      state.repriseObservations = data.observations || null;
-      state.repriseJustification = data.justification_ecart || null;
-      renderAll();
-      if (data.reprise) toast("Saisie reprise");
-      if (window._SP && typeof window._SP.runCalc === "function") { window._SP.runCalc(); }
-      var optionsCandidat = state.blocs
-        .filter(function (b) { return b.grille && b.grille.type === "option" && b.grille.code_option; })
-        .map(function (b) { return b.grille.code_option; });
-      chargerTesteurs(optionsCandidat, state.repriseTesteurId);
-    })
-    .catch(function (e) {
-      document.getElementById("sp-progress-txt").textContent = "Erreur : " + e.message;
+  function traiterReponseSaisie(data) {
+    state.saisieId = data.saisie_id;
+    state.mode = data.mode;
+    state.statut = data.statut;
+    state.blocs = data.blocs.map(function (b) {
+      return {
+        bloc_id: b.bloc_id, grille: b.grille,
+        notes: b.notes_saisies || {}, elim: b.eliminatoires_coches || []
+      };
     });
+    state.repriseTesteurId = data.testeur_id || null;
+    state.repriseSignature = data.signature_testeur || null;
+    state.repriseObservations = data.observations || null;
+    state.repriseJustification = data.justification_ecart || null;
+    renderAll();
+    if (data.reprise) toast("Saisie reprise");
+    if (window._SP && typeof window._SP.runCalc === "function") { window._SP.runCalc(); }
+    var optionsCandidat = state.blocs
+      .filter(function (b) { return b.grille && b.grille.type === "option" && b.grille.code_option; })
+      .map(function (b) { return b.grille.code_option; });
+    chargerTesteurs(optionsCandidat, state.repriseTesteurId);
+  }
+
+  function lancerOuverture(engin2) {
+    var url = BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir";
+    if (engin2) { url += "?engin2=" + encodeURIComponent(engin2); }
+    return api("POST", url)
+      .then(traiterReponseSaisie)
+      .catch(function (e) {
+        document.getElementById("sp-progress-txt").textContent = "Erreur : " + e.message;
+      });
+  }
+
+  function estCatA() {
+    return (FAMILLE || "").toUpperCase().replace(/[^A-Z0-9]/g, "").indexOf("R482") === 0
+      && (CATEGORIE || "").toUpperCase() === "A";
+  }
+
+  function afficherChoixEngin2() {
+    var ENGINS = [
+      { code: "MB", lib: "Motobasculeur compact" },
+      { code: "CH", lib: "Chargeuse compacte" },
+      { code: "CP", lib: "Compacteur compact" }
+    ];
+    var ov = document.createElement("div");
+    ov.id = "sp-engin2-overlay";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(45,45,45,0.92);z-index:200;"
+      + "display:flex;align-items:center;justify-content:center;padding:20px;";
+    var box = '<div style="background:#fff;border-radius:12px;max-width:440px;width:100%;'
+      + 'padding:24px;box-shadow:0 10px 40px rgba(0,0,0,0.4);">'
+      + '<div style="font-size:18px;font-weight:700;color:#2d2d2d;margin-bottom:4px;">Categorie A &mdash; Engins compacts</div>'
+      + '<div style="font-size:13px;color:#666;margin-bottom:18px;line-height:1.5;">'
+      + "L'epreuve se deroule sur <b>deux engins</b>. L'engin N1 est toujours la "
+      + "<b>pelle hydraulique compacte (PH)</b>.<br>Choisissez l'engin N2 presente au candidat :</div>"
+      + '<div id="sp-engin2-choices" style="display:flex;flex-direction:column;gap:10px;">';
+    ENGINS.forEach(function (e) {
+      box += '<button type="button" class="sp-engin2-btn" data-engin2="' + e.code + '" '
+        + 'style="text-align:left;padding:14px 16px;border:2px solid #e2e6ee;border-radius:8px;'
+        + 'background:#f9fafb;cursor:pointer;font-size:15px;color:#2d2d2d;transition:all .15s;">'
+        + '<b>' + e.code + '</b> &mdash; ' + e.lib + '</button>';
+    });
+    box += '</div></div>';
+    ov.innerHTML = box;
+    document.body.appendChild(ov);
+
+    ov.querySelectorAll(".sp-engin2-btn").forEach(function (btn) {
+      btn.addEventListener("mouseover", function () {
+        btn.style.borderColor = "#cc0000"; btn.style.background = "#fff5f5";
+      });
+      btn.addEventListener("mouseout", function () {
+        btn.style.borderColor = "#e2e6ee"; btn.style.background = "#f9fafb";
+      });
+      btn.addEventListener("click", function () {
+        var engin2 = btn.getAttribute("data-engin2");
+        if (ov.parentNode) ov.parentNode.removeChild(ov);
+        lancerOuverture(engin2);
+      });
+    });
+  }
+
+  function ouvrirOuDemander() {
+    if (!estCatA()) { lancerOuverture(null); return; }
+    var url = BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir";
+    api("POST", url)
+      .then(traiterReponseSaisie)
+      .catch(function () { afficherChoixEngin2(); });
+  }
+
+  ouvrirOuDemander();
 
 })();
 
