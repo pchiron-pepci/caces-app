@@ -4,7 +4,8 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, RedirectResponse
+from app.services import storage
 from app.database import SessionLocal
 from app.config_utils import get_pin_admin as _gpa
 
@@ -280,14 +281,18 @@ async def upload_carte_testeur(testeur_id: int, pin: str, file: UploadFile = Fil
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     contents = await file.read()
-    contenu_b64 = base64.b64encode(contents).decode()
+    cle = storage.construire_cle("testeurs/carte", file.filename)
+    storage.upload_fichier(contents, cle, "application/pdf")
     from app.models.testeur import Testeur
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t:
             raise HTTPException(status_code=404, detail="Testeur non trouvé")
-        t.carte_pdf = contenu_b64
+        if t.carte_cle:
+            try: storage.delete_fichier(t.carte_cle)
+            except Exception: pass
+        t.carte_cle = cle
         t.carte_nom_fichier = file.filename
         db.commit()
     finally:
@@ -301,17 +306,13 @@ def telecharger_carte_testeur(testeur_id: int):
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if not t or not t.carte_pdf:
+        if not t or not t.carte_cle:
             raise HTTPException(status_code=404, detail="Carte non disponible")
-        contenu = base64.b64decode(t.carte_pdf)
         nom = f"{t.nom}_{t.prenom}_{t.carte_nom_fichier or 'carte.pdf'}"
+        url = storage.generer_url_presignee(t.carte_cle, nom_telechargement=nom, inline=False)
     finally:
         db.close()
-    return Response(
-        content=contenu,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
-    )
+    return RedirectResponse(url)
 
 
 @router.delete("/carte-testeur/{testeur_id}")
@@ -323,7 +324,10 @@ def supprimer_carte_testeur(testeur_id: int, pin: str):
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if t:
-            t.carte_pdf = None
+            if t.carte_cle:
+                try: storage.delete_fichier(t.carte_cle)
+                except Exception: pass
+            t.carte_cle = None
             t.carte_nom_fichier = None
             db.commit()
     finally:
@@ -426,7 +430,8 @@ async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestat
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     contents = await file.read()
-    contenu_b64 = base64.b64encode(contents).decode()
+    cle = storage.construire_cle("testeurs/attestation", file.filename)
+    storage.upload_fichier(contents, cle, "application/pdf")
     from app.models.testeur import Testeur
     from datetime import datetime
     db = SessionLocal()
@@ -434,7 +439,10 @@ async def upload_attestation_prevention(testeur_id: int, pin: str, date_attestat
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t:
             raise HTTPException(status_code=404, detail="Testeur non trouvé")
-        t.attestation_prevention_pdf = contenu_b64
+        if t.attestation_prevention_cle:
+            try: storage.delete_fichier(t.attestation_prevention_cle)
+            except Exception: pass
+        t.attestation_prevention_cle = cle
         t.attestation_prevention_nom = file.filename
         if date_attestation:
             try:
@@ -453,17 +461,13 @@ def telecharger_attestation_prevention(testeur_id: int):
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if not t or not t.attestation_prevention_pdf:
+        if not t or not t.attestation_prevention_cle:
             raise HTTPException(status_code=404, detail="Attestation non disponible")
-        contenu = base64.b64decode(t.attestation_prevention_pdf)
         nom = f"{t.nom}_{t.prenom}_{t.attestation_prevention_nom or 'attestation.pdf'}"
+        url = storage.generer_url_presignee(t.attestation_prevention_cle, nom_telechargement=nom, inline=False)
     finally:
         db.close()
-    return Response(
-        content=contenu,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
-    )
+    return RedirectResponse(url)
 
 
 @router.delete("/attestation-prevention/{testeur_id}")
@@ -475,7 +479,10 @@ def supprimer_attestation_prevention(testeur_id: int, pin: str):
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if t:
-            t.attestation_prevention_pdf = None
+            if t.attestation_prevention_cle:
+                try: storage.delete_fichier(t.attestation_prevention_cle)
+                except Exception: pass
+            t.attestation_prevention_cle = None
             t.attestation_prevention_nom = None
             t.attestation_prevention_date = None
             db.commit()
@@ -493,7 +500,8 @@ async def upload_visite_medicale(testeur_id: int, pin: str, date_visite: str = N
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     contents = await file.read()
-    contenu_b64 = base64.b64encode(contents).decode()
+    cle = storage.construire_cle("testeurs/visite", file.filename)
+    storage.upload_fichier(contents, cle, "application/pdf")
     from app.models.testeur import Testeur
     from datetime import datetime, date as date_type
     db = SessionLocal()
@@ -501,7 +509,10 @@ async def upload_visite_medicale(testeur_id: int, pin: str, date_visite: str = N
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t:
             raise HTTPException(status_code=404, detail="Testeur non trouvé")
-        t.visite_medicale_pdf = contenu_b64
+        if t.visite_medicale_cle:
+            try: storage.delete_fichier(t.visite_medicale_cle)
+            except Exception: pass
+        t.visite_medicale_cle = cle
         t.visite_medicale_nom = file.filename
         if date_visite:
             try:
@@ -520,14 +531,13 @@ def telecharger_visite_medicale(testeur_id: int):
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if not t or not t.visite_medicale_pdf:
+        if not t or not t.visite_medicale_cle:
             raise HTTPException(status_code=404, detail="Visite non disponible")
-        contenu = base64.b64decode(t.visite_medicale_pdf)
-        nom = t.visite_medicale_nom or "visite.pdf"
+        nom = f"{t.nom}_{t.prenom}_{t.visite_medicale_nom or 'visite.pdf'}"
+        url = storage.generer_url_presignee(t.visite_medicale_cle, nom_telechargement=nom, inline=False)
     finally:
         db.close()
-    return Response(content=contenu, media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'})
+    return RedirectResponse(url)
 
 
 @router.delete("/visite-medicale/{testeur_id}")
@@ -539,7 +549,10 @@ def supprimer_visite_medicale(testeur_id: int, pin: str):
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if t:
-            t.visite_medicale_pdf = None
+            if t.visite_medicale_cle:
+                try: storage.delete_fichier(t.visite_medicale_cle)
+                except Exception: pass
+            t.visite_medicale_cle = None
             t.visite_medicale_nom = None
             db.commit()
     finally:
@@ -556,7 +569,8 @@ async def upload_evaluation(testeur_id: int, pin: str, date_evaluation: str = No
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     contents = await file.read()
-    contenu_b64 = base64.b64encode(contents).decode()
+    cle = storage.construire_cle("testeurs/evaluation", file.filename)
+    storage.upload_fichier(contents, cle, "application/pdf")
     from app.models.testeur import Testeur
     from datetime import datetime
     db = SessionLocal()
@@ -564,7 +578,10 @@ async def upload_evaluation(testeur_id: int, pin: str, date_evaluation: str = No
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t:
             raise HTTPException(status_code=404, detail="Testeur non trouvé")
-        t.evaluation_pdf = contenu_b64
+        if t.evaluation_cle:
+            try: storage.delete_fichier(t.evaluation_cle)
+            except Exception: pass
+        t.evaluation_cle = cle
         t.evaluation_nom = file.filename
         if date_evaluation:
             try:
@@ -583,14 +600,13 @@ def telecharger_evaluation(testeur_id: int):
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if not t or not t.evaluation_pdf:
+        if not t or not t.evaluation_cle:
             raise HTTPException(status_code=404, detail="Évaluation non disponible")
-        contenu = base64.b64decode(t.evaluation_pdf)
-        nom = t.evaluation_nom or "evaluation.pdf"
+        nom = f"{t.nom}_{t.prenom}_{t.evaluation_nom or 'evaluation.pdf'}"
+        url = storage.generer_url_presignee(t.evaluation_cle, nom_telechargement=nom, inline=False)
     finally:
         db.close()
-    return Response(content=contenu, media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'})
+    return RedirectResponse(url)
 
 
 @router.delete("/evaluation/{testeur_id}")
@@ -602,7 +618,10 @@ def supprimer_evaluation(testeur_id: int, pin: str):
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if t:
-            t.evaluation_pdf = None
+            if t.evaluation_cle:
+                try: storage.delete_fichier(t.evaluation_cle)
+                except Exception: pass
+            t.evaluation_cle = None
             t.evaluation_nom = None
             t.evaluation_date = None
             db.commit()
@@ -620,14 +639,18 @@ async def upload_autorisation_conduite(testeur_id: int, pin: str, file: UploadFi
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     contents = await file.read()
-    contenu_b64 = base64.b64encode(contents).decode()
+    cle = storage.construire_cle("testeurs/autorisation", file.filename)
+    storage.upload_fichier(contents, cle, "application/pdf")
     from app.models.testeur import Testeur
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if not t:
             raise HTTPException(status_code=404, detail="Testeur non trouvé")
-        t.autorisation_conduite_pdf = contenu_b64
+        if t.autorisation_conduite_cle:
+            try: storage.delete_fichier(t.autorisation_conduite_cle)
+            except Exception: pass
+        t.autorisation_conduite_cle = cle
         t.autorisation_conduite_nom = file.filename
         db.commit()
     finally:
@@ -641,14 +664,13 @@ def telecharger_autorisation_conduite(testeur_id: int):
     db = SessionLocal()
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
-        if not t or not t.autorisation_conduite_pdf:
+        if not t or not t.autorisation_conduite_cle:
             raise HTTPException(status_code=404, detail="Autorisation non disponible")
-        contenu = base64.b64decode(t.autorisation_conduite_pdf)
-        nom = t.autorisation_conduite_nom or "autorisation.pdf"
+        nom = f"{t.nom}_{t.prenom}_{t.autorisation_conduite_nom or 'autorisation.pdf'}"
+        url = storage.generer_url_presignee(t.autorisation_conduite_cle, nom_telechargement=nom, inline=False)
     finally:
         db.close()
-    return Response(content=contenu, media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'})
+    return RedirectResponse(url)
 
 
 @router.delete("/autorisation-conduite/{testeur_id}")
@@ -660,7 +682,10 @@ def supprimer_autorisation_conduite(testeur_id: int, pin: str):
     try:
         t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
         if t:
-            t.autorisation_conduite_pdf = None
+            if t.autorisation_conduite_cle:
+                try: storage.delete_fichier(t.autorisation_conduite_cle)
+                except Exception: pass
+            t.autorisation_conduite_cle = None
             t.autorisation_conduite_nom = None
             db.commit()
     finally:
