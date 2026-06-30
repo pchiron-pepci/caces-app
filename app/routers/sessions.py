@@ -29,7 +29,7 @@ from app.services.caces_obtenus import calculer_et_synchroniser
 from app.models.utilisateur import Utilisateur
 from app.routers.auth import get_utilisateur_courant
 from app.config_utils import get_pin_admin, get_pin_formateur
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from datetime import date, datetime as dt
 from typing import Optional, List, Dict
 import json
@@ -116,6 +116,17 @@ class CandidatJourPratique(BaseModel):
     stagiaire_id: int
     categories: List[str] = []
     options: Dict[str, List[str]] = {}
+
+    @model_validator(mode="after")
+    def _options_rattachees_a_categorie(self):
+        # Garde-fou INRS : une option n'existe pas sans sa categorie support passee.
+        # On ecarte silencieusement toute option orpheline (categorie non cochee/passee).
+        if self.options:
+            cats = set(self.categories)
+            self.options = {
+                cat: opts for cat, opts in self.options.items() if cat in cats
+            }
+        return self
 
 class JourTestCreate(BaseModel):
     session_id: int
