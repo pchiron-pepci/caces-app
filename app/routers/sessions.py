@@ -1520,6 +1520,24 @@ def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
     if s.statut == "terminee":
         raise HTTPException(status_code=400, detail="Impossible de déclencher le tirage sur une session clôturée")
 
+    # ── Garde-fou audit : tirage suspendu tant qu'un reset est requis ──
+    # Si la date d'audit externe est atteinte sans reset effectue, le
+    # declenchement est bloque pour TOUT l'organisme (on ne peut pas deviner
+    # quelles familles sont auditees). L'utilisateur doit reinitialiser ses
+    # compteurs (Statistiques) ou corriger sa date d'audit (Administration).
+    # Import local : contourne "organize imports on save" de l'IDE.
+    from app.models.reset_tirage import audit_reset_requis
+    _audit_date = audit_reset_requis(db)
+    if _audit_date is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=("Déclenchement des tirages suspendu : votre date d'audit externe "
+                    "(%s) est atteinte. Réinitialisez les compteurs de tirage "
+                    "(Statistiques → Grilles) une fois l'audit terminé, ou corrigez "
+                    "votre date d'audit dans Administration → Calendrier qualité."
+                    % _audit_date.strftime("%d/%m/%Y")),
+        )
+
     nb_candidats_theorie = (
         db.query(JourTestCandidat)
         .join(JourTest, JourTest.id == JourTestCandidat.jour_test_id)

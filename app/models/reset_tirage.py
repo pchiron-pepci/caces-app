@@ -42,3 +42,28 @@ def resets_famille(famille: str, db) -> list:
         .order_by(ResetTirage.date_reset.desc())
         .all()
     )
+
+
+def audit_reset_requis(db) -> "date | None":
+    """Renvoie la date d'audit si un reset est requis (et donc si le tirage doit
+    etre bloque + le bandeau affiche), sinon None.
+
+    Regle : reset requis si la date d'audit externe est aujourd'hui ou passee ET
+    qu'aucun reset n'a eu lieu a cette date. Se resout des qu'un reset est fait le
+    jour de l'audit, ou que l'OF repousse sa date d'audit. Le meme critere pilote
+    le bandeau du dashboard et le blocage du tirage."""
+    from datetime import date as _date
+    from sqlalchemy import func as _func
+    from app.models.config_organisme import ConfigOrganisme  # import local : evite les cycles
+
+    cfg = db.query(ConfigOrganisme).first()
+    if not cfg or not cfg.audit_externe_date:
+        return None
+    if cfg.audit_externe_date > _date.today():
+        return None
+    reset_ce_jour = (
+        db.query(ResetTirage)
+        .filter(_func.date(ResetTirage.date_reset) == cfg.audit_externe_date)
+        .first()
+    )
+    return None if reset_ce_jour else cfg.audit_externe_date
