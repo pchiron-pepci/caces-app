@@ -311,6 +311,31 @@ python init_questions_r482.py
 - Credentials `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` stockés dans les variables d'environnement de chaque instance Render, ou dans une table `tenant_config` en base.
 - Au provisioning d'un nouveau tenant : créer un compte Cloudinary gratuit et renseigner les 3 credentials.
 
+---
+
+## Doctrine de stockage : R2 vs base64
+
+Regle de decision pour tout nouveau champ fichier :
+
+**Cloudflare R2** (colonne `_cle VARCHAR(500)`, helper `app/services/storage.py`) — pour les gros fichiers qui se multiplient et se telechargent via une route dediee :
+- PDF testeurs : carte, attestation prevention, visite medicale, evaluation, autorisation (Lot 1)
+- Cartes CACES multi-familles `CarteTesteur.cle` (Lot 2)
+- Documents officiels `DocumentOfficiel.cle` : certificat, assurance, procedure
+- Justificatifs pratique/theorie, dispenses (deja `_cle` anterieurement)
+
+Pattern R2 : upload = `storage.upload_fichier` + purge ancienne cle ; download = `RedirectResponse(storage.generer_url_presignee(...))` ; delete = `storage.delete_fichier`.
+
+**base64 en base** (colonne `_base64 TEXT`) — pour les petites images embarquees inline dans les pages Jinja et les PDF WeasyPrint, ou un acces local immediat prime sur le stockage distant :
+- Logos + signature organisme (`config_organisme`) : injectes en `data:` URI dans 7 generateurs PDF
+- Photos stagiaires (`stagiaire.photo_base64`) : ~60 Ko/photo, affichage inline massif (4 templates + 4 points PDF), gelees en base64 dans le snapshot `caces_json` des cartes emises
+- Signatures de production : neutralite, consentement RGPD, saisie pratique
+
+Critere : **gros fichier a route de telechargement -> R2** ; **petite image au plus pres du rendu (page ou PDF) -> base64**.
+
+Note photos stagiaires : ~80 Mo a 1000 stagiaires, gerable par PostgreSQL. Si la charge devient un sujet, optimiser via `defer(Stagiaire.photo_base64)` sur les requetes qui n'affichent pas la photo, sans changer le stockage.
+
+---
+
 | Haute | Photos stagiaires — migration filesystem éphémère → base64 PostgreSQL (`photo_base64` Text) | ✅ fait |
 | Haute | Token vérification UUID (`token_verification`) + anonymisation RGPD sur `/verifier/{token}` | ✅ fait |
 | Haute | Options incluse/facultative (`OptionCategorie.incluse`) + calcul UT filtré | ✅ fait |
