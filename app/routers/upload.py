@@ -366,7 +366,8 @@ async def upload_nouvelle_carte_testeur(testeur_id: int, pin: str, famille: str,
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     contents = await file.read()
-    contenu_b64 = base64.b64encode(contents).decode()
+    cle = storage.construire_cle("testeurs/cartes", file.filename)
+    storage.upload_fichier(contents, cle, "application/pdf")
     from app.models.carte_testeur import CarteTesteur
     from datetime import datetime
     db = SessionLocal()
@@ -375,7 +376,7 @@ async def upload_nouvelle_carte_testeur(testeur_id: int, pin: str, famille: str,
             testeur_id=testeur_id,
             famille=famille,
             nom_fichier=file.filename,
-            contenu_pdf=contenu_b64,
+            cle=cle,
             date_upload=datetime.utcnow()
         )
         db.add(carte)
@@ -392,17 +393,13 @@ def telecharger_carte(carte_id: int):
     db = SessionLocal()
     try:
         c = db.query(CarteTesteur).filter(CarteTesteur.id == carte_id).first()
-        if not c or not c.contenu_pdf:
+        if not c or not c.cle:
             raise HTTPException(status_code=404, detail="Carte non disponible")
-        contenu = base64.b64decode(c.contenu_pdf)
         nom = c.nom_fichier
+        url = storage.generer_url_presignee(c.cle, nom_telechargement=nom, inline=False)
     finally:
         db.close()
-    return Response(
-        content=contenu,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
-    )
+    return RedirectResponse(url)
 
 
 @router.delete("/carte/{carte_id}")
@@ -414,6 +411,9 @@ def supprimer_carte(carte_id: int, pin: str):
     try:
         c = db.query(CarteTesteur).filter(CarteTesteur.id == carte_id).first()
         if c:
+            if c.cle:
+                try: storage.delete_fichier(c.cle)
+                except Exception: pass
             c.actif = False
             db.commit()
     finally:

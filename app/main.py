@@ -72,6 +72,7 @@ def _run_startup_migrations():
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS date_validite TIMESTAMP",
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS numero_certificat VARCHAR(100)",
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS contenu_pdf TEXT",
+        "ALTER TABLE carte_testeur ADD COLUMN IF NOT EXISTS cle VARCHAR(500)",
         # testeurs
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_cle VARCHAR(500)",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR",
@@ -348,7 +349,7 @@ try:
                 testeur_id INTEGER NOT NULL REFERENCES testeurs(id),
                 famille VARCHAR(50) NOT NULL,
                 nom_fichier VARCHAR(200) NOT NULL,
-                contenu_pdf TEXT,
+                cle VARCHAR(500),
                 date_upload TIMESTAMP DEFAULT NOW(),
                 actif BOOLEAN DEFAULT TRUE
             )
