@@ -162,7 +162,7 @@ def get_documents_officiels():
                 {
                     "type": d.type,
                     "nom_fichier": d.nom_fichier,
-                    "has_file": bool(d.contenu_pdf),
+                    "has_file": bool(d.cle),
                     "date_validite": d.date_validite.strftime("%Y-%m-%d") if d.date_validite else None,
                     "numero_certificat": d.numero_certificat or ""
                 }
@@ -202,7 +202,6 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Format PDF uniquement")
     contents = await file.read()
-    contenu_b64 = base64.b64encode(contents).decode()
     from app.models.document_officiel import DocumentOfficiel
     from datetime import datetime
     db = SessionLocal()
@@ -214,14 +213,21 @@ async def upload_document_officiel(type: str, pin: str, file: UploadFile = File(
             except ValueError:
                 pass
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
+        cle = storage.construire_cle("documents", file.filename)
+        storage.upload_fichier(contents, cle, "application/pdf")
         if doc:
-            doc.contenu_pdf = contenu_b64
+            if doc.cle:
+                try:
+                    storage.delete_fichier(doc.cle)
+                except Exception:
+                    pass
+            doc.cle = cle
             doc.nom_fichier = file.filename
             doc.date_validite = dv
             if numero_certificat is not None:
                 doc.numero_certificat = numero_certificat
         else:
-            db.add(DocumentOfficiel(type=type, contenu_pdf=contenu_b64, nom_fichier=file.filename, date_validite=dv, numero_certificat=numero_certificat))
+            db.add(DocumentOfficiel(type=type, cle=cle, nom_fichier=file.filename, date_validite=dv, numero_certificat=numero_certificat))
         db.commit()
     finally:
         db.close()
@@ -237,18 +243,13 @@ def telecharger_document_officiel(type: str):
     db = SessionLocal()
     try:
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
-        print(f"[DOC] type={type} doc={doc} contenu_pdf_len={len(doc.contenu_pdf) if doc and doc.contenu_pdf else 'NULL'}")
-        if not doc or not doc.contenu_pdf:
+        if not doc or not doc.cle:
             raise HTTPException(status_code=404, detail="Document non disponible")
-        contenu = base64.b64decode(doc.contenu_pdf)
         nom = doc.nom_fichier or f"{type}.pdf"
+        url = storage.generer_url_presignee(doc.cle, nom_telechargement=nom, inline=False)
     finally:
         db.close()
-    return Response(
-        content=contenu,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{nom}"'}
-    )
+    return RedirectResponse(url=url)
 
 
 @router.delete("/document-officiel/{type}")
@@ -263,7 +264,12 @@ def supprimer_document_officiel(type: str, pin: str):
     try:
         doc = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == type).first()
         if doc:
-            doc.contenu_pdf = None
+            if doc.cle:
+                try:
+                    storage.delete_fichier(doc.cle)
+                except Exception:
+                    pass
+            doc.cle = None
             doc.nom_fichier = None
             doc.date_validite = None
             db.commit()

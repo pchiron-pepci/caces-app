@@ -71,7 +71,7 @@ def _run_startup_migrations():
         # document_officiel
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS date_validite TIMESTAMP",
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS numero_certificat VARCHAR(100)",
-        "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS contenu_pdf TEXT",
+        "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS cle VARCHAR(500)",
         "ALTER TABLE carte_testeur ADD COLUMN IF NOT EXISTS cle VARCHAR(500)",
         # testeurs
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_cle VARCHAR(500)",
