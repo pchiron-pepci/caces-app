@@ -322,6 +322,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (scTheorie) scTheorie.addEventListener('change', _syncDispenseNote);
     document.addEventListener('change', function(e) {
         const cb = e.target;
+        // --- Cocher une option facultative force sa catégorie support à se cocher ---
+        if (cb.matches('[name^="jp-opt-"]') && cb.checked && !cb.dataset.incluse) {
+            const m = cb.name.match(/^jp-opt-(\d+)-(.+)$/);
+            if (m) {
+                const sid = m[1];
+                const catOpt = m[2];
+                const catCb = document.querySelector('[name="jp-cat-' + sid + '"][value="' + catOpt + '"]');
+                if (catCb && !catCb.checked) {
+                    catCb.checked = true;
+                    catCb.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        }
         if (!cb.matches('[name^="jp-cat-"]')) return;
         const stagiaireId = parseInt(cb.name.replace('jp-cat-', ''));
         const cat = cb.value;
@@ -331,6 +344,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 cb.checked = true;
                 alert('Supprimez d\'abord le résultat de la catégorie ' + cat + ' avant de la retirer');
             }
+            // Décocher la catégorie décoche aussi ses options facultatives
+            document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cat + '"]').forEach(function(ob) {
+                if (!ob.dataset.incluse) ob.checked = false;
+            });
         }
         // Sync included options to follow their category
         document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cat + '"][data-incluse="1"]').forEach(function(ob) {
@@ -497,15 +514,6 @@ function calculerRecapUT() {
                 }
             });
         });
-        // Option-seule : options cochées pour catégories NON cochées (base = 0, option = +0.5)
-        document.querySelectorAll('[name^="jp-opt-' + stagiaireId + '-"]:checked').forEach(optCb => {
-            const prefix = 'jp-opt-' + stagiaireId + '-';
-            const cat = optCb.name.slice(prefix.length);
-            if (!checkedCats.has(cat) && !optCb.dataset.incluse) {
-                utCand += 0.5;
-                total += 0.5;
-            }
-        });
         if (utCand > 0) {
             html += '<div style="display:flex; justify-content:space-between; padding:3px 0;">' +
                 '<span><strong>' + nom + '</strong> : ' + Array.from(checkedCats).join(', ') + '</span>' +
@@ -625,16 +633,8 @@ async function sauvegarderJourPratique() {
             const optCbs = document.querySelectorAll('[name="jp-opt-' + stagiaireId + '-' + cat + '"]:checked');
             if (optCbs.length > 0) options[cat] = Array.from(optCbs).map(o => o.value);
         });
-        // Option-seule : options cochées pour catégories NON cochées
-        document.querySelectorAll('[name^="jp-opt-' + stagiaireId + '-"]:checked').forEach(optCb => {
-            const prefix = 'jp-opt-' + stagiaireId + '-';
-            const cat = optCb.name.slice(prefix.length);
-            if (!cats.includes(cat)) {
-                if (!options[cat]) options[cat] = [];
-                if (!options[cat].includes(optCb.value)) options[cat].push(optCb.value);
-            }
-        });
-        if (cats.length > 0 || Object.keys(options).length > 0) candidats_pratique.push({ stagiaire_id: stagiaireId, categories: cats, options });
+        // (cas "option-seule" supprimé : une option ne peut exister sans sa catégorie support)
+        if (cats.length > 0) candidats_pratique.push({ stagiaire_id: stagiaireId, categories: cats, options });
     });
     if (candidats_pratique.length === 0) { alert('Selectionnez au moins un candidat !'); return; }
     if (jourId) {
