@@ -41,6 +41,8 @@ class LieuCreate(BaseModel):
     ville: Optional[str] = None
     telephone: Optional[str] = None
     email: Optional[str] = None
+    date_integration: Optional[date] = None
+    date_sortie: Optional[date] = None
     habilitations: List[LieuHabilitationCreate] = []
 
 @router.get("/categories/{famille}")

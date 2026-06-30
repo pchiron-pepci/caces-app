@@ -73,6 +73,9 @@ def _run_startup_migrations():
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS numero_certificat VARCHAR(100)",
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS cle VARCHAR(500)",
         "ALTER TABLE carte_testeur ADD COLUMN IF NOT EXISTS cle VARCHAR(500)",
+        # lieux
+        "ALTER TABLE lieux ADD COLUMN IF NOT EXISTS date_integration DATE",
+        "ALTER TABLE lieux ADD COLUMN IF NOT EXISTS date_sortie DATE",
         # testeurs
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_cle VARCHAR(500)",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR",

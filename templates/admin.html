@@ -203,7 +203,7 @@
     <div class="card">
         <table class="table">
             <thead>
-                <tr><th>Nom</th><th>Type</th><th>Adresse</th><th>Familles/Catégories</th><th>Statut</th><th>Actions</th></tr>
+                <tr><th>Nom</th><th>Type</th><th>Adresse</th><th>Familles/Catégories</th><th>Intégration</th><th>Sortie</th><th>Statut</th><th>Actions</th></tr>
             </thead>
             <tbody>
                 {% for l in lieux %}
@@ -223,6 +223,8 @@
                             <span style="color:#888; font-size:12px;">Toutes familles PEPCI</span>
                         {% endif %}
                     </td>
+                    <td>{{ l.date_integration.strftime('%d/%m/%Y') if l.date_integration else '—' }}</td>
+                    <td>{{ l.date_sortie.strftime('%d/%m/%Y') if l.date_sortie else '—' }}</td>
                     <td>
                         {% if l.actif %}<span class="badge green">✅ Actif</span>
                         {% else %}<span class="badge red">❌ Inactif</span>{% endif %}
@@ -237,6 +239,8 @@
                             data-ville="{{ l.ville or '' }}"
                             data-tel="{{ l.telephone or '' }}"
                             data-email="{{ l.email or '' }}"
+                            data-integration="{{ l.date_integration.isoformat() if l.date_integration else '' }}"
+                            data-sortie="{{ l.date_sortie.isoformat() if l.date_sortie else '' }}"
                             onclick="editerLieu(this)">✏️</button>
                         {% if l.actif %}
                         <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
@@ -562,6 +566,14 @@
                 <label>Email</label>
                 <input type="email" id="l-email">
             </div>
+            <div class="form-field">
+                <label>Date d'intégration</label>
+                <input type="date" id="l-date-integration">
+            </div>
+            <div class="form-field">
+                <label>Date de sortie</label>
+                <input type="date" id="l-date-sortie">
+            </div>
         </div>
 
         <div id="section-habilitations" style="margin-top:20px;">
@@ -816,6 +828,8 @@ async function ouvrirLieu() {
     document.getElementById('l-ville').value = '';
     document.getElementById('l-tel').value = '';
     document.getElementById('l-email').value = '';
+    document.getElementById('l-date-integration').value = '';
+    document.getElementById('l-date-sortie').value = '';
     document.querySelector('[name="l-type"][value="cdt"]').checked = true;
     toggleHabilitations();
     document.getElementById('modal-lieu').style.display = 'flex';
@@ -832,6 +846,8 @@ async function editerLieu(btn) {
     document.getElementById('l-ville').value = btn.dataset.ville;
     document.getElementById('l-tel').value = btn.dataset.tel;
     document.getElementById('l-email').value = btn.dataset.email;
+    document.getElementById('l-date-integration').value = btn.dataset.integration || '';
+    document.getElementById('l-date-sortie').value = btn.dataset.sortie || '';
     const type = btn.dataset.type;
     document.querySelector(`[name="l-type"][value="${type}"]`).checked = true;
     toggleHabilitations();
@@ -866,6 +882,8 @@ async function sauvegarderLieu() {
         ville: document.getElementById('l-ville').value || null,
         telephone: document.getElementById('l-tel').value || null,
         email: document.getElementById('l-email').value || null,
+        date_integration: document.getElementById('l-date-integration').value || null,
+        date_sortie: document.getElementById('l-date-sortie').value || null,
         habilitations
     };
     if (!data.nom) { alert('Le nom est obligatoire !'); return; }

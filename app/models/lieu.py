@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum, Text
+from sqlalchemy import Column, Integer, String, DateTime, Date, Boolean, Enum, Text
 from app.database import Base
 from datetime import datetime
 import enum
@@ -28,6 +28,9 @@ class Lieu(Base):
     # Note libre
     note = Column(Text, nullable=True)
     
+    # Dates de reference du lieu pour l'OF (optionnelles)
+    date_integration = Column(Date, nullable=True)
+    date_sortie = Column(Date, nullable=True)
     # Métadonnées
     date_creation = Column(DateTime, default=datetime.utcnow)
     actif = Column(Boolean, default=True)
