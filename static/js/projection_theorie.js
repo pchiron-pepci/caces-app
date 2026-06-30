@@ -23,11 +23,14 @@
     // lang fr-FR, rate 0.8 ; contournement bug Chrome cancel→speak :
     // setTimeout 100 ms CSP-safe + clearTimeout anti-chevauchement.
     var _speakTimer = null;
+    var _audioEnCours = null;
 
-    function speak(text) {
+    // Voix système (navigateur) — secours si pas de MP3 ou échec de lecture.
+    function _parlerSysteme(text) {
         if (!window.speechSynthesis || !text) return;
         if (_speakTimer) { clearTimeout(_speakTimer); _speakTimer = null; }
         window.speechSynthesis.cancel();
+        // contournement bug Chrome cancel→speak : setTimeout 100 ms CSP-safe
         _speakTimer = setTimeout(function () {
             _speakTimer = null;
             var u = new SpeechSynthesisUtterance(text);
@@ -37,7 +40,30 @@
         }, 100);
     }
 
+    // Lecture unifiée : MP3 IA d'abord (même logique que la tablette),
+    // repli sur la voix du navigateur en cas d'absence ou d'échec.
+    function speak(idx) {
+        cancelSpeech();
+        var q = questions[idx];
+        if (!q) return;
+        var audioUrl = q.audio || null;
+        var texte = q.texte || '';
+        if (audioUrl) {
+            var a = new Audio(audioUrl);
+            _audioEnCours = a;
+            a.onerror = function () { _parlerSysteme(texte); };
+            var pr = a.play();
+            if (pr && pr.catch) { pr.catch(function () { _parlerSysteme(texte); }); }
+        } else {
+            _parlerSysteme(texte);
+        }
+    }
+
     function cancelSpeech() {
+        if (_audioEnCours) {
+            try { _audioEnCours.pause(); _audioEnCours.currentTime = 0; } catch (e) {}
+            _audioEnCours = null;
+        }
         if (_speakTimer) { clearTimeout(_speakTimer); _speakTimer = null; }
         if (window.speechSynthesis) window.speechSynthesis.cancel();
     }
@@ -135,7 +161,7 @@
             currentIdx++;
             resetSlot();
             renderQuestion(currentIdx);
-            speak(questions[currentIdx].texte);
+            speak(currentIdx);
         }
     }
 
@@ -154,7 +180,7 @@
         }
         playing = true;
         renderEtat(true);
-        speak(questions[currentIdx].texte);
+        speak(currentIdx);
     }
 
     function pause(silent) {
@@ -194,7 +220,7 @@
                     currentIdx--;
                     resetSlot();        // repart un créneau plein pour cette question
                     renderQuestion(currentIdx);
-                    if (playing) speak(questions[currentIdx].texte);
+                    if (playing) speak(currentIdx);
                 }
                 break;
             case 'next':
@@ -203,14 +229,14 @@
                     currentIdx++;
                     resetSlot();        // repart un créneau plein pour cette question
                     renderQuestion(currentIdx);
-                    if (playing) speak(questions[currentIdx].texte);
+                    if (playing) speak(currentIdx);
                 }
                 break;
             case 'reset':
                 reset();
                 break;
             case 'relire':
-                speak(questions[currentIdx].texte);
+                speak(currentIdx);
                 break;
         }
     });
