@@ -103,12 +103,17 @@
         <strong>Légende options :</strong>
         PE = Porte-engins &nbsp;·&nbsp; TEL = Télécommande &nbsp;·&nbsp; CC = Conduite cabine &nbsp;·&nbsp; TR = Translation sur rails &nbsp;·&nbsp; CEC = Circulation en charge
     </div>
+    <div style="margin-bottom:16px;">
+        <input type="text" id="search-testeur" placeholder="🔍 Rechercher un testeur…" oninput="filtrerTesteurs(this.value)"
+            style="width:100%; max-width:400px; padding:8px 14px; border:1px solid #d0d4d8; border-radius:999px; font-size:14px; outline:none;">
+    </div>
     {% for t in testeurs %}
-    <div class="card" style="margin-bottom:16px;">
-        <div class="card-header">
-            <h2>👨‍🏫 {{ t.nom }} {{ t.prenom }}</h2>
-            <button class="btn btn-primary" onclick="ouvrirHabilitation({{ t.id }}, '{{ t.nom }} {{ t.prenom }}')">➕ Ajouter habilitation</button>
+    <div class="card" style="margin-bottom:16px;" data-testeur-name="{{ (t.nom ~ ' ' ~ t.prenom) | lower }}">
+        <div class="card-header" style="cursor:pointer;" onclick="toggleTesteurCard(this)">
+            <h2>👨‍🏫 {{ t.nom }} {{ t.prenom }} <span class="toggle-arrow" style="font-size:13px; margin-left:8px; color:#888;">▶</span></h2>
+            <button class="btn btn-primary" onclick="event.stopPropagation(); ouvrirHabilitation({{ t.id }}, '{{ t.nom }} {{ t.prenom }}')">➕ Ajouter habilitation</button>
         </div>
+        <div class="testeur-body" style="display:none;">
         <table class="table">
             <thead>
                 <tr>
@@ -178,6 +183,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
     {% endfor %}
 
@@ -646,6 +652,22 @@ function _restaurerOngletActif() {
     if (name === 'documents' && typeof chargerDocuments === 'function') chargerDocuments();
 }
 document.addEventListener('DOMContentLoaded', _restaurerOngletActif);
+
+function toggleTesteurCard(header) {
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector('.toggle-arrow');
+    const expanded = body.style.display !== 'none';
+    body.style.display = expanded ? 'none' : 'block';
+    if (arrow) arrow.textContent = expanded ? '▶' : '▼';
+}
+
+function filtrerTesteurs(q) {
+    const query = q.toLowerCase().trim();
+    document.querySelectorAll('#tab-habilitations .card[data-testeur-name]').forEach(card => {
+        const match = !query || (card.dataset.testeurName || '').includes(query);
+        card.style.display = match ? '' : 'none';
+    });
+}
 
 function demanderPin(message, callback) {
     document.getElementById('pin-message').textContent = message;
