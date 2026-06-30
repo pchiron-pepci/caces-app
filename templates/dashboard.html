@@ -466,7 +466,7 @@
                             <div style="font-size:12px; color:#666; margin-top:2px;">N° {{ doc.numero_certificat }}</div>
                         {% endif %}
                     </td>
-                    {% if doc and doc.contenu_pdf %}
+                    {% if doc and doc.cle %}
                     <td>
                         <a href="/api/upload/document-officiel/{{ type_key }}/download" style="font-size:13px; color:#1a237e; text-decoration:none;">{{ doc.nom_fichier }}</a>
                     </td>
