@@ -9,6 +9,10 @@
     <button class="btn btn-primary" onclick="ouvrirAjout()">+ Nouvel utilisateur</button>
 </div>
 
+<div style="margin-bottom:16px;">
+    <input type="text" id="search-user" placeholder="🔍 Rechercher un utilisateur…" oninput="filtrerUsers(this.value)"
+        style="width:100%; max-width:400px; padding:8px 14px; border:1px solid #d0d4d8; border-radius:999px; font-size:14px; outline:none;">
+</div>
 <div class="card">
     <table class="table">
         <thead>
@@ -107,12 +111,17 @@ async function chargerUsers() {
         return;
     }
     listeUsers = await resp.json();
+    listeUsers.sort((a, b) => (a.nom + ' ' + a.prenom).localeCompare(b.nom + ' ' + b.prenom, 'fr'));
+    renderUsers(listeUsers);
+}
+
+function renderUsers(list) {
     const tbody = document.getElementById('tbody-users');
-    if (listeUsers.length === 0) {
+    if (list.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">Aucun utilisateur</td></tr>';
         return;
     }
-    tbody.innerHTML = listeUsers.map(u => `
+    tbody.innerHTML = list.map(u => `
         <tr style="opacity:${u.actif ? '1' : '0.5'}">
             <td><strong>${u.nom} ${u.prenom}</strong></td>
             <td>${u.email}</td>
@@ -121,8 +130,8 @@ async function chargerUsers() {
                 : u.role === 'terrain'
                     ? '<span class="badge orange">Terrain</span>'
                     : '<span class="badge green">' + u.role.charAt(0).toUpperCase() + u.role.slice(1) + '</span>'}</td>
-            <td>${u.actif 
-                ? '<span class="badge green">Actif</span>' 
+            <td>${u.actif
+                ? '<span class="badge green">Actif</span>'
                 : '<span class="badge red">Inactif</span>'}</td>
             <td>
                 <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
@@ -136,6 +145,14 @@ async function chargerUsers() {
             </td>
         </tr>
     `).join('');
+}
+
+function filtrerUsers(q) {
+    const query = q.toLowerCase().trim();
+    const filtered = !query ? listeUsers : listeUsers.filter(u =>
+        (u.nom + ' ' + u.prenom + ' ' + u.email).toLowerCase().includes(query)
+    );
+    renderUsers(filtered);
 }
 
 // On récupère les données de l'utilisateur depuis la variable globale
