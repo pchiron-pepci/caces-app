@@ -1,6 +1,9 @@
-document.addEventListener('DOMContentLoaded', function() {
+﻿document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('search').addEventListener('keyup', filtrer);
+    const _chkInactifs = document.getElementById('chk-inactifs');
+    if (_chkInactifs) _chkInactifs.addEventListener('change', filtrer);
+    filtrer();
     document.getElementById('btn-changer-etat').addEventListener('click', changerEtatTesteur);
     document.getElementById('btn-nouveau-testeur').addEventListener('click', ouvrirFormulaire);
     document.getElementById('btn-sauvegarder').addEventListener('click', sauvegarder);
@@ -426,7 +429,17 @@ function changerEtatTesteur() {
 
 function filtrer() {
     const q = document.getElementById('search').value.toLowerCase();
+    const showInactifs = !!(document.getElementById('chk-inactifs') || {}).checked;
+    const lbl = document.getElementById('lbl-inactifs');
+    if (lbl) {
+        lbl.style.background = showInactifs ? '#e3f2fd' : '#f0f2f7';
+        lbl.style.borderColor = showInactifs ? '#1565c0' : '#c8d8f0';
+    }
     document.querySelectorAll('.testeur-card').forEach(card => {
+        if (card.dataset.inactif && !showInactifs) {
+            card.style.display = 'none';
+            return;
+        }
         card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
 }

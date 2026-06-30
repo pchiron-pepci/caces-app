@@ -6,6 +6,10 @@
 <div class="toolbar">
     <div class="toolbar-left">
         <input type="text" id="search" value="" placeholder="🔍 Rechercher un testeur..." class="search-input" autocomplete="new-password" data-lpignore="true" data-1p-ignore data-bwignore>
+        <label for="chk-inactifs" id="lbl-inactifs" title="Afficher tous les testeurs (suspendus et sortis)" style="display:inline-flex; align-items:center; cursor:pointer; background:#f0f2f7; border:1.5px solid #c8d8f0; border-radius:8px; padding:6px 11px; font-size:15px; user-select:none; margin-left:8px;">
+            <input type="checkbox" id="chk-inactifs" style="position:absolute; opacity:0; width:0; height:0;">
+            👁
+        </label>
     </div>
     <div class="toolbar-right">
         {% if user_role != 'terrain' %}
@@ -21,7 +25,7 @@
     </div>
     {% endif %}
     {% for t in testeurs %}
-    <div class="card testeur-card" id="testeur-{{ t.id }}" style="padding:0;">
+    <div class="card testeur-card" id="testeur-{{ t.id }}" data-etat="{{ t.etat or 'actif' }}"{% if (t.etat or 'actif') != 'actif' %} data-inactif="1"{% endif %} style="padding:0;">
         <!-- En-tête -->
         <div style="display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid #e8ecf4;">
             <div style="flex:1; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
