@@ -613,8 +613,23 @@ function showTab(name, btn) {
     });
     document.getElementById('tab-' + name).style.display = 'block';
     document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active-tab'));
-    btn.classList.add('active-tab');
+    if (btn) btn.classList.add('active-tab');
+    // Memorise l'onglet actif pour le restaurer apres un location.reload()
+    try { history.replaceState(null, '', '#' + name); } catch (e) { location.hash = name; }
 }
+
+// Restaure l'onglet actif au chargement (sinon retour au 1er onglet apres reload)
+function _restaurerOngletActif() {
+    const ONGLETS = ['cartographie','habilitations','lieux','parametres','documents'];
+    const name = (location.hash || '').replace('#', '');
+    if (!ONGLETS.includes(name)) return;
+    const btn = document.querySelector('.tab-btn[onclick*="showTab(\'' + name + '\'"]');
+    showTab(name, btn);
+    // Declenche le chargement paresseux associe a certains onglets
+    if (name === 'parametres' && typeof chargerConfigOrganisme === 'function') chargerConfigOrganisme();
+    if (name === 'documents' && typeof chargerDocuments === 'function') chargerDocuments();
+}
+document.addEventListener('DOMContentLoaded', _restaurerOngletActif);
 
 function demanderPin(message, callback) {
     document.getElementById('pin-message').textContent = message;
