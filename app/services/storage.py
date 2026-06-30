@@ -69,6 +69,15 @@ def delete_fichier(cle: str) -> None:
     """Supprime l'objet de R2. Silencieux si la cle n'existe pas."""
     _client().delete_object(Bucket=_bucket(), Key=cle)
 
+def generer_url_presignee(cle: str, nom_telechargement: str = None, inline: bool = False, expire: int = 3600) -> str:
+    """URL temporaire signee vers un objet R2, sans exposer les cles d'acces.
+    inline=True : affichage navigateur ; inline=False : telechargement. expire en secondes."""
+    params = {"Bucket": _bucket(), "Key": cle}
+    disposition = "inline" if inline else "attachment"
+    if nom_telechargement:
+        params["ResponseContentDisposition"] = f'{disposition}; filename="{nom_telechargement}"'
+    return _client().generate_presigned_url("get_object", Params=params, ExpiresIn=expire)
+
 def test_connexion() -> dict:
     """Teste la connexion R2 : ecrit un petit objet, le relit, le supprime."""
     cle = construire_cle("_selftest", "test.txt")
