@@ -141,6 +141,18 @@
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
 
+        if (btn.dataset.action === 'toggle-carte') {
+            const id = btn.dataset.id;
+            const corps = document.getElementById('corps-' + id);
+            const chevron = document.getElementById('chevron-' + id);
+            if (corps) {
+                const ouvert = corps.style.display !== 'none';
+                corps.style.display = ouvert ? 'none' : 'grid';
+                if (chevron) chevron.textContent = ouvert ? '▶' : '▼';
+            }
+            return;
+        }
+
         if (btn.dataset.action === 'editer') {
             editer(btn.dataset.id, btn.dataset.nom, btn.dataset.prenom, btn.dataset.statut,
                 btn.dataset.entreprise, btn.dataset.inrs, btn.dataset.email, btn.dataset.tel,

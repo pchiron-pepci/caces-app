@@ -28,6 +28,9 @@
     <div class="card testeur-card" id="testeur-{{ t.id }}" data-etat="{{ t.etat or 'actif' }}"{% if (t.etat or 'actif') != 'actif' %} data-inactif="1"{% endif %} style="padding:0;">
         <!-- En-tête -->
         <div style="display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid #e8ecf4;">
+            <button type="button" data-action="toggle-carte" data-id="{{ t.id }}" title="Déplier / replier"
+                style="background:none; border:none; cursor:pointer; font-size:16px; padding:2px 6px; color:#888; flex-shrink:0; transition:transform 0.15s;"
+                id="chevron-{{ t.id }}">▶</button>
             <div style="flex:1; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                 <span style="font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700;">{{ t.nom }} {{ t.prenom }}</span>
                 {% if t.etat == 'suspendu' %}
@@ -103,7 +106,7 @@
             </div>
         </div>
         <!-- Corps : 4 colonnes -->
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; padding:16px 20px; gap:0;">
+        <div id="corps-{{ t.id }}" style="display:none; grid-template-columns:1fr 1fr 1fr 1fr; padding:16px 20px; gap:0;">
             <!-- Certifications CACES® -->
             <div style="padding-right:16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Certifications CACES®</div>
