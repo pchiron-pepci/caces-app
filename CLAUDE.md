@@ -2090,9 +2090,12 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 **Middleware `_verifier_role` :** 6 exceptions ajoutées pour les routes `/api/sessions/\d+/\d+/\d+/[a-zA-Z0-9]+/(ouvrir|enregistrer|calculer|valider|rouvrir|supprimer)`.
 
 **Scripts init grille :**
-- `init_grille_pratique_r482f.py` — grille R482/F base (5 thèmes, 8 PE, 100 pts, 5 éliminatoires), idempotent
-- `init_grille_pratique_r482f_options.py` — options PE et TEL (50 pts chacune)
-- À exécuter sur Render avec `DATABASE_URL` réel (pas encore fait en prod)
+- `init_grille_pratique_r482a.py` + `_options.py` — grilles A multi-engins (PH/MB/CH/CP, 100 pts), option TEL — déployé prod
+- `init_grille_pratique_r482f.py` + `_options.py` — grille R482/F base (100 pts) + options PE/TEL (50 pts) — déployé prod
+- `init_grille_pratique_r482b1.py` + `_options.py` + `patch_criteres_r482b1.py` — grille R482/B1 — **déployé prod (2026-06-30)**
+- Tous idempotents, à exécuter sur Render Shell avec `DATABASE_URL` réel
+
+**Grille pratique B1 R.482 (déployée 2026-06-30) :** base 100 pts, 5 thèmes (Prise de poste /16, Conduite et circulation /24, Travaux de base /30 [3 PE : charger/déblai-remblai/tranchée], Opération de levage /18, Fin de poste /12 ; seuil par thème = moitié du barème) + 5 critères éliminatoires (saut, sécurité piétons, charge en hauteur, levage sans dispositifs, quitter sans arrêter moteur). Options Porte-Engins (PE) et Télécommande (TEL) **facultatives**, 50 pts / seuil 35 / 0,5 UT chacune. UT base B1 = 1,0 (déjà en base via `init_data.py`, options déclarées dans `init_options.py` ligne 26 : `[("PE", False), ("TEL", False)]`). `patch_criteres_r482b1.py` : 58 consignes d'échec (colonne L INRS), matching par libellé normalisé, idempotent. Source : Excel OTC 'Pratique B1'.
 
 **Règles métier INRS :**
 - Mode saisie adaptatif : binaire → 2 boutons ✓/✗ ; partiel + barème ≤ 3 → boutons paliers ; partiel + barème > 3 → stepper +/-
