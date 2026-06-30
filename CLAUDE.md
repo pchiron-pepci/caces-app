@@ -2274,17 +2274,17 @@ PIN/confirmation gérés front ; audit + PIN revérifiés serveur. Pas de consom
 L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) — choix ergonomique : un historique par famille décalerait les blocs des autres familles. Mais il gagne DEUX sélecteurs en tête : **Famille** (Toutes / R482 / R489…) + **Période**. Choisir une famille active le sélecteur de période avec les bornes de reset de CETTE famille ; "Toutes les familles" désactive la période. Filtrage côté JS (les lignes portent `data-famille` et `data-date` ISO ; `PERIODES_HIST` = `periodes_json` JSON-safe injecté via `tojson`). Cohérent avec le tri par période des 2 tableaux du haut.
 
 **PIÈGE IDE RÉSOLU** : VS Code avec "organize imports on save" (Pylance/Ruff) supprimait `ConfigOrganisme` et `date` de statistiques.py à chaque Ctrl+S (vus comme inutilisés). → Désactiver `source.organizeImports` dans settings.json. Symptôme : `NameError: name 'ConfigOrganisme' is not defined` au chargement de /statistiques.
-### 🔲 BLOCAGE DU TIRAGE PENDANT L'AUDIT — À FAIRE (spécifié 2026-06-29)
+### ✅ BLOCAGE DU TIRAGE PENDANT L'AUDIT — TERMINÉ (2026-06-30)
 
-**FAIT :** le bandeau dashboard d'audit (orange clignotant) est en prod. Texte : "Date de votre audit externe : le JJ/MM/AAAA. Le déclenchement des tirages est suspendu jusqu'à la réinitialisation des compteurs. Une fois votre audit terminé, réinitialisez les tirages des familles concernées pour rouvrir le tirage. Si cette date ne correspond pas à un audit, corrigez-la dans Administration → Calendrier qualité." + lien "Réinitialiser les compteurs →" vers /statistiques#tab-grilles.
+**EN PROD (chantier complet, déployé et testé) :**
 
-**RESTE À FAIRE (chantier complet) :** le bandeau annonce "suspendu" mais le blocage du tirage N'EST PAS codé. À implémenter :
+- **Bandeau dashboard** (orange clignotant). Texte : "Date de votre audit externe : le JJ/MM/AAAA. Le déclenchement des tirages est suspendu jusqu'à la réinitialisation des compteurs. Une fois votre audit terminé, réinitialisez les tirages des familles concernées pour rouvrir le tirage. Si cette date ne correspond pas à un audit, corrigez-la dans Administration → Calendrier qualité." + lien "Réinitialiser les compteurs →" vers /statistiques#tab-grilles.
 
-1. **Helper partagé** dans `app/models/reset_tirage.py` : `audit_reset_requis(db) -> date | None`. Renvoie la date d'audit si un reset est requis (et donc bandeau affiché + tirage bloqué), sinon None. Règle : reset requis si `ConfigOrganisme.audit_externe_date <= aujourd'hui` ET aucun ResetTirage à cette date (`func.date(date_reset) == audit_externe_date`). Se résout dès qu'un reset est fait le jour de l'audit, OU que l'OF repousse sa date d'audit. Import local de ConfigOrganisme pour éviter les cycles. CE MÊME HELPER doit piloter le bandeau (refactorer le calcul inline du dashboard pour l'utiliser) ET le blocage.
+- **Helper partagé** `audit_reset_requis(db) -> date | None` dans `app/models/reset_tirage.py`. Renvoie la date d'audit si un reset est requis (bandeau affiché + tirage bloqué), sinon None. Règle : reset requis si `ConfigOrganisme.audit_externe_date <= aujourd'hui` ET aucun ResetTirage à cette date (`func.date(date_reset) == audit_externe_date`). Se résout dès qu'un reset est fait le jour de l'audit OU que l'OF repousse sa date d'audit. Import local de ConfigOrganisme (évite les cycles). CE MÊME HELPER pilote le bandeau ET le blocage (une seule source de vérité).
 
-2. **Blocage du tirage** dans `app/routers/sessions.py`, route `POST /{id}/declencher-tirage` (~ligne 1510) : après la vérif "session clôturée", avant le comptage candidats, insérer : si `audit_reset_requis(db)` renvoie une date → `HTTPException(409, "Déclenchement des tirages suspendu : votre date d'audit externe (JJ/MM/AAAA) est atteinte. Réinitialisez les compteurs de tirage (Statistiques → Grilles) une fois l'audit terminé, ou corrigez votre date d'audit dans Administration → Calendrier qualité.")`.
+- **Blocage du tirage** dans `app/routers/sessions.py`, route `POST /{id}/declencher-tirage` : après la vérif "session clôturée", si `audit_reset_requis(db)` renvoie une date → `HTTPException(409, "Déclenchement des tirages suspendu : votre date d'audit externe (JJ/MM/AAAA) est atteinte...")`.
 
-3. **Refactorer `main.py`** (route dashboard `@app.get("/")` ~ligne 875) : remplacer le calcul inline de `audit_rappel` par l'appel au helper `audit_reset_requis(db)` (un seul critère pilote bandeau + blocage).
+- **main.py** (route dashboard) refactoré : `audit_rappel_date = audit_reset_requis(db)` (remplace l'ancien calcul inline). Imports de `audit_reset_requis` placés DANS les fonctions (main.py + sessions.py) pour contourner "organize imports on save" de VS Code.
 
 **DÉCISIONS ACTÉES :**
 - Blocage PORTE SUR TOUT TIRAGE (toutes familles) — on ne peut pas deviner quelle famille est auditée à partir d'une seule date d'audit.
@@ -2297,3 +2297,21 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 **IMPORTS LOCAUX OBLIGATOIRES** (dans les fonctions, pas en tête de fichier) pour `audit_reset_requis` dans main.py et sessions.py → contourne le piège "organize imports on save" de VS Code qui supprime les imports vus comme inutilisés.
 
 **Helper audit_reset_requis testé (logique validée sur 5 cas) :** sans config → None ; audit futur → None ; audit aujourd'hui sans reset → date (BLOQUE) ; audit + reset fait ce jour → None (DÉBLOQUE) ; audit passé sans reset → date (BLOQUE, persiste).
+---
+
+## Maintenance — Reset des données de production
+
+**Script :** `reset_donnees_of.py` (racine du dépôt) — remet à zéro les données liées à l'activité OF en **conservant le référentiel**. Idempotent (relancé sur base propre = « rien à supprimer »). Confirmation interactive obligatoire : taper `RESET`. Technique : `TRUNCATE ... RESTART IDENTITY CASCADE` (l'ordre des FK est géré par PostgreSQL ; aucune table conservée ne pointe vers une table vidée).
+
+**Lancement :** `python reset_donnees_of.py` sur le Render Shell (après déploiement du script).
+
+**CONSERVE (référentiel + comptes + fiches) :** `familles`, `categories`, `option_categorie`, `grilles_theorie`, `reponses_grilles`, grilles pratique (`grille_pratique`, `theme_pratique`, `point_evaluation`, `item_pratique`, `critere_eliminatoire`), `config_organisme`, `document_officiel`, `utilisateurs`, `lieux`, `stagiaires` (fiches sans historique), `testeurs`, `habilitations_testeurs`, `habilitation_option`, `lieu_habilitations`, `carte_testeur`, `association_log`, `association_audio_log`.
+
+**VIDE (production + tirages) :** `sessions`, `jours_test`, `jour_test_candidats`, `resultats_theorie`, `brouillons_theorie`, `session_candidats`, `session_epreuves`, `caces_obtenus`, `carte_caces`, `fiche_recommandation`, `consentements_rgpd`, `attestations_neutralite`, `justificatifs`, `non_conformites`, `saisie_pratique`, `saisie_bloc`, `saisie_item_note`, `saisie_eliminatoire`, `jours_formation`, `affectations_formation`, `planning_apprenants`, `affectations_test`, `utilisations_grilles`, `utilisations_themes`, `reset_tirage`, `equipements`.
+
+**Notes :**
+- Les audios IA, images de questions et photos stagiaires sur Cloudinary ne sont **jamais** touchés (la base ne stocke que les URLs).
+- `config_organisme` est conservé → le compteur `prochain_numero_caces` garde sa valeur. Remise à 1 = manuelle via Administration → Paramètres.
+- Sauvegarde recommandée avant exécution : `pg_dump "$DATABASE_URL" --no-owner --no-acl -f /tmp/backup_$(date +%Y%m%d_%H%M).sql` sur le Render Shell.
+
+---
