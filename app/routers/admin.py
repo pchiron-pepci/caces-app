@@ -1,5 +1,7 @@
-import base64
+import base64, os, subprocess
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.config_utils import get_pin_admin
@@ -439,3 +441,42 @@ def update_options_habilitation(hab_id: int, pin: str, data: OptionsUpdate, db: 
         db.add(HabilitationOption(habilitation_id=hab_id, code_option=code))
     db.commit()
     return {"message": "Options mises à jour"}
+
+
+@router.get("/export-base")
+def export_base(pin: str, db: Session = Depends(get_db)):
+    """Export pg_dump de la base, streame au navigateur. Protege par PIN admin.
+    Le dump n'est jamais ecrit sur le disque serveur (RGPD + Render ephemere)."""
+    if pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise HTTPException(status_code=500, detail="DATABASE_URL absente sur le serveur")
+
+    horodatage = datetime.now().strftime("%Y-%m-%d_%H%M")
+    nom_fichier = f"noryx_backup_{horodatage}.sql"
+
+    cmd = ["pg_dump", database_url, "--no-owner", "--no-acl"]
+
+    def generer():
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            while True:
+                chunk = proc.stdout.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            proc.stdout.close()
+            code = proc.wait()
+            if code != 0:
+                err = proc.stderr.read().decode(errors="ignore")
+                print(f"[EXPORT-BASE] pg_dump a echoue (code {code}): {err[:500]}")
+            proc.stderr.close()
+
+    return StreamingResponse(
+        generer(),
+        media_type="application/sql",
+        headers={"Content-Disposition": f'attachment; filename="{nom_fichier}"'},
+    )

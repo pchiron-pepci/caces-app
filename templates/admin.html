@@ -461,6 +461,20 @@
             <p id="config-organisme-msg" style="display:none; margin-top:8px; font-size:13px; color:#2e7d32;"></p>
         </div>
     </div>
+
+    <div class="card" style="margin-top:16px;">
+        <div class="card-header" style="cursor:pointer;" onclick="toggleTesteurCard(this)"><h2>💾 Sauvegarde de la base <span class="toggle-arrow" style="font-size:13px; margin-left:8px; color:#888;">▶</span></h2></div>
+        <div style="display:none; padding:24px;">
+            <p style="color:#666; font-size:14px; margin-bottom:12px;">
+                Télécharge une copie complète de votre base de données (format SQL standard PostgreSQL).
+                Conservez ce fichier en lieu sûr : il contient toutes vos données.
+            </p>
+            <button type="button" data-action="export-base"
+                style="background:#2d2d2d; color:#fff; border:none; border-radius:8px; padding:10px 18px; font-size:15px; cursor:pointer;">
+                Exporter ma base
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- TAB DOCUMENTS OFFICIELS -->
@@ -1335,5 +1349,21 @@ async function modifierPinAdmin() {
         msg.style.display = 'block';
     }
 }
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+
+    if (btn.dataset.action === 'export-base') {
+        const pin = prompt('Code PIN administrateur pour exporter la base :');
+        if (!pin) return;
+        const a = document.createElement('a');
+        a.href = '/admin/export-base?pin=' + encodeURIComponent(pin);
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+    }
+});
 </script>
 {% endblock %}
