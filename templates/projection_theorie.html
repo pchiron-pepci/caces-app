@@ -1,339 +1,249 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Projection — {{ session_ref }}</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+(function () {
+    'use strict';
 
-  html, body {
-    height: 100%; width: 100%;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: #f0f2f5;
-    overflow: hidden;
-  }
+    var dataEl = document.getElementById('projection-data');
+    if (!dataEl) return;
 
-  /* ── En-tête ─────────────────────────────────────────────────── */
-  #proj-header {
-    position: fixed; top: 0; left: 0; right: 0;
-    height: 56px;
-    background: #1a237e;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    z-index: 100;
-    gap: 16px;
-  }
-  #proj-ref {
-    font-size: 14px;
-    font-weight: 600;
-    opacity: 0.9;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    flex: 0 1 auto;
-  }
-  #proj-center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1 1 auto;
-    text-align: center;
-  }
-  #proj-q-num {
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.1;
-  }
-  #proj-theme-label {
-    font-size: 12px;
-    opacity: 0.8;
-    margin-top: 1px;
-  }
-  /* Header logo — valeurs alignées avec test_theorie.html,
-     garder synchronisées si modification (height desktop/mobile, seuil). */
-  #proj-logo {
-    height: 40px;
-    width: auto;
-    flex: 0 0 auto;
-    object-fit: contain;
-    border-radius: 4px;
-  }
-  #proj-timer {
-    font-size: 26px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 2px;
-    white-space: nowrap;
-    flex: 0 0 auto;
-    min-width: 90px;
-    text-align: right;
-  }
-  #proj-timer.urgent { color: #ff5252; }
+    var questions = JSON.parse(dataEl.dataset.questions);
+    var N = parseInt(dataEl.dataset.total, 10);
+    if (!N || N === 0) return;
 
-  /* ── Zone question ───────────────────────────────────────────── */
-  #proj-main {
-    position: fixed;
-    top: 56px; bottom: 72px; left: 0; right: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px 48px 16px;
-    gap: 20px;
-    overflow-y: auto;
-  }
+    var TOTAL_MS = 3600 * 1000;
+    var DUR_MS   = TOTAL_MS / N;   // créneau par question (ms)
 
-  #proj-q-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    max-width: 900px;
-    width: 100%;
-  }
+    var currentIdx    = 0;
+    var chronoStartTs = null;  // 1er Lecture — monotone, plafond 1h absolu
+    var slotStartTs   = null;  // début du créneau courant (play-time seulement)
+    var pauseBeganAt  = null;  // quand la pause a commencé (null = pas en pause)
+    var playing       = false;
+    var interval      = null;
+    var finished      = false;
 
-  #proj-q-numero {
-    font-size: 20px;
-    font-weight: 800;
-    color: #1a237e;
-    text-align: center;
-  }
+    // ── Synthèse vocale ───────────────────────────────────────────
+    // lang fr-FR, rate 0.8 ; contournement bug Chrome cancel→speak :
+    // setTimeout 100 ms CSP-safe + clearTimeout anti-chevauchement.
+    var _speakTimer = null;
+    var _audioEnCours = null;
 
-  #proj-q-texte {
-    font-size: clamp(20px, 2.8vw, 34px);
-    font-weight: 500;
-    color: #111;
-    text-align: center;
-    line-height: 1.45;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
+    // Voix système (navigateur) — secours si pas de MP3 ou échec de lecture.
+    function _parlerSysteme(text) {
+        if (!window.speechSynthesis || !text) return;
+        if (_speakTimer) { clearTimeout(_speakTimer); _speakTimer = null; }
+        window.speechSynthesis.cancel();
+        // contournement bug Chrome cancel→speak : setTimeout 100 ms CSP-safe
+        _speakTimer = setTimeout(function () {
+            _speakTimer = null;
+            var u = new SpeechSynthesisUtterance(text);
+            u.lang = 'fr-FR';
+            u.rate = 0.8;
+            window.speechSynthesis.speak(u);
+        }, 100);
+    }
 
-  #proj-img-zone {
-    display: none;
-    justify-content: center;
-  }
-  #proj-img-zone.visible { display: flex; }
-  #proj-img {
-    max-height: 260px;
-    max-width: 100%;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(0,0,0,.15);
-    object-fit: contain;
-  }
+    // Lecture unifiée : MP3 IA d'abord (même logique que la tablette),
+    // repli sur la voix du navigateur en cas d'absence ou d'échec.
+    function speak(idx) {
+        cancelSpeech();
+        var q = questions[idx];
+        if (!q) return;
+        var audioUrl = q.audio || null;
+        var texte = q.texte || '';
+        if (audioUrl) {
+            var a = new Audio(audioUrl);
+            _audioEnCours = a;
+            a.onerror = function () { _parlerSysteme(texte); };
+            var pr = a.play();
+            if (pr && pr.catch) { pr.catch(function () { _parlerSysteme(texte); }); }
+        } else {
+            _parlerSysteme(texte);
+        }
+    }
 
-  /* ── Boutons VRAI / FAUX (décoratifs, non interactifs) ──────── */
-  #proj-vf {
-    display: flex;
-    gap: 40px;
-    justify-content: center;
-    margin-top: 4px;
-  }
-  .btn-vf {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 14px 52px;
-    font-size: clamp(18px, 2.2vw, 26px);
-    font-weight: 700;
-    border: 3px solid #bdbdbd;
-    border-radius: 10px;
-    color: #757575;
-    background: #fafafa;
-    pointer-events: none;
-    user-select: none;
-    letter-spacing: 2px;
-  }
+    function cancelSpeech() {
+        if (_audioEnCours) {
+            try { _audioEnCours.pause(); _audioEnCours.currentTime = 0; } catch (e) {}
+            _audioEnCours = null;
+        }
+        if (_speakTimer) { clearTimeout(_speakTimer); _speakTimer = null; }
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+    }
 
-  /* ── Barre de contrôles testeur ──────────────────────────────── */
-  #proj-controls {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 72px;
-    background: #263238;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 0 24px;
-    z-index: 100;
-  }
-  .ctrl-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background .15s;
-    background: #37474f;
-    color: white;
-  }
-  .ctrl-btn:hover { background: #455a64; }
-  .ctrl-btn:active { background: #546e7a; }
-  #btn-playpause { background: #1565c0; }
-  #btn-playpause:hover { background: #1976d2; }
-  #btn-reset { background: #4e342e; }
-  #btn-reset:hover { background: #6d4c41; }
-  #proj-etat {
-    font-size: 12px;
-    color: #90a4ae;
-    margin-left: 8px;
-    min-width: 70px;
-  }
+    // ── Chrono global (monotone, inaltérable) ─────────────────────
+    function getElapsedMs() {
+        return chronoStartTs !== null ? Date.now() - chronoStartTs : 0;
+    }
 
-  /* ── Mobile ≤ 600 px ────────────────────────────────────────────
-     Header : réf/famille masquée (Q{i}/N + chrono suffisent), logo
-     et chrono réduits. Contrôles : boutons réduits, état masqué.
-     Desktop (> 600 px) : aucun changement.                          */
-  @media (max-width: 600px) {
-    #proj-header   { padding: 0 10px; gap: 8px; }
-    #proj-logo     { height: 28px; }
-    #proj-ref      { display: none; }
-    #proj-q-num    { font-size: 15px; }
-    #proj-theme-label { font-size: 10px; }
-    #proj-timer    { font-size: 20px; min-width: 68px; letter-spacing: 1px; }
-    #proj-controls { gap: 8px; padding: 0 10px; }
-    .ctrl-btn      { padding: 6px 8px; font-size: 12px; gap: 3px; }
-    #proj-etat     { display: none; }
-  }
+    function remainingMs() {
+        return Math.max(0, TOTAL_MS - getElapsedMs());
+    }
 
-  /* ── Overlay fin de temps ─────────────────────────────────────── */
-  #proj-overlay-fin {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.82);
-    z-index: 200;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-  }
-  #proj-overlay-fin .fin-icone { font-size: 72px; }
-  #proj-overlay-fin .fin-texte {
-    font-size: 42px;
-    font-weight: 800;
-    color: white;
-    text-align: center;
-  }
-  #proj-overlay-fin .fin-sous {
-    font-size: 18px;
-    color: #cfd8dc;
-    text-align: center;
-  }
-  #btn-fin-reset {
-    margin-top: 24px;
-    padding: 12px 32px;
-    font-size: 16px;
-    font-weight: 700;
-    border: none;
-    border-radius: 8px;
-    background: #1565c0;
-    color: white;
-    cursor: pointer;
-  }
-  #btn-fin-reset:hover { background: #1976d2; }
+    // ── Créneau par question (pause-aware) ────────────────────────
+    // slotElapsedMs() retourne le temps de LECTURE écoulé sur la
+    // question courante — la pause n'est pas comptée.
+    function slotElapsedMs() {
+        if (slotStartTs === null) return 0;
+        if (!playing && pauseBeganAt !== null) {
+            // En pause : geler à l'instant où la pause a commencé
+            return Math.max(0, pauseBeganAt - slotStartTs);
+        }
+        return Math.max(0, Date.now() - slotStartTs);
+    }
 
-  /* ── Écran bloquant : tirage non déclenché ────────────────────── */
-  #ecran-no-tirage {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f0f2f5;
-  }
-  .no-tirage-card {
-    background: white;
-    border: 2px solid #e65100;
-    border-radius: 12px;
-    padding: 40px 48px;
-    text-align: center;
-    max-width: 480px;
-  }
-  .no-tirage-card .icon { font-size: 56px; margin-bottom: 12px; }
-  .no-tirage-card h2 { color: #bf360c; font-size: 22px; margin-bottom: 10px; }
-  .no-tirage-card p { color: #555; font-size: 15px; line-height: 1.5; }
-</style>
-</head>
-<body>
+    // Repart le créneau à zéro pour la question courante.
+    // Si on est en pause, le créneau part de 0 mais reste gelé.
+    function resetSlot() {
+        slotStartTs  = Date.now();
+        pauseBeganAt = playing ? null : Date.now();
+    }
 
-<!-- Conteneur de données — injecté côté serveur, lu par le JS -->
-<div id="projection-data"
-     data-questions="{{ questions | tojson | forceescape }}"
-     data-total="{{ total }}">
-</div>
+    // ── Affichage ─────────────────────────────────────────────────
+    function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
-{% if not tirage_ok %}
-<!-- Écran bloquant si pas de tirage -->
-<div id="ecran-no-tirage">
-  <div class="no-tirage-card">
-    <div class="icon">🎲</div>
-    <h2>Tirage non déclenché</h2>
-    <p>Aucun tirage de grille n'a été effectué pour cette session
-       ({{ session_ref }} — CACES® {{ famille }}).<br><br>
-       Déclenchez le tirage depuis la page de détail de la session avant
-       de lancer la projection.</p>
-  </div>
-</div>
+    function renderTimer() {
+        var rem = Math.ceil(remainingMs() / 1000);
+        var el  = document.getElementById('proj-timer');
+        el.textContent = pad2(Math.floor(rem / 60)) + ':' + pad2(rem % 60);
+        if (rem <= 60) el.classList.add('urgent');
+        else           el.classList.remove('urgent');
+    }
 
-{% else %}
-<!-- ── En-tête ─────────────────────────────────────── -->
-<div id="proj-header">
-  {% set _logo = logo_organisme() %}
-  {% if _logo %}<img id="proj-logo" src="{{ _logo }}" alt="Logo organisme" />{% endif %}
-  <div id="proj-ref">{{ session_ref }} — CACES® {{ famille }}</div>
-  <div id="proj-center">
-    <div id="proj-q-num">Question —/{{ total }}</div>
-    <div id="proj-theme-label">Thème —</div>
-  </div>
-  <div id="proj-timer">60:00</div>
-</div>
+    function renderQuestion(idx) {
+        var q = questions[idx];
+        document.getElementById('proj-q-num').textContent =
+            'Question ' + (idx + 1) + ' / ' + N;
+        document.getElementById('proj-theme-label').textContent =
+            'Thème ' + q.theme;
+        document.getElementById('proj-q-numero').textContent =
+            'Q ' + q.seq;
+        document.getElementById('proj-q-texte').textContent = q.texte || '';
 
-<!-- ── Zone principale ──────────────────────────────── -->
-<div id="proj-main">
-  <div id="proj-q-body">
-    <div id="proj-q-numero"></div>
-    <div id="proj-q-texte"></div>
-    <div id="proj-img-zone">
-      <img id="proj-img" src="" alt="Illustration question" />
-    </div>
-    <div id="proj-vf">
-      <div class="btn-vf">VRAI</div>
-      <div class="btn-vf">FAUX</div>
-    </div>
-  </div>
-</div>
+        var imgZone = document.getElementById('proj-img-zone');
+        var img     = document.getElementById('proj-img');
+        if (q.image) {
+            img.src = q.image;
+            imgZone.classList.add('visible');
+        } else {
+            img.src = '';
+            imgZone.classList.remove('visible');
+        }
+    }
 
-<!-- ── Contrôles testeur ─────────────────────────────── -->
-<div id="proj-controls">
-  <button class="ctrl-btn" data-action="prev" title="Question précédente">⏮ Précédent</button>
-  <button class="ctrl-btn" id="btn-playpause" data-action="playpause" title="Lecture / Pause">▶ Lecture</button>
-  <button class="ctrl-btn" data-action="next" title="Question suivante">⏭ Suivant</button>
-  <button class="ctrl-btn" id="btn-reset" data-action="reset" title="Revenir au début">⟳ Reset</button>
-  <button class="ctrl-btn" data-action="relire" title="Relire la question à voix haute">🔊 Relire</button>
-  <span id="proj-etat">En pause</span>
-</div>
+    function renderEtat(isPlaying) {
+        var btn = document.getElementById('btn-playpause');
+        var lbl = document.getElementById('proj-etat');
+        if (isPlaying) {
+            btn.textContent = '⏸ Pause';
+            lbl.textContent = 'Lecture';
+        } else {
+            btn.textContent = '▶ Lecture';
+            lbl.textContent = 'En pause';
+        }
+    }
 
-<!-- ── Overlay fin de temps ──────────────────────────── -->
-<div id="proj-overlay-fin">
-  <div class="fin-icone">⏰</div>
-  <div class="fin-texte">Temps écoulé</div>
-  <div class="fin-sous">Le test théorique est terminé.</div>
-  <button id="btn-fin-reset" data-action="reset">⟳ Recommencer depuis le début</button>
-</div>
+    // ── Tick (250 ms, tourne sans interruption) ───────────────────
+    function tick() {
+        renderTimer();
 
-<script src="/static/js/projection_theorie.js"></script>
-{% endif %}
+        // Chrono global PRIME : fin à 0:00, quoi qu'il arrive
+        if (remainingMs() <= 0 && !finished) {
+            finished = true;
+            playing  = false;
+            if (interval) { clearInterval(interval); interval = null; }
+            cancelSpeech();
+            document.getElementById('proj-overlay-fin').style.display = 'flex';
+            return;
+        }
 
-</body>
-</html>
+        if (!playing) return;
+
+        // Auto-avance : créneau PAR QUESTION — ne dépend plus du chrono global
+        if (slotElapsedMs() >= DUR_MS && currentIdx < N - 1) {
+            currentIdx++;
+            resetSlot();
+            renderQuestion(currentIdx);
+            speak(currentIdx);
+        }
+    }
+
+    // ── Contrôles ─────────────────────────────────────────────────
+    function play() {
+        if (finished) return;
+        if (chronoStartTs === null) {
+            // 1er Lecture : démarre le chrono global ET le premier créneau
+            chronoStartTs = Date.now();
+            interval = setInterval(tick, 250);
+            resetSlot();
+        } else if (pauseBeganAt !== null) {
+            // Reprise après pause : décaler slotStartTs pour ne pas compter la pause
+            slotStartTs += Date.now() - pauseBeganAt;
+            pauseBeganAt = null;
+        }
+        playing = true;
+        renderEtat(true);
+        speak(currentIdx);
+    }
+
+    function pause(silent) {
+        if (!playing) return;
+        playing      = false;
+        pauseBeganAt = Date.now();
+        cancelSpeech();
+        if (!silent) renderEtat(false);
+    }
+
+    function reset() {
+        playing      = false;
+        pauseBeganAt = null;
+        if (interval) { clearInterval(interval); interval = null; }
+        cancelSpeech();
+        finished      = false;
+        chronoStartTs = null;
+        slotStartTs   = null;
+        currentIdx    = 0;
+        renderQuestion(0);
+        renderTimer();
+        renderEtat(false);
+        document.getElementById('proj-overlay-fin').style.display = 'none';
+    }
+
+    // ── Listeners ─────────────────────────────────────────────────
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        switch (btn.dataset.action) {
+            case 'playpause':
+                if (playing) pause(false); else play();
+                break;
+            case 'prev':
+                if (!finished && currentIdx > 0) {
+                    cancelSpeech();
+                    currentIdx--;
+                    resetSlot();        // repart un créneau plein pour cette question
+                    renderQuestion(currentIdx);
+                    if (playing) speak(currentIdx);
+                }
+                break;
+            case 'next':
+                if (!finished && currentIdx < N - 1) {
+                    cancelSpeech();
+                    currentIdx++;
+                    resetSlot();        // repart un créneau plein pour cette question
+                    renderQuestion(currentIdx);
+                    if (playing) speak(currentIdx);
+                }
+                break;
+            case 'reset':
+                reset();
+                break;
+            case 'relire':
+                speak(currentIdx);
+                break;
+        }
+    });
+
+    // ── Init ──────────────────────────────────────────────────────
+    renderQuestion(0);
+    renderTimer();
+    renderEtat(false);
+
+}());
