@@ -946,11 +946,11 @@ def dashboard(request: Request):
         alertes_testeurs = []
         for t in testeurs_list:
             alertes = []
-            if not t.attestation_prevention_pdf:
+            if not t.attestation_prevention_cle:
                 alertes.append({"label": "Attestation prévention manquante", "couleur": "rouge"})
             elif t.attestation_prevention_date and t.attestation_prevention_date < limite_4ans:
                 alertes.append({"label": "Attestation prévention > 4 ans", "couleur": "orange"})
-            if not t.visite_medicale_pdf:
+            if not t.visite_medicale_cle:
                 alertes.append({"label": "Visite médicale manquante", "couleur": "rouge"})
             elif t.visite_medicale_date and t.visite_medicale_date < limite_2ans:
                 alertes.append({"label": "Visite médicale > 2 ans", "couleur": "orange"})
