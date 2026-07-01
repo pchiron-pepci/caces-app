@@ -27,7 +27,7 @@ OPTIONS = [
     ("R482", "B2",     [("TEL", True)]),                   # conducteur accompagnant
     ("R482", "C1",     [("PE", False)]),
     ("R482", "C2",     [("PE", False)]),
-    ("R482", "C3",     [("PE", False)]),
+    ("R482", "C3",     [("PE", False), ("TEL", False)]),    # nivellement : PE + TEL facultatives (TEL au referentiel)
     ("R482", "D",      [("PE", False), ("TEL", False)]),
     ("R482", "E",      [("PE", False), ("TEL", False)]),    # tombereau : PE + TEL facultatives (TEL prevue au referentiel)
     ("R482", "F",      [("PE", False), ("TEL", False)]),    # tout-terrain, PE+TEL facultatives

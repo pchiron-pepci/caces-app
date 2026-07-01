@@ -34,7 +34,7 @@ def init_data():
             Categorie(famille_id=r482.id, code="B3",      libelle="Engins extraction a chenilles",                ut_pratique=1.0,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="C1",      libelle="Engins chargement deplacement alternatif",     ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
             Categorie(famille_id=r482.id, code="C2",      libelle="Engins chargement rotatifs",                   ut_pratique=1.0,  pepci_habilite=False, actif=True),
-            Categorie(famille_id=r482.id, code="C3",      libelle="Engins chargement a chenilles",                ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="C3",      libelle="Engins de nivellement a deplacement alternatif", ut_pratique=1.0,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="D",       libelle="Engins de compactage",                        ut_pratique=1.0,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="E",       libelle="Engins de finissage",                         ut_pratique=1.0,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="F",       libelle="Chariots manutention tout terrain",            ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
