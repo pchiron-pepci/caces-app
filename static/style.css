@@ -667,6 +667,12 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
     .hab-add-link { font-size: 12px; padding: 2px 4px; }
 }
 
+/* Separateur de famille (cartes mobiles) : simple trait, sans titre */
+.carto-fam-trait {
+    border-top: 2px solid #1a237e;
+    margin: 14px 0 12px;
+}
+
 /* Cartographie : bascule tableau (desktop) / cartes (mobile) */
 .carto-desktop { display: block; }
 .carto-cards { display: none; }
