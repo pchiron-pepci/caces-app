@@ -343,6 +343,9 @@
           api("POST", url2).then(traiterReponseSaisie).catch(function () {
             afficherChoixVariante(info.variantes || []);
           });
+        } else if (info.mode === "cumul_total") {
+          // G : les 2 engins CH+PC sont imposes, le back cree les 2 blocs, ouverture directe sans modale
+          lancerOuverture(null);
         } else {
           lancerOuverture(null);
         }
