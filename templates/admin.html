@@ -268,15 +268,10 @@
         </table>
         </div>
         <div class="carto-cards">
-            {% set nsh = namespace(prev_famille='') %}
             {% for h in t.habilitations %}
-            {% if nsh.prev_famille != h.famille %}
-                <div class="carto-fam-sep">{{ h.famille }}</div>
-                {% set nsh.prev_famille = h.famille %}
-            {% endif %}
             <div class="carto-card" style="{{ 'opacity:0.55;' if not h.actif else '' }}">
                 <div class="carto-card-head">
-                    <span class="carto-card-fam">{{ h.categorie }}</span>
+                    <span class="carto-card-fam">{{ h.famille }} {{ h.categorie }}</span>
                     {% if h.actif %}<span class="badge green" style="font-size:11px;">Actif</span>
                     {% else %}<span class="badge red" style="font-size:11px;">Inactif</span>{% endif %}
                 </div>
@@ -288,7 +283,7 @@
                             {% if h.date_expiration %}<span style="display:block; color:#c62828;">sortie : {{ h.date_expiration }}</span>{% endif %}
                         </span>
                     </div>
-                    <div style="display:flex; gap:16px; justify-content:flex-end; border-top:0.5px solid var(--border); padding-top:10px; margin-top:2px;">
+                    <div style="display:flex; gap:16px; justify-content:flex-end; margin-top:6px;">
                         <button style="background:none; border:none; padding:4px; font-size:20px; cursor:pointer;"
                             onclick="editerHabilitation({{ h.id }}, '{{ h.famille }}', '{{ h.categorie }}', '{{ h.date_integration }}', '{{ h.date_expiration or '' }}')" title="Modifier">✏️</button>
                         {% if h.actif %}
