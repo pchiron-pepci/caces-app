@@ -2097,6 +2097,12 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 
 **Grille pratique B1 R.482 (déployée 2026-06-30) :** base 100 pts, 5 thèmes (Prise de poste /16, Conduite et circulation /24, Travaux de base /30 [3 PE : charger/déblai-remblai/tranchée], Opération de levage /18, Fin de poste /12 ; seuil par thème = moitié du barème) + 5 critères éliminatoires (saut, sécurité piétons, charge en hauteur, levage sans dispositifs, quitter sans arrêter moteur). Options Porte-Engins (PE) et Télécommande (TEL) **facultatives**, 50 pts / seuil 35 / 0,5 UT chacune. UT base B1 = 1,0 (déjà en base via `init_data.py`, options déclarées dans `init_options.py` ligne 26 : `[("PE", False), ("TEL", False)]`). `patch_criteres_r482b1.py` : 58 consignes d'échec (colonne L INRS), matching par libellé normalisé, idempotent. Source : Excel OTC 'Pratique B1'.
 
+**Grille pratique C1 R.482 (déployée 2026-07-01) — MULTI-VARIANTES :** catégorie a 2 grilles base exclusives (choix d'un seul engin, pas de cumul). CH = Chargeuse (100 pts, sans levage : Prise /16 + Conduite /32 + Travaux /40 [charger + déblai-remblai] + Fin /12). CP = Chargeuse-pelleteuse (100 pts, avec levage : Prise /16 + Conduite /24 + Travaux /32 [charger + tranchée] + Levage /16 + Fin /12). Options PE + TEL facultatives (50 pts chacune). `init_options.py` ligne 28 corrigée : C1 = `[("PE", False), ("TEL", False)]`. Scripts : `init_grille_pratique_r482c1.py` (variantes CH/CP), `_options.py`, `patch_criteres_r482c1.py` (86 critères, 0 miss). Source : Excel OTC 'Pratique C1 - CH' et '- CP'.
+
+**Mécanisme générique de variantes (saisie pratique) :** 3 configurations detectees automatiquement a l'ouverture d'une saisie. (1) grille unique (B1, F...) : ouverture directe. (2) variantes CUMULEES = cat A uniquement (engin N1 PH fixe + engin N2 MB/CH/CP au choix, 2 blocs). (3) variantes EXCLUSIVES (C1 et futures) : >=2 grilles base, choix d'UNE variante, 1 bloc. Route `GET .../variantes` renvoie `{mode: cumul|exclusif|unique, variantes[]}`. `ouvrir_saisie` accepte param `variante`. Front `saisie_pratique.js` : `afficherChoixVariante()` generique (libelles lus du back, aucun engin code en dur). Les futures categories multi-variantes ne necessitent AUCUN code supplementaire.
+
+**UX saisie pratique — bandeau testeur (2026-07-01) :** le select testeur est un bandeau pleine largeur dedie (sorti de l'en-tete). Bascule couleur : rouge (#3a2020 + bordure #cc0000 + ⚠) tant qu'aucun testeur choisi, vert (#1e3320 + #2e9e56 + ✓) une fois selectionne. `majBandeauTesteur()` + listener change delegue dans saisie_pratique.js.
+
 **Règles métier INRS :**
 - Mode saisie adaptatif : binaire → 2 boutons ✓/✗ ; partiel + barème ≤ 3 → boutons paliers ; partiel + barème > 3 → stepper +/-
 - Bloc réussi : note_globale ≥ note_min ET chaque thème ≥ barème/2 ET chaque PE ≥ barème_PE/2 ET 0 éliminatoires
@@ -2328,6 +2334,14 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Helper audit_reset_requis testé (logique validée sur 5 cas) :** sans config → None ; audit futur → None ; audit aujourd'hui sans reset → date (BLOQUE) ; audit + reset fait ce jour → None (DÉBLOQUE) ; audit passé sans reset → date (BLOQUE, persiste).
 ---
+
+## Sauvegarde base de données
+
+**Filet de securite principal = Render natif** (dashboard base `caces-db` > Recovery) : Point-in-Time Recovery (3 jours Hobby, 7 jours Pro) + Export logique (retention 7j) + bouton "Restore database" integre. C'est la reference d'exploitation, rien a coder.
+
+**Bouton `/admin/export-base` (usage ADMIN interne, editeur) :** `pg_dump` streame cote serveur (pas de fichier temporaire, RGPD). Securise par TOKEN a usage unique : POST `/admin/export-base/token` valide le PIN (dans le body) et renvoie un token ephemere (60s), le GET `/admin/export-base?token=...` telecharge. Le PIN ne transite JAMAIS dans l'URL. Limite : tokens en memoire (mono-instance) ; a migrer vers stockage partage si passage en autoscaling.
+
+**ATTENTION multi-tenant :** `pg_dump` exporte TOUTE la base (tous schemas/tenants). NE PAS exposer ce bouton aux OTC clients tel quel (fuite inter-tenants). Reserve a l'admin editeur. Chantier futur : export par-tenant (`--schema=`) pour la portabilite RGPD client. Doctrine RGPD "par personne" (droit d'acces art.15, effacement art.17) = chantier distinct ; l'effacement bute sur l'immutabilite des cartes CACES emises (conservation legale) -> a arbitrer avec DPO.
 
 ## Maintenance — Reset des données de production
 
