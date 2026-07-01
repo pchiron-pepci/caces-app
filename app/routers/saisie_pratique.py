@@ -23,6 +23,10 @@ from app.config_utils import get_pin_formateur, get_pin_admin
 
 router = APIRouter(prefix="/api/sessions", tags=["saisie_pratique"])
 
+# Categories dont TOUTES les variantes base sont imposees et cumulees (pas de choix a l'ouverture).
+# Ex R.482 G : engin a chenilles (CH) + engin a pneu/cylindre (PC), les deux passes a la suite.
+CATEGORIES_CUMUL_TOTAL = {("R.482", "G")}
+
 
 def _recommandation_from_famille(famille: str) -> str:
     """famille stockee type 'R482' -> recommandation grille 'R.482'."""
@@ -100,8 +104,11 @@ def variantes_categorie(session_id: int, jour_test_id: int, stagiaire_id: int, c
         {"variante": g.variante, "libelle": g.libelle}
         for g in grilles if g.variante
     ]
+    est_cumul_total = (reco, (categorie or "").upper()) in CATEGORIES_CUMUL_TOTAL
     if est_cat_a:
         mode = "cumul"
+    elif est_cumul_total and len(variantes) >= 2:
+        mode = "cumul_total"
     elif len(variantes) >= 2:
         mode = "exclusif"
     else:
@@ -141,7 +148,8 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
         GrillePratique.type == "base", GrillePratique.actif == True,
     ).all()
     variantes_dispo = {g.variante for g in grilles_base_cat if g.variante}
-    EST_VARIANTE_EXCLUSIVE = (not EST_CAT_A) and len(variantes_dispo) >= 2
+    EST_CUMUL_TOTAL = ((reco, (categorie or "").upper()) in CATEGORIES_CUMUL_TOTAL) and len(variantes_dispo) >= 2
+    EST_VARIANTE_EXCLUSIVE = (not EST_CAT_A) and (not EST_CUMUL_TOTAL) and len(variantes_dispo) >= 2
 
     saisie = db.query(SaisiePratique).filter(
         SaisiePratique.jour_test_id == jour_test_id,
@@ -203,6 +211,16 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
             if not g_n2:
                 raise HTTPException(404, "Grille base %s introuvable pour %s A" % (engin2_norm, reco))
             db.add(SaisieBloc(saisie_id=saisie.id, grille_id=g_n2.id, type="base"))
+        elif EST_CUMUL_TOTAL:
+            grilles_cumul = db.query(GrillePratique).filter(
+                GrillePratique.recommandation == reco,
+                GrillePratique.categorie == categorie,
+                GrillePratique.type == "base", GrillePratique.actif == True,
+            ).order_by(GrillePratique.ordre).all()
+            if not grilles_cumul:
+                raise HTTPException(404, "Aucune grille base pour %s %s" % (reco, categorie))
+            for g_cumul in grilles_cumul:
+                db.add(SaisieBloc(saisie_id=saisie.id, grille_id=g_cumul.id, type="base"))
         elif EST_VARIANTE_EXCLUSIVE:
             grille_base = _grille_base(variante_norm)
             if not grille_base:
