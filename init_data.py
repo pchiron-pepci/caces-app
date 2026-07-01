@@ -38,7 +38,7 @@ def init_data():
             Categorie(famille_id=r482.id, code="D",       libelle="Engins de compactage",                        ut_pratique=1.0,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="E",       libelle="Engins de finissage",                         ut_pratique=1.0,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="F",       libelle="Chariots manutention tout terrain",            ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
-            Categorie(famille_id=r482.id, code="G",       libelle="Engins de forage et fondations",               ut_pratique=1.2,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="G",       libelle="Conduite des engins hors production",          ut_pratique=1.2,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="OPT-TEL", libelle="Option Telecommande",                          ut_pratique=0.5,  pepci_habilite=True,  actif=True, est_option=True),
             Categorie(famille_id=r482.id, code="OPT-PE",  libelle="Option Porte-Engins",                          ut_pratique=0.5,  pepci_habilite=True,  actif=True, est_option=True),
 
