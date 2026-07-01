@@ -31,7 +31,7 @@ OPTIONS = [
     ("R482", "D",      [("PE", False), ("TEL", False)]),
     ("R482", "E",      [("PE", False)]),
     ("R482", "F",      [("PE", False), ("TEL", False)]),    # tout-terrain, PE+TEL facultatives
-    ("R482", "G",      [("TEL", True), ("PE", False)]),     # telescopique, TEL incluse, PE facultative
+    ("R482", "G",      [("TEL", False)]),                   # G = porte-engins par nature (pas de PE), TEL facultative
     ("R482", "H",      [("TEL", False)]),
     ("R483", "A",      [("CC", True),  ("CEC", True),  ("TEL", False)]),  # CC+CEC incluses, TEL facultative
     ("R483", "B",      [("CC", True),  ("CEC", False), ("TEL", False)]),  # CC incluse, CEC+TEL facultatives
