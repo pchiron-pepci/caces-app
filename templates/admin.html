@@ -40,7 +40,7 @@
     </div>
     <div class="card">
         <div class="card-header"><h2>✅ Catégories habilitées PEPCI</h2></div>
-        <div class="carto-table-wrap">
+        <div class="carto-table-wrap carto-desktop">
         <table class="table carto-table">
             <colgroup>
                 <col class="c-famille"><col class="c-code"><col class="c-lib">
@@ -87,6 +87,58 @@
                 {% endif %}{% endfor %}
             </tbody>
         </table>
+        </div>
+        <div class="carto-cards">
+            {% set nsc = namespace(prev_famille='') %}
+            {% for c in categories %}{% if c.pepci_habilite and not c.est_option %}
+            {% if nsc.prev_famille != c.famille_code %}
+                <div class="carto-fam-sep">{{ c.famille_code }}</div>
+                {% set nsc.prev_famille = c.famille_code %}
+            {% endif %}
+            <div class="carto-card">
+                <div class="carto-card-head">
+                    <span class="carto-card-fam">{{ c.code }}</span>
+                    <span style="font-size:14px;">{{ c.libelle }}</span>
+                </div>
+                <div class="carto-card-body">
+                    <div class="carto-card-row">
+                        <span class="lbl">UT pratique</span>
+                        <span style="text-align:right;">{{ c.ut_pratique }} UT
+                            {% set incl_key = c.famille_code + '__' + c.code %}
+                            {% if incl_key in options_incluses_map %}
+                            <br><span style="font-size:11px; color:#888; font-style:italic;">incl. {% for o in options_incluses_map[incl_key] %}{{ o.code_option }}{% if not loop.last %}, {% endif %}{% endfor %} obligatoire{% if options_incluses_map[incl_key]|length > 1 %}s{% endif %}</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% set opt_key = c.famille_code + '__' + c.code %}
+                    {% if opt_key in options_cat_map %}
+                    {% set facultatives = options_cat_map[opt_key] | selectattr('incluse', 'equalto', false) | list %}
+                    {% if facultatives %}
+                    <div class="carto-opts">
+                        {% for opt in facultatives %}
+                        <div class="carto-opt">
+                            <span class="badge" style="background:#e8eef8; color:#1a237e; font-size:11px;">{{ opt.code_option }}</span>
+                            <span style="font-style:italic;">{{ opt.libelle_option }}</span>
+                            <span class="ut">+0.5 UT</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    <div class="carto-card-row">
+                        <span class="lbl">Habilitation</span>
+                        <span style="text-align:right;">
+                            {{ c.date_habilitation.strftime('%d/%m/%Y') if c.date_habilitation else '—' }}
+                            {% if c.date_sortie %}<br><span style="font-size:11px; color:#c62828;">sortie : {{ c.date_sortie.strftime('%d/%m/%Y') }}</span>{% endif %}
+                        </span>
+                    </div>
+                    <div class="carto-card-actions">
+                        <button class="btn" style="padding:8px; font-size:13px; background:#eef2f8; color:#1a237e; border:1px solid #c5cae9;" onclick="modifierDatesHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}', '{{ c.date_habilitation.isoformat() if c.date_habilitation else '' }}', '{{ c.date_sortie.isoformat() if c.date_sortie else '' }}')">✏️ Dates</button>
+                        <button class="btn btn-danger" style="padding:8px; font-size:13px;" onclick="desactiverHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">🔒 Désactiver</button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}{% endfor %}
         </div>
     </div>
     <div style="margin-top:24px;">
