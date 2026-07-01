@@ -29,7 +29,7 @@ OPTIONS = [
     ("R482", "C2",     [("PE", False)]),
     ("R482", "C3",     [("PE", False)]),
     ("R482", "D",      [("PE", False), ("TEL", False)]),
-    ("R482", "E",      [("PE", False)]),
+    ("R482", "E",      [("PE", False), ("TEL", False)]),    # tombereau : PE + TEL facultatives (TEL prevue au referentiel)
     ("R482", "F",      [("PE", False), ("TEL", False)]),    # tout-terrain, PE+TEL facultatives
     ("R482", "G",      [("TEL", False)]),                   # G = porte-engins par nature (pas de PE), TEL facultative
     ("R482", "H",      [("TEL", False)]),
