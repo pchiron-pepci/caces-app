@@ -60,23 +60,60 @@ def get_categories_famille(famille: str, db: Session = Depends(get_db)):
     ).order_by(Categorie.code).all()
     return [{"code": c.code, "libelle": c.libelle} for c in cats]
 
+class ActiverCategorieBody(BaseModel):
+    pin: str
+    date_habilitation: Optional[date] = None
+
+class DesactiverCategorieBody(BaseModel):
+    pin: str
+    date_sortie: Optional[date] = None
+
+class DatesHabilitationBody(BaseModel):
+    pin: str
+    date_habilitation: Optional[date] = None
+    date_sortie: Optional[date] = None
+
 @router.post("/categorie/{id}/activer")
-def activer_categorie(id: int, db: Session = Depends(get_db)):
+def activer_categorie(id: int, data: ActiverCategorieBody, db: Session = Depends(get_db)):
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
     c = db.query(Categorie).filter(Categorie.id == id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Categorie non trouvee")
     c.pepci_habilite = True
+    if data.date_habilitation is not None:
+        c.date_habilitation = data.date_habilitation
     db.commit()
     return {"message": "Categorie activee"}
 
 @router.post("/categorie/{id}/desactiver")
-def desactiver_categorie(id: int, db: Session = Depends(get_db)):
+def desactiver_categorie(id: int, data: DesactiverCategorieBody, db: Session = Depends(get_db)):
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
     c = db.query(Categorie).filter(Categorie.id == id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Categorie non trouvee")
     c.pepci_habilite = False
+    if data.date_sortie is not None:
+        c.date_sortie = data.date_sortie
     db.commit()
     return {"message": "Categorie desactivee"}
+
+@router.post("/categorie/{id}/dates")
+def modifier_dates_categorie(id: int, data: DatesHabilitationBody, db: Session = Depends(get_db)):
+    """Edite les dates d'habilitation (entree/sortie). None efface la date."""
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    c = db.query(Categorie).filter(Categorie.id == id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Categorie non trouvee")
+    # Coherence : sortie ne peut pas preceder l'entree
+    if data.date_habilitation and data.date_sortie and data.date_sortie < data.date_habilitation:
+        raise HTTPException(status_code=422, detail="La date de sortie ne peut pas preceder la date d'habilitation")
+    c.date_habilitation = data.date_habilitation
+    c.date_sortie = data.date_sortie
+    db.commit()
+    return {"message": "Dates mises a jour"}
 
 @router.post("/habilitation")
 def add_habilitation(data: HabilitationCreate, db: Session = Depends(get_db)):

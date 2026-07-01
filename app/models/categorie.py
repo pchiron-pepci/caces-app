@@ -23,4 +23,5 @@ class Categorie(Base):
     option_tel = Column(Boolean, default=False)
     pepci_habilite = Column(Boolean, default=False)
     date_habilitation = Column(Date, nullable=True)
+    date_sortie = Column(Date, nullable=True)
     actif = Column(Boolean, default=True)

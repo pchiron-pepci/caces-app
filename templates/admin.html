@@ -52,8 +52,13 @@
                         <br><span style="font-size:10px; color:#888; font-style:italic;">incl. {% for o in options_incluses_map[incl_key] %}{{ o.code_option }}{% if not loop.last %}, {% endif %}{% endfor %} obligatoire{% if options_incluses_map[incl_key]|length > 1 %}s{% endif %}</span>
                         {% endif %}
                     </td>
-                    <td>{{ c.date_habilitation or '—' }}</td>
-                    <td><button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="desactiverHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">🔒 Désactiver</button></td>
+                    <td>
+                        {{ c.date_habilitation or '—' }}{% if c.date_sortie %}<br><span style="font-size:11px; color:#c62828;">sortie : {{ c.date_sortie }}</span>{% endif %}
+                    </td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn" style="padding:6px 10px; font-size:12px; background:#eef2f8; color:#1a237e; border:1px solid #c5cae9;" onclick="modifierDatesHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}', '{{ c.date_habilitation or '' }}', '{{ c.date_sortie or '' }}')">✏️ Dates</button>
+                        <button class="btn btn-danger" style="padding:6px 10px; font-size:12px;" onclick="desactiverHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">🔒 Désactiver</button>
+                    </td>
                 </tr>
                 {% set opt_key = c.famille_code + '__' + c.code %}
                 {% if opt_key in options_cat_map %}
@@ -76,7 +81,7 @@
             <div class="card-header"><h2>⭕ Catégories non habilitées</h2></div>
             <table class="table">
                 <thead>
-                    <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Actions</th></tr>
+                    <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Dernière période</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                     {% set ns2 = namespace(prev_famille='') %}
@@ -88,7 +93,13 @@
                         <td><span class="badge orange">{{ c.code }}</span></td>
                         <td>{{ c.libelle }}</td>
                         <td>{{ c.ut_pratique }} UT</td>
-                        <td><button class="btn btn-primary" style="padding:6px 12px; font-size:12px;" onclick="activerHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">✅ Activer</button></td>
+                        <td style="font-size:12px; color:#666;">
+                            {% if c.date_habilitation or c.date_sortie %}{{ c.date_habilitation or '?' }}{% if c.date_sortie %} → {{ c.date_sortie }}{% endif %}{% else %}<span style="color:#bbb;">jamais habilité</span>{% endif %}
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn" style="padding:6px 10px; font-size:12px; background:#eef2f8; color:#1a237e; border:1px solid #c5cae9;" onclick="modifierDatesHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}', '{{ c.date_habilitation or '' }}', '{{ c.date_sortie or '' }}')">✏️ Dates</button>
+                            <button class="btn btn-primary" style="padding:6px 10px; font-size:12px;" onclick="activerHabilitation({{ c.id }}, '{{ c.famille_code }} {{ c.code }}')">✅ Activer</button>
+                        </td>
                     </tr>
                     {% endif %}{% endfor %}
                 </tbody>
@@ -507,6 +518,28 @@
     </div>
 </div>
 
+<!-- MODAL DATES HABILITATION -->
+<div id="modal-dates-hab" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:32px; width:420px; max-width:95vw;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:4px;">📅 Dates d'habilitation</h2>
+        <p style="color:#666; margin-bottom:20px;" id="dates-hab-nom"></p>
+        <input type="hidden" id="dates-hab-id">
+        <div class="form-field" style="margin-bottom:16px;">
+            <label>Date d'habilitation (entrée)</label>
+            <input type="date" id="dates-hab-entree">
+        </div>
+        <div class="form-field" style="margin-bottom:8px;">
+            <label>Date de sortie (facultatif)</label>
+            <input type="date" id="dates-hab-sortie">
+        </div>
+        <p style="font-size:12px; color:#888; margin-bottom:20px;">Laissez un champ vide pour effacer la date correspondante.</p>
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+            <button class="btn btn-secondary" onclick="document.getElementById('modal-dates-hab').style.display='none'">Annuler</button>
+            <button class="btn btn-primary" id="dates-hab-confirm-btn">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL HABILITATION TESTEUR -->
 <div id="modal-hab" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:32px; width:95vw; max-width:1100px; max-height:90vh; overflow-y:auto;">
@@ -714,18 +747,60 @@ async function chargerCategories() {
     ).join('');
 }
 
+function modifierDatesHabilitation(id, nom, dateEntree, dateSortie) {
+    document.getElementById('dates-hab-id').value = id;
+    document.getElementById('dates-hab-nom').textContent = nom;
+    document.getElementById('dates-hab-entree').value = dateEntree || '';
+    document.getElementById('dates-hab-sortie').value = dateSortie || '';
+    document.getElementById('modal-dates-hab').style.display = 'flex';
+    document.getElementById('dates-hab-confirm-btn').onclick = () => {
+        const entree = document.getElementById('dates-hab-entree').value || null;
+        const sortie = document.getElementById('dates-hab-sortie').value || null;
+        if (entree && sortie && sortie < entree) {
+            alert('La date de sortie ne peut pas précéder la date d\'habilitation.');
+            return;
+        }
+        document.getElementById('modal-dates-hab').style.display = 'none';
+        demanderPin(`Modifier les dates d'habilitation : ${nom} ?`, async (pin) => {
+            const resp = await fetch(`/admin/categorie/${id}/dates`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin, date_habilitation: entree, date_sortie: sortie })
+            });
+            if (resp.ok) location.reload();
+            else if (resp.status === 403) alert('Code PIN incorrect');
+            else if (resp.status === 422) alert('Dates incohérentes (sortie avant entrée)');
+            else alert('Erreur !');
+        });
+    };
+}
+
 function activerHabilitation(id, nom) {
-    demanderPin(`Activer l'habilitation PEPCI : ${nom} ?`, async () => {
-        const resp = await fetch(`/admin/categorie/${id}/activer`, { method: 'POST' });
+    const dateHab = prompt(`Date d'habilitation PEPCI pour ${nom} (AAAA-MM-JJ) :`, '2022-06-14');
+    if (dateHab === null) return;
+    demanderPin(`Activer l'habilitation PEPCI : ${nom} ?`, async (pin) => {
+        const resp = await fetch(`/admin/categorie/${id}/activer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin: pin, date_habilitation: dateHab || null })
+        });
         if (resp.ok) location.reload();
+        else if (resp.status === 403) alert('Code PIN incorrect');
         else alert('Erreur !');
     });
 }
 
 function desactiverHabilitation(id, nom) {
-    demanderPin(`Désactiver l'habilitation PEPCI : ${nom} ?`, async () => {
-        const resp = await fetch(`/admin/categorie/${id}/desactiver`, { method: 'POST' });
+    const dateSortie = prompt(`Date de sortie d'habilitation pour ${nom} (AAAA-MM-JJ, laisser vide si inconnue) :`, '');
+    if (dateSortie === null) return;
+    demanderPin(`Désactiver l'habilitation PEPCI : ${nom} ?`, async (pin) => {
+        const resp = await fetch(`/admin/categorie/${id}/desactiver`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin: pin, date_sortie: dateSortie || null })
+        });
         if (resp.ok) location.reload();
+        else if (resp.status === 403) alert('Code PIN incorrect');
         else alert('Erreur !');
     });
 }

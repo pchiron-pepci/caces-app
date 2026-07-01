@@ -76,6 +76,8 @@ def _run_startup_migrations():
         # lieux
         "ALTER TABLE lieux ADD COLUMN IF NOT EXISTS date_integration DATE",
         "ALTER TABLE lieux ADD COLUMN IF NOT EXISTS date_sortie DATE",
+        # categories : sortie d'habilitation
+        "ALTER TABLE categories ADD COLUMN IF NOT EXISTS date_sortie DATE",
         # testeurs
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_cle VARCHAR(500)",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR",
