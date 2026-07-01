@@ -108,10 +108,15 @@ body.sp-show-crit .sp-crit { display:block; }
 .sp-pin-actions button[data-action="pin-annuler"] { background:#eee; color:#555; }
 #sp-pin-confirm { background:#cc0000; color:#fff; }
 
-#sp-testeur-wrap { margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-#sp-testeur-wrap label { font-size:12px; color:#cfcfcf; }
-#sp-testeur-select { font-size:13px; padding:5px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.3); background:#3a3a3a; color:#fff; max-width:230px; }
-#sp-testeur-select:focus { outline:2px solid #cc0000; }
+.sp-header-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px; }
+#sp-testeur-band { margin:12px -16px 0; padding:12px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-top:3px solid; transition:background .2s, border-color .2s; }
+#sp-testeur-band.non-selectionne { background:#3a2020; border-top-color:#cc0000; }
+#sp-testeur-band.selectionne { background:#1e3320; border-top-color:#2e9e56; }
+#sp-testeur-band label { font-size:14px; font-weight:500; color:#fff; }
+#sp-testeur-ic { font-size:20px; }
+#sp-testeur-select { flex:1; min-width:180px; font-size:14px; padding:8px 10px; border-radius:6px; border:2px solid #cc0000; background:#fff; color:#2d2d2d; font-weight:500; transition:border-color .2s; }
+#sp-testeur-band.selectionne #sp-testeur-select { border-color:#2e9e56; }
+#sp-testeur-select:focus { outline:2px solid #185fa5; }
 </style>
 </head>
 <body
@@ -124,14 +129,17 @@ body.sp-show-crit .sp-crit { display:block; }
 <div id="sp-header">
     <div class="sp-cand">{{ candidat_nom }} {{ candidat_prenom }}</div>
     <div class="sp-meta">{{ recommandation }} · Catégorie {{ categorie }}{% if candidat_ddn %} · né(e) le {{ candidat_ddn }}{% endif %}</div>
-    <div id="sp-testeur-wrap">
-        <label for="sp-testeur-select">Testeur :</label>
-        <select id="sp-testeur-select"><option value="">— Choisir le testeur habilité —</option></select>
+    <div class="sp-header-row">
+        <span class="sp-mode" id="sp-mode-badge">…</span>
+        <button id="sp-eye-btn" data-action="toggle-criteres" type="button"><span id="sp-eye-ic">&#128065;</span> <span id="sp-eye-label">Afficher les critères</span></button>
     </div>
-    <span class="sp-mode" id="sp-mode-badge">…</span>
-    <button id="sp-eye-btn" data-action="toggle-criteres" type="button"><span id="sp-eye-ic">&#128065;</span> <span id="sp-eye-label">Afficher les critères</span></button>
     <div id="sp-progress-wrap"><div id="sp-progress-bar"></div></div>
     <div id="sp-progress-txt">Chargement…</div>
+    <div id="sp-testeur-band" class="non-selectionne">
+        <span id="sp-testeur-ic">&#9888;</span>
+        <label for="sp-testeur-select">Testeur habilité :</label>
+        <select id="sp-testeur-select"><option value="">— Sélectionner le testeur —</option></select>
+    </div>
 </div>
 
 <div id="sp-content">

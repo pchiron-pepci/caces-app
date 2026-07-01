@@ -191,7 +191,24 @@
       if (testeurIdPreselect) {
         sel.value = String(testeurIdPreselect);
       }
+      majBandeauTesteur();
     }).catch(function () {});
+  }
+
+  function majBandeauTesteur() {
+    var sel = document.getElementById("sp-testeur-select");
+    var band = document.getElementById("sp-testeur-band");
+    var ic = document.getElementById("sp-testeur-ic");
+    if (!sel || !band) return;
+    if (sel.value) {
+      band.classList.remove("non-selectionne");
+      band.classList.add("selectionne");
+      if (ic) ic.innerHTML = "&#10003;";
+    } else {
+      band.classList.remove("selectionne");
+      band.classList.add("non-selectionne");
+      if (ic) ic.innerHTML = "&#9888;";
+    }
   }
 
   // ─── Chargement initial ───
@@ -336,6 +353,10 @@
         api("POST", url).then(traiterReponseSaisie).catch(function () { afficherChoixEngin2(); });
       });
   }
+
+  document.addEventListener("change", function (e) {
+    if (e.target && e.target.id === "sp-testeur-select") majBandeauTesteur();
+  });
 
   ouvrirOuDemander();
 
