@@ -207,8 +207,7 @@
                     {# Colonne Options masquee (les testeurs n'ont pas d'options pour l'instant) - reactiver si besoin
                     <th>Options</th>
                     #}
-                    <th>Date intégration</th>
-                    <th>Date de sortie</th>
+                    <th>Période intégration</th>
                     <th>Statut</th>
                     <th>Actions</th>
                 </tr>
@@ -235,11 +234,9 @@
                         {% endif %}
                     </td>
                     #}
-                    <td>{{ h.date_integration }}</td>
-                    <td>
-                        {% if h.date_expiration %}
-                            <span class="badge orange">{{ h.date_expiration }}</span>
-                        {% else %}—{% endif %}
+                    <td style="font-size:12px;">
+                        <span style="display:block;">entrée : {{ h.date_integration or '—' }}</span>
+                        {% if h.date_expiration %}<span style="display:block; color:#c62828;">sortie : {{ h.date_expiration }}</span>{% endif %}
                     </td>
                     <td>
                         {% if h.actif %}<span class="badge green">Actif</span>
