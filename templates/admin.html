@@ -9,17 +9,24 @@
     <a href="/admin/images" class="btn btn-secondary">🎬 Médias des questions</a>
 </div>
 
-<div style="display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0;">
-    <button class="tab-btn active-tab" onclick="showTab('cartographie', this)">🗺️ Cartographie</button>
-    <button class="tab-btn" onclick="showTab('habilitations', this)">👨‍🏫 Habilitations testeurs</button>
-    <button class="tab-btn" onclick="showTab('lieux', this)">📍 Lieux</button>
-    <button class="tab-btn" onclick="showTab('parametres', this); chargerConfigOrganisme();">⚙️ Paramètres</button>
-    <button class="tab-btn" onclick="showTab('documents', this); chargerDocuments();">📄 Documents officiels</button>
+<div class="admin-tabs-bar" style="display:flex; gap:4px; margin-bottom:16px; border-bottom:2px solid #e8ecf4; padding-bottom:0; flex-wrap:nowrap;">
+    <button class="tab-btn active-tab" onclick="showTab('cartographie', this)">🗺️ <span class="tab-long">Cartographie</span><span class="tab-short">Carto.</span></button>
+    <button class="tab-btn" onclick="showTab('habilitations', this)">👨‍🏫 <span class="tab-long">Habilitations testeurs</span><span class="tab-short">Habil.</span></button>
+    <button class="tab-btn" onclick="showTab('lieux', this)">📍 <span class="tab-long">Lieux</span><span class="tab-short">Lieux</span></button>
+    <button class="tab-btn" onclick="showTab('parametres', this); chargerConfigOrganisme();">⚙️ <span class="tab-long">Paramètres</span><span class="tab-short">Para.</span></button>
+    <button class="tab-btn" onclick="showTab('documents', this); chargerDocuments();">📄 <span class="tab-long">Documents officiels</span><span class="tab-short">Docs</span></button>
 </div>
 
 <style>
 .tab-btn { padding:10px 20px; border:none; background:none; font-size:14px; font-weight:600; color:#888; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
 .tab-btn:hover { color:#1a237e; }
+.tab-short { display:none; }
+@media (max-width: 1023px) {
+    .tab-long { display:none; }
+    .tab-short { display:inline; }
+    .tab-btn { padding:8px 10px; font-size:13px; }
+    .admin-tabs-bar { gap:2px !important; }
+}
 .active-tab { color:#1a237e !important; border-bottom:3px solid #1a237e !important; }
 </style>
 
