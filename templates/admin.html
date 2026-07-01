@@ -268,7 +268,12 @@
         </table>
         </div>
         <div class="carto-cards">
+            {% set nsh = namespace(prev_famille='') %}
             {% for h in t.habilitations %}
+            {% if nsh.prev_famille != h.famille %}
+                <div class="carto-fam-sep">{{ h.famille }}</div>
+                {% set nsh.prev_famille = h.famille %}
+            {% endif %}
             <div class="carto-card" style="{{ 'opacity:0.55;' if not h.actif else '' }}">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span class="carto-card-fam">{{ h.famille }} {{ h.categorie }}</span>
