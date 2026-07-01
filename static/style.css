@@ -631,3 +631,24 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
 @media (min-width: 1024px) {
     .btn-hamburger { display: none !important; }
 }
+
+/* Cartographie : 2 tableaux alignes (desktop) / scroll horizontal (mobile) */
+.carto-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.carto-table {
+    width: 100%;
+    table-layout: fixed;
+    min-width: 720px;
+}
+.carto-table col.c-famille { width: 9%; }
+.carto-table col.c-code    { width: 8%; }
+.carto-table col.c-lib     { width: 34%; }
+.carto-table col.c-ut      { width: 13%; }
+.carto-table col.c-dates   { width: 16%; }
+.carto-table col.c-actions { width: 20%; }
+.carto-table td, .carto-table th { overflow-wrap: anywhere; }
+@media (max-width: 1023px) {
+    .carto-table { table-layout: auto; min-width: 720px; }
+}

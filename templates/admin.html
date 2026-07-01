@@ -33,7 +33,12 @@
     </div>
     <div class="card">
         <div class="card-header"><h2>✅ Catégories habilitées PEPCI</h2></div>
-        <table class="table">
+        <div class="carto-table-wrap">
+        <table class="table carto-table">
+            <colgroup>
+                <col class="c-famille"><col class="c-code"><col class="c-lib">
+                <col class="c-ut"><col class="c-dates"><col class="c-actions">
+            </colgroup>
             <thead>
                 <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Date habilitation</th><th>Actions</th></tr>
             </thead>
@@ -75,11 +80,17 @@
                 {% endif %}{% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
     <div style="margin-top:24px;">
         <div class="card">
             <div class="card-header"><h2>⭕ Catégories non habilitées</h2></div>
-            <table class="table">
+            <div class="carto-table-wrap">
+            <table class="table carto-table">
+                <colgroup>
+                    <col class="c-famille"><col class="c-code"><col class="c-lib">
+                    <col class="c-ut"><col class="c-dates"><col class="c-actions">
+                </colgroup>
                 <thead>
                     <tr><th>Famille</th><th>Code</th><th>Libellé</th><th>UT pratique</th><th>Dernière période</th><th>Actions</th></tr>
                 </thead>
@@ -107,6 +118,7 @@
                     {% endif %}{% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 </div>
