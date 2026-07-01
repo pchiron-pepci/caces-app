@@ -218,9 +218,12 @@
     chargerTesteurs(optionsCandidat, state.repriseTesteurId);
   }
 
-  function lancerOuverture(engin2) {
+  function lancerOuverture(engin2, variante) {
     var url = BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir";
-    if (engin2) { url += "?engin2=" + encodeURIComponent(engin2); }
+    var params = [];
+    if (engin2) { params.push("engin2=" + encodeURIComponent(engin2)); }
+    if (variante) { params.push("variante=" + encodeURIComponent(variante)); }
+    if (params.length) { url += "?" + params.join("&"); }
     return api("POST", url)
       .then(traiterReponseSaisie)
       .catch(function (e) {
@@ -275,12 +278,63 @@
     });
   }
 
+  function afficherChoixVariante(variantes) {
+    var ov = document.createElement("div");
+    ov.id = "sp-variante-overlay";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(45,45,45,0.92);z-index:200;"
+      + "display:flex;align-items:center;justify-content:center;padding:20px;";
+    var box = '<div style="background:#fff;border-radius:12px;max-width:440px;width:100%;'
+      + 'padding:24px;box-shadow:0 10px 40px rgba(0,0,0,0.4);">'
+      + '<div style="font-size:18px;font-weight:700;color:#2d2d2d;margin-bottom:4px;">Categorie ' + CATEGORIE + ' &mdash; Choix de l\'engin</div>'
+      + '<div style="font-size:13px;color:#666;margin-bottom:18px;line-height:1.5;">'
+      + "Cette categorie se decline en plusieurs engins. Choisissez celui presente au candidat :</div>"
+      + '<div id="sp-variante-choices" style="display:flex;flex-direction:column;gap:10px;">';
+    variantes.forEach(function (v) {
+      box += '<button type="button" class="sp-variante-btn" data-variante="' + v.variante + '" '
+        + 'style="text-align:left;padding:14px 16px;border:2px solid #e2e6ee;border-radius:8px;'
+        + 'background:#f9fafb;cursor:pointer;font-size:15px;color:#2d2d2d;transition:all .15s;">'
+        + '<b>' + v.variante + '</b> &mdash; ' + (v.libelle || "") + '</button>';
+    });
+    box += '</div></div>';
+    ov.innerHTML = box;
+    document.body.appendChild(ov);
+
+    ov.querySelectorAll(".sp-variante-btn").forEach(function (btn) {
+      btn.addEventListener("mouseover", function () {
+        btn.style.borderColor = "#cc0000"; btn.style.background = "#fff5f5";
+      });
+      btn.addEventListener("mouseout", function () {
+        btn.style.borderColor = "#e2e6ee"; btn.style.background = "#f9fafb";
+      });
+      btn.addEventListener("click", function () {
+        var variante = btn.getAttribute("data-variante");
+        if (ov.parentNode) ov.parentNode.removeChild(ov);
+        lancerOuverture(null, variante);
+      });
+    });
+  }
+
   function ouvrirOuDemander() {
-    if (!estCatA()) { lancerOuverture(null); return; }
-    var url = BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir";
-    api("POST", url)
-      .then(traiterReponseSaisie)
-      .catch(function () { afficherChoixEngin2(); });
+    var urlVar = BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/variantes";
+    api("GET", urlVar)
+      .then(function (info) {
+        if (info.mode === "cumul") {
+          var url = BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir";
+          api("POST", url).then(traiterReponseSaisie).catch(function () { afficherChoixEngin2(); });
+        } else if (info.mode === "exclusif") {
+          var url2 = BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir";
+          api("POST", url2).then(traiterReponseSaisie).catch(function () {
+            afficherChoixVariante(info.variantes || []);
+          });
+        } else {
+          lancerOuverture(null);
+        }
+      })
+      .catch(function () {
+        if (!estCatA()) { lancerOuverture(null); return; }
+        var url = BASE + JOUR_ID + "/" + STAGIAIRE_ID + "/" + CATEGORIE + "/ouvrir";
+        api("POST", url).then(traiterReponseSaisie).catch(function () { afficherChoixEngin2(); });
+      });
   }
 
   ouvrirOuDemander();
