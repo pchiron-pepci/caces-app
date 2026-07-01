@@ -79,9 +79,39 @@ def _grille_dict(grille, db) -> dict:
     }
 
 
+@router.get("/{session_id}/pratique/saisie/{jour_test_id}/{stagiaire_id}/{categorie}/variantes")
+def variantes_categorie(session_id: int, jour_test_id: int, stagiaire_id: int, categorie: str,
+                        db: DBSession = Depends(get_db)):
+    """Liste les variantes de grille base d'une categorie (choix exclusif d'engin).
+    Renvoie [] si grille unique. Le cas A (cumul) est signale a part via 'mode'."""
+    jour = db.query(JourTest).filter(JourTest.id == jour_test_id).first()
+    if not jour:
+        raise HTTPException(404, "Jour de test introuvable")
+    reco = _recommandation_from_famille(jour_session_famille(jour, db))
+    est_cat_a = (reco == "R.482" and (categorie or "").upper() == "A")
+
+    grilles = db.query(GrillePratique).filter(
+        GrillePratique.recommandation == reco,
+        GrillePratique.categorie == categorie,
+        GrillePratique.type == "base", GrillePratique.actif == True,
+    ).order_by(GrillePratique.ordre).all()
+
+    variantes = [
+        {"variante": g.variante, "libelle": g.libelle}
+        for g in grilles if g.variante
+    ]
+    if est_cat_a:
+        mode = "cumul"
+    elif len(variantes) >= 2:
+        mode = "exclusif"
+    else:
+        mode = "unique"
+    return {"mode": mode, "variantes": variantes}
+
+
 @router.post("/{session_id}/pratique/saisie/{jour_test_id}/{stagiaire_id}/{categorie}/ouvrir")
 def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categorie: str,
-                  engin2: str = None,
+                  engin2: str = None, variante: str = None,
                   db: DBSession = Depends(get_db)):
     """Ouvre (ou reprend) la saisie pour un test PLANIFIE : jour + candidat + categorie.
     Cat A multi-engins (R.482) : 2 blocs base. Engin N1 = PH (toujours), engin N2
@@ -103,6 +133,15 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
     EST_CAT_A = (reco == "R.482" and (categorie or "").upper() == "A")
     ENGINS_N2_VALIDES = {"MB", "CH", "CP"}
     engin2_norm = (engin2 or "").strip().upper() or None
+    variante_norm = (variante or "").strip().upper() or None
+    # Detection variantes exclusives (categorie != A avec >=2 grilles base variantes)
+    grilles_base_cat = db.query(GrillePratique).filter(
+        GrillePratique.recommandation == reco,
+        GrillePratique.categorie == categorie,
+        GrillePratique.type == "base", GrillePratique.actif == True,
+    ).all()
+    variantes_dispo = {g.variante for g in grilles_base_cat if g.variante}
+    EST_VARIANTE_EXCLUSIVE = (not EST_CAT_A) and len(variantes_dispo) >= 2
 
     saisie = db.query(SaisiePratique).filter(
         SaisiePratique.jour_test_id == jour_test_id,
@@ -114,6 +153,10 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
     if EST_CAT_A and not reprise:
         if engin2_norm not in ENGINS_N2_VALIDES:
             raise HTTPException(422, "Engin N2 requis pour la categorie A (MB, CH ou CP).")
+    if EST_VARIANTE_EXCLUSIVE and not reprise:
+        if variante_norm not in variantes_dispo:
+            raise HTTPException(422, "Variante d'engin requise pour la categorie %s (%s)." % (
+                categorie, ", ".join(sorted(variantes_dispo))))
 
     codes_planif = set()
     if jtc.options_planifiees:
@@ -160,6 +203,11 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
             if not g_n2:
                 raise HTTPException(404, "Grille base %s introuvable pour %s A" % (engin2_norm, reco))
             db.add(SaisieBloc(saisie_id=saisie.id, grille_id=g_n2.id, type="base"))
+        elif EST_VARIANTE_EXCLUSIVE:
+            grille_base = _grille_base(variante_norm)
+            if not grille_base:
+                raise HTTPException(404, "Grille %s introuvable pour %s %s" % (variante_norm, reco, categorie))
+            db.add(SaisieBloc(saisie_id=saisie.id, grille_id=grille_base.id, type="base"))
         else:
             grille_base = _grille_base()
             if not grille_base:
