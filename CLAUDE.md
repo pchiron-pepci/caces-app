@@ -302,6 +302,7 @@ python init_questions_r482.py
 | Haute | Historique sessions par stagiaire — bouton ▶ dans page stagiaires, lazy load GET /stagiaires/{id}/historique | ✅ fait |
 | Haute | Options CACES® (PE, TEL, CC, TR, CEC) sur épreuves pratiques — planification + résultats | ✅ fait |
 | Haute | Évaluation pratique en ligne (grille INRS sur tablette) — modèles, moteur, router, UI mobile | ✅ fait (init grille prod à exécuter) |
+| Haute | Cartographie habilitations dates (entrée/sortie) — Categorie.date_sortie + routes PIN + frontend modal | ✅ fait |
 | Moyenne | Externaliser JS inline de admin.html (contrainte CSP) | à faire |
 | Moyenne | Grilles R486, R489 (scripts init à créer) | à faire |
 | Moyenne | Multi-tenant (subdomain routing, database-per-tenant) | à faire |
@@ -2093,6 +2094,10 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - `init_grille_pratique_r482a.py` + `_options.py` — grilles A multi-engins (PH/MB/CH/CP, 100 pts), option TEL — déployé prod
 - `init_grille_pratique_r482f.py` + `_options.py` — grille R482/F base (100 pts) + options PE/TEL (50 pts) — déployé prod
 - `init_grille_pratique_r482b1.py` + `_options.py` + `patch_criteres_r482b1.py` — grille R482/B1 — **déployé prod (2026-06-30)**
+- `init_grille_pratique_r482c1.py` + `_options.py` + `patch_criteres_r482c1.py` — grille R482/C1 (multi-variantes CH/CP) — **déployé prod (2026-07-01)**
+- `init_grille_pratique_r482d.py` + `_options.py` + `patch_criteres_r482d.py` — grille R482/D (compactage) — scripts commit `c64e03c`, prod à exécuter
+- `init_grille_pratique_r482e.py` + `_options.py` + `patch_criteres_r482e.py` — grille R482/E (tombereau) — scripts commit `937e489`, prod à exécuter
+- `init_grille_pratique_r482g.py` + `_options.py` + `patch_criteres_r482g.py` + `fix_libelle_g.py` — grille R482/G (porte-engins, cumul_total) — scripts commit voir grille G, prod à exécuter
 - Tous idempotents, à exécuter sur Render Shell avec `DATABASE_URL` réel
 
 **Grille pratique B1 R.482 (déployée 2026-06-30) :** base 100 pts, 5 thèmes (Prise de poste /16, Conduite et circulation /24, Travaux de base /30 [3 PE : charger/déblai-remblai/tranchée], Opération de levage /18, Fin de poste /12 ; seuil par thème = moitié du barème) + 5 critères éliminatoires (saut, sécurité piétons, charge en hauteur, levage sans dispositifs, quitter sans arrêter moteur). Options Porte-Engins (PE) et Télécommande (TEL) **facultatives**, 50 pts / seuil 35 / 0,5 UT chacune. UT base B1 = 1,0 (déjà en base via `init_data.py`, options déclarées dans `init_options.py` ligne 26 : `[("PE", False), ("TEL", False)]`). `patch_criteres_r482b1.py` : 58 consignes d'échec (colonne L INRS), matching par libellé normalisé, idempotent. Source : Excel OTC 'Pratique B1'.
@@ -2100,6 +2105,12 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 **Grille pratique C1 R.482 (déployée 2026-07-01) — MULTI-VARIANTES :** catégorie a 2 grilles base exclusives (choix d'un seul engin, pas de cumul). CH = Chargeuse (100 pts, sans levage : Prise /16 + Conduite /32 + Travaux /40 [charger + déblai-remblai] + Fin /12). CP = Chargeuse-pelleteuse (100 pts, avec levage : Prise /16 + Conduite /24 + Travaux /32 [charger + tranchée] + Levage /16 + Fin /12). Options PE + TEL facultatives (50 pts chacune). `init_options.py` ligne 28 corrigée : C1 = `[("PE", False), ("TEL", False)]`. Scripts : `init_grille_pratique_r482c1.py` (variantes CH/CP), `_options.py`, `patch_criteres_r482c1.py` (86 critères, 0 miss). Source : Excel OTC 'Pratique C1 - CH' et '- CP'.
 
 **Mécanisme générique de variantes (saisie pratique) :** 4 configurations detectees automatiquement a l'ouverture d'une saisie. (1) grille unique (B1, F...) : ouverture directe. (2) variantes CUMULEES = cat A uniquement (engin N1 PH fixe + engin N2 MB/CH/CP au choix, 2 blocs). (3) variantes EXCLUSIVES (C1 et futures) : >=2 grilles base, choix d'UNE variante, 1 bloc. (4) variantes CUMUL_TOTAL (G et futures) : TOUTES les grilles base imposees et cumulees, AUCUN choix a l'ouverture — voir `CATEGORIES_CUMUL_TOTAL`. Route `GET .../variantes` renvoie `{mode: cumul|exclusif|cumul_total|unique, variantes[]}`. `ouvrir_saisie` accepte param `variante`. Front `saisie_pratique.js` : `afficherChoixVariante()` generique (libelles lus du back, aucun engin code en dur). Les futures categories multi-variantes ne necessitent AUCUN code supplementaire.
+
+**Grille pratique D R.482 (compactage, scripts commit c64e03c, prod a executer) :** base 100 pts, 5 themes (Prise de poste /16, Conduite et circulation /40, Travaux de base /20 [bourrage-compactage + scarification], Operations specifiques /12, Fin de poste /12 ; seuil = moitie bareme). 5 eliminatoires identiques F/B1. Options PE et TEL facultatives (50 pts, seuil 35, 0,5 UT). UT base D = 1,0. Scripts : `init_grille_pratique_r482d.py`, `init_grille_pratique_r482d_options.py`, `patch_criteres_r482d.py`. `init_options.py` ligne D : `[("PE", False), ("TEL", False)]`.
+**A executer sur Render Shell :** `python init_options.py` → `python init_grille_pratique_r482d.py` → `python init_grille_pratique_r482d_options.py` → `python patch_criteres_r482d.py`.
+
+**Grille pratique E R.482 (tombereau, scripts commit 937e489, prod a executer) :** base 100 pts, 5 themes (Prise de poste /16, Conduite et circulation /40, Travaux de base /20 [chargement + deblai/remblai], Operations specifiques /12, Fin de poste /12 ; seuil = moitie bareme). 5 eliminatoires. Options PE et TEL facultatives (50 pts, seuil 35, 0,5 UT) — TEL prevue au referentiel. UT base E = 1,0. Scripts : `init_grille_pratique_r482e.py`, `init_grille_pratique_r482e_options.py`, `patch_criteres_r482e.py`. `init_options.py` ligne E : `[("PE", False), ("TEL", False)]`.
+**A executer sur Render Shell :** `python init_options.py` → `python init_grille_pratique_r482e.py` → `python init_grille_pratique_r482e_options.py` → `python patch_criteres_r482e.py`.
 
 **Grille pratique G R.482 (scripts crées 2026-07-01, prod a executer) :** 2 engins CUMULES sans choix (mode cumul_total). CH = chenilles, PC = pneumatiques/cylindre ; chacun 100 pts, meme structure : Prise de poste /16 + Conduite et circulation /40 + Chargement/dechargement sur porte-engins /32 (3 PE : chargement + preparation transport + arrimage + dechargement) + Fin de poste /12. Seuil = moitie du bareme par theme. 5 eliminatoires : sauter, pietons, charge en hauteur, levage sans dispositifs, quitter sans arreter moteur. Option TEL facultative (50 pts, seuil 35, 0,5 UT). Pas d'option PE (G EST le porte-engins). UT base G = 1,2 (deja en base). `CATEGORIES_CUMUL_TOTAL = {("R.482", "G")}` dans `saisie_pratique.py`.
 Scripts : `init_grille_pratique_r482g.py`, `init_grille_pratique_r482g_options.py`, `patch_criteres_r482g.py`, `fix_libelle_g.py` (corrige libelle en prod), `init_options.py` (TEL facultative, pas de PE).
@@ -2337,6 +2348,36 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 **IMPORTS LOCAUX OBLIGATOIRES** (dans les fonctions, pas en tête de fichier) pour `audit_reset_requis` dans main.py et sessions.py → contourne le piège "organize imports on save" de VS Code qui supprime les imports vus comme inutilisés.
 
 **Helper audit_reset_requis testé (logique validée sur 5 cas) :** sans config → None ; audit futur → None ; audit aujourd'hui sans reset → date (BLOQUE) ; audit + reset fait ce jour → None (DÉBLOQUE) ; audit passé sans reset → date (BLOQUE, persiste).
+
+### ✅ Chantier terminé : mode cumul_total + grilles D/E (saisie pratique) (2026-07-01)
+
+**Commit `2e6dfb6` + `937e489` + `c64e03c` :**
+- `saisie_pratique.py` : `CATEGORIES_CUMUL_TOTAL = {("R.482", "G")}` ; route `variantes_categorie` → `mode = "cumul_total"` si catégorie dans le set et ≥2 variantes ; `ouvrir_saisie` : `EST_CUMUL_TOTAL` = set + ≥2 ; bloc création cumul_total = toutes grilles base imposées et cumulées (pas de choix).
+- `saisie_pratique.js` : branche explicite `if (info.mode === "cumul_total")` → `lancerOuverture(null)` directement (pas de modale de choix).
+- Grille D R.482 (compactage) : `init_grille_pratique_r482d.py` + `_options.py` + `patch_criteres_r482d.py` — idempotents, prod à exécuter.
+- Grille E R.482 (tombereau) : `init_grille_pratique_r482e.py` + `_options.py` + `patch_criteres_r482e.py` ; `init_options.py` ligne E corrigée : `[("PE", False), ("TEL", False)]` (TEL ajoutée) — idempotents, prod à exécuter.
+
+### ✅ Chantier terminé : Cartographie habilitations dates (entrée/sortie) (2026-07-01, commit 9b49255)
+
+**4 fichiers, 125 insertions :**
+
+**Modèle + migration :**
+- `app/models/categorie.py` : `date_sortie = Column(Date, nullable=True)` après `date_habilitation`.
+- `app/main.py` : migration `ALTER TABLE categories ADD COLUMN IF NOT EXISTS date_sortie DATE` dans `_MIGRATIONS`.
+
+**Backend (`app/routers/admin.py`) :**
+- `ActiverCategorieBody` : `pin: str` + `date_habilitation: Optional[date]` — activer_categorie met à jour `date_habilitation` et repasse `date_sortie = None`.
+- `DesactiverCategorieBody` : `pin: str` + `date_sortie: Optional[date]` — desactiver_categorie enregistre `date_sortie`.
+- `DatesHabilitationBody` + route `POST /categorie/{id}/dates` : édite les deux dates ; guard 422 si `date_sortie < date_habilitation` ; `None` efface la date.
+- PIN admin vérifié sur les 3 routes via `get_pin_admin(db)`.
+
+**Frontend (`templates/admin.html`) :**
+- Tableau HABILITÉES : `date_sortie` en rouge sous `date_habilitation` + bouton ✏️ Dates.
+- Tableau NON HABILITÉES : colonne "Dernière période" (dates historiques).
+- `activerHabilitation` / `desactiverHabilitation` : prompt date + envoi JSON `{pin, date_*}`.
+- Modale `#modal-dates-hab` : 2 inputs date (entrée + sortie) + check client-side cohérence + `POST /admin/categorie/{id}/dates`.
+- Fonction `modifierDatesHabilitation(id, nom, dateEntree, dateSortie)` avant `activerHabilitation`.
+
 ---
 
 ## Sauvegarde base de données
