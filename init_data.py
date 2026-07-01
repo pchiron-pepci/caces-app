@@ -31,7 +31,7 @@ def init_data():
             Categorie(famille_id=r482.id, code="A",       libelle="Engins compacts",                              ut_pratique=1.5,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
             Categorie(famille_id=r482.id, code="B1",      libelle="Engins extraction deplacement sequentiel",     ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
             Categorie(famille_id=r482.id, code="B2",      libelle="Engins extraction rotatifs",                   ut_pratique=1.0,  pepci_habilite=False, actif=True),
-            Categorie(famille_id=r482.id, code="B3",      libelle="Engins extraction a chenilles",                ut_pratique=1.0,  pepci_habilite=False, actif=True),
+            Categorie(famille_id=r482.id, code="B3",      libelle="Engins rail-route a deplacement sequentiel",   ut_pratique=1.0,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="C1",      libelle="Engins chargement deplacement alternatif",     ut_pratique=1.0,  pepci_habilite=True,  actif=True, date_habilitation=date(2022,6,14)),
             Categorie(famille_id=r482.id, code="C2",      libelle="Engins de reglage a deplacement alternatif",   ut_pratique=1.0,  pepci_habilite=False, actif=True),
             Categorie(famille_id=r482.id, code="C3",      libelle="Engins de nivellement a deplacement alternatif", ut_pratique=1.0,  pepci_habilite=False, actif=True),
