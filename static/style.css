@@ -653,6 +653,20 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
     .carto-table { table-layout: auto; min-width: 720px; }
 }
 
+/* Lien "Ajouter habilitation" : texte ardoise, sans fond ni bordure */
+.hab-add-link {
+    color: #2d2d2d;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    padding: 4px 6px;
+}
+.hab-add-link:hover { color: #000; text-decoration: underline; }
+@media (max-width: 1023px) {
+    .hab-add-link { font-size: 12px; padding: 2px 4px; }
+}
+
 /* Cartographie : bascule tableau (desktop) / cartes (mobile) */
 .carto-desktop { display: block; }
 .carto-cards { display: none; }

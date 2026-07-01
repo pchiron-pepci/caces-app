@@ -196,7 +196,7 @@
     <div class="card" style="margin-bottom:16px;" data-testeur-name="{{ (t.nom ~ ' ' ~ t.prenom) | lower }}">
         <div class="card-header" style="cursor:pointer;" onclick="toggleTesteurCard(this)">
             <h2>👨‍🏫 {{ t.nom }} {{ t.prenom }} <span class="toggle-arrow" style="font-size:13px; margin-left:8px; color:#888;">▶</span></h2>
-            <button class="btn" style="background:#2d2d2d; color:#fff; border:none;" onclick="event.stopPropagation(); ouvrirHabilitation({{ t.id }}, '{{ t.nom }} {{ t.prenom }}')">➕ Habilitation</button>
+            <span class="hab-add-link" onclick="event.stopPropagation(); ouvrirHabilitation({{ t.id }}, '{{ t.nom }} {{ t.prenom }}')">➕ Habilitation</span>
         </div>
         <div class="testeur-body" style="display:none;">
         <div class="carto-desktop">
