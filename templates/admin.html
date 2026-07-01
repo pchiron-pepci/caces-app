@@ -270,35 +270,31 @@
         <div class="carto-cards">
             {% for h in t.habilitations %}
             <div class="carto-card" style="{{ 'opacity:0.55;' if not h.actif else '' }}">
-                <div class="carto-card-head">
+                <div style="display:flex; align-items:center; gap:8px;">
                     <span class="carto-card-fam">{{ h.famille }} {{ h.categorie }}</span>
                     {% if h.actif %}<span class="badge green" style="font-size:11px;">Actif</span>
                     {% else %}<span class="badge red" style="font-size:11px;">Inactif</span>{% endif %}
-                </div>
-                <div class="carto-card-body">
-                    <div class="carto-card-row">
-                        <span class="lbl">Période intégration</span>
-                        <span style="text-align:right; font-size:12px;">
-                            <span style="display:block;">entrée : {{ h.date_integration or '—' }}</span>
-                            {% if h.date_expiration %}<span style="display:block; color:#c62828;">sortie : {{ h.date_expiration }}</span>{% endif %}
-                        </span>
-                    </div>
-                    <div style="display:flex; gap:16px; justify-content:flex-end; margin-top:6px;">
-                        <button style="background:none; border:none; padding:4px; font-size:20px; cursor:pointer;"
+                    <span style="margin-left:auto; display:flex; gap:12px; white-space:nowrap;">
+                        <button style="background:none; border:none; padding:2px; font-size:19px; cursor:pointer;"
                             onclick="editerHabilitation({{ h.id }}, '{{ h.famille }}', '{{ h.categorie }}', '{{ h.date_integration }}', '{{ h.date_expiration or '' }}')" title="Modifier">✏️</button>
                         {% if h.actif %}
-                        <button style="background:none; border:none; padding:4px; font-size:20px; cursor:pointer;"
+                        <button style="background:none; border:none; padding:2px; font-size:19px; cursor:pointer;"
                             onclick="desactiverHabTesteur({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')" title="Désactiver">🔒</button>
-                        <button style="background:none; border:none; padding:4px; font-size:20px; cursor:pointer;"
+                        <button style="background:none; border:none; padding:2px; font-size:19px; cursor:pointer;"
                             onclick="supprimerHabTesteur({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')" title="Supprimer">🗑️</button>
                         {% else %}
-                        <button style="background:none; border:none; padding:4px; font-size:20px; cursor:pointer;"
+                        <button style="background:none; border:none; padding:2px; font-size:19px; cursor:pointer;"
                             onclick="activerHabTesteur({{ h.id }}, '{{ t.nom }} - {{ h.famille }} {{ h.categorie }}')" title="Activer">✅</button>
                         {% endif %}
-                    </div>
+                    </span>
+                </div>
+                <div style="font-size:12px; margin-top:8px;">
+                    <span style="color:#666;">Période intégration :</span> {{ h.date_integration or '—' }}
+                    {% if h.date_expiration %}<span style="display:block; color:#c62828;">sortie : {{ h.date_expiration }}</span>{% endif %}
                 </div>
             </div>
             {% endfor %}
+        </div>
         </div>
     </div>
     {% endfor %}
