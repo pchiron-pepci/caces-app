@@ -2240,7 +2240,8 @@ Document officiel remis au candidat en échec (théorie et/ou pratiques). Preuve
 - `app/services/pdf_fiche_reco.py` — generer_pdf_fiche_reco. WeasyPrint, charte NORYX. En-tête + n° INRS (champ ABSENT de ConfigOrganisme à ce jour → à ajouter), bloc session, bloc validité, blocs théorie/pratiques par thème, fautes éliminatoires, total anthracite, cases testeur, rappel CNAM.
 - `app/routers/fiches_reco.py` — GET charger (calcul+brouillon), POST brouillon, GET .../pdf (génère + marque statut="finalisee" + date_finalisation).
 - `app/models/fiche_recommandation.py` — table fiche_recommandation.
-- Écran : modale `#modal-fiche-reco` + bouton `#sc-btn-fiche-reco` (modale candidat, édition) + bouton `#fr-btn-pdf` ; JS construireFormFicheReco/genererPdfFicheReco dans session_detail.js.
+- Écran : modale `#modal-fiche-reco` + bouton `#fr-btn-pdf` ; JS construireFormFicheReco/genererPdfFicheReco dans session_detail.js.
+- Accès via mini-modale `#modal-choix-doc` (commit a96ac38, 2026-07-02) : bouton 📄 ligne candidat (`data-action="choix-doc-candidat"`) ouvre un choix entre "Bilan de compétences" (→ PDF attestation-reussite) et "Fiche de recommandation" (→ `ouvrirFicheReco`). Ancien bouton `#sc-btn-fiche-reco` dans la modale candidat SUPPRIMÉ.
 - ZIP : sous-dossier `recommandations/recommandation_{NOM_Prenom}.pdf` par candidat en échec.
 
 **RÈGLE DURÉES (cumul, sans plafond figé) — paramétrable admin (constantes en tête de calcul_fiche_reco.py) :**
