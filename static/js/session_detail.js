@@ -2218,7 +2218,9 @@ document.addEventListener('DOMContentLoaded', function() {
             noteTesteur: btn.dataset.noteTesteur,
             optsPlanif: optsPlanif,
             optsObtenues: btn.dataset.optsObtenues,
-            epreuveId: parseInt(btn.dataset.epreuveId)
+            epreuveId: parseInt(btn.dataset.epreuveId),
+            estNumerique: btn.dataset.estNumerique === '1',
+            justifNom: btn.dataset.justifNom || ''
         };
         var zonePdf = document.getElementById('choix-pratique-pdf-zone');
         if (zonePdf) zonePdf.style.display = 'block';
@@ -2244,13 +2246,21 @@ document.addEventListener('DOMContentLoaded', function() {
         );
     });
 
-    // Choix : PDF resultat -> ouvre le PDF dans un onglet (genere a la volee)
+    // Choix : "Résultats" -> selon la voie de saisie.
+    //  - numerique : PDF genere a la volee (en-tete, notes, signature)
+    //  - manuel    : fichier justificatif depose (grille jointe)
     document.addEventListener('click', function (e) {
         if (!e.target.closest('[data-action="choix-pratique-pdf"]')) return;
         var c = window._pratiqueCtx; if (!c) return;
         var sidp = (typeof SESSION_ID !== 'undefined') ? SESSION_ID : (document.body.dataset.sessionId || window.location.pathname.split('/')[2]);
         document.getElementById('modal-choix-pratique').style.display = 'none';
-        window.open('/api/sessions/' + sidp + '/pratique/resultat/' + c.jourTestId + '/' + c.stagiaireId + '/' + encodeURIComponent(c.cat) + '/pdf', '_blank');
+        if (c.estNumerique) {
+            window.open('/api/sessions/' + sidp + '/pratique/resultat/' + c.jourTestId + '/' + c.stagiaireId + '/' + encodeURIComponent(c.cat) + '/pdf', '_blank');
+        } else if (c.justifNom) {
+            window.open('/api/sessions/' + sidp + '/pratique/justificatif/' + c.epreuveId, '_blank');
+        } else {
+            afficherErreur("Aucun document disponible : joignez la grille d’évaluation via l’icône sous la catégorie.");
+        }
     });
 
     // Choix : saisie en ligne -> ecran plein ecran (nouvel onglet)
