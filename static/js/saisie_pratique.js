@@ -326,12 +326,10 @@
       }
       return '<div class="sp-cmp" data-key="' + g.key + '" '
         + 'style="flex:1;min-width:200px;border:1px solid ' + bordure + ';border-radius:9px;padding:8px 9px;background:' + bg + ';">'
-        + '<div style="display:flex;align-items:center;gap:8px;">'
+        + '<div style="display:flex;align-items:center;gap:6px;">'
         + '<span style="flex:1;font-size:10px;color:#888;">' + escapeHtml(g.label) + ' · ref ' + fmtDureeCourt(g.ref) + ' (' + utLabel(g.ut) + ')</span>'
         + '<span class="sp-cmp-t" data-cmp="toggle" data-key="' + g.key + '" title="Cliquer pour lancer / mettre en pause" style="font-family:monospace;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;padding:2px 8px;border-radius:6px;user-select:none;background:' + (ch.run ? "#e1f5ee" : "transparent") + ';color:' + (depasse ? "#cc0000" : "#2d2d2d") + ';">' + fmtChrono(ch.restant) + '</span>'
-        + '</div>'
-        + '<div style="display:flex;gap:3px;margin-top:4px;justify-content:flex-end;">'
-        + '<button class="sp-cmp-btn" data-cmp="reset" data-key="' + g.key + '" title="Reinitialiser ce compteur" style="height:24px;padding:0 12px;border:1px solid #d0d4d8;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:5px;">&#8635; Reset</button>'
+        + '<button class="sp-cmp-btn" data-cmp="reset" data-key="' + g.key + '" title="Reinitialiser ce compteur" style="height:22px;padding:0 7px;border:1px solid #d0d4d8;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;line-height:1;flex-shrink:0;">&#8635;</button>'
         + '</div>'
         + '<div style="display:flex;gap:3px;margin-top:5px;">' + rub("pp", "Prise poste") + rub("mn", "Manoeuvre") + rub("fp", "Fin poste") + '</div>'
         + '</div>';
