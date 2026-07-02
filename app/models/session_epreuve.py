@@ -8,7 +8,7 @@ class SessionEpreuve(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
     stagiaire_id = Column(Integer, ForeignKey("stagiaires.id"), nullable=False)
-    testeur_id = Column(Integer, ForeignKey("testeurs.id"), nullable=False)
+    testeur_id = Column(Integer, ForeignKey("testeurs.id"), nullable=True)
 
     # Epreuve
     date = Column(Date, nullable=False)

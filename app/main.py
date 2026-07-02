@@ -82,6 +82,7 @@ def _run_startup_migrations():
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS organisme_externe VARCHAR(200)",
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS justificatif_cle VARCHAR(500)",
         "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS justificatif_nom VARCHAR(255)",
+        "ALTER TABLE session_epreuves ALTER COLUMN testeur_id DROP NOT NULL",
         # testeurs
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_cle VARCHAR(500)",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR",
