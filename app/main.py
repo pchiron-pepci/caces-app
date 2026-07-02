@@ -1490,6 +1490,19 @@ def page_session_detail(request: Request, session_id: int):
                 if e.obtenue and not epreuves_map[key].obtenue:
                     epreuves_map[key] = e
 
+        # Couples (stagiaire_id, categorie) issus de la SAISIE NUMERIQUE en ligne.
+        # Sert a masquer l'icone justificatif externe (📎/⚠️) : la grille
+        # native de la saisie en ligne tient deja lieu de justificatif.
+        saisie_numerique_set = set()
+        _saisies_sess = (
+            db.query(SaisiePratique)
+            .join(JourTest, JourTest.id == SaisiePratique.jour_test_id)
+            .filter(JourTest.session_id == session_id)
+            .all()
+        )
+        for _sp in _saisies_sess:
+            saisie_numerique_set.add((_sp.stagiaire_id, _sp.categorie))
+
         testeur_initiales_par_stag_cat = {}
         for (stag_id, cat), e in epreuves_map.items():
             if e.testeur_id and e.testeur_nom and e.testeur_nom != "?":
@@ -1941,6 +1954,7 @@ def page_session_detail(request: Request, session_id: int):
             request=request,
             name="session_detail.html",
             context={
+            "saisie_numerique_set": saisie_numerique_set,
                 "page": "sessions",
                 "session": session,
                 "lieu": lieu,
