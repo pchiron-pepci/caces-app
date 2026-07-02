@@ -412,13 +412,22 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
             continue
         date_initiale = _date_initiale_depuis_echeance(c.famille, c.date_echeance)
         if limite_12_mois(date_initiale) >= today:
+            est_externe = bool(c.organisme_externe)
+            if est_externe:
+                ref = f"CACES externe {c.famille} cat {c.categorie} ({c.organisme_externe})"
+                lien = f"/stagiaires#stagiaire-{stagiaire_id}"
+            else:
+                ref = f"CACES {c.famille} cat {c.categorie}" + (f" n°{c.numero_ordre}" if c.numero_ordre else "")
+                lien = "/caces-obtenus"
             candidates.append({
                 "date": date_initiale,
                 "type": "caces",
-                "reference": f"CACES {c.famille} cat {c.categorie}" + (f" n°{c.numero_ordre}" if c.numero_ordre else ""),
+                "reference": ref,
                 "source": "R1",
                 "source_id": c.id,
-                "lien": "/caces-obtenus",
+                "lien": lien,
+                "origine": "externe" if est_externe else "interne",
+                "organisme": c.organisme_externe or "",
             })
 
     # --- Source R2-a : theorie de la SESSION COURANTE (si session_id fourni) ---
@@ -442,6 +451,7 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
                     "date": jt.date, "type": "theorie", "reference": "Theorie de la session courante",
                     "source": "R2-a", "source_id": rt_courante.id,
                     "lien": f"/sessions/{session_id}/projection/{rt_courante.jour_test_id}",
+                    "origine": "interne", "organisme": "",
                 })
 
     # --- Source R2-b : theorie ORPHELINE d'une autre session (aucun CACES rattache) ---
@@ -469,6 +479,7 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
                 "date": jt.date, "type": "theorie", "reference": "Theorie (autre session)",
                 "source": "R2-b", "source_id": rt.id,
                 "lien": "",
+                "origine": "interne", "organisme": "",
             })
 
     if not candidates:
@@ -483,6 +494,8 @@ def detecter_base_theorique(db, stagiaire_id, famille, session_id=None):
         "reference": meilleure["reference"],
         "date_limite_dispense": limite_12_mois(meilleure["date"]).isoformat(),
         "lien": meilleure["lien"],
+        "origine": meilleure.get("origine", "interne"),
+        "organisme": meilleure.get("organisme", ""),
         "source": meilleure["source"],
         "source_id": meilleure["source_id"],
     }
