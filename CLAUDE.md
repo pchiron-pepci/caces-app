@@ -1985,9 +1985,10 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - CHANTIER 6 — cas 5 : extension avec théorie native (branche `else` de `_calculer_pour_epreuve`) : FAIT — commit 609d81e.
   - Si théorie ≤ pratique ET pas post_cloture : cherche un CACES de base autre-session dont l'origine reconstituée est dans la fenêtre 12 mois ET ≤ date théorie.
   - Si trouvé → retourne extension (`post_cloture=True`, `caces_source_id`, échéance héritée). Sinon → cas 2 pur (calcul normal).
-- CHANTIER 7 — affichage dispense implicite pour extensions cas 5/6 : FAIT — commit fc175b0 (`app/routers/caces_obtenus.py`).
-  - Fallback dans `_get_theorie_pratique` : si `dispense_info is None` et `co.caces_initial_id` rempli, construit une dispense `{"origine":"interne", "date_base": base.date_obtention, ...}` à partir du CACES initial.
-  - Affiché par `ligneDispense()` JS comme "🪪 Dispense interne · base du JJ/MM/AAAA".
+- CHANTIER 7 — affichage dispense implicite pour extensions cas 5/6 : FAIT — commit fc175b0 (`app/routers/caces_obtenus.py`), puis corrigé commit 724d4e8.
+  - Fallback dans `_get_theorie_pratique` : si `dispense_info is None` et `co.caces_initial_id` rempli, construit une dispense à partir du CACES de base.
+  - Origine DYNAMIQUE (fix 724d4e8) : `_est_ext = bool(_base.organisme_externe)` → `"externe"` si le CACES de base est externe, `"interne"` sinon. L'ancien code hardcodait toujours `"interne"` même pour un CACES de base externe.
+  - Affiché par `ligneDispense()` JS avec badge interne (vert) ou externe (orange) selon l'origine.
 - RESTE À FAIRE — Options (cas 9 / chap. 6bis) : règles verrouillées dans la spec, implémentation NON CODÉE.
 - `detecter_base_theorique` (suggestion UI) : R1 amélioré FAIT — commit 60de332.
 
