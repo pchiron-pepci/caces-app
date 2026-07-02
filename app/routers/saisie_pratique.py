@@ -568,7 +568,11 @@ def supprimer(session_id: int, saisie_id: int, data: SupprimerSaisie,
     if not saisie:
         raise HTTPException(404, "Saisie introuvable")
 
+    # Hard delete symetrique a la voie manuelle (delete_epreuve) :
+    # on supprime completement la SessionEpreuve liee (meme triplet),
+    # au lieu de la vider et laisser une ligne d'epreuve fantome.
     jour = db.query(JourTest).filter(JourTest.id == saisie.jour_test_id).first()
+    epreuve_supprimee = False
     if jour:
         epreuve = db.query(SessionEpreuve).filter(
             SessionEpreuve.session_id == jour.session_id,
@@ -576,10 +580,9 @@ def supprimer(session_id: int, saisie_id: int, data: SupprimerSaisie,
             SessionEpreuve.categorie == saisie.categorie,
         ).first()
         if epreuve:
-            epreuve.obtenue = None
-            epreuve.options_obtenues = None
-            epreuve.note_testeur = None
+            db.delete(epreuve)
+            epreuve_supprimee = True
 
-    db.delete(saisie)
+    db.delete(saisie)  # cascade ORM -> blocs, notes, eliminatoires
     db.commit()
-    return {"message": "Supprimee"}
+    return {"message": "Supprimee", "epreuve_supprimee": epreuve_supprimee}
