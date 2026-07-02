@@ -2095,10 +2095,22 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - `init_grille_pratique_r482f.py` + `_options.py` — grille R482/F base (100 pts) + options PE/TEL (50 pts) — déployé prod
 - `init_grille_pratique_r482b1.py` + `_options.py` + `patch_criteres_r482b1.py` — grille R482/B1 — **déployé prod (2026-06-30)**
 - `init_grille_pratique_r482c1.py` + `_options.py` + `patch_criteres_r482c1.py` — grille R482/C1 (multi-variantes CH/CP) — **déployé prod (2026-07-01)**
-- `init_grille_pratique_r482d.py` + `_options.py` + `patch_criteres_r482d.py` — grille R482/D (compactage) — scripts commit `c64e03c`, prod à exécuter
-- `init_grille_pratique_r482e.py` + `_options.py` + `patch_criteres_r482e.py` — grille R482/E (tombereau) — scripts commit `937e489`, prod à exécuter
-- `init_grille_pratique_r482g.py` + `_options.py` + `patch_criteres_r482g.py` + `fix_libelle_g.py` — grille R482/G (porte-engins, cumul_total) — scripts commit voir grille G, prod à exécuter
+- `init_grille_pratique_r482d.py` + `_options.py` + `patch_criteres_r482d.py` — grille R482/D (compactage) — **déployé prod (2026-07-01)**
+- `init_grille_pratique_r482e.py` + `_options.py` + `patch_criteres_r482e.py` — grille R482/E (tombereau) — **déployé prod (2026-07-01)**
+- `init_grille_pratique_r482g.py` + `_options.py` + `patch_criteres_r482g.py` + `fix_libelle_g.py` — grille R482/G (porte-engins, cumul_total) — **déployé prod (2026-07-01)**
+- `init_grille_pratique_r482c2.py` + `_options.py` + `patch_criteres_r482c2.py` + `fix_libelle_c2.py` — grille R482/C2 (réglage) — **déployé prod (2026-07-01)**
+- `init_grille_pratique_r482c3.py` + `_options.py` + `patch_criteres_r482c3.py` + `fix_libelle_c3.py` — grille R482/C3 (nivellement) — **déployé prod (2026-07-01)**
+- `init_grille_pratique_r482b3.py` + `_options.py` + `patch_criteres_r482b3.py` + `fix_libelle_b3.py` — grille R482/B3 (rail-route) — **déployé prod (2026-07-02)**
+- `init_grille_pratique_r482b2.py` + `_options.py` + `patch_criteres_r482b2.py` + `fix_libelle_b2.py` — grille R482/B2 (forage, variantes CA/CP) — **déployé prod (2026-07-02)**
 - Tous idempotents, à exécuter sur Render Shell avec `DATABASE_URL` réel
+
+**✅ R.482 COMPLET — 11 catégories déployées prod (2026-07-02).** Récap structures : A (cumul PH+N2 au choix), B1 (unique, avec levage), B2 (exclusif CA/CP forage, TEL intégrée dans CA), B3 (unique rail-route, 5 thèmes dont levage), C1 (exclusif CH/CP), C2 (unique réglage), C3 (unique nivellement), D (unique compactage), E (unique tombereau), F (unique), G (cumul-total CH+PC). Le mécanisme de saisie à **4 modes** (`unique` / `cumul` / `exclusif` / `cumul_total`) couvre toutes les configurations — aucune catégorie R.482 ne nécessite désormais de nouveau code de saisie. Règle : seuil par thème = barème/2 strict (y compris demi-points, ex. B3 Prise /17 → seuil 8.5). Les libellés `init_data.py` de plusieurs catégories étaient erronés et ont été corrigés via scripts `fix_libelle_*.py` (init_data ne modifie pas l'existant en base) : B2 → "Engins de forage à déplacement séquentiel", B3 → "Engins rail-route à déplacement séquentiel", C2 → "Engins de réglage à déplacement alternatif", C3 → "Engins de nivellement à déplacement alternatif", G → "Conduite des engins hors production". Toutes les options TEL manquantes dans `init_options.py` (C2, C3, E) ont été ajoutées ; B2 = `[("PE", False)]` (TEL intégrée dans la variante CA, pas un module).
+
+**Grille pratique B2 R.482 (déployée 2026-07-02) — MULTI-VARIANTES + TEL INTÉGRÉE :** engins de forage, 2 grilles base exclusives asymétriques (items ET barèmes différents entre variantes). CA = conducteur accompagnant, **télécommande intégrée dans la grille base** (items télécommande dans la Prise de poste, pas de module TEL séparé — même logique que le PE inclus du A). CP = conducteur porté (poste de conduite classique). Chaque variante 100 pts : Prise /16 + Conduite /32 + Travaux /40 [forage] + Fin /12. Option PE facultative commune (50 pts). Pas d'option TEL. Scripts : `init_grille_pratique_r482b2.py` (variantes CA/CP via colonne `variante`), `_options.py` (PE seul), `patch_criteres_r482b2.py` (CA 34 + CP 35 + PE, 0 miss). Source : Excel OTC 'Pratique B2 - CA' et '- CP' + grille officielle INRS.
+
+**Grille pratique B3 R.482 (déployée 2026-07-02) — RAIL-ROUTE :** engins rail-route à déplacement séquentiel, mono-grille 100 pts, 5 thèmes : Prise /17 (items spécifiques rail : accessoires levage, mécanismes montée/descente lorries, groupe de secours), Conduite /23 (mode route/rail, manœuvres enraillement/déraillement), Travaux /30, Opération de levage /18, Fin /12 (6 items dont "Mettre l'engin à l'arrêt"). Seuils impairs stricts : Prise 8.5, Conduite 11.5 (barème/2, pas d'arrondi INRS). Options PE + TEL facultatives. `init_options.py` : ligne B3 ajoutée (était absente) = `[("PE", False), ("TEL", False)]`. Scripts : `init_grille_pratique_r482b3.py`, `_options.py`, `patch_criteres_r482b3.py` (35 base dont 6 rail-route + PE + TEL, 0 miss). Source : grille officielle INRS B3.
+
+**Grilles pratiques C2 / C3 / D / E R.482 (déployées 2026-07-01) — mono-grilles :** toutes structure Prise /16 + Conduite /42 + Travaux /30 + Fin /12 = 100 pts, options PE + TEL facultatives. C2 (réglage) : Travaux = 2 PE (réglage plate-forme + déblai/remblai). C3 (nivellement) : Travaux = 2 PE (réglage plate-forme + talus/fossé lame déportée). D (compactage) : Travaux = 1 PE (compactage plate-forme). E (tombereau) : Travaux = 3 PE (positionner chargement/parcours test/positionner déchargement), Conduite /42. Seuil Prise = 8 (coquille Excel "min.9" ignorée, règle moitié maintenue). TEL conservée pour E malgré absence pratique de tombereau télécommandé (référentiel INRS la liste, coût nul).
 
 **Grille pratique B1 R.482 (déployée 2026-06-30) :** base 100 pts, 5 thèmes (Prise de poste /16, Conduite et circulation /24, Travaux de base /30 [3 PE : charger/déblai-remblai/tranchée], Opération de levage /18, Fin de poste /12 ; seuil par thème = moitié du barème) + 5 critères éliminatoires (saut, sécurité piétons, charge en hauteur, levage sans dispositifs, quitter sans arrêter moteur). Options Porte-Engins (PE) et Télécommande (TEL) **facultatives**, 50 pts / seuil 35 / 0,5 UT chacune. UT base B1 = 1,0 (déjà en base via `init_data.py`, options déclarées dans `init_options.py` ligne 26 : `[("PE", False), ("TEL", False)]`). `patch_criteres_r482b1.py` : 58 consignes d'échec (colonne L INRS), matching par libellé normalisé, idempotent. Source : Excel OTC 'Pratique B1'.
 
@@ -2356,6 +2368,27 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 - `saisie_pratique.js` : branche explicite `if (info.mode === "cumul_total")` → `lancerOuverture(null)` directement (pas de modale de choix).
 - Grille D R.482 (compactage) : `init_grille_pratique_r482d.py` + `_options.py` + `patch_criteres_r482d.py` — idempotents, prod à exécuter.
 - Grille E R.482 (tombereau) : `init_grille_pratique_r482e.py` + `_options.py` + `patch_criteres_r482e.py` ; `init_options.py` ligne E corrigée : `[("PE", False), ("TEL", False)]` (TEL ajoutée) — idempotents, prod à exécuter.
+
+### ✅ Chantier terminé : responsive admin — cartographie + habilitations testeurs (2026-07-02)
+
+**Périmètre :** `templates/admin.html` + `static/style.css`.
+
+**Dates FR sur la cartographie :** affichage `{{ c.date_habilitation.strftime('%d/%m/%Y') }}` ; boutons crayon conservent l'ISO (`isoformat()` → `input[type=date]`). Tableaux cartographie : `<div class="carto-table-wrap carto-desktop">` + `<table class="carto-table">` + `<colgroup>` col widths (9/8/34/13/16/20%).
+
+**Bascule tableau ↔ cartes (< 1024px) :** `.carto-desktop { display:block; }` / `.carto-cards { display:none; }` + swap dans `@media (max-width:1023px)`. Pas de scroll horizontal — deux rendus distincts.
+
+**Cartes mobiles — HABILITÉES :** `{% set nsc = namespace(prev_famille='') %}` + séparateur `.carto-fam-sep` (titre famille) + `.carto-card` avec options facultatives, dates FR, boutons ✏️/🔒.
+
+**Habilitations testeurs desktop :** 2 colonnes dates fusionnées → 1 colonne "Période intégration" (`<span style="display:block;">entrée : …</span><span>sortie : …</span>`). Boutons emojis nus (`background:none; border:none; padding:4px 6px; font-size:17px`).
+
+**Cartes mobiles — habilitations testeurs :** `{% set nsh = namespace(prev_famille='') %}` + séparateur trait `.carto-fam-trait` (sans titre, sauf première famille — `{% if nsh.prev_famille and nsh.prev_famille != h.famille %}`). En-tête inline sur une ligne : `<div style="display:flex; align-items:center; gap:8px;">` → span famille+catégorie + badge statut + icônes (margin-left:auto). Sous-section période d'intégration + bouton ➕ Habilitation = `<span class="hab-add-link">`.
+
+**CSS `.hab-add-link` :** `color:#2d2d2d; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; padding:4px 6px;` + hover + mobile (12px/2px 4px).
+**CSS `.carto-fam-trait` :** `border-top:2px solid #1a237e; margin:14px 0 12px;`.
+
+**Structure HTML testeur (équilibre div vérifié par `python3 -c "... zone.count('<div') vs zone.count('</div>') ..."`) :** `<div class="testeur-body">` → `<div class="carto-desktop">` (table) → `</div>` → `<div class="carto-cards">` (cartes) → `</div>` → `</div>` (testeur-body) → `</div>` (card). 16/16 divs équilibrés.
+
+**Onglets admin compacts (< 1024px) :** `.tab-long` / `.tab-short` dans chaque bouton onglet (`.admin-tabs-bar` flex no-wrap). Style inline `@media (max-width:1023px)` : `.tab-long { display:none; }` / `.tab-short { display:inline; }` / `.tab-btn { padding:8px 10px; font-size:13px; }` / `.admin-tabs-bar { gap:2px !important; }`.
 
 ### ✅ Chantier terminé : Cartographie habilitations dates (entrée/sortie) (2026-07-01, commit 9b49255)
 
