@@ -372,6 +372,15 @@
         var top = heads[i].getBoundingClientRect().top;
         if (top <= seuil + 6) courant = heads[i];
       }
+      // Le bandeau n'apparait qu'au lancement d'un chrono (test demarre).
+      var demarre = false;
+      var _chs = state.chronos || {};
+      for (var _k in _chs) {
+        if (_chs.hasOwnProperty(_k) && _chs[_k] && (_chs[_k].run || _chs[_k].restant !== _chs[_k].ref)) {
+          demarre = true; break;
+        }
+      }
+      if (!demarre) { bandeau.style.display = "none"; return; }
       var badge = courant.getAttribute("data-engin-badge") || "";
       var nom = courant.getAttribute("data-engin-nom") || "";
       bandeau.style.display = "flex";
@@ -427,6 +436,7 @@
       if (act === "start" && !ch.run) { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); }
       else if (act === "stop") { ch.run = false; if (ch.timer) clearInterval(ch.timer); }
       else if (act === "reset") { ch.run = false; if (ch.timer) clearInterval(ch.timer); ch.restant = ch.ref; _majAffichageCompteur(key); }
+      if (typeof _engMajFn === "function") _engMajFn();
       return;
     }
     var r = e.target.closest("[data-clock]");
