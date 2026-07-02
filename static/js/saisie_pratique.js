@@ -312,9 +312,20 @@
         rouge:  { bord: "#e24b4a", fond: "#fcebeb", txt: "#a32d2d" }
       };
 
+      // Le compteur est-il demarre ? (run OU deja decompte)
+      var _chG = state.chronos[g.key];
+      var _lance = !!(_chG && (_chG.run || _chG.restant !== _chG.ref));
+
       function rub(k, lib) {
         var val = hr[k];
         var set = !!val;
+        if (!_lance) {
+          return '<div class="sp-rub sp-rub-lock" title="Lancez le compteur avant de saisir les temps" '
+            + 'style="flex:1;border:1px solid #e0e3e6;border-radius:5px;padding:3px 4px;'
+            + 'text-align:center;background:#f1f1f1;opacity:0.55;cursor:not-allowed;">'
+            + '<div style="font-size:9px;color:#aaa;line-height:1.2;">' + lib + '</div>'
+            + '<div style="font-size:12px;font-weight:700;font-family:monospace;color:#ccc;">--:--</div></div>';
+        }
         var c = set ? _COL[_etat] : { bord: "#e0e3e6", fond: "#f9fafb", txt: "#bbb" };
         var _titre = set ? "Cliquer pour corriger la duree de cette phase" : "Cliquer pour cloturer la phase precedente et demarrer celle-ci";
         return '<div class="sp-rub" data-clock="' + g.key + '|' + k + '" title="' + _titre + '" '
@@ -440,9 +451,14 @@
     if (r) {
       var parts = r.getAttribute("data-clock").split("|");
       var gkey = parts[0], champ = parts[1];
+      var ch = state.chronos[gkey];
+      // Garde-fou : saisie interdite tant que le compteur n'a pas ete lance.
+      if (!ch || (!ch.run && ch.restant === ch.ref)) {
+        alert("Lancez d'abord le compteur (clic sur le chrono) avant de saisir les temps.");
+        return;
+      }
       if (!state.jalons[gkey]) state.jalons[gkey] = { pp: null, mn: null, fp: null };
       if (!state.horaires[gkey]) state.horaires[gkey] = { pp: "", mn: "", fp: "" };
-      var ch = state.chronos[gkey];
       var ecoule = ch ? (ch.ref - ch.restant) : 0;
       var dejaPose = state.jalons[gkey][champ] != null;
       var precede = { pp: null, mn: "pp", fp: "mn" };
