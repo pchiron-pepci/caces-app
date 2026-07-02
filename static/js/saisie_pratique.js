@@ -280,11 +280,7 @@
     var groupes = _groupes();
     if (!groupes.length) { host.style.display = "none"; return; }
     host.style.display = "block";
-    // Ligne candidat compacte (reste visible avec les compteurs au scroll).
-    var candEl = document.querySelector("#sp-header .sp-cand");
-    var candNom = candEl ? candEl.textContent : "";
-    var ligneCand = '<div style="font-size:13px;font-weight:700;color:#2d2d2d;padding:2px 2px 6px;">'
-      + escapeHtml(candNom) + '</div>';
+    var ligneCand = '';
     var cartes = groupes.map(function (g) {
       var ch = _ensureChrono(g.key, g.ref);
       var hr = state.horaires[g.key];
