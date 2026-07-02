@@ -125,6 +125,25 @@
     return m + " min";
   }
 
+  function _parseDuree(str) {
+    // Accepte "mm:ss", "m:ss", "hh:mm:ss" ou un nombre de minutes seul.
+    str = String(str).trim();
+    if (/^\d+$/.test(str)) { return _fmtEcoule(parseInt(str, 10) * 60); }
+    var m3 = str.match(/^(\d+):(\d{1,2}):(\d{1,2})$/);
+    if (m3) {
+      var sc3 = parseInt(m3[3], 10);
+      if (sc3 > 59) return null;
+      return _fmtEcoule(parseInt(m3[1], 10) * 3600 + parseInt(m3[2], 10) * 60 + sc3);
+    }
+    var m2 = str.match(/^(\d{1,2}):(\d{1,2})$/);
+    if (m2) {
+      var sc2 = parseInt(m2[2], 10);
+      if (sc2 > 59) return null;
+      return _fmtEcoule(parseInt(m2[1], 10) * 60 + sc2);
+    }
+    return null;
+  }
+
   function _fmtEcoule(sec) {
     // Duree ecoulee positive, format mm:ss (ou h:mm:ss au-dela de 60 min).
     sec = Math.max(0, Math.round(sec));
@@ -248,10 +267,11 @@
       function rub(k, lib) {
         var val = hr[k];
         var set = !!val;
-        return '<div class="sp-rub" data-clock="' + g.key + '|' + k + '" '
+        var _titre = set ? "Cliquer pour corriger" : "Cliquer pour poser le temps ecoule";
+        return '<div class="sp-rub" data-clock="' + g.key + '|' + k + '" title="' + _titre + '" '
           + 'style="flex:1;border:1px solid ' + (set ? "#5dcaa5" : "#e0e3e6") + ';border-radius:5px;'
           + 'padding:3px 4px;cursor:pointer;text-align:center;background:' + (set ? "#e1f5ee" : "#f9fafb") + ';">'
-          + '<div style="font-size:9px;color:#888;line-height:1.2;">' + lib + '</div>'
+          + '<div style="font-size:9px;color:#888;line-height:1.2;">' + lib + (set ? ' ✎' : '') + '</div>'
           + '<div style="font-size:12px;font-weight:700;font-family:monospace;color:' + (set ? "#0f6e56" : "#bbb") + ';">'
           + (val || "--:--") + '</div></div>';
       }
@@ -312,10 +332,33 @@
       var parts = r.getAttribute("data-clock").split("|");
       var gkey = parts[0], champ = parts[1];
       if (!state.horaires[gkey]) state.horaires[gkey] = { pp: "", mn: "", fp: "" };
-      // Temps ECOULE du compteur de ce groupe (ref - restant), format mm:ss.
       var ch = state.chronos[gkey];
       var ecoule = ch ? (ch.ref - ch.restant) : 0;
-      state.horaires[gkey][champ] = _fmtEcoule(ecoule);
+      var actuel = state.horaires[gkey][champ];
+      if (!actuel) {
+        // 1er clic sur rubrique VIDE : pose auto le temps ecoule.
+        state.horaires[gkey][champ] = _fmtEcoule(ecoule);
+      } else {
+        // Rubrique DEJA remplie : edition manuelle, jamais d'ecrasement auto.
+        var libs = { pp: "Prise de poste", mn: "Manoeuvre", fp: "Fin de poste" };
+        var saisie = window.prompt(
+          "Corriger le temps (" + (libs[champ] || champ) + ") au format mm:ss."
+          + " Vide + OK = reprendre le temps ecoule actuel (" + _fmtEcoule(ecoule) + ").",
+          actuel
+        );
+        if (saisie === null) { return; }
+        saisie = saisie.trim();
+        if (saisie === "") {
+          state.horaires[gkey][champ] = _fmtEcoule(ecoule);
+        } else {
+          var norm = _parseDuree(saisie);
+          if (norm === null) {
+            alert("Format invalide (attendu mm:ss, ex : 12:30)");
+            return;
+          }
+          state.horaires[gkey][champ] = norm;
+        }
+      }
       renderBarreCompteurs();
     }
   });
