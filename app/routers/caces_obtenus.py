@@ -203,7 +203,10 @@ def get_a_valider(db: DBSession = Depends(get_db)):
 def get_valides(db: DBSession = Depends(get_db)):
     records = (
         db.query(CacesObtenu)
-        .filter(CacesObtenu.statut.in_(["valide", "annule"]))
+        .filter(
+            CacesObtenu.statut.in_(["valide", "annule"]),
+            CacesObtenu.organisme_externe.is_(None),  # exclut les CACES externes (affichage PEPCI uniquement ; moteur d'extension non impacte)
+        )
         .order_by(CacesObtenu.numero_ordre.desc())
         .all()
     )
