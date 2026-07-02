@@ -501,8 +501,8 @@
   function renderAll() {
     var box = document.getElementById("sp-blocs");
     state.compteurs = calculerCompteurs(state.blocs);
-    renderBarreCompteurs();
     box.innerHTML = state.blocs.map(renderBloc).join("");
+    renderBarreCompteurs();
     document.getElementById("sp-mode-badge").textContent = modeLabel(state.mode);
     if (window.majProgression) window.majProgression();
     if (window.majScores) window.majScores();
