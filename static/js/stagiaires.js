@@ -487,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return '<div style="margin-top:10px;">'
             + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">'
-            + '<strong style="color:#7b1fa2;font-size:13px;">🪪 Historique repris</strong>'
+            + '<strong style="color:#7b1fa2;font-size:13px;">🪪 Historique CACES internes</strong>'
             + '<button data-action="ajouter-reprise" data-id="' + stagiaireId + '" style="background:#7b1fa2;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">+ Ajouter</button>'
             + '</div>'
             + lignes
