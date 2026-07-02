@@ -305,7 +305,7 @@ python init_questions_r482.py
 | Haute | Cartographie habilitations dates (entrée/sortie) — Categorie.date_sortie + routes PIN + frontend modal | ✅ fait |
 | Haute | CACES externe (dispense tracée) — Carte 1/3 : modèle + migration (organisme_externe / justificatif_cle / justificatif_nom sur CacesObtenu) | ✅ fait (commit 6a1bd3d, 2026-07-02) |
 | Haute | CACES externe — Carte 2/3 : routes backend (POST création multipart + exploitabilité, GET justificatif, DELETE) | ✅ fait (commit 09fbea8, 2026-07-02) |
-| Haute | CACES externe — Carte 3/3 : UI (affichage, badge "Externe", justificatif cliquable) | à faire |
+| Haute | CACES externe — Carte 3/3 : UI (affichage, badge "Externe", justificatif cliquable) | ✅ fait (commit 300db66, 2026-07-02) |
 | Moyenne | Externaliser JS inline de admin.html (contrainte CSP) | à faire |
 | Moyenne | Grilles R486, R489 (scripts init à créer) | à faire |
 | Moyenne | Multi-tenant (subdomain routing, database-per-tenant) | à faire |
