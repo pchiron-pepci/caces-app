@@ -184,10 +184,29 @@ document.addEventListener('DOMContentLoaded', function() {
         ouvrirAjoutCandidatJour(btn.dataset.jourId, dejaIds);
     });
     document.addEventListener('click', function(e) {
-        var btn = e.target.closest('[data-action="attestation-reussite"]');
+        var btn = e.target.closest('[data-action="choix-doc-candidat"]');
         if (!btn) return;
-        var stagId = btn.getAttribute('data-stag-id');
+        window._choixDocStagId = btn.getAttribute('data-stag-id');
+        document.getElementById('modal-choix-doc').style.display = 'flex';
+    });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('[data-action="fermer-choix-doc"]')) return;
+        document.getElementById('modal-choix-doc').style.display = 'none';
+    });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('[data-action="choix-doc-bilan"]')) return;
+        var stagId = window._choixDocStagId;
+        document.getElementById('modal-choix-doc').style.display = 'none';
+        if (!stagId) { afficherErreur('Candidat introuvable'); return; }
         window.open('/api/sessions/' + SESSION_ID + '/attestation-reussite/' + stagId, '_blank');
+    });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('[data-action="choix-doc-reco"]')) return;
+        var stagId = window._choixDocStagId;
+        document.getElementById('modal-choix-doc').style.display = 'none';
+        if (!stagId) { afficherErreur('Candidat introuvable'); return; }
+        window._frStagiaireId = stagId;
+        ouvrirFicheReco();
     });
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="retirer-candidat"]');
@@ -937,8 +956,6 @@ function ouvrirAjoutCandidat() {
         afficherErreur('L\'inscription d\'un candidat est reservee au back-office.');
         return;
     }
-    var btnFrA = document.getElementById('sc-btn-fiche-reco');
-    if (btnFrA) btnFrA.style.display = 'none';
     document.getElementById('modal-candidat').style.display = 'flex';
 }
 
@@ -957,9 +974,7 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('modal-candidat').style.display = 'flex';
     _detecterDispense();
     _appliquerRoleModaleCandidat();
-    window._frStagiaireId = stagiaireId;
-    var btnFr = document.getElementById('sc-btn-fiche-reco');
-    if (btnFr) btnFr.style.display = 'inline-block';
+
 }
 
 function fermerModalCandidat() { document.getElementById('modal-candidat').style.display = 'none'; }
