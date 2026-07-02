@@ -821,9 +821,8 @@
       });
     });
     var pct = totalItems ? Math.round(faits / totalItems * 100) : 0;
-    document.getElementById("sp-progress-bar").style.width = pct + "%";
     document.getElementById("sp-progress-txt").textContent =
-      faits + " / " + totalItems + " items · " + fmt(ptsSaisis) + " pts saisis";
+      faits + "/" + totalItems + " · " + fmt(ptsSaisis) + "pts";
   };
 
   window.majScores = function () {
