@@ -97,17 +97,26 @@
       html += '<div class="sp-bloc-titre"><div class="sp-bloc-line"></div>'
         + '<span class="sp-bloc-label">Option · ' + escapeHtml(g.libelle) + '</span>'
         + '<div class="sp-bloc-line"></div></div>';
-    } else if (g.variante) {
-      // Cat A multi-engins : en-tete d'engin bien visible (N1 = PH, N2 = autre).
-      var rang = (g.variante === "PH") ? "N°1" : "N°2";
-      var nom = ENGIN_LABELS[g.variante] || g.variante;
+    } else if (g.type === "base") {
+      // En-tete d'engin uniforme pour TOUTES les categories.
+      //  - cat A multi-engins (g.variante) : badge "ENGIN N°1/N°2" + nom mappe + code.
+      //  - categorie a un seul engin       : badge "ENGIN" + nom = g.libelle.
+      var badge, nom;
+      if (g.variante) {
+        var rang = (g.variante === "PH") ? "N°1" : "N°2";
+        badge = "ENGIN " + rang;
+        nom = (ENGIN_LABELS[g.variante] || g.variante) + " (" + g.variante + ")";
+      } else {
+        badge = "ENGIN";
+        nom = g.libelle || "";
+      }
       html += '<div class="sp-engin-head" style="background:#2d2d2d;color:#fff;'
         + 'border-radius:8px;padding:10px 14px;margin:14px 0 8px;display:flex;'
         + 'align-items:center;gap:10px;border-left:5px solid #cc0000;">'
         + '<span style="background:#cc0000;color:#fff;font-weight:700;font-size:13px;'
-        + 'padding:3px 9px;border-radius:5px;white-space:nowrap;">ENGIN ' + rang + '</span>'
+        + 'padding:3px 9px;border-radius:5px;white-space:nowrap;">' + escapeHtml(badge) + '</span>'
         + '<span style="font-weight:700;font-size:15px;">' + escapeHtml(nom)
-        + ' (' + escapeHtml(g.variante) + ')</span></div>';
+        + '</span></div>';
     }
     g.themes.forEach(function (th, i) {
       var openCls = (i === 0 && g.type === "base") ? " open" : "";
