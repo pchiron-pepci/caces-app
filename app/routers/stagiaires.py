@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
+from fastapi.responses import StreamingResponse
+from io import BytesIO
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.config_utils import get_pin_admin
+from app.services import storage
+from app.services.caces_obtenus import _date_initiale_depuis_echeance, limite_12_mois
 from app.models.stagiaire import Stagiaire
 from app.models.session_candidat import SessionCandidat
 from app.models.jour_test import JourTest, JourTestCandidat, ResultatTheorie
@@ -753,3 +757,138 @@ def get_reprises_orphelines(id: int, db: Session = Depends(get_db)):
 def base_theorique_dispense(stag_id: int, famille: str, session_id: int | None = None, db: Session = Depends(get_db)):
     from app.services.caces_obtenus import detecter_base_theorique
     return detecter_base_theorique(db, stag_id, famille, session_id)
+
+
+@router.post("/{id}/caces-externe")
+async def creer_caces_externe(
+    id: int,
+    request: Request,
+    famille: str = Form(...),
+    categorie: str = Form(...),
+    date_echeance: str = Form(...),
+    organisme: str = Form(...),
+    pin: str = Form(...),
+    fichier: UploadFile = File(None),
+    db: Session = Depends(get_db),
+):
+    from datetime import date as _date, datetime as _dt
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    if pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if not organisme.strip():
+        raise HTTPException(status_code=400, detail="Le nom de l'organisme est obligatoire.")
+    try:
+        ech = _dt.strptime(date_echeance, "%Y-%m-%d").date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Date d'echeance invalide.")
+    if ech.year > _date.today().year + 15 or ech.year < 1990:
+        raise HTTPException(status_code=400, detail="Date d'echeance hors plage plausible.")
+
+    sess = get_or_create_session_reprise(id, db)
+
+    existe = db.query(CacesObtenu).filter(
+        CacesObtenu.stagiaire_id == id,
+        CacesObtenu.session_id == sess.id,
+        CacesObtenu.categorie == categorie,
+    ).first()
+    if existe:
+        raise HTTPException(status_code=409, detail="Un CACES est deja enregistre pour cette categorie dans les reprises. Supprimez-le d'abord.")
+
+    # Test d'exploitabilite (regle 12 mois) — informatif, NE BLOQUE PAS
+    origine = _date_initiale_depuis_echeance(famille, ech)
+    exploitable = limite_12_mois(origine) >= _date.today()
+
+    cle = None
+    nom_fichier = None
+    if fichier is not None and fichier.filename:
+        nom = fichier.filename
+        ext = nom.rsplit(".", 1)[1].lower() if "." in nom else ""
+        if ext not in storage.EXTENSIONS_AUTORISEES:
+            raise HTTPException(status_code=400, detail="Type de fichier non autorise (PDF, Word ou Excel).")
+        contenu = await fichier.read()
+        if len(contenu) > storage.TAILLE_MAX:
+            raise HTTPException(status_code=400, detail="Fichier trop volumineux (10 Mo maximum).")
+        if contenu:
+            cle = storage.construire_cle("caces-externes", nom)
+            storage.upload_fichier(contenu, cle, fichier.content_type or "application/octet-stream")
+            nom_fichier = nom[:255]
+
+    co = CacesObtenu(
+        stagiaire_id=id,
+        session_id=sess.id,
+        famille=famille,
+        categorie=categorie,
+        date_obtention=origine,
+        date_echeance=ech,
+        statut="valide",
+        numero_ordre=None,
+        organisme_externe=organisme.strip()[:200],
+        justificatif_cle=cle,
+        justificatif_nom=nom_fichier,
+    )
+    db.add(co)
+    ep = SessionEpreuve(
+        session_id=sess.id,
+        stagiaire_id=id,
+        testeur_id=None,
+        date=origine,
+        famille=famille,
+        categorie=categorie,
+        obtenue=True,
+    )
+    db.add(ep)
+    db.commit()
+    db.refresh(co)
+
+    msg = "CACES externe enregistre."
+    if not exploitable:
+        msg = ("CACES externe enregistre, mais son echeance ne permet pas de servir de "
+               "dispense/base d'extension aujourd'hui (hors de la fenetre des 12 mois).")
+    return {"message": msg, "id": co.id, "exploitable": exploitable}
+
+
+@router.get("/{id}/caces-externe/{caces_id}/justificatif")
+def lire_justificatif_caces_externe(id: int, caces_id: int, request: Request, db: Session = Depends(get_db)):
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    co = db.query(CacesObtenu).filter(
+        CacesObtenu.id == caces_id,
+        CacesObtenu.stagiaire_id == id,
+    ).first()
+    if not co or not co.justificatif_cle:
+        raise HTTPException(status_code=404, detail="Aucun justificatif pour ce CACES externe")
+    data = storage.get_fichier(co.justificatif_cle)
+    nom = co.justificatif_nom or "justificatif"
+    return StreamingResponse(
+        BytesIO(data),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'inline; filename="{nom}"'},
+    )
+
+
+@router.delete("/{id}/caces-externe/{caces_id}")
+def supprimer_caces_externe(id: int, caces_id: int, pin: str = "", db: Session = Depends(get_db)):
+    if pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    co = db.query(CacesObtenu).filter(
+        CacesObtenu.id == caces_id,
+        CacesObtenu.stagiaire_id == id,
+    ).first()
+    if not co:
+        raise HTTPException(status_code=404, detail="CACES externe introuvable")
+    if co.justificatif_cle:
+        try:
+            storage.delete_fichier(co.justificatif_cle)
+        except Exception:
+            pass
+    db.query(SessionEpreuve).filter(
+        SessionEpreuve.session_id == co.session_id,
+        SessionEpreuve.stagiaire_id == id,
+        SessionEpreuve.categorie == co.categorie,
+    ).delete()
+    db.delete(co)
+    db.commit()
+    return {"message": "CACES externe supprime"}
