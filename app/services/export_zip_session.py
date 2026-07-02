@@ -9,6 +9,7 @@ Contenu final :
   tests_numeriques/{NOM_Prenom}.pdf         — détail candidat (mode numérique)
   consentements/consentement_{NOM_Prenom}.pdf — consentement RGPD par candidat
   neutralite/neutralite_{NOM_Prenom}.pdf    — attestation neutralité par candidat
+  attestations_reussite/attestation_{NOM_Prenom}.pdf — attestation de réussite provisoire par candidat
 """
 
 import base64
@@ -29,6 +30,7 @@ from app.services.pdf_recap_session import generer_recap_resultats
 from app.services.pdf_detail_theorie import generer_pdf_detail_theorie
 from app.services.pdf_resultat_pratique import generer_pdf_resultat_pratique
 from app.services.pdf_fiche_reco import generer_pdf_fiche_reco
+from app.services.pdf_attestation_reussite import generer_attestation_reussite
 from app.services.calcul_fiche_reco import calculer_fiche_reco
 from app.models.grille_pratique import SaisiePratique
 from app.services.pdf_consentement_neutralite import (
@@ -163,6 +165,16 @@ def generer_zip_session(session_id: int, db: DBSession) -> bytes:
         if extra_ids:
             for s in db.query(Stagiaire).filter(Stagiaire.id.in_(extra_ids)).all():
                 stagiaires[s.id] = s
+
+        # ── attestations de reussite provisoire (une par candidat) ────────────
+        for sc in scs_all:
+            try:
+                pdf_bytes = generer_attestation_reussite(session_id, sc.stagiaire_id, db)
+                if pdf_bytes:
+                    nom = _nom_candidat(sc.stagiaire_id, stagiaires)
+                    zf.writestr(f"attestations_reussite/attestation_{nom}.pdf", pdf_bytes)
+            except Exception as e:
+                print(f"[ZIP] attestation_reussite stag={sc.stagiaire_id} error: {e}", flush=True)
 
         # ── boucle 5 : justificatifs de FORMATION ────────────────────────────
         justifs_formation = db.query(Justificatif).filter(
