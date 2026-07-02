@@ -10,6 +10,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; min-heig
 
 #sp-header {
     background: #2d2d2d; color: #fff; padding: 10px 16px;
+    position: sticky; top: 0; z-index: 40;
 }
 #sp-header .sp-cand { font-size: 17px; font-weight: 700; }
 #sp-header .sp-meta { font-size: 13px; color: #cfcfcf; margin-top: 2px; }
@@ -108,7 +109,7 @@ body.sp-show-crit .sp-crit { display:block; }
 #sp-pin-confirm { background:#cc0000; color:#fff; }
 
 .sp-header-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px; }
-#sp-testeur-band { margin:12px -16px 0; padding:12px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-top:3px solid; transition:background .2s, border-color .2s; }
+#sp-testeur-band { margin:0 0 8px; padding:12px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-top:3px solid; transition:background .2s, border-color .2s; }
 #sp-testeur-band.non-selectionne { background:#3a2020; border-top-color:#cc0000; }
 #sp-testeur-band.selectionne { background:#1e3320; border-top-color:#2e9e56; }
 #sp-testeur-band label { font-size:14px; font-weight:500; color:#fff; }
@@ -134,14 +135,14 @@ body.sp-show-crit .sp-crit { display:block; }
     </div>
     <div id="sp-progress-wrap"><div id="sp-progress-bar"></div></div>
     <div id="sp-progress-txt">Chargement…</div>
+</div>
+
+<div id="sp-content">
     <div id="sp-testeur-band" class="non-selectionne">
         <span id="sp-testeur-ic">&#9888;</span>
         <label for="sp-testeur-select">Testeur habilité :</label>
         <select id="sp-testeur-select"><option value="">— Sélectionner le testeur —</option></select>
     </div>
-</div>
-
-<div id="sp-content">
     <div id="sp-blocs"></div>
     <div id="sp-propo" style="display:none;"></div>
 </div>

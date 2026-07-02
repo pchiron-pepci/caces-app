@@ -200,7 +200,7 @@
         badge = "ENGIN";
         nom = g.libelle || "";
       }
-      html += '<div class="sp-engin-head" style="background:#2d2d2d;color:#fff;'
+      html += '<div class="sp-engin-head" data-engin-badge="' + escapeHtml(badge) + '" data-engin-nom="' + escapeHtml(nom) + '" style="background:#2d2d2d;color:#fff;'
         + 'border-radius:8px;padding:10px 14px;margin:14px 0 8px;display:flex;'
         + 'align-items:center;gap:10px;border-left:5px solid #cc0000;">'
         + '<span style="background:#cc0000;color:#fff;font-weight:700;font-size:13px;'
@@ -311,7 +311,38 @@
         + '<div style="display:flex;gap:3px;margin-top:5px;">' + rub("pp", "Prise poste") + rub("mn", "Manoeuvre") + rub("fp", "Fin poste") + '</div>'
         + '</div>';
     }).join("");
-    host.innerHTML = ligneCand + '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + cartes + '</div>';
+    host.innerHTML = ligneCand + '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + cartes + '</div>'
+      + '<div id="sp-engin-courant" style="display:none;background:#cc0000;color:#fff;padding:5px 12px;margin:7px -8px -8px;font-size:13px;font-weight:700;align-items:center;gap:8px;"></div>';
+    _installObserverEngin();
+  }
+
+  // Bandeau engin courant : suit l'en-tete d'engin le plus haut visible.
+  var _engObserver = null;
+  function _installObserverEngin() {
+    var bandeau = document.getElementById("sp-engin-courant");
+    if (!bandeau) return;
+    var heads = Array.prototype.slice.call(document.querySelectorAll(".sp-engin-head"));
+    if (heads.length < 2) { bandeau.style.display = "none"; return; }
+
+    function maj() {
+      var host = document.getElementById("sp-compteurs");
+      var seuil = host ? (host.getBoundingClientRect().bottom) : 0;
+      var courant = null;
+      heads.forEach(function (h) {
+        var top = h.getBoundingClientRect().top;
+        if (top <= seuil + 4) courant = h;
+      });
+      if (!courant) courant = heads[0];
+      var badge = courant.getAttribute("data-engin-badge") || "";
+      var nom = courant.getAttribute("data-engin-nom") || "";
+      bandeau.style.display = "flex";
+      bandeau.innerHTML = '<span style="background:rgba(255,255,255,0.22);font-size:10px;padding:1px 7px;border-radius:4px;">'
+        + badge + '</span><span>' + nom + '</span>';
+    }
+
+    window.removeEventListener("scroll", maj);
+    window.addEventListener("scroll", maj, { passive: true });
+    maj();
   }
 
   function _majAffichageCompteur(key) {
