@@ -649,7 +649,11 @@ def _verifier_role(path: str, method: str, role: str):
         if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/justificatif/\d+$", base):
             return True
         # Exceptions : saisie pratique EN LIGNE (terrain testeur, PIN formateur requis)
-        if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/ouvrir$", base):
+        # ouvrir : chemin reel = /pratique/saisie/{jour_test_id}/{stagiaire_id}/{categorie}/ouvrir
+        if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/\d+/[^/]+/ouvrir$", base):
+            return True
+        # variantes (GET) : meme forme de chemin, requis pour preparer la saisie
+        if method == "GET" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/\d+/[^/]+/variantes$", base):
             return True
         if method == "POST" and _re.match(r"^/api/sessions/\d+/pratique/saisie/\d+/enregistrer$", base):
             return True
