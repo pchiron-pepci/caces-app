@@ -98,19 +98,22 @@
   var MINUTES_PAR_UT = 60;
 
   function calculerCompteurs(blocs) {
-    var utCat = 0, options = {};
+    var utBaseMax = 0, utInclus = 0, options = {};
     (blocs || []).forEach(function (b) {
       var g = b.grille || {};
       var ut = (typeof g.ut === "number") ? g.ut : (parseFloat(g.ut || 0) || 0);
       if (g.type === "base") {
-        utCat += ut;
+        // Plusieurs machines base (ex. cat A : PH + N2) = UNE epreuve.
+        // On prend le MAX, on n'additionne pas (sinon 1,5 + 1,5 = 3, faux).
+        if (ut > utBaseMax) utBaseMax = ut;
       } else if (g.type === "option") {
-        if (g.incluse) { utCat += ut; }
+        if (g.incluse) { utInclus += ut; }
         else if (g.code_option) {
           options[g.code_option] = { ut: ut, secondes: Math.round(ut * MINUTES_PAR_UT * 60), libelle: g.libelle || g.code_option };
         }
       }
     });
+    var utCat = utBaseMax + utInclus;
     return {
       categorie: { ut: utCat, secondes: Math.round(utCat * MINUTES_PAR_UT * 60) },
       options: options
