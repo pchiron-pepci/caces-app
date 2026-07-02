@@ -125,6 +125,14 @@
     return m + " min";
   }
 
+  function _fmtEcoule(sec) {
+    // Duree ecoulee positive, format mm:ss (ou h:mm:ss au-dela de 60 min).
+    sec = Math.max(0, Math.round(sec));
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), x = sec % 60;
+    var p = function (v) { return v < 10 ? "0" + v : v; };
+    return (h > 0 ? (h + ":" + p(m)) : m) + ":" + p(x);
+  }
+
   function fmtChrono(sec) {
     var neg = sec < 0, a = Math.abs(Math.round(sec));
     var h = Math.floor(a / 3600), m = Math.floor((a % 3600) / 60), x = a % 60;
@@ -223,8 +231,13 @@
     }
     var groupes = _groupes();
     if (!groupes.length) { host.style.display = "none"; return; }
-    host.style.display = "flex";
-    host.innerHTML = groupes.map(function (g) {
+    host.style.display = "block";
+    // Ligne candidat compacte (reste visible avec les compteurs au scroll).
+    var candEl = document.querySelector("#sp-header .sp-cand");
+    var candNom = candEl ? candEl.textContent : "";
+    var ligneCand = '<div style="font-size:13px;font-weight:700;color:#2d2d2d;padding:2px 2px 6px;">'
+      + escapeHtml(candNom) + '</div>';
+    var cartes = groupes.map(function (g) {
       var ch = _ensureChrono(g.key, g.ref);
       var hr = state.horaires[g.key];
       var depasse = ch.restant < 0;
@@ -256,6 +269,7 @@
         + '<div style="display:flex;gap:3px;margin-top:5px;">' + rub("pp", "Prise poste") + rub("mn", "Manoeuvre") + rub("fp", "Fin poste") + '</div>'
         + '</div>';
     }).join("");
+    host.innerHTML = ligneCand + '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + cartes + '</div>';
   }
 
   function _majAffichageCompteur(key) {
@@ -298,10 +312,10 @@
       var parts = r.getAttribute("data-clock").split("|");
       var gkey = parts[0], champ = parts[1];
       if (!state.horaires[gkey]) state.horaires[gkey] = { pp: "", mn: "", fp: "" };
-      var d = new Date();
-      var hh = d.getHours() < 10 ? "0" + d.getHours() : d.getHours();
-      var mm = d.getMinutes() < 10 ? "0" + d.getMinutes() : d.getMinutes();
-      state.horaires[gkey][champ] = hh + ":" + mm;
+      // Temps ECOULE du compteur de ce groupe (ref - restant), format mm:ss.
+      var ch = state.chronos[gkey];
+      var ecoule = ch ? (ch.ref - ch.restant) : 0;
+      state.horaires[gkey][champ] = _fmtEcoule(ecoule);
       renderBarreCompteurs();
     }
   });
