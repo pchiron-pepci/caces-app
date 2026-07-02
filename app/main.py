@@ -78,6 +78,10 @@ def _run_startup_migrations():
         "ALTER TABLE lieux ADD COLUMN IF NOT EXISTS date_sortie DATE",
         # categories : sortie d'habilitation
         "ALTER TABLE categories ADD COLUMN IF NOT EXISTS date_sortie DATE",
+        # caces externes (dispense tracee)
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS organisme_externe VARCHAR(200)",
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS justificatif_cle VARCHAR(500)",
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS justificatif_nom VARCHAR(255)",
         # testeurs
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_cle VARCHAR(500)",
         "ALTER TABLE testeurs ADD COLUMN IF NOT EXISTS carte_nom_fichier VARCHAR",
