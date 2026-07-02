@@ -542,7 +542,7 @@ function renderCarteAValider(co) {
                 ↩ À réviser
             </button>
             <button data-action="valider-caces" data-id="${co.id}" data-nom="${nomComplet}"
-                style="min-width:130px;background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;">
+                style="min-width:130px;background:#607d8b;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;">
                 📜 Émettre
             </button>`;
 
