@@ -442,6 +442,11 @@
           return;
         }
         state.jalons[gkey][champ] = ecoule;
+        // Fin de poste = epreuve terminee : on arrete le chrono de ce compteur.
+        if (champ === "fp" && ch) {
+          ch.run = false;
+          if (ch.timer) { clearInterval(ch.timer); ch.timer = null; }
+        }
       } else {
         // Reclic : edition manuelle de la DUREE de cette phase (jamais d'ecrasement auto).
         var libs = { pp: "Prise de poste", mn: "Manoeuvre", fp: "Fin de poste" };
