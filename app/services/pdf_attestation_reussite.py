@@ -106,18 +106,6 @@ def _collecter(session_id, stagiaire_id, db):
         if t.obtenue is False and theorie_famille is None:
             theorie_famille = False
 
-    lignes = {}
-    for ep in epreuves:
-        key = (ep.famille, ep.categorie)
-        if key not in lignes:
-            lignes[key] = {"famille": ep.famille, "categorie": ep.categorie,
-                           "theorie": None, "pratique": None}
-        lignes[key]["pratique"] = ep.obtenue
-        if fam_session and ep.famille == fam_session:
-            lignes[key]["theorie"] = theorie_famille
-
-    lignes_list = sorted(lignes.values(), key=lambda x: (x["famille"], x["categorie"]))
-
     caces = (
         db.query(CacesObtenu)
         .filter(
@@ -128,6 +116,27 @@ def _collecter(session_id, stagiaire_id, db):
         .order_by(CacesObtenu.famille, CacesObtenu.categorie)
         .all()
     )
+    # Categories pour lesquelles un CACES est delivrable -> theorie couverte
+    # (dispense, theorie du jour reussie, ou theorie valide reconstituee ailleurs)
+    cat_couvertes = {(c.famille, c.categorie) for c in caces}
+
+    lignes = {}
+    for ep in epreuves:
+        key = (ep.famille, ep.categorie)
+        if key not in lignes:
+            lignes[key] = {"famille": ep.famille, "categorie": ep.categorie,
+                           "theorie": None, "pratique": None}
+        lignes[key]["pratique"] = ep.obtenue
+        if fam_session and ep.famille == fam_session:
+            lignes[key]["theorie"] = theorie_famille
+
+    # Principe du plus favorable : si un CACES est delivrable pour la categorie et que
+    # la theorie du jour est en echec ou absente, on affiche "Dispense" (theorie couverte).
+    for key, lg in lignes.items():
+        if key in cat_couvertes and lg["theorie"] is not True:
+            lg["theorie"] = "dispense"
+
+    lignes_list = sorted(lignes.values(), key=lambda x: (x["famille"], x["categorie"]))
 
     return {"session": sess, "stagiaire": stag, "lignes": lignes_list, "caces": caces}
 
@@ -137,6 +146,8 @@ def _badge_epreuve(obt):
         return '<span style="color:#2e7d32;">&#10003; R&eacute;ussie</span>'
     if obt is False:
         return '<span style="color:#c62828;">&#10007; &Eacute;chec</span>'
+    if obt == "dispense":
+        return '<span style="color:#1565c0;">Dispense</span>'
     return '<span style="color:#999;">&mdash;</span>'
 
 
