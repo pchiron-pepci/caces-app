@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<div style="margin-top:10px;">'
             + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">'
             + '<strong style="color:#00695c;font-size:13px;">🌐 CACES externes</strong>'
-            + '<button data-action="ajouter-caces-externe" data-stagiaire-id="' + stagiaireId + '" style="background:#00695c;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">+ Ajouter</button>'
+            + '<button data-action="ajouter-caces-externe" data-id="' + stagiaireId + '" style="background:#00695c;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">+ Ajouter</button>'
             + '</div>'
             + lignes
             + '</div>';
