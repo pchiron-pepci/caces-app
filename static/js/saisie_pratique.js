@@ -286,15 +286,35 @@
       var alerte = ch.restant <= -seuil;
       var bordure = alerte ? "#cc0000" : (depasse ? "#e24b4a" : "#e0e3e6");
       var bg = alerte ? "#fcebeb" : "#fff";
+      // Cumul du groupe = temps ecoule total au dernier jalon renseigne.
+      var _jg = state.jalons[g.key] || { pp: null, mn: null, fp: null };
+      var _cumul = null;
+      if (_jg.fp != null) _cumul = _jg.fp;
+      else if (_jg.mn != null) _cumul = _jg.mn;
+      else if (_jg.pp != null) _cumul = _jg.pp;
+      // Etat couleur du groupe : vert (<100%), orange (100-130%), rouge (>=130%).
+      var _ref = g.ref, _seuil130 = _ref * 1.30;
+      var _etat = "vert";
+      if (_cumul != null) {
+        if (_cumul >= _seuil130) _etat = "rouge";
+        else if (_cumul >= _ref) _etat = "orange";
+      }
+      var _COL = {
+        vert:   { bord: "#5dcaa5", fond: "#e1f5ee", txt: "#0f6e56" },
+        orange: { bord: "#ef9f27", fond: "#faeeda", txt: "#854f0b" },
+        rouge:  { bord: "#e24b4a", fond: "#fcebeb", txt: "#a32d2d" }
+      };
+
       function rub(k, lib) {
         var val = hr[k];
         var set = !!val;
+        var c = set ? _COL[_etat] : { bord: "#e0e3e6", fond: "#f9fafb", txt: "#bbb" };
         var _titre = set ? "Cliquer pour corriger la duree de cette phase" : "Cliquer pour cloturer la phase precedente et demarrer celle-ci";
         return '<div class="sp-rub" data-clock="' + g.key + '|' + k + '" title="' + _titre + '" '
-          + 'style="flex:1;border:1px solid ' + (set ? "#5dcaa5" : "#e0e3e6") + ';border-radius:5px;'
-          + 'padding:3px 4px;cursor:pointer;text-align:center;background:' + (set ? "#e1f5ee" : "#f9fafb") + ';">'
+          + 'style="flex:1;border:1px solid ' + c.bord + ';border-radius:5px;'
+          + 'padding:3px 4px;cursor:pointer;text-align:center;background:' + c.fond + ';">'
           + '<div style="font-size:9px;color:#888;line-height:1.2;">' + lib + (set ? ' ✎' : '') + '</div>'
-          + '<div style="font-size:12px;font-weight:700;font-family:monospace;color:' + (set ? "#0f6e56" : "#bbb") + ';">'
+          + '<div style="font-size:12px;font-weight:700;font-family:monospace;color:' + c.txt + ';">'
           + (val || "--:--") + '</div></div>';
       }
       return '<div class="sp-cmp" data-key="' + g.key + '" '
