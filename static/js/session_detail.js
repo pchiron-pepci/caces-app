@@ -393,9 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } catch(e) {}
     document.addEventListener('change', function(e) {
-        if (e.target && e.target.name === 'dispense-origine') { _appliquerVisibiliteOrigine(); }
-        if (e.target && e.target.id === 'sc-dispense-date') { _verifierQ2(); _verifierEcheance(); }
-        if (e.target && e.target.id === 'sc-dispense-echeance') { _verifierEcheance(); }
+        if (e.target && e.target.id === 'sc-theorie') { _syncDispenseNote(); }
     });
 });
 
@@ -803,32 +801,24 @@ async function sauvegarderPratique() {
 }
 
 function _syncDispenseNote() {
-    const isDispense = document.getElementById('sc-theorie').value === 'dispense';
-    const field = document.getElementById('field-dispense-note');
-    field.style.display = isDispense ? 'block' : 'none';
-    if (!isDispense) document.getElementById('sc-dispense-note').value = '';
-    var champFichier = document.getElementById('field-dispense-fichier');
-    if (champFichier) champFichier.style.display = isDispense ? 'block' : 'none';
-    var champDate = document.getElementById('field-dispense-date');
-    if (champDate) champDate.style.display = isDispense ? 'block' : 'none';
-    var champOrigine = document.getElementById('field-dispense-origine');
-    if (champOrigine) champOrigine.style.display = isDispense ? 'block' : 'none';
-    var champEch = document.getElementById('field-dispense-echeance');
-    if (champEch && !isDispense) champEch.style.display = 'none';
+    var selT = document.getElementById('sc-theorie');
+    var isDispense = selT && selT.value === 'dispense';
+    var field = document.getElementById('field-dispense-note');
+    if (field) field.style.display = isDispense ? 'block' : 'none';
+    var note = document.getElementById('sc-dispense-note');
+    if (!isDispense && note) note.value = '';
     _detecterDispense();
 }
 
 function _detecterDispense() {
     var box = document.getElementById('dispense-proposition');
     if (!box) return;
-    var radioInt = document.getElementById('dispense-origine-interne');
-    var radioExt = document.getElementById('dispense-origine-externe');
-    window._dispenseDateInterne = null;
-    var isDispense = document.getElementById('sc-theorie').value === 'dispense';
+    var selT = document.getElementById('sc-theorie');
+    var isDispense = selT && selT.value === 'dispense';
     var stagId = window._scStagiaireId;
     var famille = window.SESSION_FAMILLE;
     var sessionId = window.SESSION_ID;
-    if (!stagId || !famille) {
+    if (!isDispense || !stagId || !famille) {
         box.style.display = 'none';
         box.innerHTML = '';
         return;
@@ -840,30 +830,24 @@ function _detecterDispense() {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (!data || !data.possible) {
-                box.innerHTML = 'ℹ️ Aucune base de dispense trouvée en interne pour cette famille (théorie ou CACES de moins de 12 mois). Vous pouvez saisir une dispense externe manuellement.';
+                box.innerHTML = 'ℹ️ Aucune base de dispense détectée pour cette famille. Si le candidat détient un CACES d\'un autre organisme, enregistrez-le dans sa fiche (onglet reprise → CACES externes).';
                 box.style.background = '#fff7e6';
                 box.style.borderColor = '#e0c080';
-                if (radioInt) { radioInt.disabled = true; }
-                if (radioExt) { radioExt.disabled = false; if (!radioInt || !radioInt.checked) radioExt.checked = true; }
-                if (radioInt && radioInt.checked) { radioInt.checked = false; if (radioExt) radioExt.checked = true; }
-                _appliquerVisibiliteOrigine();
                 return;
             }
             var typeLib = data.type === 'caces' ? 'CACES' : 'Théorie';
+            var origineLib = (data.origine === 'externe')
+                ? ('externe' + (data.organisme ? ' (' + data.organisme + ')' : ''))
+                : 'interne';
             var lienHtml = data.lien ? ' · <a href="' + data.lien + '" target="_blank">Vérifier ↗</a>' : '';
-            box.style.background = '#eef4fb';
-            box.style.borderColor = '#bcd';
+            box.style.background = '#eef2f5';
+            box.style.borderColor = '#cbd5dc';
             box.innerHTML =
                 '<strong>ℹ️ Dispense possible (à valider par vous)</strong><br>' +
                 'Base : ' + typeLib + ' — ' + (data.reference || '') + '<br>' +
+                'Origine : ' + origineLib + '<br>' +
                 'Date d\'origine : ' + _dateFr(data.date_origine) + ' · Dispense valable jusqu\'au ' + _dateFr(data.date_limite_dispense) +
-                lienHtml +
-                '<br><span style="color:#666;">Le système propose, vous décidez : cochez la dispense et renseignez les champs si vous validez.</span>';
-            window._dispenseDateInterne = data.date_origine || null;
-            if (radioInt) radioInt.disabled = false;
-            if (radioExt) radioExt.disabled = false;
-            if (radioInt && radioExt && !radioInt.checked && !radioExt.checked) { radioInt.checked = true; }
-            _appliquerVisibiliteOrigine();
+                lienHtml;
         })
         .catch(function() {
             box.innerHTML = '⚠️ Erreur lors de la recherche de base de dispense.';
@@ -872,29 +856,7 @@ function _detecterDispense() {
         });
 }
 
-function _appliquerVisibiliteOrigine() {
-    var radioExt = document.getElementById('dispense-origine-externe');
-    var box = document.getElementById('dispense-proposition');
-    var estExterne = radioExt && radioExt.checked;
-    if (box) box.style.display = estExterne ? 'none' : (box.innerHTML.trim() ? 'block' : 'none');
-    var champDate = document.getElementById('sc-dispense-date');
-    if (champDate) {
-        if (estExterne) {
-            // base externe : saisie volontaire assumee → vider la date heritee de l'interne
-            if (champDate.disabled) champDate.value = '';   // ne vide que si on ARRIVE depuis interne (champ etait grise)
-            champDate.disabled = false;
-        } else {
-            // base interne : date detectee, grisee
-            champDate.value = window._dispenseDateInterne || '';
-            champDate.disabled = true;
-        }
-    }
-    var estDispense = document.getElementById('sc-theorie').value === 'dispense';
-    var champEcheanceWrap = document.getElementById('field-dispense-echeance');
-    if (champEcheanceWrap) champEcheanceWrap.style.display = (estDispense && estExterne) ? 'block' : 'none';
-    _verifierQ2();
-    _verifierEcheance();
-}
+function _appliquerVisibiliteOrigine() { /* obsolete : origine geree par le moteur */ }
 
 function _verifierQ2() {
     var warn = document.getElementById('dispense-q2-warning');
