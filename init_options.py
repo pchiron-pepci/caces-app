@@ -24,7 +24,7 @@ LIBELLES = {
 OPTIONS = [
     ("R482", "A",      [("PE", True),  ("TEL", False)]),
     ("R482", "B1",     [("PE", False), ("TEL", False)]),
-    ("R482", "B2",     [("TEL", True)]),                   # conducteur accompagnant
+    ("R482", "B2",     [("PE", False)]),                   # forage : PE facultative ; TEL integree dans variante CA (pas de module)
     ("R482", "B3",     [("PE", False), ("TEL", False)]),   # rail-route : PE + TEL facultatives
     ("R482", "C1",     [("PE", False)]),
     ("R482", "C2",     [("PE", False), ("TEL", False)]),    # reglage : PE + TEL facultatives (TEL au referentiel)
