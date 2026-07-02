@@ -858,7 +858,8 @@ function _detecterDispense() {
 
 function _appliquerVisibiliteOrigine() { /* obsolete : origine geree par le moteur */ }
 
-function _verifierQ2() {
+function _verifierQ2() { return; }
+function _verifierQ2_obsolete() {
     var warn = document.getElementById('dispense-q2-warning');
     var radioExt = document.getElementById('dispense-origine-externe');
     if (!warn || !radioExt) return;
@@ -872,7 +873,8 @@ function _verifierQ2() {
     }
 }
 
-function _verifierEcheance() {
+function _verifierEcheance() { return; }
+function _verifierEcheance_obsolete() {
     var warn = document.getElementById('dispense-echeance-warning');
     var radioExt = document.getElementById('dispense-origine-externe');
     if (!warn || !radioExt) return;
@@ -924,23 +926,12 @@ function ouvrirAjoutCandidat() {
     _majAffichageJustif('');
     _resetStagiaireSearch();
     document.getElementById('sc-theorie').value = 'normal';
-    document.getElementById('sc-dispense-note').value = '';
-    document.getElementById('sc-dispense-date').value = '';
-    document.getElementById('sc-dispense-echeance').value = '';
-    var _ri = document.getElementById('dispense-origine-interne');
-    var _re = document.getElementById('dispense-origine-externe');
-    if (_ri) _ri.checked = false;
-    if (_re) _re.checked = false;
-    document.getElementById('field-dispense-note').style.display = 'none';
-    document.getElementById('field-dispense-date').style.display = 'none';
-    document.getElementById('field-dispense-origine').style.display = 'none';
-    document.getElementById('field-dispense-echeance').style.display = 'none';
-    document.getElementById('field-dispense-fichier').style.display = 'none';
-    var _wq = document.getElementById('dispense-q2-warning');
-    if (_wq) { _wq.style.display = 'none'; _wq.innerHTML = ''; }
-    var _we = document.getElementById('dispense-echeance-warning');
-    if (_we) { _we.style.display = 'none'; _we.innerHTML = ''; }
-    window._dispenseDateInterne = null;
+    var _note = document.getElementById('sc-dispense-note');
+    if (_note) _note.value = '';
+    var _fn = document.getElementById('field-dispense-note');
+    if (_fn) _fn.style.display = 'none';
+    var _box = document.getElementById('dispense-proposition');
+    if (_box) { _box.style.display = 'none'; _box.innerHTML = ''; }
     document.getElementById('field-stagiaire').style.display = 'block';
     if (window.USER_ROLE === 'terrain') {
         afficherErreur('L\'inscription d\'un candidat est reservee au back-office.');
@@ -957,24 +948,12 @@ function editerCandidat(id, stagiaireId, theorie_dispensee, dispenseNote, fichie
     document.getElementById('sc-id').value = id;
     document.getElementById('sc-stagiaire').value = stagiaireId;
     document.getElementById('sc-theorie').value = theorie_dispensee ? 'dispense' : 'normal';
-    document.getElementById('sc-dispense-note').value = dispenseNote || '';
-    document.getElementById('field-dispense-note').style.display = theorie_dispensee ? 'block' : 'none';
-    document.getElementById('field-dispense-fichier').style.display = theorie_dispensee ? 'block' : 'none';
-    document.getElementById('field-dispense-date').style.display = theorie_dispensee ? 'block' : 'none';
-    document.getElementById('field-dispense-origine').style.display = theorie_dispensee ? 'block' : 'none';
-    document.getElementById('sc-dispense-date').value = dispenseDate || '';
-    document.getElementById('sc-dispense-echeance').value = dispenseEcheance || '';
-    document.getElementById('field-dispense-echeance').style.display = (theorie_dispensee && origine === 'externe') ? 'block' : 'none';
-    _verifierEcheance();
+    var _en = document.getElementById('sc-dispense-note');
+    if (_en) _en.value = dispenseNote || '';
+    var _efn = document.getElementById('field-dispense-note');
+    if (_efn) _efn.style.display = theorie_dispensee ? 'block' : 'none';
     document.getElementById('field-stagiaire').style.display = 'none';
-    _majAffichageJustif(fichierNom || '');
-    if (theorie_dispensee) {
-        var re = document.getElementById('dispense-origine-externe');
-        var ri = document.getElementById('dispense-origine-interne');
-        if (origine === 'externe') { if (re) re.checked = true; if (ri) ri.checked = false; }
-        else if (origine === 'interne') { if (ri) ri.checked = true; if (re) re.checked = false; }
-        else { if (re) re.checked = false; if (ri) ri.checked = false; }
-    }
+    _syncDispenseNote();
     document.getElementById('modal-candidat').style.display = 'flex';
     _detecterDispense();
     _appliquerRoleModaleCandidat();
@@ -1175,10 +1154,7 @@ async function sauvegarderCandidat() {
         session_id: window.SESSION_ID,
         stagiaire_id: parseInt(document.getElementById('sc-stagiaire').value),
         theorie_dispensee: isDispense,
-        dispense_note: isDispense ? (document.getElementById('sc-dispense-note').value.trim() || null) : null,
-        dispense_date: isDispense ? (document.getElementById('sc-dispense-date').value || null) : null,
-        dispense_origine_choisie: isDispense ? ((document.querySelector('input[name="dispense-origine"]:checked') || {}).value || null) : null,
-        dispense_echeance: isDispense ? (document.getElementById('sc-dispense-echeance').value || null) : null
+        dispense_note: isDispense ? ((document.getElementById('sc-dispense-note') || {}).value || '').trim() || null : null
     };
     if (!id && !data.stagiaire_id) { alert('Choisir un stagiaire !'); return; }
     const url = id ? '/api/sessions/' + window.SESSION_ID + '/candidats/' + id : '/api/sessions/' + window.SESSION_ID + '/candidats';
