@@ -443,7 +443,7 @@
       if (act === "toggle") { if (ch.run) { ch.run = false; if (ch.timer) clearInterval(ch.timer); } else { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); } _majAffichageCompteur(key); }
       else if (act === "start" && !ch.run) { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); }
       else if (act === "stop") { ch.run = false; if (ch.timer) clearInterval(ch.timer); }
-      else if (act === "reset") { ch.run = false; if (ch.timer) clearInterval(ch.timer); ch.restant = ch.ref; _majAffichageCompteur(key); }
+      else if (act === "reset") { ch.run = false; if (ch.timer) clearInterval(ch.timer); ch.restant = ch.ref; if (state.jalons[key]) state.jalons[key] = { pp: null, mn: null, fp: null }; if (state.horaires[key]) state.horaires[key] = { pp: "", mn: "", fp: "" }; _majAffichageCompteur(key); }
       if (typeof _engMajFn === "function") _engMajFn();
       return;
     }
