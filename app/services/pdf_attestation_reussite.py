@@ -142,12 +142,10 @@ def _collecter(session_id, stagiaire_id, db):
 
 
 def _badge_epreuve(obt):
-    if obt is True:
-        return '<span style="color:#2e7d32;">&#10003; R&eacute;ussie</span>'
+    if obt is True or obt == "dispense":
+        return '<span style="color:#2e7d32;">&#10003; Acquis</span>'
     if obt is False:
-        return '<span style="color:#c62828;">&#10007; &Eacute;chec</span>'
-    if obt == "dispense":
-        return '<span style="color:#1565c0;">Dispense</span>'
+        return '<span style="color:#c62828;">&#10007; Non acquis</span>'
     return '<span style="color:#999;">&mdash;</span>'
 
 
@@ -194,8 +192,9 @@ def _build_html(data, cfg):
             '</div>'
         ) % (_esc(c.famille), _esc(c.categorie), opts, _fmt_date(c.date_echeance))
     if not caces_rows:
-        caces_bloc = ('<div style="color:#999; font-style:italic; font-size:13px;">'
-                      'Aucun CACES&reg; d&eacute;livrable en l\'&eacute;tat.</div>')
+        caces_bloc = ('<div style="border:1px solid #cc0000; border-radius:8px; padding:10px 14px; font-size:13px;">'
+                      'CACES&reg; pouvant &ecirc;tre d&eacute;livr&eacute;s : <strong>N&eacute;ant</strong> '
+                      '&mdash; se reporter &agrave; la fiche de recommandation.</div>')
     else:
         caces_bloc = ('<div style="border:1px solid #cc0000; border-radius:8px; padding:10px 14px;">%s</div>'
                       % caces_rows)
@@ -224,8 +223,8 @@ th {{ text-align:left; font-size:11px; color:#666; border-bottom:1px solid #ddd;
   </div>
 
   <div class="titre">
-    <div class="t">Attestation de r&eacute;ussite provisoire</div>
-    <div class="st">Document d'attente &mdash; ne remplace pas la carte CACES&reg;</div>
+    <div class="t">Bilan d'acquisition des comp&eacute;tences</div>
+    <div class="st">Document provisoire &mdash; ne remplace pas la carte CACES&reg;</div>
   </div>
 
   <div class="cand">
@@ -246,9 +245,9 @@ th {{ text-align:left; font-size:11px; color:#666; border-bottom:1px solid #ddd;
 
   <div class="validite">
     <strong>Validit&eacute; :</strong> le pr&eacute;sent document est valable <strong>un mois</strong>
-    &agrave; compter de sa date d'&eacute;mission (soit jusqu'au <strong>{validite}</strong>), dans l'attente de la
-    d&eacute;livrance de la ou des cartes CACES&reg; correspondantes. Il atteste de la r&eacute;ussite aux
-    &eacute;preuves mais ne constitue pas le certificat officiel.
+    &agrave; compter de sa date d'&eacute;mission (soit jusqu'au <strong>{validite}</strong>), dans l'attente,
+    le cas &eacute;ch&eacute;ant, de la d&eacute;livrance de la carte CACES&reg; correspondante. Ce document ne
+    constitue en aucune fa&ccedil;on un certificat officiel et sa validit&eacute; est provisoire.
   </div>
 
   <div class="sign">
