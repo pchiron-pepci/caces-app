@@ -2805,17 +2805,6 @@ function afficherInfoToast(msg) {
     }, 1800);
 }
 
-document.addEventListener('click', function(e) {
-    var p = e.target.closest('[data-action="dispense-fichier-direct"]');
-    if (!p) return;
-    var scId = p.dataset.scId;
-    var nom = p.dataset.fichierNom || '';
-    if (nom) {
-        window.open('/api/sessions/' + SESSION_ID + '/candidats/' + scId + '/dispense-fichier', '_blank');
-    } else {
-        afficherInfoToast('Aucun justificatif joint');
-    }
-});
 
 // ===== Justificatifs de formation — menu multi-fichiers (chantier table Justificatif) =====
 (function() {
