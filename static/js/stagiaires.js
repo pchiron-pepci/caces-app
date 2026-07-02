@@ -99,6 +99,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (arrow) arrow.textContent = open ? '▶' : '▼';
         }
         else if (action === 'ajouter-reprise') { ouvrirModalReprise(btn.dataset.id); return; }
+        else if (action === 'ajouter-caces-externe') { ouvrirModalCacesExterne(btn.dataset.stagiaireId); return; }
+        else if (action === 'fermer-modal-caces-externe') { document.getElementById('modal-caces-externe').style.display = 'none'; return; }
+        else if (action === 'confirmer-caces-externe') { confirmerCacesExterne(); return; }
+        else if (action === 'suppr-caces-externe') { supprimerCacesExterne(btn.dataset.id, btn.dataset.stag); return; }
         else if (action === 'fermer-modal-reprise') { document.getElementById('modal-reprise').style.display = 'none'; return; }
         else if (action === 'confirmer-ajout-reprise') { confirmerAjoutReprise(); return; }
         else if (action === 'ajouter-orpheline') { ouvrirModalOrpheline(btn.dataset.id); return; }
@@ -447,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderHistoriqueDeReprise(reprises, orphelines, stagiaireId) {
-        var contenu = renderReprisesHistorique(reprises, stagiaireId) + renderOrphelinesReprises(orphelines, stagiaireId);
+        var contenu = renderReprisesHistorique(reprises, stagiaireId) + renderCacesExternes(reprises, stagiaireId) + renderOrphelinesReprises(orphelines, stagiaireId);
         return '<div style="margin-top:16px;border-top:2px solid #e0e0e0;padding-top:10px;">'
             + '<div data-action="toggle-historique-reprise" data-id="' + stagiaireId + '" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">'
             + '<span id="hist-reprise-arrow-' + stagiaireId + '" style="color:#2d2d2d;font-size:12px;">▶</span>'
@@ -461,10 +465,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderReprisesHistorique(reprises, stagiaireId) {
         var lignes = '';
-        if (!reprises || reprises.length === 0) {
+        var reprisesLocales = (reprises || []).filter(function(r) { return !r.organisme_externe; });
+        if (reprisesLocales.length === 0) {
             lignes = '<div style="color:#888;font-size:13px;padding:6px 0;">Aucun CACES repris.</div>';
         } else {
-            lignes = reprises.map(function(r) {
+            lignes = reprisesLocales.map(function(r) {
                 var opts = r.options_obtenues
                     ? r.options_obtenues.split(',').map(function(o){ return '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:1px 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>'; }).join(' ')
                     : '<span style="color:#ccc;font-size:11px;">—</span>';
@@ -493,6 +498,36 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!iso) return '—';
         var p = iso.split('-');
         return p[2] + '/' + p[1] + '/' + p[0];
+    }
+
+    function renderCacesExternes(reprises, stagiaireId) {
+        var externes = (reprises || []).filter(function(r) { return r.organisme_externe; });
+        var lignes = '';
+        if (externes.length === 0) {
+            lignes = '<div style="color:#888;font-size:13px;padding:6px 0;">Aucun CACES externe enregistré.</div>';
+        } else {
+            lignes = externes.map(function(r) {
+                var justif = r.a_justificatif
+                    ? '<a href="/stagiaires/' + stagiaireId + '/caces-externe/' + r.id + '/justificatif" target="_blank" style="color:#00695c;font-size:11px;text-decoration:underline;" title="Voir le justificatif">📎 ' + (r.justificatif_nom || 'Justificatif') + '</a>'
+                    : '<span style="color:#e65100;font-size:11px;" title="Aucun justificatif joint">⚠️ Sans justificatif</span>';
+                return '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #eef0f6;font-size:12px;flex-wrap:wrap;">'
+                    + '<span style="font-weight:700;color:#00695c;">🌐 ' + r.organisme_externe + '</span>'
+                    + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
+                    + '<span style="background:#00695c;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
+                    + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
+                    + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
+                    + justif
+                    + '<button type="button" data-action="suppr-caces-externe" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">Supprimer</button>'
+                    + '</div>';
+            }).join('');
+        }
+        return '<div style="margin-top:10px;">'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+            + '<strong style="color:#00695c;font-size:13px;">🌐 CACES externes</strong>'
+            + '<button data-action="ajouter-caces-externe" data-stagiaire-id="' + stagiaireId + '" style="background:#00695c;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">+ Ajouter</button>'
+            + '</div>'
+            + lignes
+            + '</div>';
     }
 
     function renderOrphelinesReprises(data, stagiaireId) {
@@ -824,6 +859,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(function(){ sCat.innerHTML = '<option value="">— Erreur —</option>'; sCat.disabled = true; });
         }
+        if (e.target && e.target.id === 'cext-famille') {
+            var fam = e.target.value;
+            var sCat = document.getElementById('cext-categorie');
+            if (!fam) { sCat.innerHTML = '<option value="">— Choisir une famille d\'abord —</option>'; sCat.disabled = true; return; }
+            sCat.innerHTML = '<option value="">— Chargement… —</option>'; sCat.disabled = true;
+            fetch('/admin/categories/' + encodeURIComponent(fam), { credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(cats){
+                    sCat.innerHTML = '<option value="">— Choisir —</option>';
+                    (cats || []).forEach(function(c){
+                        var o = document.createElement('option');
+                        o.value = c.code; o.textContent = c.code + ' — ' + c.libelle;
+                        sCat.appendChild(o);
+                    });
+                    sCat.disabled = false;
+                })
+                .catch(function(){ sCat.innerHTML = '<option value="">— Erreur —</option>'; sCat.disabled = true; });
+        }
         if (e.target && e.target.id === 'orph-famille') {
             var fam = e.target.value;
             var sCat = document.getElementById('orph-categorie');
@@ -843,6 +896,88 @@ document.addEventListener('DOMContentLoaded', function () {
                 .catch(function(){ sCat.innerHTML = '<option value="">— Erreur —</option>'; sCat.disabled = true; });
         }
     });
+
+    function ouvrirModalCacesExterne(stagiaireId) {
+        window._cextStagiaireId = stagiaireId;
+        document.getElementById('cext-organisme').value = '';
+        document.getElementById('cext-famille').value = '';
+        document.getElementById('cext-categorie').innerHTML = '<option value="">— Choisir une famille d\'abord —</option>';
+        document.getElementById('cext-categorie').disabled = true;
+        document.getElementById('cext-echeance').value = '';
+        document.getElementById('cext-fichier').value = '';
+        document.getElementById('cext-pin').value = '';
+        document.getElementById('cext-error').style.display = 'none';
+        document.getElementById('cext-warn').style.display = 'none';
+        document.getElementById('modal-caces-externe').style.display = 'flex';
+    }
+
+    function confirmerCacesExterne() {
+        var stagiaireId = window._cextStagiaireId;
+        var fd = new FormData();
+        fd.append('famille', document.getElementById('cext-famille').value);
+        fd.append('categorie', document.getElementById('cext-categorie').value);
+        fd.append('date_echeance', document.getElementById('cext-echeance').value);
+        fd.append('organisme', document.getElementById('cext-organisme').value);
+        fd.append('pin', document.getElementById('cext-pin').value);
+        var fichierInput = document.getElementById('cext-fichier');
+        if (fichierInput.files && fichierInput.files[0]) { fd.append('fichier', fichierInput.files[0]); }
+        var errDiv = document.getElementById('cext-error');
+        var warnDiv = document.getElementById('cext-warn');
+        errDiv.style.display = 'none';
+        warnDiv.style.display = 'none';
+        fetch('/stagiaires/' + stagiaireId + '/caces-externe', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: fd
+        }).then(function(r) {
+            return r.json().then(function(d) { return { ok: r.ok, data: d }; });
+        }).then(function(res) {
+            if (!res.ok) {
+                errDiv.textContent = res.data.detail || 'Erreur';
+                errDiv.style.display = 'block';
+            } else {
+                if (res.data.exploitable === false) {
+                    warnDiv.textContent = 'CACES ajouté mais non exploitable (base théorique > 12 mois).';
+                    warnDiv.style.display = 'block';
+                    setTimeout(function() {
+                        document.getElementById('modal-caces-externe').style.display = 'none';
+                        rechargerHistoriqueReprise(stagiaireId);
+                    }, 2000);
+                } else {
+                    document.getElementById('modal-caces-externe').style.display = 'none';
+                    rechargerHistoriqueReprise(stagiaireId);
+                }
+            }
+        }).catch(function() {
+            errDiv.textContent = 'Erreur réseau';
+            errDiv.style.display = 'block';
+        });
+    }
+
+    function supprimerCacesExterne(cacesId, stagiaireId) {
+        var pin = prompt('PIN admin pour supprimer ce CACES externe :');
+        if (!pin) return;
+        fetch('/stagiaires/' + stagiaireId + '/caces-externe/' + cacesId + '?pin=' + encodeURIComponent(pin), {
+            method: 'DELETE',
+            credentials: 'same-origin'
+        }).then(function(r) {
+            if (r.ok) {
+                rechargerHistoriqueReprise(stagiaireId);
+            } else {
+                r.json().then(function(d) { alert(d.detail || 'Erreur'); });
+            }
+        }).catch(function() { alert('Erreur réseau'); });
+    }
+
+    function rechargerHistoriqueReprise(stagiaireId) {
+        var sid = String(stagiaireId);
+        var body = document.getElementById('hist-body-' + sid);
+        var btn = document.querySelector('[data-action="historique"][data-id="' + sid + '"]');
+        if (body) { delete body.dataset.loaded; }
+        var row = document.getElementById('hist-' + sid);
+        if (row) { row.style.display = 'none'; if (btn) btn.textContent = '▶'; }
+        if (btn) toggleHistorique(sid, btn);
+    }
 
     function confirmerAjoutReprise() {
         var err = document.getElementById('rep-error');
