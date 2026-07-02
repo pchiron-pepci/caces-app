@@ -2094,7 +2094,7 @@ Les 2 briques d'un couple doivent être à < 12 mois l'une de l'autre, quel que 
 - Modale de choix `#modal-choix-pratique` : 2 boutons — "📱 Saisie en ligne" → `window.open` saisie en ligne ; "✍️ Enregistrement manuel" → ancienne modale pratique
 - Boutons `modifier-epreuve-pratique` (vert et rouge) + bouton `+` (nouveau résultat) : tous redirigés vers la modale de choix avec `data-jour-test-id="{{ j.id }}"` — `window._pratiqueCtx.jourTestId` stocké pour construire l'URL
 
-**Middleware `_verifier_role` :** 6 exceptions ajoutées pour les routes `/api/sessions/\d+/\d+/\d+/[a-zA-Z0-9]+/(ouvrir|enregistrer|calculer|valider|rouvrir|supprimer)`.
+**Middleware `_verifier_role` :** exceptions terrain pour les routes saisie pratique (chemin réel : `/api/sessions/{session_id}/pratique/saisie/{jour}/{stagiaire}/{categorie}/action`) — pattern whitelist corrigé en `\d+/\d+/[^/]+/ouvrir` (fix 2026-07-02 : l'ancien `\d+/ouvrir` ne matchait pas) ; route `variantes` (GET) whitelistée en même temps.
 
 **Scripts init grille :**
 - `init_grille_pratique_r482a.py` + `_options.py` — grilles A multi-engins (PH/MB/CH/CP, 100 pts), option TEL — déployé prod
