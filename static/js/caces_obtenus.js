@@ -587,7 +587,6 @@ function renderCarteAValider(co) {
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;padding-left:72px;">
-                    <span style="color:#2e7d32;font-weight:700;">✅</span>
                     ${co.testeur_nom_theorie ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${_abrevTesteur(co.testeur_nom_theorie)}</span>` : ''}
                 </div>
             </div>
@@ -604,7 +603,6 @@ function renderCarteAValider(co) {
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;padding-left:72px;flex-wrap:wrap;">
-                    <span style="color:#2e7d32;font-weight:700;">✅</span>
                     ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
                     ${co.testeur_nom ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${_abrevTesteur(co.testeur_nom)}</span>` : ''}
                 </div>
