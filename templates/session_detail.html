@@ -1629,6 +1629,10 @@
                             data-action="retirer-candidat"
                             data-sc-id="{{ sc.id }}"
                             data-nom="{{ nddn(sc.stagiaire) }}">🗑️</button>
+                        <button class="btn-edit"
+                            data-action="attestation-reussite"
+                            data-stag-id="{{ sc.stagiaire_id }}"
+                            title="Attestation de réussite provisoire (PDF)">📄</button>
                     </td>
                     {% endif %}
                 </tr>

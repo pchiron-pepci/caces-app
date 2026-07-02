@@ -184,6 +184,12 @@ document.addEventListener('DOMContentLoaded', function() {
         ouvrirAjoutCandidatJour(btn.dataset.jourId, dejaIds);
     });
     document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action="attestation-reussite"]');
+        if (!btn) return;
+        var stagId = btn.getAttribute('data-stag-id');
+        window.open('/api/sessions/' + SESSION_ID + '/attestation-reussite/' + stagId, '_blank');
+    });
+    document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action="retirer-candidat"]');
         if (btn) retirerCandidat(parseInt(btn.dataset.scId), btn.dataset.nom);
     });

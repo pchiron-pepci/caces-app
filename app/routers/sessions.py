@@ -2514,3 +2514,21 @@ def supprimer_justificatif(
     db.delete(j)
     db.commit()
     return {"ok": True}
+
+
+@router.get("/{session_id}/attestation-reussite/{stagiaire_id}")
+def attestation_reussite_pdf(session_id: int, stagiaire_id: int,
+                             request: Request, db: DBSession = Depends(get_db)):
+    # Auth via cookie (middleware) — window.open n'envoie pas le Bearer header.
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Non authentifie")
+    from app.services.pdf_attestation_reussite import generer_attestation_reussite
+    pdf_bytes = generer_attestation_reussite(session_id, stagiaire_id, db)
+    if not pdf_bytes:
+        raise HTTPException(status_code=404, detail="Candidat ou session introuvable")
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'inline; filename="attestation_reussite.pdf"'},
+    )
