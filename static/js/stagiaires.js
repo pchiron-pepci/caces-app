@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (arrow) arrow.textContent = open ? '▶' : '▼';
         }
         else if (action === 'ajouter-reprise') { ouvrirModalReprise(btn.dataset.id); return; }
-        else if (action === 'ajouter-caces-externe') { ouvrirModalCacesExterne(btn.dataset.stagiaireId); return; }
+        else if (action === 'ajouter-caces-externe') { ouvrirModalCacesExterne(btn.dataset.id); return; }
         else if (action === 'fermer-modal-caces-externe') { document.getElementById('modal-caces-externe').style.display = 'none'; return; }
         else if (action === 'confirmer-caces-externe') { confirmerCacesExterne(); return; }
         else if (action === 'suppr-caces-externe') { supprimerCacesExterne(btn.dataset.id, btn.dataset.stag); return; }
@@ -900,7 +900,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function ouvrirModalCacesExterne(stagiaireId) {
         window._cextStagiaireId = stagiaireId;
         document.getElementById('cext-organisme').value = '';
-        document.getElementById('cext-famille').value = '';
         document.getElementById('cext-categorie').innerHTML = '<option value="">— Choisir une famille d\'abord —</option>';
         document.getElementById('cext-categorie').disabled = true;
         document.getElementById('cext-echeance').value = '';
@@ -908,6 +907,17 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('cext-pin').value = '';
         document.getElementById('cext-error').style.display = 'none';
         document.getElementById('cext-warn').style.display = 'none';
+        var sFam = document.getElementById('cext-famille');
+        sFam.innerHTML = '<option value="">— Choisir —</option>';
+        try {
+            var familles = JSON.parse(document.getElementById('reprise-data').dataset.familles || '[]');
+            familles.forEach(function(f) {
+                var o = document.createElement('option');
+                o.value = f.code; o.textContent = f.code + ' — ' + f.libelle;
+                sFam.appendChild(o);
+            });
+        } catch (e) {}
+        sFam.value = '';
         document.getElementById('modal-caces-externe').style.display = 'flex';
     }
 
