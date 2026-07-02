@@ -18,7 +18,8 @@
     online: navigator.onLine,
     compteurs: null,
     chronos: {},
-    horaires: {}
+    horaires: {},        // groupKey -> {pp, mn, fp}  (duree AFFICHEE de chaque phase, mm:ss)
+    jalons: {}           // groupKey -> {pp, mn, fp}  (INSTANT du clic = temps ecoule en s, ou null)
   };
 
   function toast(msg) {
@@ -123,6 +124,23 @@
     var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
     if (h > 0) return h + "h" + (m > 0 ? (m < 10 ? "0" + m : m) : "");
     return m + " min";
+  }
+
+  // Recalcule les durees AFFICHEES de chaque phase a partir des jalons.
+  function _recalcPhases(gkey) {
+    var j = state.jalons[gkey] || { pp: null, mn: null, fp: null };
+    var h = state.horaires[gkey] || { pp: "", mn: "", fp: "" };
+    h.pp = (j.pp != null) ? _fmtEcoule(j.pp) : "";
+    h.mn = (j.mn != null && j.pp != null) ? _fmtEcoule(Math.max(0, j.mn - j.pp)) : "";
+    h.fp = (j.fp != null && j.mn != null) ? _fmtEcoule(Math.max(0, j.fp - j.mn)) : "";
+    state.horaires[gkey] = h;
+  }
+
+  function _dureeEnSecondes(mmss) {
+    var m = String(mmss).match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})$/);
+    if (!m) return 0;
+    var h = m[1] ? parseInt(m[1], 10) : 0;
+    return h * 3600 + parseInt(m[2], 10) * 60 + parseInt(m[3], 10);
   }
 
   function _parseDuree(str) {
@@ -235,6 +253,7 @@
     if (!state.chronos[key]) state.chronos[key] = { ref: ref, restant: ref, run: false, timer: null };
     else state.chronos[key].ref = ref;
     if (!state.horaires[key]) state.horaires[key] = { pp: "", mn: "", fp: "" };
+    if (!state.jalons[key]) state.jalons[key] = { pp: null, mn: null, fp: null };
     return state.chronos[key];
   }
 
@@ -267,7 +286,7 @@
       function rub(k, lib) {
         var val = hr[k];
         var set = !!val;
-        var _titre = set ? "Cliquer pour corriger" : "Cliquer pour poser le temps ecoule";
+        var _titre = set ? "Cliquer pour corriger la duree de cette phase" : "Cliquer pour cloturer la phase precedente et demarrer celle-ci";
         return '<div class="sp-rub" data-clock="' + g.key + '|' + k + '" title="' + _titre + '" '
           + 'style="flex:1;border:1px solid ' + (set ? "#5dcaa5" : "#e0e3e6") + ';border-radius:5px;'
           + 'padding:3px 4px;cursor:pointer;text-align:center;background:' + (set ? "#e1f5ee" : "#f9fafb") + ';">'
@@ -331,34 +350,43 @@
     if (r) {
       var parts = r.getAttribute("data-clock").split("|");
       var gkey = parts[0], champ = parts[1];
+      if (!state.jalons[gkey]) state.jalons[gkey] = { pp: null, mn: null, fp: null };
       if (!state.horaires[gkey]) state.horaires[gkey] = { pp: "", mn: "", fp: "" };
       var ch = state.chronos[gkey];
       var ecoule = ch ? (ch.ref - ch.restant) : 0;
-      var actuel = state.horaires[gkey][champ];
-      if (!actuel) {
-        // 1er clic sur rubrique VIDE : pose auto le temps ecoule.
-        state.horaires[gkey][champ] = _fmtEcoule(ecoule);
+      var dejaPose = state.jalons[gkey][champ] != null;
+      var precede = { pp: null, mn: "pp", fp: "mn" };
+
+      if (!dejaPose) {
+        // 1er clic : exige que la phase precedente soit jalonnee (enchainement).
+        var prev = precede[champ];
+        if (prev && state.jalons[gkey][prev] == null) {
+          alert("Cliquez d'abord la phase precedente (" +
+            (prev === "pp" ? "Prise de poste" : "Manoeuvre") + ").");
+          return;
+        }
+        state.jalons[gkey][champ] = ecoule;
       } else {
-        // Rubrique DEJA remplie : edition manuelle, jamais d'ecrasement auto.
+        // Reclic : edition manuelle de la DUREE de cette phase (jamais d'ecrasement auto).
         var libs = { pp: "Prise de poste", mn: "Manoeuvre", fp: "Fin de poste" };
+        var actuel = state.horaires[gkey][champ] || "";
         var saisie = window.prompt(
-          "Corriger le temps (" + (libs[champ] || champ) + ") au format mm:ss."
-          + " Vide + OK = reprendre le temps ecoule actuel (" + _fmtEcoule(ecoule) + ").",
+          "Corriger la duree de la phase (" + (libs[champ] || champ) + ") au format mm:ss.",
           actuel
         );
         if (saisie === null) { return; }
         saisie = saisie.trim();
-        if (saisie === "") {
-          state.horaires[gkey][champ] = _fmtEcoule(ecoule);
-        } else {
-          var norm = _parseDuree(saisie);
-          if (norm === null) {
-            alert("Format invalide (attendu mm:ss, ex : 12:30)");
-            return;
-          }
-          state.horaires[gkey][champ] = norm;
-        }
+        if (saisie === "") { return; }
+        var norm = _parseDuree(saisie);
+        if (norm === null) { alert("Format invalide (attendu mm:ss, ex : 12:30)"); return; }
+        // Reconstruire le jalon a partir de la duree corrigee + jalon precedent.
+        var secs = _dureeEnSecondes(norm);
+        var base = 0;
+        if (champ === "mn") base = state.jalons[gkey].pp || 0;
+        else if (champ === "fp") base = state.jalons[gkey].mn || 0;
+        state.jalons[gkey][champ] = base + secs;
       }
+      _recalcPhases(gkey);
       renderBarreCompteurs();
     }
   });
