@@ -184,9 +184,16 @@
     var g = bloc.grille;
     var html = "";
     if (g.type === "option") {
-      html += '<div class="sp-bloc-titre"><div class="sp-bloc-line"></div>'
-        + '<span class="sp-bloc-label">Option · ' + escapeHtml(g.libelle) + '</span>'
-        + '<div class="sp-bloc-line"></div></div>';
+      // Meme bandeau que les machines (sp-engin-head) mais CENTRE + accent vert.
+      var _badgeO = "OPTION";
+      var _nomO = g.libelle || "";
+      html += '<div class="sp-engin-head" data-engin-badge="' + escapeHtml(_badgeO) + '" data-engin-nom="' + escapeHtml(_nomO) + '" style="background:#2d2d2d;color:#fff;'
+        + 'border-radius:8px;padding:10px 14px;margin:14px 0 8px;display:flex;'
+        + 'align-items:center;justify-content:center;gap:10px;border-left:5px solid #0f6e56;">'
+        + '<span style="background:#0f6e56;color:#fff;font-weight:700;font-size:13px;'
+        + 'padding:3px 9px;border-radius:5px;white-space:nowrap;">' + escapeHtml(_badgeO) + '</span>'
+        + '<span style="font-weight:700;font-size:15px;">' + escapeHtml(_nomO)
+        + '</span></div>';
     } else if (g.type === "base") {
       // En-tete d'engin uniforme pour TOUTES les categories.
       //  - cat A multi-engins (g.variante) : badge "ENGIN N°1/N°2" + nom mappe + code.
