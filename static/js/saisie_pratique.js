@@ -15,7 +15,10 @@
     statut: "en_cours",
     blocs: [],            // [{bloc_id, grille, notes{item_id:note}, elim:[crit_id]}]
     dirty: {},            // bloc_id -> true (modifs non synchronisees)
-    online: navigator.onLine
+    online: navigator.onLine,
+    compteurs: null,
+    chronos: {},
+    horaires: {}
   };
 
   function toast(msg) {
@@ -90,6 +93,45 @@
     "CP": "Compacteur compact"
   };
 
+  // ─── LOT 1 : calcul des compteurs (1 UT = 60 min, proportionnel) ───
+  var MINUTES_PAR_UT = 60;
+
+  function calculerCompteurs(blocs) {
+    var utCat = 0, options = {};
+    (blocs || []).forEach(function (b) {
+      var g = b.grille || {};
+      var ut = (typeof g.ut === "number") ? g.ut : (parseFloat(g.ut || 0) || 0);
+      if (g.type === "base") {
+        utCat += ut;
+      } else if (g.type === "option") {
+        if (g.incluse) { utCat += ut; }
+        else if (g.code_option) {
+          options[g.code_option] = { ut: ut, secondes: Math.round(ut * MINUTES_PAR_UT * 60), libelle: g.libelle || g.code_option };
+        }
+      }
+    });
+    return {
+      categorie: { ut: utCat, secondes: Math.round(utCat * MINUTES_PAR_UT * 60) },
+      options: options
+    };
+  }
+
+  function utLabel(ut) { return (ut === Math.floor(ut) ? ut : String(ut).replace(".", ",")) + " UT"; }
+
+  function fmtDureeCourt(sec) {
+    sec = Math.round(sec);
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+    if (h > 0) return h + "h" + (m > 0 ? (m < 10 ? "0" + m : m) : "");
+    return m + " min";
+  }
+
+  function fmtChrono(sec) {
+    var neg = sec < 0, a = Math.abs(Math.round(sec));
+    var h = Math.floor(a / 3600), m = Math.floor((a % 3600) / 60), x = a % 60;
+    var p = function (v) { return v < 10 ? "0" + v : v; };
+    return (neg ? "-" : "") + (h > 0 ? (h + ":" + p(m)) : m) + ":" + p(x);
+  }
+
   function renderBloc(bloc) {
     var g = bloc.grille;
     var html = "";
@@ -148,8 +190,126 @@
     return html;
   }
 
+  // ─── LOT 2 : barre de compteurs figee ─────────────────────────
+  function _groupes() {
+    var c = state.compteurs || { categorie: { secondes: 0, ut: 0 }, options: {} };
+    var out = [];
+    if (c.categorie.secondes > 0) {
+      out.push({ key: "CAT", label: "Categorie " + (CATEGORIE || ""), ref: c.categorie.secondes, ut: c.categorie.ut });
+    }
+    Object.keys(c.options).forEach(function (code) {
+      var o = c.options[code];
+      out.push({ key: "OPT:" + code, label: "Option " + code, ref: o.secondes, ut: o.ut });
+    });
+    return out;
+  }
+
+  function _ensureChrono(key, ref) {
+    if (!state.chronos[key]) state.chronos[key] = { ref: ref, restant: ref, run: false, timer: null };
+    else state.chronos[key].ref = ref;
+    if (!state.horaires[key]) state.horaires[key] = { pp: "", mn: "", fp: "" };
+    return state.chronos[key];
+  }
+
+  function renderBarreCompteurs() {
+    var host = document.getElementById("sp-compteurs");
+    if (!host) {
+      var content = document.getElementById("sp-content");
+      if (!content) return;
+      host = document.createElement("div");
+      host.id = "sp-compteurs";
+      host.style.cssText = "position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #d0d4d8;padding:8px;display:flex;gap:8px;flex-wrap:wrap;";
+      content.insertBefore(host, content.firstChild);
+    }
+    var groupes = _groupes();
+    if (!groupes.length) { host.style.display = "none"; return; }
+    host.style.display = "flex";
+    host.innerHTML = groupes.map(function (g) {
+      var ch = _ensureChrono(g.key, g.ref);
+      var hr = state.horaires[g.key];
+      var depasse = ch.restant < 0;
+      var seuil = Math.round(g.ref * 0.30);
+      var alerte = ch.restant <= -seuil;
+      var bordure = alerte ? "#cc0000" : (depasse ? "#e24b4a" : "#e0e3e6");
+      var bg = alerte ? "#fcebeb" : "#fff";
+      function rub(k, lib) {
+        var val = hr[k];
+        var set = !!val;
+        return '<div class="sp-rub" data-clock="' + g.key + '|' + k + '" '
+          + 'style="flex:1;border:1px solid ' + (set ? "#5dcaa5" : "#e0e3e6") + ';border-radius:5px;'
+          + 'padding:3px 4px;cursor:pointer;text-align:center;background:' + (set ? "#e1f5ee" : "#f9fafb") + ';">'
+          + '<div style="font-size:9px;color:#888;line-height:1.2;">' + lib + '</div>'
+          + '<div style="font-size:12px;font-weight:700;font-family:monospace;color:' + (set ? "#0f6e56" : "#bbb") + ';">'
+          + (val || "--:--") + '</div></div>';
+      }
+      return '<div class="sp-cmp" data-key="' + g.key + '" '
+        + 'style="flex:1;min-width:200px;border:1px solid ' + bordure + ';border-radius:9px;padding:8px 9px;background:' + bg + ';">'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+        + '<span style="flex:1;font-size:10px;color:#888;">' + escapeHtml(g.label) + ' · ref ' + fmtDureeCourt(g.ref) + ' (' + utLabel(g.ut) + ')</span>'
+        + '<span class="sp-cmp-t" style="font-family:monospace;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (depasse ? "#cc0000" : "#2d2d2d") + ';">' + fmtChrono(ch.restant) + '</span>'
+        + '</div>'
+        + '<div style="display:flex;gap:3px;margin-top:4px;">'
+        + '<button class="sp-cmp-btn" data-cmp="start" data-key="' + g.key + '" style="flex:1;height:24px;border:1px solid #d0d4d8;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;">&#9654;</button>'
+        + '<button class="sp-cmp-btn" data-cmp="stop" data-key="' + g.key + '" style="flex:1;height:24px;border:1px solid #d0d4d8;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;">&#10073;&#10073;</button>'
+        + '<button class="sp-cmp-btn" data-cmp="reset" data-key="' + g.key + '" style="flex:1;height:24px;border:1px solid #d0d4d8;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;">&#8635;</button>'
+        + '</div>'
+        + '<div style="display:flex;gap:3px;margin-top:5px;">' + rub("pp", "Prise poste") + rub("mn", "Manoeuvre") + rub("fp", "Fin poste") + '</div>'
+        + '</div>';
+    }).join("");
+  }
+
+  function _majAffichageCompteur(key) {
+    var host = document.getElementById("sp-compteurs");
+    if (!host) return;
+    var el = null;
+    var all = host.querySelectorAll(".sp-cmp");
+    for (var i = 0; i < all.length; i++) { if (all[i].getAttribute("data-key") === key) { el = all[i]; break; } }
+    if (!el) return;
+    var ch = state.chronos[key]; if (!ch) return;
+    var depasse = ch.restant < 0;
+    var seuil = Math.round(ch.ref * 0.30);
+    var alerte = ch.restant <= -seuil;
+    var t = el.querySelector(".sp-cmp-t");
+    t.textContent = fmtChrono(ch.restant);
+    t.style.color = depasse ? "#cc0000" : "#2d2d2d";
+    el.style.borderColor = alerte ? "#cc0000" : (depasse ? "#e24b4a" : "#e0e3e6");
+    el.style.background = alerte ? "#fcebeb" : "#fff";
+  }
+
+  function _tick(key) {
+    var ch = state.chronos[key]; if (!ch) return;
+    ch.restant -= 1;
+    _majAffichageCompteur(key);
+  }
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-cmp]");
+    if (b) {
+      var key = b.getAttribute("data-key");
+      var act = b.getAttribute("data-cmp");
+      var ch = state.chronos[key]; if (!ch) return;
+      if (act === "start" && !ch.run) { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); }
+      else if (act === "stop") { ch.run = false; if (ch.timer) clearInterval(ch.timer); }
+      else if (act === "reset") { ch.run = false; if (ch.timer) clearInterval(ch.timer); ch.restant = ch.ref; _majAffichageCompteur(key); }
+      return;
+    }
+    var r = e.target.closest("[data-clock]");
+    if (r) {
+      var parts = r.getAttribute("data-clock").split("|");
+      var gkey = parts[0], champ = parts[1];
+      if (!state.horaires[gkey]) state.horaires[gkey] = { pp: "", mn: "", fp: "" };
+      var d = new Date();
+      var hh = d.getHours() < 10 ? "0" + d.getHours() : d.getHours();
+      var mm = d.getMinutes() < 10 ? "0" + d.getMinutes() : d.getMinutes();
+      state.horaires[gkey][champ] = hh + ":" + mm;
+      renderBarreCompteurs();
+    }
+  });
+
   function renderAll() {
     var box = document.getElementById("sp-blocs");
+    state.compteurs = calculerCompteurs(state.blocs);
+    renderBarreCompteurs();
     box.innerHTML = state.blocs.map(renderBloc).join("");
     document.getElementById("sp-mode-badge").textContent = modeLabel(state.mode);
     if (window.majProgression) window.majProgression();

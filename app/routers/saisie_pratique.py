@@ -79,7 +79,7 @@ def _grille_dict(grille, db) -> dict:
     return {
         "grille_id": grille.id, "type": grille.type, "code_option": grille.code_option,
         "libelle": grille.libelle, "note_min": grille.note_min, "note_max": grille.note_max,
-        "themes": themes, "eliminatoires": elims,
+        "ut": grille.ut, "themes": themes, "eliminatoires": elims,
     }
 
 
@@ -266,6 +266,15 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
             SaisieEliminatoire.bloc_id == bloc.id).all()]
         gd = _grille_dict(grille, db)
         gd["variante"] = grille.variante
+        gd["incluse"] = False
+        if grille.type == "option" and grille.code_option:
+            _inc = db.query(OptionCategorie).filter(
+                OptionCategorie.famille == reco,
+                OptionCategorie.categorie == categorie,
+                OptionCategorie.code_option == grille.code_option,
+                OptionCategorie.incluse == True,
+            ).first()
+            gd["incluse"] = bool(_inc)
         blocs_out.append({
             "bloc_id": bloc.id, "grille": gd,
             "notes_saisies": notes, "eliminatoires_coches": elim,
