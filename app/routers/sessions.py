@@ -1444,9 +1444,29 @@ def delete_epreuve(session_id: int, epreuve_id: int, pin: str = "", db: DBSessio
     ).first()
     if not e:
         raise HTTPException(status_code=404, detail="Epreuve non trouvee")
+
+    # Nettoyage de la saisie pratique en ligne liee a cette epreuve.
+    # SaisiePratique n'a pas de FK vers SessionEpreuve : lien par triplet
+    # (jour_test.session_id + stagiaire_id + categorie). Sans ce nettoyage,
+    # SaisieBloc / SaisieItemNote / SaisieEliminatoire restent orphelins.
+    from app.models.grille_pratique import SaisiePratique
+    from app.models.jour_test import JourTest
+    saisies_orphelines = (
+        db.query(SaisiePratique)
+        .join(JourTest, JourTest.id == SaisiePratique.jour_test_id)
+        .filter(
+            JourTest.session_id == session_id,
+            SaisiePratique.stagiaire_id == e.stagiaire_id,
+            SaisiePratique.categorie == e.categorie,
+        )
+        .all()
+    )
+    for _saisie in saisies_orphelines:
+        db.delete(_saisie)  # cascade ORM -> blocs, notes, eliminatoires
+
     db.delete(e)
     db.commit()
-    return {"message": "Epreuve supprimee"}
+    return {"message": "Epreuve supprimee", "saisies_nettoyees": len(saisies_orphelines)}
 
 class CloturerTerrainBody(BaseModel):
     pin: str
