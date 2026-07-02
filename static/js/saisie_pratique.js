@@ -267,7 +267,7 @@
       if (!content) return;
       host = document.createElement("div");
       host.id = "sp-compteurs";
-      host.style.cssText = "position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #d0d4d8;padding:8px;display:flex;gap:8px;flex-wrap:wrap;";
+      host.style.cssText = "position:sticky;top:0;z-index:25;background:#fff;border-bottom:1px solid #d0d4d8;padding:8px;";
       content.insertBefore(host, content.firstChild);
     }
     var groupes = _groupes();
@@ -337,31 +337,53 @@
   }
 
   // Bandeau engin courant : suit l'en-tete d'engin le plus haut visible.
-  var _engObserver = null;
+  var _engMajFn = null;
   function _installObserverEngin() {
     var bandeau = document.getElementById("sp-engin-courant");
     if (!bandeau) return;
     var heads = Array.prototype.slice.call(document.querySelectorAll(".sp-engin-head"));
     if (heads.length < 2) { bandeau.style.display = "none"; return; }
 
-    function maj() {
+    // Cale sp-compteurs juste SOUS sp-header (empilement sticky sans chevauchement).
+    function _cale() {
+      var header = document.getElementById("sp-header");
       var host = document.getElementById("sp-compteurs");
-      var seuil = host ? (host.getBoundingClientRect().bottom) : 0;
-      var courant = null;
-      heads.forEach(function (h) {
-        var top = h.getBoundingClientRect().top;
-        if (top <= seuil + 4) courant = h;
-      });
-      if (!courant) courant = heads[0];
+      if (header && host) {
+        var h = header.getBoundingClientRect().height;
+        host.style.top = h + "px";
+      }
+    }
+
+    var _raf = null;
+    function maj() {
+      _cale();
+      var host = document.getElementById("sp-compteurs");
+      // Seuil = bas reel de la zone figee (header + compteurs).
+      var seuil = host ? host.getBoundingClientRect().bottom : 0;
+      var courant = heads[0];
+      for (var i = 0; i < heads.length; i++) {
+        var top = heads[i].getBoundingClientRect().top;
+        if (top <= seuil + 6) courant = heads[i];
+      }
       var badge = courant.getAttribute("data-engin-badge") || "";
       var nom = courant.getAttribute("data-engin-nom") || "";
       bandeau.style.display = "flex";
       bandeau.innerHTML = '<span style="background:rgba(255,255,255,0.22);font-size:10px;padding:1px 7px;border-radius:4px;">'
-        + badge + '</span><span>' + nom + '</span>';
+        + escapeHtml(badge) + '</span><span>' + escapeHtml(nom) + '</span>';
     }
 
-    window.removeEventListener("scroll", maj);
-    window.addEventListener("scroll", maj, { passive: true });
+    function onScroll() {
+      if (_raf) return;
+      _raf = requestAnimationFrame(function () { _raf = null; maj(); });
+    }
+
+    if (_engMajFn) {
+      window.removeEventListener("scroll", _engMajFn, { passive: true });
+      window.removeEventListener("resize", _engMajFn, { passive: true });
+    }
+    _engMajFn = onScroll;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
     maj();
   }
 
