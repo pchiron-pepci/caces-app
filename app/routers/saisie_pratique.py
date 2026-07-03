@@ -345,6 +345,23 @@ def testeurs_habilites_saisie(session_id: int, saisie_id: int,
     return out
 
 
+class EnregistrerTesteur(BaseModel):
+    testeur_id: int
+
+
+@router.post("/{session_id}/pratique/saisie/{saisie_id}/testeur")
+def enregistrer_testeur(session_id: int, saisie_id: int, data: EnregistrerTesteur,
+                        db: DBSession = Depends(get_db)):
+    """Persiste le testeur habilite des sa selection (fil de l'eau), afin
+    qu'il soit conserve a la reprise avant validation finale."""
+    saisie = db.query(SaisiePratique).filter(SaisiePratique.id == saisie_id).first()
+    if not saisie:
+        raise HTTPException(404, "Saisie introuvable")
+    saisie.testeur_id = data.testeur_id or None
+    db.commit()
+    return {"message": "Testeur enregistre", "testeur_id": saisie.testeur_id}
+
+
 @router.post("/{session_id}/pratique/saisie/{saisie_id}/enregistrer")
 def enregistrer_lot(session_id: int, saisie_id: int, data: EnregistrerLot,
                     db: DBSession = Depends(get_db)):

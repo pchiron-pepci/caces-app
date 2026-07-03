@@ -719,7 +719,14 @@
   }
 
   document.addEventListener("change", function (e) {
-    if (e.target && e.target.id === "sp-testeur-select") majBandeauTesteur();
+    if (e.target && e.target.id === "sp-testeur-select") {
+      majBandeauTesteur();
+      var _tid = e.target.value;
+      if (_tid && state.saisieId) {
+        api("POST", BASE + state.saisieId + "/testeur", { testeur_id: parseInt(_tid, 10) })
+          .catch(function () { /* silencieux : la validation finale le re-enregistrera */ });
+      }
+    }
   });
 
   ouvrirOuDemander();
