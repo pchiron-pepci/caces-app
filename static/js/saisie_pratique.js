@@ -515,6 +515,47 @@
   var _holdTimer = null, _holdRaf = null, _holdBtn = null, _holdKey = null, _holdStart = 0;
   var HOLD_MS = 2000;
 
+  // Modale HTML de confirmation du reset (non bloquante, se ferme proprement).
+  function _fermerModaleReset() {
+    var ov = document.getElementById("sp-reset-overlay");
+    if (ov) ov.remove();
+  }
+
+  function _ouvrirModaleReset(key) {
+    _fermerModaleReset();
+    if (!key) return;
+    var ov = document.createElement("div");
+    ov.id = "sp-reset-overlay";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;";
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:14px;padding:20px;max-width:380px;width:100%;">'
+      + '<h2 style="font-size:17px;margin:0 0 10px;color:#a32d2d;">Réinitialiser ce compteur ?</h2>'
+      + '<p style="font-size:13px;color:#444;line-height:1.5;margin:0 0 16px;">Cela efface le chronomètre '
+      + 'et les 3 temps (prise de poste, manœuvre, fin de poste) de ce compteur. Action irréversible.</p>'
+      + '<div style="display:flex;gap:10px;">'
+      + '<button data-action="reset-annuler" style="flex:1;height:42px;border:1px solid #b0b4bc;background:#fff;border-radius:8px;font-size:14px;cursor:pointer;">Annuler</button>'
+      + '<button data-action="reset-confirmer" data-key="' + key + '" style="flex:1;height:42px;border:none;background:#cc0000;color:#fff;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">Réinitialiser</button>'
+      + '</div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click", function (e) {
+      if (e.target === ov) _fermerModaleReset();
+    });
+  }
+
+  document.addEventListener("click", function (e) {
+    if (e.target.closest('[data-action="reset-annuler"]')) {
+      _fermerModaleReset();
+      return;
+    }
+    var conf = e.target.closest('[data-action="reset-confirmer"]');
+    if (conf) {
+      var k = conf.getAttribute("data-key");
+      _fermerModaleReset();
+      if (k) _executerReset(k);
+      return;
+    }
+  });
+
   function _holdCancel() {
     if (_holdTimer) { clearTimeout(_holdTimer); _holdTimer = null; }
     if (_holdRaf) { cancelAnimationFrame(_holdRaf); _holdRaf = null; }
@@ -542,11 +583,7 @@
     _holdTimer = setTimeout(function () {
       var key = _holdKey;
       _holdCancel();
-      var ok = window.confirm(
-        "Reinitialiser ce compteur ?\n\nCela EFFACE le chronometre et les 3 temps"
-        + " (prise de poste, manoeuvre, fin de poste) de ce compteur. Action irreversible."
-      );
-      if (ok && key) _executerReset(key);
+      _ouvrirModaleReset(key);   // modale HTML non bloquante
     }, HOLD_MS);
   }
 
