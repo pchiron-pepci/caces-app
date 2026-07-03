@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     btnConf.disabled = false; btnConf.textContent = 'Réinitialiser définitivement';
                     return;
                 }
-                window.location.href = new URL(window.location.href).pathname + '#tab-grilles';
+                fermerModaleReset();
                 window.location.reload();
             }).catch(function() {
                 err.textContent = 'Erreur réseau.'; err.style.display = 'block';
