@@ -648,6 +648,10 @@
         if (c.duree_pp != null) { state.horaires[k].pp = _f(c.duree_pp); state.figes[k].pp = true; }
         if (c.duree_mn != null) { state.horaires[k].mn = _f(c.duree_mn); state.figes[k].mn = true; }
         if (c.duree_fp != null) { state.horaires[k].fp = _f(c.duree_fp); state.figes[k].fp = true; }
+        var _cum = 0;
+        if (c.duree_pp != null) { _cum += c.duree_pp; state.jalons[k].pp = _cum; }
+        if (c.duree_mn != null) { _cum += c.duree_mn; state.jalons[k].mn = _cum; }
+        if (c.duree_fp != null) { _cum += c.duree_fp; state.jalons[k].fp = _cum; }
         var ch = state.chronos[k];
         if (ch && c.ref_secondes) {
           var ecoule = (c.ecoule_courant != null) ? c.ecoule_courant : 0;
