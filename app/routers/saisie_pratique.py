@@ -341,12 +341,13 @@ def testeurs_habilites_saisie(session_id: int, saisie_id: int,
     opts_par_testeur = {}   # options detenues sur TOUTE la famille (PE / TEL)
     testeur_info = {}
     for t, hab in rows:
-        cats_par_testeur.setdefault(t.id, set()).add(hab.categorie)
+        _cat = (hab.categorie or "").upper()
         _opts = opts_par_testeur.setdefault(t.id, set())
-        if getattr(hab, "option_pe", False):
-            _opts.add("PE")
-        if getattr(hab, "option_tel", False):
-            _opts.add("TEL")
+        if _cat.startswith("OPT-"):
+            # Ligne option (ex. OPT-TEL) : valable pour l'option sur toute la famille.
+            _opts.add(_cat[4:])
+        else:
+            cats_par_testeur.setdefault(t.id, set()).add(hab.categorie)
         testeur_info[t.id] = t
 
     out = []
@@ -576,11 +577,14 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
         _HT.testeur_id == data.testeur_id,
         _HT.actif == True,
     ).all() if _norm_fam(h.famille) == _fam_n]
-    _a_pe = any(getattr(h, "option_pe", False) for h in _habs_fam)
-    _a_tel = any(getattr(h, "option_tel", False) for h in _habs_fam)
-    if "PE" in _codes_opt and not _a_pe:
+    _opts_fam = set()
+    for h in _habs_fam:
+        _c = (h.categorie or "").upper()
+        if _c.startswith("OPT-"):
+            _opts_fam.add(_c[4:])
+    if "PE" in _codes_opt and "PE" not in _opts_fam:
         raise HTTPException(422, "Testeur non habilite pour l'option Porte-engins (PE).")
-    if "TEL" in _codes_opt and not _a_tel:
+    if "TEL" in _codes_opt and "TEL" not in _opts_fam:
         raise HTTPException(422, "Testeur non habilite pour l'option Telecommande (TEL).")
 
     if not (data.signature_testeur or "").strip():
