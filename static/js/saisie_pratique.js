@@ -701,7 +701,7 @@
   // expose pour les blocs suivants
   window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt,
                  compteurLance: _compteurLance, groupDeCible: _groupDeCible,
-                 compteursTempsIncomplets: _compteursTempsIncomplets };
+                 groupes: _groupes };
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
   function chargerTesteurs(options, testeurIdPreselect) {
@@ -1311,8 +1311,8 @@
     }
 
     // Blocage : chaque compteur ENTAME doit avoir ses 3 temps renseignes.
-    if (window._SP && _SP.compteursTempsIncomplets) {
-      var _incomplets = _SP.compteursTempsIncomplets();
+    {
+      var _incomplets = _compteursTempsIncomplets();
       if (_incomplets.length) {
         var _msg = "Impossible de valider : temps manquants.\n\n";
         _incomplets.forEach(function (c) {
@@ -1333,10 +1333,10 @@
   });
 
   // Un compteur est "entame" si son chrono a bouge OU si un temps est saisi.
-  function _compteurEntame(gkey) {
-    var ch = state.chronos[gkey];
+  function _compteurEntame(st, gkey) {
+    var ch = st.chronos[gkey];
     var bouge = !!(ch && (ch.run || ch.restant !== ch.ref));
-    var h = state.horaires[gkey] || {};
+    var h = st.horaires[gkey] || {};
     var unTemps = !!(h.pp || h.mn || h.fp);
     return bouge || unTemps;
   }
@@ -1344,10 +1344,12 @@
   // Retourne la liste des compteurs entames dont les 3 temps ne sont pas
   // tous renseignes. Chaque entree : { key, label, manque:[...] }.
   function _compteursTempsIncomplets() {
+    if (!window._SP || !_SP.groupes || !_SP.state) return [];
+    var st = _SP.state;
     var out = [];
-    _groupes().forEach(function (g) {
-      if (!_compteurEntame(g.key)) return;
-      var h = state.horaires[g.key] || {};
+    _SP.groupes().forEach(function (g) {
+      if (!_compteurEntame(st, g.key)) return;
+      var h = st.horaires[g.key] || {};
       var manque = [];
       if (!h.pp) manque.push("prise de poste");
       if (!h.mn) manque.push("manœuvre");
