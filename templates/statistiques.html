@@ -210,9 +210,9 @@
                     {% endif %}
                 </td>
                 {% endfor %}
-                <td style="white-space:nowrap; font-size:13px;">
+                <td style="font-size:13px;">
                     {% if h.date_tirage %}
-                        {{ h.date_tirage | paris_dt('%d/%m/%Y à %H:%M') }}{% if h.declenche_par %}<br><span style="color:#666;">par {{ h.declenche_par }}</span>{% endif %}
+                        <span style="white-space:nowrap;">{{ h.date_tirage | paris_dt('%d/%m/%Y à %H:%M') }}</span>{% if h.declenche_par %}<br><span style="color:#666; font-size:11px; white-space:normal; word-break:break-word;">par {{ h.declenche_par }}</span>{% endif %}
                     {% else %}
                         <span style="color:#ccc;">—</span>
                     {% endif %}
