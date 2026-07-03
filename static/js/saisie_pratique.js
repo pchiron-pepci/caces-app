@@ -662,7 +662,8 @@
   }
 
   // expose pour les blocs suivants
-  window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt };
+  window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt,
+                 compteurLance: _compteurLance, groupDeCible: _groupDeCible };
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
   function chargerTesteurs(options, testeurIdPreselect) {
@@ -1089,12 +1090,12 @@
     // Garde-fou : notation interdite tant que le compteur de la section
     // n'est pas lance. Concerne bin / palier / step / elim.
     var _actNote = e.target.closest('[data-action="bin"],[data-action="palier"],[data-action="step"],[data-action="elim"]');
-    if (_actNote) {
-      var _gk = _groupDeCible(_actNote);
-      if (_gk && !_compteurLance(_gk)) {
+    if (_actNote && window._SP && _SP.groupDeCible && _SP.compteurLance) {
+      var _gk = _SP.groupDeCible(_actNote);
+      if (_gk && !_SP.compteurLance(_gk)) {
         e.preventDefault();
-        var _lib = (_gk === "CAT") ? "de la categorie" : "de l'option";
-        toast("Lancez d'abord le compteur " + _lib + " (clic sur le chrono) avant de noter.");
+        var _lib = (_gk === "CAT") ? "de la catégorie" : "de l'option";
+        _SP.toast("Lancez d'abord le compteur " + _lib + " (clic sur le chrono) avant de noter.");
         return;
       }
     }
