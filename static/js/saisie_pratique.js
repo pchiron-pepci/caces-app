@@ -19,7 +19,8 @@
     compteurs: null,
     chronos: {},
     horaires: {},        // groupKey -> {pp, mn, fp}  (duree AFFICHEE de chaque phase, mm:ss)
-    jalons: {}           // groupKey -> {pp, mn, fp}  (INSTANT du clic = temps ecoule en s, ou null)
+    jalons: {},          // groupKey -> {pp, mn, fp}  (INSTANT du clic = temps ecoule en s, ou null)
+    figes: {}            // groupKey -> {pp, mn, fp}  (true = duree corrigee a la main, ne pas recalculer)
   };
 
   function toast(msg) {
@@ -133,9 +134,10 @@
   function _recalcPhases(gkey) {
     var j = state.jalons[gkey] || { pp: null, mn: null, fp: null };
     var h = state.horaires[gkey] || { pp: "", mn: "", fp: "" };
-    h.pp = (j.pp != null) ? _fmtEcoule(j.pp) : "";
-    h.mn = (j.mn != null && j.pp != null) ? _fmtEcoule(Math.max(0, j.mn - j.pp)) : "";
-    h.fp = (j.fp != null && j.mn != null) ? _fmtEcoule(Math.max(0, j.fp - j.mn)) : "";
+    var f = state.figes[gkey] || {};
+    if (!f.pp) h.pp = (j.pp != null) ? _fmtEcoule(j.pp) : "";
+    if (!f.mn) h.mn = (j.mn != null && j.pp != null) ? _fmtEcoule(Math.max(0, j.mn - j.pp)) : "";
+    if (!f.fp) h.fp = (j.fp != null && j.mn != null) ? _fmtEcoule(Math.max(0, j.fp - j.mn)) : "";
     state.horaires[gkey] = h;
   }
 
@@ -468,6 +470,7 @@
           return;
         }
         state.jalons[gkey][champ] = ecoule;
+        if (state.figes[gkey]) state.figes[gkey][champ] = false;
         // Fin de poste = epreuve terminee : on arrete le chrono de ce compteur.
         if (champ === "fp" && ch) {
           ch.run = false;
@@ -486,12 +489,11 @@
         if (saisie === "") { return; }
         var norm = _parseDuree(saisie);
         if (norm === null) { alert("Format invalide (attendu mm:ss, ex : 12:30)"); return; }
-        // Reconstruire le jalon a partir de la duree corrigee + jalon precedent.
-        var secs = _dureeEnSecondes(norm);
-        var base = 0;
-        if (champ === "mn") base = state.jalons[gkey].pp || 0;
-        else if (champ === "fp") base = state.jalons[gkey].mn || 0;
-        state.jalons[gkey][champ] = base + secs;
+        // Correction manuelle : on FIGE la duree de CETTE phase uniquement.
+        // Les autres phases (jalons) ne bougent pas.
+        if (!state.figes[gkey]) state.figes[gkey] = { pp: false, mn: false, fp: false };
+        state.figes[gkey][champ] = true;
+        state.horaires[gkey][champ] = norm;
       }
       _recalcPhases(gkey);
       renderBarreCompteurs();
