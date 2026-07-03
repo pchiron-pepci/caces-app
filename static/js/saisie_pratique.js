@@ -215,7 +215,9 @@
 
   function renderBloc(bloc) {
     var g = bloc.grille;
-    var html = "";
+    // group_key de la section : CAT (base) ou OPT:<code> (option).
+    var _gk = (g.type === "option" && g.code_option) ? ("OPT:" + g.code_option) : "CAT";
+    var html = '<div class="sp-section" data-group="' + _gk + '">';
     if (g.type === "option") {
       // Meme bandeau que les machines (sp-engin-head) mais CENTRE + accent vert.
       var _badgeO = "OPTION";
@@ -275,6 +277,7 @@
       });
       html += '</div>';
     }
+    html += '</div>';  // fin .sp-section
     return html;
   }
 
@@ -298,6 +301,40 @@
     if (!state.horaires[key]) state.horaires[key] = { pp: "", mn: "", fp: "" };
     if (!state.jalons[key]) state.jalons[key] = { pp: null, mn: null, fp: null };
     return state.chronos[key];
+  }
+
+  // Un compteur est-il lance ? (run OU deja decompte : restant != ref)
+  function _compteurLance(gkey) {
+    var ch = state.chronos[gkey];
+    return !!(ch && (ch.run || ch.restant !== ch.ref));
+  }
+
+  // Retrouve le group_key d'un element de notation via sa section parente.
+  function _groupDeCible(el) {
+    var sec = el.closest ? el.closest(".sp-section") : null;
+    return sec ? sec.getAttribute("data-group") : null;
+  }
+
+  // Grise les sections dont le compteur n'est pas lance (indice visuel).
+  function _majSectionsVerrou() {
+    var secs = document.querySelectorAll(".sp-section");
+    secs.forEach(function (sec) {
+      var gk = sec.getAttribute("data-group");
+      var lance = _compteurLance(gk);
+      sec.style.opacity = lance ? "1" : "0.55";
+      var flag = sec.querySelector(".sp-section-lock");
+      if (!lance) {
+        if (!flag) {
+          flag = document.createElement("div");
+          flag.className = "sp-section-lock";
+          flag.style.cssText = "background:#fff4e5;border:1px solid #e0a93f;color:#7a5a12;font-size:12px;padding:6px 10px;border-radius:8px;margin:6px 0;";
+          flag.textContent = "Compteur non lance — lancez le chrono pour noter cette partie.";
+          sec.insertBefore(flag, sec.firstChild);
+        }
+      } else if (flag) {
+        flag.remove();
+      }
+    });
   }
 
   function renderBarreCompteurs() {
@@ -534,6 +571,7 @@
         if (ch.run) { ch.run = false; if (ch.timer) clearInterval(ch.timer); _persistChrono(key, "pause"); }
         else { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); _persistChrono(key, "run"); }
         renderBarreCompteurs();
+        _majSectionsVerrou();
       }
       else if (act === "start" && !ch.run) { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); _persistChrono(key, "run"); renderBarreCompteurs(); }
       else if (act === "stop") { ch.run = false; if (ch.timer) clearInterval(ch.timer); _persistChrono(key, "pause"); renderBarreCompteurs(); }
@@ -601,6 +639,7 @@
     var box = document.getElementById("sp-blocs");
     state.compteurs = calculerCompteurs(state.blocs);
     box.innerHTML = state.blocs.map(renderBloc).join("");
+    _majSectionsVerrou();
     renderBarreCompteurs();
     document.getElementById("sp-mode-badge").textContent = modeLabel(state.mode);
     if (window.majProgression) window.majProgression();
@@ -1045,6 +1084,19 @@
         })
         .catch(function (err) { toast("Erreur : " + err.message); });
       return;
+    }
+
+    // Garde-fou : notation interdite tant que le compteur de la section
+    // n'est pas lance. Concerne bin / palier / step / elim.
+    var _actNote = e.target.closest('[data-action="bin"],[data-action="palier"],[data-action="step"],[data-action="elim"]');
+    if (_actNote) {
+      var _gk = _groupDeCible(_actNote);
+      if (_gk && !_compteurLance(_gk)) {
+        e.preventDefault();
+        var _lib = (_gk === "CAT") ? "de la categorie" : "de l'option";
+        toast("Lancez d'abord le compteur " + _lib + " (clic sur le chrono) avant de noter.");
+        return;
+      }
     }
 
     if ((t = e.target.closest('[data-action="bin"]'))) {
