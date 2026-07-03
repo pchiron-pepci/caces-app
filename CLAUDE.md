@@ -2419,6 +2419,52 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 - Modale `#modal-dates-hab` : 2 inputs date (entrée + sortie) + check client-side cohérence + `POST /admin/categorie/{id}/dates`.
 - Fonction `modifierDatesHabilitation(id, nom, dateEntree, dateSortie)` avant `activerHabilitation`.
 
+### ✅ Chantier terminé : verdict saisie pratique verrouillé — règle 130% intégrée (2026-07-03, commit 36306d9)
+
+**Fichier :** `static/js/saisie_pratique.js`
+
+**Règle métier :** si cumul(pp+mn+fp) en secondes ≥ 1,30 × ref d'un compteur → dépassement → échec forcé sur ce compteur/option, et échec global si la catégorie ou une option est concernée.
+
+**1ère IIFE :**
+- Ajout `_depassement130(gkey)` : calcule `{depasse, cumul, ref, aTemps}` à partir de `state.horaires[gkey]` et `g.ref`.
+- Export `window._SP` : `dureeEnSecondes` remplacé par `depassement130: _depassement130`.
+
+**2ème IIFE (verdict + affichage) :**
+- `_dep(gk)` appelle `_SP.depassement130` ; `_depCat` pour la catégorie, `_optDep` pour chaque option.
+- `baseReussi` = résultat base ET pas de dépassement CAT.
+- Options dépassées → `o.reussi = false; o.acquis = false`.
+- `echecGlobal` = `!baseReussi || option.reussi === false`.
+- `_spDecisions` figé sur verdict calculé (plus modifiable par l'utilisateur).
+- `_etatTempsHtml(groupKey)` : affiche "Temps dépassé (>130%)" en rouge ou "Temps conforme" en vert via `_SP.depassement130`.
+- `blocRecap` : radios Réussi/Échec supprimées → div verdict non modifiable ("✓ RÉUSSI" / "✗ ÉCHEC — verdict calculé, non modifiable").
+
+### ✅ Chantier terminé : habilitation option testeur valable sur toute la famille (2026-07-03, commit bc8890b)
+
+**Fichier :** `app/routers/saisie_pratique.py`
+
+**Bug 1 — liste testeurs habilités :** la route comparait des pseudo-catégories `"OPT-PE"` / `"OPT-TEL"` à des catégories réelles → aucun testeur proposé dès qu'une option est requise.
+
+**Correctif liste :** `opts_requises` séparé de `cats_requises`. Accumulation des options via `opts_par_testeur[tid]` sur **toutes** les lignes de la famille (`getattr(hab, "option_pe", False)` / `option_tel`). Filtrage final : `cats_requises.issubset(cats) and opts_requises.issubset(opts_par_testeur.get(tid, set()))`.
+
+**Bug 2 — validation :** vérifiait l'option uniquement sur la ligne de la catégorie testée → refus à tort si option détenue via une autre catégorie de la famille.
+
+**Correctif validation :** `_habs_fam` = toutes les habilitations actives du testeur dans la famille (sans filtre catégorie). `_a_pe = any(option_pe for h in _habs_fam)`, idem TEL. Guard 422 si option requise manquante.
+
+### ✅ Chantier terminé : normalisation format famille — R.482 == R482 (2026-07-03, commit 4c37465)
+
+**Fichier :** `app/routers/saisie_pratique.py`
+
+**Cause :** le front/grilles utilisent `"R.482"` (avec point, issu de `Famille.code`) ; `habilitations_testeurs.famille` stocke `"R482"` (sans point). Le filtre `_HT.famille == famille` ne matchait jamais → liste vide.
+
+**Helper :** `_norm_fam(v)` = `(v or "").replace(".", "").replace(" ", "").upper()` — `"R.482"` et `"R482"` → `"R482"`.
+
+**Route liste :** filtre SQL famille retiré ; query charge toute la table (filtre actif/actif/etat) puis filtre Python `[(t, hab) for ... if _norm_fam(hab.famille) == _fam_norm]`.
+
+**Route validation :**
+- `_fam_n = _norm_fam(_fam)`.
+- `_habs_cat` : query sans filtre famille + `next(h for h if _norm_fam(h.famille) == _fam_n)`.
+- `_habs_fam` : idem, filtre Python sur `_fam_n`.
+
 ---
 
 ## Sauvegarde base de données
