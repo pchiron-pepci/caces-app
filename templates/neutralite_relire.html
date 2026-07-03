@@ -63,7 +63,7 @@
             </div>
             <div style="text-align:right; flex-shrink:0; margin-left:16px;">
                 <div style="font-size:14px; font-weight:700;">{{ attestation.horodatage_verification.strftime('%d/%m/%Y') }}</div>
-                <div style="font-size:13px; color:#666;">{{ attestation.horodatage_verification.strftime('%H:%M') }}</div>
+                <div style="font-size:13px; color:#666;">{{ attestation.horodatage_verification | paris_dt('%H:%M') }}</div>
             </div>
         </div>
         {% endif %}
@@ -74,7 +74,7 @@
             </div>
             <div style="text-align:right; flex-shrink:0; margin-left:16px;">
                 <div style="font-size:14px; font-weight:700;">{{ attestation.horodatage.strftime('%d/%m/%Y') }}</div>
-                <div style="font-size:13px; color:#666;">{{ attestation.horodatage.strftime('%H:%M') }}</div>
+                <div style="font-size:13px; color:#666;">{{ attestation.horodatage | paris_dt('%H:%M') }}</div>
             </div>
         </div>
     </div>

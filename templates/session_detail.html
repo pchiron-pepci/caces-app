@@ -574,7 +574,7 @@
             </button>
             {% else %}
             <span class="badge" style="background:#e8f5e9;color:#2e7d32;white-space:nowrap;"
-                  {% if date_tirage %}title="Tirage déclenché le {{ date_tirage.strftime('%d/%m/%Y à %H:%M') }}"{% endif %}>
+                  {% if date_tirage %}title="Tirage déclenché le {{ date_tirage | paris_dt('%d/%m/%Y à %H:%M') }}"{% endif %}>
                 ✅ Tirage fait
             </span>{% if date_tirage %}<span class="tirage-date-mobile">{{ date_tirage.strftime('%d/%m') }}</span>{% endif %}
             {% endif %}
