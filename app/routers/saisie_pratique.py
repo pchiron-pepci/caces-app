@@ -312,12 +312,10 @@ def testeurs_habilites_saisie(session_id: int, saisie_id: int,
     from app.models.habilitation_testeur import HabilitationTesteur as _HT
     if not famille:
         raise HTTPException(422, "Parametre famille requis")
-    req = set(o.strip().upper() for o in (options or "").split(",") if o.strip())
+    opts_requises = set(o.strip().upper() for o in (options or "").split(",") if o.strip())
     cats_requises = set()
     if categorie:
         cats_requises.add(categorie)
-    for o in req:
-        cats_requises.add("OPT-" + o)
 
     rows = (
         db.query(Testeur, _HT)
@@ -333,14 +331,21 @@ def testeurs_habilites_saisie(session_id: int, saisie_id: int,
     )
 
     cats_par_testeur = {}
+    opts_par_testeur = {}   # options detenues sur TOUTE la famille (PE / TEL)
     testeur_info = {}
     for t, hab in rows:
         cats_par_testeur.setdefault(t.id, set()).add(hab.categorie)
+        _opts = opts_par_testeur.setdefault(t.id, set())
+        if getattr(hab, "option_pe", False):
+            _opts.add("PE")
+        if getattr(hab, "option_tel", False):
+            _opts.add("TEL")
         testeur_info[t.id] = t
 
     out = []
     for tid, cats in cats_par_testeur.items():
-        if cats_requises.issubset(cats):
+        # Categorie requise detenue ET options requises detenues (n'importe quelle ligne).
+        if cats_requises.issubset(cats) and opts_requises.issubset(opts_par_testeur.get(tid, set())):
             t = testeur_info[tid]
             out.append({"id": t.id, "nom": t.nom, "prenom": t.prenom})
     return out
@@ -557,9 +562,18 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
         _g = db.query(GrillePratique).filter(GrillePratique.id == _b.grille_id).first()
         if _g and _g.code_option:
             _codes_opt.add(_g.code_option)
-    if "PE" in _codes_opt and not hab.option_pe:
+    # Options : detenir l'option sur UNE categorie de la famille suffit
+    # (habilitation valable pour l'option sur toute la famille).
+    _habs_fam = db.query(_HT).filter(
+        _HT.testeur_id == data.testeur_id,
+        _HT.famille == _fam,
+        _HT.actif == True,
+    ).all()
+    _a_pe = any(getattr(h, "option_pe", False) for h in _habs_fam)
+    _a_tel = any(getattr(h, "option_tel", False) for h in _habs_fam)
+    if "PE" in _codes_opt and not _a_pe:
         raise HTTPException(422, "Testeur non habilite pour l'option Porte-engins (PE).")
-    if "TEL" in _codes_opt and not hab.option_tel:
+    if "TEL" in _codes_opt and not _a_tel:
         raise HTTPException(422, "Testeur non habilite pour l'option Telecommande (TEL).")
 
     if not (data.signature_testeur or "").strip():
