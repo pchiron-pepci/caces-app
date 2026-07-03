@@ -715,7 +715,8 @@
   // expose pour les blocs suivants
   window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt,
                  compteurLance: _compteurLance, groupDeCible: _groupDeCible,
-                 groupes: _groupes, groupesAvecNotes: _groupesAvecNotes };
+                 groupes: _groupes, groupesAvecNotes: _groupesAvecNotes,
+                 dureeEnSecondes: _dureeEnSecondes };
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
   function chargerTesteurs(options, testeurIdPreselect) {
@@ -1386,10 +1387,10 @@
       + '<h2 style="font-size:18px;margin-bottom:12px;color:#2d2d2d;">Valider le résultat</h2>';
 
     // recap base
-    html += blocRecap("Catégorie — " + (res.base ? res.base.libelle : ""), res.base, "base", baseReussi);
+    html += blocRecap("Catégorie — " + (res.base ? res.base.libelle : ""), res.base, "base", baseReussi, "CAT");
     // recap options
     (res.options || []).forEach(function (o) {
-      html += blocRecap("Option — " + o.libelle, o, "opt_" + o.code_option, o.acquis);
+      html += blocRecap("Option — " + o.libelle, o, "opt_" + o.code_option, o.acquis, "OPT:" + o.code_option);
     });
 
     var obligLabel = echecGlobal
@@ -1448,7 +1449,27 @@
     }
   }
 
-  function blocRecap(titre, d, key, propAcquis) {
+  // Etat du temps d'un compteur pour la modale : conforme / depasse (>130%).
+  // Rien si le groupe n'a pas de temps saisi.
+  function _etatTempsHtml(gkey) {
+    if (!gkey || !window._SP || !_SP.state) return "";
+    var st = _SP.state;
+    var g = null;
+    if (_SP.groupes) { _SP.groupes().forEach(function (x) { if (x.key === gkey) g = x; }); }
+    if (!g || !g.ref) return "";
+    var h = st.horaires[gkey] || {};
+    var cumul = 0, aTemps = false;
+    ["pp", "mn", "fp"].forEach(function (c) {
+      if (h[c] && _SP.dureeEnSecondes) { cumul += _SP.dureeEnSecondes(h[c]); aTemps = true; }
+    });
+    if (!aTemps) return "";
+    var depasse = cumul >= g.ref * 1.30;
+    var col = depasse ? "#a32d2d" : "#0f6e56";
+    var txt = depasse ? "Temps dépassé (>130%)" : "Temps conforme";
+    return ' · <span style="color:' + col + ';font-weight:700;">' + txt + '</span>';
+  }
+
+  function blocRecap(titre, d, key, propAcquis, groupKey) {
     if (!d) return "";
     var ok = !!propAcquis;
     var color = ok ? "#0f6e56" : "#a32d2d";
@@ -1470,7 +1491,7 @@
       : '';
     return '<div style="border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:8px;">'
       + '<div style="font-size:13px;font-weight:700;color:#2d2d2d;">' + escapeHtml(titre) + '</div>'
-      + '<div style="font-size:12px;color:#555;margin-top:2px;">Proposition : <span style="color:' + color + ';font-weight:700;">' + label + '</span> (' + fmt(d.note_globale) + '/' + fmt(d.note_max) + ')</div>'
+      + '<div style="font-size:12px;color:#555;margin-top:2px;">Proposition : <span style="color:' + color + ';font-weight:700;">' + label + '</span> (' + fmt(d.note_globale) + '/' + fmt(d.note_max) + ')' + _etatTempsHtml(groupKey) + '</div>'
       + radios + blocage + '</div>';
   }
 
