@@ -172,6 +172,19 @@
     state.horaires[gkey] = h;
   }
 
+  // Depassement 130% d'un compteur : cumul(pp+mn+fp) >= 1.30*ref.
+  // Retourne {depasse, cumul, ref, aTemps}.
+  function _depassement130(gkey) {
+    var g = _groupeByKey(gkey);
+    if (!g || !g.ref) return { depasse: false, cumul: 0, ref: 0, aTemps: false };
+    var h = state.horaires[gkey] || {};
+    var cumul = 0, aTemps = false;
+    ["pp", "mn", "fp"].forEach(function (c) {
+      if (h[c]) { cumul += _dureeEnSecondes(h[c]); aTemps = true; }
+    });
+    return { depasse: aTemps && cumul >= g.ref * 1.30, cumul: cumul, ref: g.ref, aTemps: aTemps };
+  }
+
   function _dureeEnSecondes(mmss) {
     var m = String(mmss).match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})$/);
     if (!m) return 0;
@@ -716,7 +729,7 @@
   window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt,
                  compteurLance: _compteurLance, groupDeCible: _groupDeCible,
                  groupes: _groupes, groupesAvecNotes: _groupesAvecNotes,
-                 dureeEnSecondes: _dureeEnSecondes };
+                 depassement130: _depassement130 };
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
   function chargerTesteurs(options, testeurIdPreselect) {
@@ -1378,7 +1391,16 @@
   }
 
   function ouvrirModalValidation(res) {
-    var baseReussi = res.base ? res.base.reussi : false;
+    // Regle 130% : depassement d'un compteur => echec force.
+    function _dep(gk) { return (window._SP && _SP.depassement130) ? _SP.depassement130(gk) : { depasse:false }; }
+    var _depCat = _dep("CAT");
+    var baseReussi = (res.base ? res.base.reussi : false) && !_depCat.depasse;
+    var _optDep = {};
+    (res.options || []).forEach(function (o) {
+      var d = _dep("OPT:" + o.code_option);
+      if (d.depasse) { o.reussi = false; o.acquis = false; _optDep[o.code_option] = true; }
+    });
+    // Categorie depassee/echouee => tout le test echoue.
     var echecGlobal = !baseReussi || (res.options || []).some(function (o) { return o.reussi === false; });
 
     var html = ''
@@ -1423,8 +1445,9 @@
     document.body.appendChild(div.firstChild);
 
     // pre-cocher les decisions selon la proposition
+    // Decisions FIGEES sur le verdict calcule (le testeur ne peut plus les changer).
     window._spDecisions = { base: baseReussi, options: {} };
-    (res.options || []).forEach(function (o) { window._spDecisions.options[o.code_option] = !!o.acquis; });
+    (res.options || []).forEach(function (o) { window._spDecisions.options[o.code_option] = !!o.acquis && !_optDep[o.code_option]; });
 
     initSignature();
 
@@ -1449,50 +1472,32 @@
     }
   }
 
-  // Etat du temps d'un compteur pour la modale : conforme / depasse (>130%).
-  // Rien si le groupe n'a pas de temps saisi.
-  function _etatTempsHtml(gkey) {
-    if (!gkey || !window._SP || !_SP.state) return "";
-    var st = _SP.state;
-    var g = null;
-    if (_SP.groupes) { _SP.groupes().forEach(function (x) { if (x.key === gkey) g = x; }); }
-    if (!g || !g.ref) return "";
-    var h = st.horaires[gkey] || {};
-    var cumul = 0, aTemps = false;
-    ["pp", "mn", "fp"].forEach(function (c) {
-      if (h[c] && _SP.dureeEnSecondes) { cumul += _SP.dureeEnSecondes(h[c]); aTemps = true; }
-    });
-    if (!aTemps) return "";
-    var depasse = cumul >= g.ref * 1.30;
-    var col = depasse ? "#a32d2d" : "#0f6e56";
-    var txt = depasse ? "Temps dépassé (>130%)" : "Temps conforme";
+  // Etat du temps d'un compteur : conforme / depasse (>130%). Vide si pas de temps.
+  function _etatTempsHtml(groupKey) {
+    if (!groupKey || !window._SP || !_SP.depassement130) return "";
+    var d = _SP.depassement130(groupKey);
+    if (!d.aTemps) return "";
+    var col = d.depasse ? "#a32d2d" : "#0f6e56";
+    var txt = d.depasse ? "Temps dépassé (>130%)" : "Temps conforme";
     return ' · <span style="color:' + col + ';font-weight:700;">' + txt + '</span>';
   }
 
   function blocRecap(titre, d, key, propAcquis, groupKey) {
     if (!d) return "";
-    var ok = !!propAcquis;
+    var ok = !!propAcquis;   // verdict CALCULE (integre deja le 130%)
     var color = ok ? "#0f6e56" : "#a32d2d";
     var label = ok ? "Réussi" : "Échec";
-    var echecMoteur = !ok;
-    var reussiDisabled = echecMoteur ? " disabled" : "";
-    var reussiStyle = echecMoteur
-      ? "flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #e0e0e0;background:#f3f3f3;color:#bbb;font-size:13px;font-weight:700;cursor:not-allowed;"
-      : "flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #a5d6a7;background:#e8f5e9;font-size:13px;font-weight:700;cursor:pointer;";
-    var radios = ''
-      + '<div style="display:flex;gap:8px;margin-top:6px;">'
-      + '<label style="' + reussiStyle + '">'
-      + '<input type="radio" name="dec-' + key + '" value="1"' + (ok ? " checked" : "") + reussiDisabled + ' data-key="' + key + '"> Réussi</label>'
-      + '<label style="flex:1;text-align:center;padding:8px;border-radius:8px;border:1px solid #ef9a9a;background:#ffebee;font-size:13px;font-weight:700;cursor:pointer;">'
-      + '<input type="radio" name="dec-' + key + '" value="0"' + (!ok ? " checked" : "") + ' data-key="' + key + '"> Échec</label>'
-      + '</div>';
-    var blocage = echecMoteur
-      ? '<div style="font-size:11px;color:#a32d2d;margin-top:6px;line-height:1.4;"><strong>Échec au test :</strong> le résultat ne peut pas être transformé en réussite. Un commentaire est obligatoire.</div>'
+    // Verrouillage TOTAL : plus de radios. Le verdict s'impose, non modifiable.
+    var verdict = '<div style="margin-top:6px;text-align:center;padding:9px;border-radius:8px;font-size:14px;font-weight:700;'
+      + 'border:1px solid ' + (ok ? "#a5d6a7" : "#ef9a9a") + ';background:' + (ok ? "#e8f5e9" : "#ffebee") + ';color:' + color + ';">'
+      + (ok ? "✓ RÉUSSI" : "✗ ÉCHEC") + ' — verdict calculé, non modifiable</div>';
+    var blocage = !ok
+      ? '<div style="font-size:11px;color:#a32d2d;margin-top:6px;line-height:1.4;"><strong>Échec :</strong> déterminé par les résultats. Une justification est obligatoire.</div>'
       : '';
     return '<div style="border:1px solid #e2e6ee;border-radius:10px;padding:10px;margin-bottom:8px;">'
       + '<div style="font-size:13px;font-weight:700;color:#2d2d2d;">' + escapeHtml(titre) + '</div>'
-      + '<div style="font-size:12px;color:#555;margin-top:2px;">Proposition : <span style="color:' + color + ';font-weight:700;">' + label + '</span> (' + fmt(d.note_globale) + '/' + fmt(d.note_max) + ')' + _etatTempsHtml(groupKey) + '</div>'
-      + radios + blocage + '</div>';
+      + '<div style="font-size:12px;color:#555;margin-top:2px;">Résultat : <span style="color:' + color + ';font-weight:700;">' + label + '</span> (' + fmt(d.note_globale) + '/' + fmt(d.note_max) + ')' + _etatTempsHtml(groupKey) + '</div>'
+      + verdict + blocage + '</div>';
   }
 
   // maj des decisions quand le testeur change un radio
