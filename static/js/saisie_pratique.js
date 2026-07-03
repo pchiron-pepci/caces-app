@@ -700,7 +700,8 @@
 
   // expose pour les blocs suivants
   window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt,
-                 compteurLance: _compteurLance, groupDeCible: _groupDeCible };
+                 compteurLance: _compteurLance, groupDeCible: _groupDeCible,
+                 compteursTempsIncomplets: _compteursTempsIncomplets };
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
   function chargerTesteurs(options, testeurIdPreselect) {
@@ -1309,11 +1310,52 @@
       if (!window.confirm(msg)) return;
     }
 
+    // Blocage : chaque compteur ENTAME doit avoir ses 3 temps renseignes.
+    if (window._SP && _SP.compteursTempsIncomplets) {
+      var _incomplets = _SP.compteursTempsIncomplets();
+      if (_incomplets.length) {
+        var _msg = "Impossible de valider : temps manquants.\n\n";
+        _incomplets.forEach(function (c) {
+          _msg += "• " + c.label + " : " + c.manque.join(", ") + "\n";
+        });
+        _msg += "\nSaisissez les 3 temps de chaque compteur entamé "
+             + "(mettez 0 si le candidat s'est arrêté en cours). "
+             + "Si une partie n'a pas été passée, réinitialisez son compteur.";
+        alert(_msg);
+        return;
+      }
+    }
+
     // 1) tout synchroniser, 2) calculer, 3) demander decision + justif
     api("GET", BASE + state.saisieId + "/calculer").then(function (res) {
       ouvrirModalValidation(res);
     }).catch(function (err) { toast("Erreur calcul : " + err.message); });
   });
+
+  // Un compteur est "entame" si son chrono a bouge OU si un temps est saisi.
+  function _compteurEntame(gkey) {
+    var ch = state.chronos[gkey];
+    var bouge = !!(ch && (ch.run || ch.restant !== ch.ref));
+    var h = state.horaires[gkey] || {};
+    var unTemps = !!(h.pp || h.mn || h.fp);
+    return bouge || unTemps;
+  }
+
+  // Retourne la liste des compteurs entames dont les 3 temps ne sont pas
+  // tous renseignes. Chaque entree : { key, label, manque:[...] }.
+  function _compteursTempsIncomplets() {
+    var out = [];
+    _groupes().forEach(function (g) {
+      if (!_compteurEntame(g.key)) return;
+      var h = state.horaires[g.key] || {};
+      var manque = [];
+      if (!h.pp) manque.push("prise de poste");
+      if (!h.mn) manque.push("manœuvre");
+      if (!h.fp) manque.push("fin de poste");
+      if (manque.length) out.push({ key: g.key, label: g.label, manque: manque });
+    });
+    return out;
+  }
 
   function ouvrirModalValidation(res) {
     var baseReussi = res.base ? res.base.reussi : false;
