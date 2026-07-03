@@ -303,6 +303,11 @@ class EnregistrerLot(BaseModel):
     eliminatoires: List[int] = []
 
 
+def _norm_fam(v):
+    """Normalise un code famille pour comparaison : R.482 == R482."""
+    return (v or "").replace(".", "").replace(" ", "").upper()
+
+
 @router.get("/{session_id}/pratique/saisie/{saisie_id}/testeurs-habilites")
 def testeurs_habilites_saisie(session_id: int, saisie_id: int,
                               db: DBSession = Depends(get_db),
@@ -317,11 +322,11 @@ def testeurs_habilites_saisie(session_id: int, saisie_id: int,
     if categorie:
         cats_requises.add(categorie)
 
+    _fam_norm = _norm_fam(famille)
     rows = (
         db.query(Testeur, _HT)
         .join(_HT, _HT.testeur_id == Testeur.id)
         .filter(
-            _HT.famille == famille,
             _HT.actif == True,
             Testeur.actif == True,
             Testeur.etat == "actif",
@@ -329,6 +334,8 @@ def testeurs_habilites_saisie(session_id: int, saisie_id: int,
         .order_by(Testeur.nom, Testeur.prenom)
         .all()
     )
+    # Filtre famille tolerant au format (R.482 == R482).
+    rows = [(t, hab) for (t, hab) in rows if _norm_fam(hab.famille) == _fam_norm]
 
     cats_par_testeur = {}
     opts_par_testeur = {}   # options detenues sur TOUTE la famille (PE / TEL)
@@ -549,12 +556,13 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
     _jour = db.query(JourTest).filter(JourTest.id == saisie.jour_test_id).first()
     _sess = db.query(_Sess).filter(_Sess.id == _jour.session_id).first() if _jour else None
     _fam = _sess.famille if _sess else ""
-    hab = db.query(_HT).filter(
+    _fam_n = _norm_fam(_fam)
+    _habs_cat = db.query(_HT).filter(
         _HT.testeur_id == data.testeur_id,
-        _HT.famille == _fam,
         _HT.categorie == saisie.categorie,
         _HT.actif == True,
-    ).first()
+    ).all()
+    hab = next((h for h in _habs_cat if _norm_fam(h.famille) == _fam_n), None)
     if not hab:
         raise HTTPException(422, "Testeur non habilite pour %s %s." % (_fam, saisie.categorie))
     _codes_opt = set()
@@ -564,11 +572,10 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
             _codes_opt.add(_g.code_option)
     # Options : detenir l'option sur UNE categorie de la famille suffit
     # (habilitation valable pour l'option sur toute la famille).
-    _habs_fam = db.query(_HT).filter(
+    _habs_fam = [h for h in db.query(_HT).filter(
         _HT.testeur_id == data.testeur_id,
-        _HT.famille == _fam,
         _HT.actif == True,
-    ).all()
+    ).all() if _norm_fam(h.famille) == _fam_n]
     _a_pe = any(getattr(h, "option_pe", False) for h in _habs_fam)
     _a_tel = any(getattr(h, "option_tel", False) for h in _habs_fam)
     if "PE" in _codes_opt and not _a_pe:
