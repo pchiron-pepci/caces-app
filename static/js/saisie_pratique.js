@@ -369,7 +369,7 @@
         + '<div style="display:flex;align-items:center;gap:6px;">'
         + '<span style="flex:1;font-size:10px;color:#888;">' + escapeHtml(g.label) + ' · ref ' + fmtDureeCourt(g.ref) + ' (' + utLabel(g.ut) + ')</span>'
         + '<span class="sp-cmp-t" data-cmp="toggle" data-key="' + g.key + '" title="Cliquer pour lancer / mettre en pause" style="font-family:monospace;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;padding:2px 8px;border-radius:6px;user-select:none;background:' + (ch.run ? "#e1f5ee" : "transparent") + ';color:' + (depasse ? "#cc0000" : "#2d2d2d") + ';">' + fmtChrono(ch.restant) + '</span>'
-        + '<button class="sp-cmp-btn" data-cmp="reset" data-key="' + g.key + '" title="Reinitialiser ce compteur" style="height:22px;padding:0 7px;border:1px solid #d0d4d8;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;line-height:1;flex-shrink:0;">&#8635;</button>'
+        + '<button class="sp-cmp-btn sp-cmp-reset" data-cmp="reset-hold" data-key="' + g.key + '" title="Maintenir 2s pour reinitialiser" style="position:relative;overflow:hidden;height:22px;padding:0 7px;border:1px solid #d0d4d8;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;line-height:1;flex-shrink:0;touch-action:none;">&#8635;<span class="sp-reset-fill" style="position:absolute;left:0;bottom:0;height:2px;width:0%;background:#cc0000;transition:none;"></span></button>'
         + '</div>'
         + '<div style="display:flex;gap:3px;margin-top:5px;">' + rub("pp", "Prise poste") + rub("mn", "Manoeuvre") + rub("fp", "Fin poste") + '</div>'
         + '</div>';
@@ -464,6 +464,67 @@
   }
 
   document.addEventListener("click", function (e) {
+  function _executerReset(key) {
+    var ch = state.chronos[key];
+    if (ch) { ch.run = false; if (ch.timer) clearInterval(ch.timer); ch.restant = ch.ref; }
+    if (state.jalons[key]) state.jalons[key] = { pp: null, mn: null, fp: null };
+    if (state.horaires[key]) state.horaires[key] = { pp: "", mn: "", fp: "" };
+    if (state.figes[key]) state.figes[key] = { pp: false, mn: false, fp: false };
+    _persistChrono(key, "stop");
+    _persistTemps(key);
+    renderBarreCompteurs();
+  }
+
+  var _holdTimer = null, _holdRaf = null, _holdBtn = null, _holdKey = null, _holdStart = 0;
+  var HOLD_MS = 2000;
+
+  function _holdCancel() {
+    if (_holdTimer) { clearTimeout(_holdTimer); _holdTimer = null; }
+    if (_holdRaf) { cancelAnimationFrame(_holdRaf); _holdRaf = null; }
+    if (_holdBtn) {
+      var fill = _holdBtn.querySelector(".sp-reset-fill");
+      if (fill) fill.style.width = "0%";
+    }
+    _holdBtn = null; _holdKey = null;
+  }
+
+  function _holdProgress() {
+    if (!_holdBtn) return;
+    var pct = Math.min(100, ((Date.now() - _holdStart) / HOLD_MS) * 100);
+    var fill = _holdBtn.querySelector(".sp-reset-fill");
+    if (fill) fill.style.width = pct + "%";
+    if (pct < 100) _holdRaf = requestAnimationFrame(_holdProgress);
+  }
+
+  function _holdStartOn(btn) {
+    _holdCancel();
+    _holdBtn = btn;
+    _holdKey = btn.getAttribute("data-key");
+    _holdStart = Date.now();
+    _holdRaf = requestAnimationFrame(_holdProgress);
+    _holdTimer = setTimeout(function () {
+      var key = _holdKey;
+      _holdCancel();
+      var ok = window.confirm(
+        "Reinitialiser ce compteur ?\n\nCela EFFACE le chronometre et les 3 temps"
+        + " (prise de poste, manoeuvre, fin de poste) de ce compteur. Action irreversible."
+      );
+      if (ok && key) _executerReset(key);
+    }, HOLD_MS);
+  }
+
+  document.addEventListener("pointerdown", function (e) {
+    var btn = e.target.closest('[data-cmp="reset-hold"]');
+    if (!btn) return;
+    e.preventDefault();
+    _holdStartOn(btn);
+  });
+  document.addEventListener("pointerup", function () { _holdCancel(); });
+  document.addEventListener("pointercancel", function () { _holdCancel(); });
+  document.addEventListener("pointerleave", function (e) {
+    if (_holdBtn && e.target === _holdBtn) _holdCancel();
+  }, true);
+
     var b = e.target.closest("[data-cmp]");
     if (b) {
       var key = b.getAttribute("data-key");
@@ -476,7 +537,7 @@
       }
       else if (act === "start" && !ch.run) { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); _persistChrono(key, "run"); renderBarreCompteurs(); }
       else if (act === "stop") { ch.run = false; if (ch.timer) clearInterval(ch.timer); _persistChrono(key, "pause"); renderBarreCompteurs(); }
-      else if (act === "reset") { ch.run = false; if (ch.timer) clearInterval(ch.timer); ch.restant = ch.ref; if (state.jalons[key]) state.jalons[key] = { pp: null, mn: null, fp: null }; if (state.horaires[key]) state.horaires[key] = { pp: "", mn: "", fp: "" }; if (state.figes[key]) state.figes[key] = { pp: false, mn: false, fp: false }; _persistChrono(key, "stop"); _persistTemps(key); renderBarreCompteurs(); }
+      // reset direct desactive : passe par appui long + confirmation.
       if (typeof _engMajFn === "function") _engMajFn();
       return;
     }
