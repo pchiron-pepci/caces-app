@@ -34,7 +34,7 @@ from app.models.habilitation_option import HabilitationOption
 from app.models.non_conformite import NonConformite
 from app.models.utilisateur import Utilisateur
 from app.models.reset_tirage import ResetTirage
-from app.models.grille_pratique import (GrillePratique, ThemePratique, PointEvaluation, ItemPratique, CritereEliminatoire, SaisiePratique, SaisieBloc, SaisieItemNote, SaisieEliminatoire)
+from app.models.grille_pratique import (GrillePratique, ThemePratique, PointEvaluation, ItemPratique, CritereEliminatoire, SaisiePratique, SaisieBloc, SaisieItemNote, SaisieEliminatoire, CompteurTemps)
 from app.models.option_categorie import OptionCategorie
 from app.models.caces_obtenu import CacesObtenu
 from app.models.carte_caces import CarteCaces

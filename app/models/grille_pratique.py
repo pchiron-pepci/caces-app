@@ -155,3 +155,28 @@ class SaisieEliminatoire(Base):
     critere_id = Column(Integer, ForeignKey("critere_eliminatoire.id"), nullable=False)
 
     bloc = relationship("SaisieBloc", back_populates="eliminatoires")
+
+
+class CompteurTemps(Base):
+    """Compteur de temps d'une saisie pratique (1 ligne par groupe).
+    group_key = 'CAT' ou 'OPT:<code>'. Deux natures de donnees :
+      - 3 durees de phase (probantes, corrigeables) ;
+      - etat du chrono de decompte (fiable au plantage, indicatif)."""
+    __tablename__ = "compteur_temps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    saisie_id = Column(Integer, ForeignKey("saisie_pratique.id"), nullable=False, index=True)
+    group_key = Column(String(40), nullable=False)
+    label = Column(String(120), nullable=True)
+    ref_secondes = Column(Integer, nullable=True)
+
+    duree_pp = Column(Integer, nullable=True)
+    duree_mn = Column(Integer, nullable=True)
+    duree_fp = Column(Integer, nullable=True)
+    cumul_secondes = Column(Integer, nullable=True)
+
+    statut = Column(String(10), nullable=True, default="stop")
+    instant_depart = Column(Float, nullable=True)
+    ecoule_fige = Column(Integer, nullable=True, default=0)
+
+    date_maj = Column(DateTime, server_default=func.now(), onupdate=func.now())

@@ -131,6 +131,37 @@
   }
 
   // Recalcule les durees AFFICHEES de chaque phase a partir des jalons.
+  function _groupeByKey(gkey) {
+    var gs = _groupes();
+    for (var i = 0; i < gs.length; i++) { if (gs[i].key === gkey) return gs[i]; }
+    return null;
+  }
+
+  function _persistTemps(gkey) {
+    if (!state.saisieId) return;
+    var g = _groupeByKey(gkey);
+    var h = state.horaires[gkey] || { pp: "", mn: "", fp: "" };
+    function _s(v) { return v ? _dureeEnSecondes(v) : null; }
+    var pp = _s(h.pp), mn = _s(h.mn), fp = _s(h.fp);
+    var cumul = (pp || 0) + (mn || 0) + (fp || 0);
+    api("POST", BASE + state.saisieId + "/compteur", {
+      group_key: gkey, label: g ? g.label : null, ref_secondes: g ? g.ref : null,
+      duree_pp: pp, duree_mn: mn, duree_fp: fp, cumul_secondes: cumul || null
+    }).catch(function () {});
+  }
+
+  function _persistChrono(gkey, statut) {
+    if (!state.saisieId) return;
+    var ch = state.chronos[gkey]; if (!ch) return;
+    var g = _groupeByKey(gkey);
+    var ecoule = ch.ref - ch.restant;
+    if (ecoule < 0) ecoule = ch.ref;
+    api("POST", BASE + state.saisieId + "/compteur", {
+      group_key: gkey, label: g ? g.label : null, ref_secondes: g ? g.ref : null,
+      statut: statut, ecoule_fige: Math.max(0, Math.round(ecoule))
+    }).catch(function () {});
+  }
+
   function _recalcPhases(gkey) {
     var j = state.jalons[gkey] || { pp: null, mn: null, fp: null };
     var h = state.horaires[gkey] || { pp: "", mn: "", fp: "" };
@@ -438,10 +469,14 @@
       var key = b.getAttribute("data-key");
       var act = b.getAttribute("data-cmp");
       var ch = state.chronos[key]; if (!ch) return;
-      if (act === "toggle") { if (ch.run) { ch.run = false; if (ch.timer) clearInterval(ch.timer); } else { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); } renderBarreCompteurs(); }
-      else if (act === "start" && !ch.run) { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); renderBarreCompteurs(); }
-      else if (act === "stop") { ch.run = false; if (ch.timer) clearInterval(ch.timer); renderBarreCompteurs(); }
-      else if (act === "reset") { ch.run = false; if (ch.timer) clearInterval(ch.timer); ch.restant = ch.ref; if (state.jalons[key]) state.jalons[key] = { pp: null, mn: null, fp: null }; if (state.horaires[key]) state.horaires[key] = { pp: "", mn: "", fp: "" }; renderBarreCompteurs(); }
+      if (act === "toggle") {
+        if (ch.run) { ch.run = false; if (ch.timer) clearInterval(ch.timer); _persistChrono(key, "pause"); }
+        else { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); _persistChrono(key, "run"); }
+        renderBarreCompteurs();
+      }
+      else if (act === "start" && !ch.run) { ch.run = true; ch.timer = setInterval(function () { _tick(key); }, 1000); _persistChrono(key, "run"); renderBarreCompteurs(); }
+      else if (act === "stop") { ch.run = false; if (ch.timer) clearInterval(ch.timer); _persistChrono(key, "pause"); renderBarreCompteurs(); }
+      else if (act === "reset") { ch.run = false; if (ch.timer) clearInterval(ch.timer); ch.restant = ch.ref; if (state.jalons[key]) state.jalons[key] = { pp: null, mn: null, fp: null }; if (state.horaires[key]) state.horaires[key] = { pp: "", mn: "", fp: "" }; if (state.figes[key]) state.figes[key] = { pp: false, mn: false, fp: false }; _persistChrono(key, "stop"); _persistTemps(key); renderBarreCompteurs(); }
       if (typeof _engMajFn === "function") _engMajFn();
       return;
     }
@@ -496,6 +531,7 @@
         state.horaires[gkey][champ] = norm;
       }
       _recalcPhases(gkey);
+      _persistTemps(gkey);
       renderBarreCompteurs();
     }
   });
@@ -596,6 +632,35 @@
       .filter(function (b) { return b.grille && b.grille.type === "option" && b.grille.code_option; })
       .map(function (b) { return b.grille.code_option; });
     chargerTesteurs(optionsCandidat, state.repriseTesteurId);
+    _rechargerCompteurs();
+  }
+
+  function _rechargerCompteurs() {
+    if (!state.saisieId) return;
+    api("GET", BASE + state.saisieId + "/compteurs").then(function (data) {
+      if (!data || !data.compteurs) return;
+      data.compteurs.forEach(function (c) {
+        var k = c.group_key;
+        if (!state.horaires[k]) state.horaires[k] = { pp: "", mn: "", fp: "" };
+        if (!state.jalons[k]) state.jalons[k] = { pp: null, mn: null, fp: null };
+        if (!state.figes[k]) state.figes[k] = { pp: false, mn: false, fp: false };
+        function _f(sec) { return (sec != null) ? _fmtEcoule(sec) : ""; }
+        if (c.duree_pp != null) { state.horaires[k].pp = _f(c.duree_pp); state.figes[k].pp = true; }
+        if (c.duree_mn != null) { state.horaires[k].mn = _f(c.duree_mn); state.figes[k].mn = true; }
+        if (c.duree_fp != null) { state.horaires[k].fp = _f(c.duree_fp); state.figes[k].fp = true; }
+        var ch = state.chronos[k];
+        if (ch && c.ref_secondes) {
+          var ecoule = (c.ecoule_courant != null) ? c.ecoule_courant : 0;
+          ch.restant = ch.ref - ecoule;
+          if (c.statut === "run") {
+            if (ch.timer) clearInterval(ch.timer);
+            ch.run = true;
+            ch.timer = setInterval(function () { _tick(k); }, 1000);
+          }
+        }
+      });
+      renderBarreCompteurs();
+    }).catch(function () {});
   }
 
   function lancerOuverture(engin2, variante) {

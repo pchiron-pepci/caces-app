@@ -16,6 +16,7 @@ from app.models.categorie import Categorie, Famille
 from app.models.grille_pratique import (
     GrillePratique, ThemePratique, PointEvaluation, ItemPratique, CritereEliminatoire,
     SaisiePratique, SaisieBloc, SaisieItemNote, SaisieEliminatoire,
+    CompteurTemps,
 )
 from app.models.config_organisme import ConfigOrganisme
 from app.services.calcul_pratique import calculer_saisie, appliquer_resultats
@@ -360,6 +361,85 @@ def enregistrer_testeur(session_id: int, saisie_id: int, data: EnregistrerTesteu
     saisie.testeur_id = data.testeur_id or None
     db.commit()
     return {"message": "Testeur enregistre", "testeur_id": saisie.testeur_id}
+
+
+import time as _time
+
+
+class CompteurTempsIn(BaseModel):
+    group_key: str
+    label: Optional[str] = None
+    ref_secondes: Optional[int] = None
+    duree_pp: Optional[int] = None
+    duree_mn: Optional[int] = None
+    duree_fp: Optional[int] = None
+    cumul_secondes: Optional[int] = None
+    statut: Optional[str] = None
+    ecoule_fige: Optional[int] = None
+
+
+@router.post("/{session_id}/pratique/saisie/{saisie_id}/compteur")
+def enregistrer_compteur(session_id: int, saisie_id: int, data: CompteurTempsIn,
+                         db: DBSession = Depends(get_db)):
+    """Upsert d'UN compteur. Appele a chaque pose/correction de temps
+    ET a chaque changement d'etat du chrono (run/pause/stop).
+    Le serveur pose lui-meme instant_depart au passage en 'run' (heure serveur)."""
+    saisie = db.query(SaisiePratique).filter(SaisiePratique.id == saisie_id).first()
+    if not saisie:
+        raise HTTPException(404, "Saisie introuvable")
+    row = db.query(CompteurTemps).filter(
+        CompteurTemps.saisie_id == saisie_id,
+        CompteurTemps.group_key == data.group_key,
+    ).first()
+    if not row:
+        row = CompteurTemps(saisie_id=saisie_id, group_key=data.group_key, ecoule_fige=0, statut="stop")
+        db.add(row)
+
+    if data.label is not None:
+        row.label = data.label
+    if data.ref_secondes is not None:
+        row.ref_secondes = data.ref_secondes
+    if data.duree_pp is not None or data.duree_mn is not None or data.duree_fp is not None or data.cumul_secondes is not None:
+        row.duree_pp = data.duree_pp
+        row.duree_mn = data.duree_mn
+        row.duree_fp = data.duree_fp
+        row.cumul_secondes = data.cumul_secondes
+
+    if data.statut is not None:
+        if data.statut == "run":
+            row.ecoule_fige = data.ecoule_fige if data.ecoule_fige is not None else (row.ecoule_fige or 0)
+            row.instant_depart = _time.time()
+            row.statut = "run"
+        elif data.statut == "pause":
+            row.ecoule_fige = data.ecoule_fige if data.ecoule_fige is not None else (row.ecoule_fige or 0)
+            row.instant_depart = None
+            row.statut = "pause"
+        elif data.statut == "stop":
+            row.ecoule_fige = 0
+            row.instant_depart = None
+            row.statut = "stop"
+
+    db.commit()
+    return {"message": "Compteur enregistre", "group_key": data.group_key}
+
+
+@router.get("/{session_id}/pratique/saisie/{saisie_id}/compteurs")
+def lire_compteurs(session_id: int, saisie_id: int, db: DBSession = Depends(get_db)):
+    """Relit les compteurs. Pour un chrono 'run', calcule l'ecoule courant."""
+    rows = db.query(CompteurTemps).filter(CompteurTemps.saisie_id == saisie_id).all()
+    now = _time.time()
+    out = []
+    for r in rows:
+        ecoule = r.ecoule_fige or 0
+        if r.statut == "run" and r.instant_depart:
+            ecoule = int((r.ecoule_fige or 0) + max(0, now - r.instant_depart))
+        out.append({
+            "group_key": r.group_key, "label": r.label, "ref_secondes": r.ref_secondes,
+            "duree_pp": r.duree_pp, "duree_mn": r.duree_mn, "duree_fp": r.duree_fp,
+            "cumul_secondes": r.cumul_secondes,
+            "statut": r.statut or "stop", "ecoule_courant": int(ecoule),
+        })
+    return {"compteurs": out}
 
 
 @router.post("/{session_id}/pratique/saisie/{saisie_id}/enregistrer")
