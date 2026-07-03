@@ -282,6 +282,20 @@
   }
 
   // ─── LOT 2 : barre de compteurs figee ─────────────────────────
+  // Ensemble des group_key (CAT / OPT:<code>) dont la section a au moins
+  // une case cochee : une note saisie OU un critere eliminatoire coche.
+  function _groupesAvecNotes() {
+    var set = {};
+    (state.blocs || []).forEach(function (b) {
+      var g = b.grille || {};
+      var gk = (g.type === "option" && g.code_option) ? ("OPT:" + g.code_option) : "CAT";
+      var aNote = b.notes && Object.keys(b.notes).some(function (k) { return b.notes[k] != null; });
+      var aElim = b.elim && b.elim.length > 0;
+      if (aNote || aElim) set[gk] = true;
+    });
+    return set;
+  }
+
   function _groupes() {
     var c = state.compteurs || { categorie: { secondes: 0, ut: 0 }, options: {} };
     var out = [];
@@ -701,7 +715,7 @@
   // expose pour les blocs suivants
   window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt,
                  compteurLance: _compteurLance, groupDeCible: _groupDeCible,
-                 groupes: _groupes };
+                 groupes: _groupes, groupesAvecNotes: _groupesAvecNotes };
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
   function chargerTesteurs(options, testeurIdPreselect) {
@@ -1346,9 +1360,12 @@
   function _compteursTempsIncomplets() {
     if (!window._SP || !_SP.groupes || !_SP.state) return [];
     var st = _SP.state;
+    var avecNotes = (_SP.groupesAvecNotes ? _SP.groupesAvecNotes() : {});
     var out = [];
     _SP.groupes().forEach(function (g) {
-      if (!_compteurEntame(st, g.key)) return;
+      // Temps obligatoires si le compteur est entame OU si la section a des cases cochees.
+      var exige = _compteurEntame(st, g.key) || !!avecNotes[g.key];
+      if (!exige) return;
       var h = st.horaires[g.key] || {};
       var manque = [];
       if (!h.pp) manque.push("prise de poste");
