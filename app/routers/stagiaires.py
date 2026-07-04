@@ -882,6 +882,29 @@ def supprimer_caces_externe(id: int, caces_id: int, pin: str = "", db: Session =
     ).first()
     if not co:
         raise HTTPException(status_code=404, detail="CACES externe introuvable")
+
+    # BLOCAGE : ce CACES peut servir a delivrer un autre CACES (extension)
+    # ou fonder une dispense de theorie. Verifier les dependances avant hard delete.
+    ext = db.query(CacesObtenu).filter(CacesObtenu.caces_initial_id == co.id).first()
+    if ext:
+        raise HTTPException(
+            status_code=409,
+            detail="Suppression impossible : ce CACES sert de base a une extension "
+                   "(%s cat. %s). Supprimez d'abord l'extension." % (
+                       ext.famille or "", ext.categorie or ""),
+        )
+
+    disp = db.query(SessionCandidat).filter(
+        SessionCandidat.dispense_source_type == "caces",
+        SessionCandidat.dispense_source_id == co.id,
+    ).first()
+    if disp:
+        raise HTTPException(
+            status_code=409,
+            detail="Suppression impossible : ce CACES fonde une dispense de theorie "
+                   "pour un candidat en session. Retirez d'abord la dispense.",
+        )
+
     if co.justificatif_cle:
         try:
             storage.delete_fichier(co.justificatif_cle)

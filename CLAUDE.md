@@ -2519,6 +2519,20 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Correctif :** suppression des 8 occurrences de l'emoji ✅ devant des mentions courtes (« Aucun » dans les 5 sections de la carte « À traiter », badges « Actif » et dates de validité). Conforme à la règle de charte déjà en place : « privilégier CSS pur (caractères Unicode sobres, chiffres dans pastilles) plutôt que des emojis ». Les autres emojis du dashboard (👥, 🪪, 📋, ⚠️, ⚡, 🚩...) sont conservés — ce chantier ne visait que ✅.
 
+### ✅ Chantier terminé : garde-fous suppression CACES externe — extension et dispense dépendantes (2026-07-04)
+
+**Fichier :** `app/routers/stagiaires.py`, route `DELETE` (`supprimer_caces_externe`, ~ligne 876)
+
+**Problème :** la suppression d'un CACES externe faisait un hard delete direct, sans vérifier si ce CACES servait de FONDATION à autre chose. Deux risques :
+1. Un autre `CacesObtenu` peut être une **extension** héritant son échéance de celui-ci (`caces_initial_id` pointant dessus) — le supprimer aurait laissé l'extension orpheline (échéance sans origine).
+2. Un `SessionCandidat` peut avoir une **dispense de théorie** fondée sur ce CACES (`dispense_source_type == "caces"`, `dispense_source_id` pointant dessus) — le supprimer aurait laissé une dispense sans justification traçable.
+
+**Correctif :** 2 vérifications AVANT le hard delete, chacune levant `HTTPException(409)` si une dépendance existe :
+- `db.query(CacesObtenu).filter(CacesObtenu.caces_initial_id == co.id).first()` → « ce CACES sert de base à une extension (famille cat. catégorie). Supprimez d'abord l'extension. »
+- `db.query(SessionCandidat).filter(dispense_source_type=="caces", dispense_source_id==co.id).first()` → « ce CACES fonde une dispense de théorie pour un candidat en session. Retirez d'abord la dispense. »
+
+**Correction apportée en cours d'application (script fourni buggé) :** le message d'erreur de l'extension utilisait `ext.recommandation`, champ INEXISTANT sur `CacesObtenu` (le modèle n'a que `famille` et `categorie`) → aurait levé une `AttributeError` au premier cas réel de blocage. Remplacé par `ext.famille`.
+
 ---
 
 ## Sauvegarde base de données
