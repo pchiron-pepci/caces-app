@@ -282,6 +282,7 @@ def _temps_html(saisie, db) -> str:
       </tr></thead>
       <tbody>%s</tbody>
     </table>
+    <div class="synth-note">Temps exprimes en h:min:s. %% = temps realise rapporte au temps de reference.</div>
 """ % trs
 
 
