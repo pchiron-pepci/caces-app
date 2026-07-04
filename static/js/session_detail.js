@@ -1088,7 +1088,7 @@ function construireFormFicheReco(data) {
             return '<div style="margin-bottom:10px; border-bottom:1px dashed #eee; padding-bottom:8px;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:13px; font-weight:600; color:#2d2d2d;">' + _frEsc(tb.theme) + '</div><div>' + champ + '</div></div><ul style="margin:4px 0 0 18px; font-size:12px;">' + (inner || '<li style="color:#888;">—</li>') + '</ul></div>';
         }).join('');
         var optHtml = '';
-        if (p.options_a_repasser && p.options_a_repasser.length) {
+        if (p.options_a_repasser && p.options_a_repasser.length && p.base_reussie) {
             optHtml = '<div style="font-size:12px; color:#7a5a12; background:#faeeda; border-radius:6px; padding:6px 9px; margin-top:8px;">Catégorie obtenue, mais option(s) à repasser : ' + p.options_a_repasser.map(function (o) { return _frEsc(o.libelle); }).join(', ') + '</div>';
         }
         html += '<div style="border:1px solid #e57373; border-radius:8px; margin-bottom:12px;"><div style="background:#fcebeb; color:#a32d2d; padding:7px 12px; font-weight:600; font-size:13px; border-radius:8px 8px 0 0;">✗ Pratique catégorie ' + _frEsc(cat) + ' — échouée</div><div style="padding:10px 12px;">';
