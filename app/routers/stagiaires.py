@@ -680,6 +680,32 @@ def supprimer_reprise_caces(id: int, co_id: int, data: SuppressionData, db: Sess
             "suppression impossible : un CACES valide a ete forme par extension de cette reprise. "
             "Annulez d'abord le CACES concerne. NORYX ne rattrape jamais automatiquement."
         ))
+
+    # VERROU DISPENSE : ce CACES repris ne doit pas fonder une dispense de theorie en cours.
+    disp = db.query(SessionCandidat).filter(
+        SessionCandidat.dispense_source_type == "caces",
+        SessionCandidat.dispense_source_id == co.id,
+    ).first()
+    if disp:
+        raise HTTPException(status_code=409, detail=(
+            "suppression impossible : ce CACES fonde une dispense de theorie pour un candidat "
+            "en session. Retirez d'abord la dispense."
+        ))
+
+    # VERROU CARTE : une carte emise pour cette famille peut avoir fige ce CACES.
+    from app.models.carte_caces import CarteCaces
+    carte = db.query(CarteCaces).filter(
+        CarteCaces.stagiaire_id == id,
+        CarteCaces.famille == co.famille,
+        CarteCaces.statut == "emise",
+    ).first()
+    if carte:
+        raise HTTPException(status_code=409, detail=(
+            "suppression impossible : une carte CACES active (n. %s) a ete emise pour cette "
+            "famille et peut inclure ce CACES. Annulez ou remplacez d'abord la carte." % (
+                carte.numero_carte or "")
+        ))
+
     # Supprimer le CacesObtenu repris ET la SessionEpreuve associee (meme triplet, session sentinelle)
     _sid, _sess_id, _cat = co.stagiaire_id, co.session_id, co.categorie
     eps = db.query(SessionEpreuve).filter(
