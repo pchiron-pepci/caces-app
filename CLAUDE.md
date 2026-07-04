@@ -2503,6 +2503,16 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Règle à retenir (fichier multi-IIFE `saisie_pratique.js`) :** toute fonction définie dans une IIFE et appelée depuis une autre DOIT être explicitement exposée sur `window._sp*` — jamais supposer une portée partagée entre les 3 IIFE de ce fichier.
 
+### ✅ Chantier terminé : dashboard — email sous le téléphone dans la carte Référents en responsive (2026-07-04)
+
+**Fichier :** `templates/dashboard.html`
+
+**Avant :** téléphone et email dans deux `<td>` séparées → sur petit écran, l'email pouvait déborder ou s'écraser contre les autres colonnes.
+
+**Correctif :** fusion des deux colonnes en une seule `<td class="ref-contact">` contenant `<span class="ref-tel">` + `<span class="ref-mail">`. CSS : sur écran large, affichés en ligne séparés par « · » ; sous 640px, empilés (`display:block`) avec l'email en dessous du téléphone (`margin-top:2px`, `word-break:break-all` pour les adresses longues).
+
+**Détail cosmétique connu (non bloquant) :** `r.telephone or '—'` rend `.ref-tel` toujours non vide (contient au moins le tiret cadratin) → le sélecteur `:not(:empty)` affiche systématiquement le séparateur « · », même sans téléphone renseigné. Effet visuel mineur (« — · email@... » au lieu de masquer le séparateur), à corriger seulement si signalé comme gênant.
+
 ---
 
 ## Sauvegarde base de données
