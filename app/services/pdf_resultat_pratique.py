@@ -187,7 +187,105 @@ def _bloc_html(bloc: dict, est_base: bool, acquis: bool) -> str:
 
 # ── Synthèse multi-colonnes (gabarit unique : N colonnes = bases + options) ──
 
-def _synthese_html(calcul: dict) -> str:
+def _fmt_hms(sec) -> str:
+    """Secondes -> H:MM:SS ou MM:SS."""
+    if sec is None:
+        return "--"
+    sec = int(sec)
+    h, r = divmod(sec, 3600)
+    m, sd = divmod(r, 60)
+    if h > 0:
+        return "%d:%02d:%02d" % (h, m, sd)
+    return "%d:%02d" % (m, sd)
+
+
+def _pct_style(pct):
+    """Triple seuil : vert <100, orange 100-130, rouge >130."""
+    if pct is None:
+        return "", ""
+    if pct < 100:
+        return "#e8f5e9", "#1b5e20"
+    if pct <= 130:
+        return "#fff3e0", "#b26a00"
+    return "#fdecea", "#a32d2d"
+
+
+def _temps_html(saisie, db) -> str:
+    """Tableau des temps par group_key (CAT = categorie, OPT:<code> = option).
+    Insere entre le titre 'Synthese par epreuve' et le tableau des notes."""
+    from app.models.grille_pratique import CompteurTemps
+    rows = db.query(CompteurTemps).filter(CompteurTemps.saisie_id == saisie.id).all()
+    if not rows:
+        return ""
+    # Ordre : CAT d'abord, puis options par ordre alpha du code.
+    def _rang(r):
+        gk = (r.group_key or "")
+        if gk == "CAT":
+            return (0, "")
+        if gk.startswith("OPT:"):
+            return (1, gk[4:])
+        return (2, gk)
+    rows = sorted(rows, key=_rang)
+
+    trs = ""
+    for r in rows:
+        gk = r.group_key or ""
+        if gk == "CAT":
+            lib = _esc(r.label or "Categorie")
+        elif gk.startswith("OPT:"):
+            lib = _esc(r.label or ("Option " + gk[4:]))
+        else:
+            lib = _esc(r.label or gk)
+        est_opt = gk.startswith("OPT:")
+        ref = r.ref_secondes
+        realise = r.cumul_secondes
+        pct = None
+        if ref and realise is not None and ref > 0:
+            pct = round(realise * 100.0 / ref)
+        bg, fg = _pct_style(pct)
+        pct_cell = "--"
+        if pct is not None:
+            pct_cell = ('<span style="background:%s;color:%s;padding:1px 6px;'
+                        'border-radius:3px;">%d%%</span>' % (bg, fg, pct))
+        realise_style = (' style="color:%s;font-weight:700;"' % fg) if pct is not None else ""
+        row_bg = ' class="col-opt"' if est_opt else ""
+        trs += (
+            '<tr>'
+            '<td class="lib"%s>%s</td>'
+            '<td class="c"%s>%s</td>'
+            '<td class="c"%s>%s</td>'
+            '<td class="c"%s>%s</td>'
+            '<td class="c na"%s>%s</td>'
+            '<td class="c"%s%s>%s</td>'
+            '<td class="c"%s>%s</td>'
+            '</tr>'
+        ) % (
+            row_bg, lib,
+            row_bg, _fmt_hms(r.duree_pp),
+            row_bg, _fmt_hms(r.duree_mn),
+            row_bg, _fmt_hms(r.duree_fp),
+            row_bg, _fmt_hms(ref),
+            row_bg, realise_style, _fmt_hms(realise),
+            row_bg, pct_cell,
+        )
+
+    return """
+    <table class="synth" style="margin-bottom:12px;">
+      <thead><tr>
+        <th class="lib">Epreuve</th>
+        <th class="c">Prise poste</th>
+        <th class="c">Man&oelig;uvre</th>
+        <th class="c">Fin poste</th>
+        <th class="c">Ref.</th>
+        <th class="c">Realise</th>
+        <th class="c">%</th>
+      </tr></thead>
+      <tbody>%s</tbody>
+    </table>
+""" % trs
+
+
+def _synthese_html(calcul: dict, saisie=None, db=None) -> str:
     """Tableau de synthèse : une colonne par épreuve (bases + options),
     une ligne par thème (— si non applicable), notes globales et verdicts.
     Gabarit unique : 1 colonne (cat F) ou N colonnes (cat A + options)."""
@@ -259,8 +357,10 @@ def _synthese_html(calcul: dict) -> str:
             badge = '<span class="badge ko">NON ACQUIS</span>'
         verd += f'<td class="c tot{extra}">{badge}</td>'
 
+    temps_html = _temps_html(saisie, db) if (saisie is not None and db is not None) else ""
     return f"""
     <div class="sub">Synthèse par épreuve</div>
+    {temps_html}
     <table class="synth">
       <thead><tr>{head}</tr></thead>
       <tbody>
@@ -276,7 +376,7 @@ def _synthese_html(calcul: dict) -> str:
 
 # ── Construction HTML ────────────────────────────────────────────────────────
 
-def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_data: str) -> str:
+def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_data: str, db=None) -> str:
     stagiaire = donnees["stagiaire"]
     session = donnees["session"]
     calcul = donnees["calcul"]
@@ -311,7 +411,7 @@ def _build_html(saisie: SaisiePratique, donnees: dict, nom_organisme: str, logo_
     </div>"""
 
     # Synthèse multi-colonnes (gabarit unique)
-    synthese_html = _synthese_html(calcul)
+    synthese_html = _synthese_html(calcul, saisie, db)
 
     # Blocs base + options
     blocs_html = ""
@@ -492,7 +592,7 @@ def generer_pdf_resultat_pratique(saisie_id: int, db: DBSession) -> bytes:
     nom_organisme = _get_nom_organisme(db)
     logo_data = _get_logo_data(db)
     donnees = _collecter(saisie, db)
-    html = _build_html(saisie, donnees, nom_organisme, logo_data)
+    html = _build_html(saisie, donnees, nom_organisme, logo_data, db)
 
     from weasyprint import HTML
     buf = BytesIO()
