@@ -2533,6 +2533,8 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Correction apportée en cours d'application (script fourni buggé) :** le message d'erreur de l'extension utilisait `ext.recommandation`, champ INEXISTANT sur `CacesObtenu` (le modèle n'a que `famille` et `categorie`) → aurait levé une `AttributeError` au premier cas réel de blocage. Remplacé par `ext.famille`.
 
+**Extension à 3 cas (2026-07-04) :** 3e garde-fou ajouté — `CarteCaces` (import local `from app.models.carte_caces import CarteCaces`, dans la fonction) : si une carte `statut == "emise"` existe pour `(stagiaire_id, famille)`, blocage 409 « une carte CACES active (n. X) a été émise pour cette famille et peut inclure ce CACES. Annulez ou remplacez d'abord la carte. ». Champs `CarteCaces` vérifiés (`stagiaire_id`, `famille`, `statut`, `numero_carte`). Le 2e script fourni pour cette extension réintroduisait la même coquille `ext.recommandation` dans son bloc de remplacement — corrigée à nouveau en `ext.famille` lors de l'application, pour rester cohérent avec le correctif déjà en place.
+
 ---
 
 ## Sauvegarde base de données

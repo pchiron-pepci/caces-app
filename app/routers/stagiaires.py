@@ -883,8 +883,11 @@ def supprimer_caces_externe(id: int, caces_id: int, pin: str = "", db: Session =
     if not co:
         raise HTTPException(status_code=404, detail="CACES externe introuvable")
 
-    # BLOCAGE : ce CACES peut servir a delivrer un autre CACES (extension)
-    # ou fonder une dispense de theorie. Verifier les dependances avant hard delete.
+    # BLOCAGE : ce CACES peut servir a delivrer un autre CACES (extension),
+    # fonder une dispense de theorie en cours, ou avoir ete fige dans une carte
+    # emise. On verifie ces dependances AVANT tout hard delete.
+    from app.models.carte_caces import CarteCaces
+
     ext = db.query(CacesObtenu).filter(CacesObtenu.caces_initial_id == co.id).first()
     if ext:
         raise HTTPException(
@@ -903,6 +906,19 @@ def supprimer_caces_externe(id: int, caces_id: int, pin: str = "", db: Session =
             status_code=409,
             detail="Suppression impossible : ce CACES fonde une dispense de theorie "
                    "pour un candidat en session. Retirez d'abord la dispense.",
+        )
+
+    carte = db.query(CarteCaces).filter(
+        CarteCaces.stagiaire_id == id,
+        CarteCaces.famille == co.famille,
+        CarteCaces.statut == "emise",
+    ).first()
+    if carte:
+        raise HTTPException(
+            status_code=409,
+            detail="Suppression impossible : une carte CACES active (n. %s) a ete emise "
+                   "pour cette famille et peut inclure ce CACES. Annulez ou remplacez "
+                   "d'abord la carte." % (carte.numero_carte or ""),
         )
 
     if co.justificatif_cle:
