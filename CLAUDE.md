@@ -2535,6 +2535,27 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Extension à 3 cas (2026-07-04) :** 3e garde-fou ajouté — `CarteCaces` (import local `from app.models.carte_caces import CarteCaces`, dans la fonction) : si une carte `statut == "emise"` existe pour `(stagiaire_id, famille)`, blocage 409 « une carte CACES active (n. X) a été émise pour cette famille et peut inclure ce CACES. Annulez ou remplacez d'abord la carte. ». Champs `CarteCaces` vérifiés (`stagiaire_id`, `famille`, `statut`, `numero_carte`). Le 2e script fourni pour cette extension réintroduisait la même coquille `ext.recommandation` dans son bloc de remplacement — corrigée à nouveau en `ext.famille` lors de l'application, pour rester cohérent avec le correctif déjà en place.
 
+**Même garde-fous portés sur `supprimer_reprise_caces` (module H5, CHANTIER 5 — reprise d'historique, 2026-07-04) :** la route `POST /stagiaires/{id}/reprises/caces/{co_id}/supprimer` (~ligne 660) n'avait qu'un seul verrou (extension valide dérivée, ligne 673-682). Ajout des 2 mêmes verrous que sur `supprimer_caces_externe`, insérés juste après le verrou extension existant :
+- **VERROU DISPENSE** : `SessionCandidat.dispense_source_type == "caces"` + `dispense_source_id == co.id` → 409 si une dispense de théorie en cours en dépend.
+- **VERROU CARTE** : `CarteCaces` `statut == "emise"` pour `(stagiaire_id=id, famille=co.famille)` → 409 si une carte active en dépend.
+
+Les deux routes de suppression de CACES (externe et repris) partagent désormais la même logique de protection à 3 niveaux (extension / dispense / carte émise), avec des messages d'erreur identiques en substance.
+
+### ✅ Chantier terminé : route PUT modification d'un CACES repris (module H5) (2026-07-04)
+
+**Fichier :** `app/routers/stagiaires.py` — nouvelle route `PUT /{id}/reprises/caces/{co_id}` (~ligne 724), juste après `supprimer_reprise_caces`.
+
+**Reprend le schéma `CacesRepriseCreate`** déjà utilisé par `POST /{id}/reprises/caces` (H2a) : `famille`, `categorie`, `options_obtenues`, `date_obtention`, `date_echeance`, `ancien_numero`, `testeur_id`, `pin`.
+
+**Gardes (dans l'ordre) :**
+1. PIN admin (403).
+2. `date_echeance > date_obtention` (400).
+3. CACES introuvable / pas une reprise (`ancien_numero` vide) → 404/400.
+4. **Les 3 mêmes verrous que la suppression** (extension valide dérivée / dispense de théorie en cours / carte émise) → 409 — un CACES repris déjà exploité ne peut pas être modifié tant que la dépendance n'est pas levée, cohérence avec la règle de suppression.
+5. Si la catégorie change : vérifie qu'aucun autre CACES repris de la même session sentinelle n'occupe déjà la nouvelle catégorie (409 sinon).
+
+**Mise à jour synchronisée :** le `CacesObtenu` ET la `SessionEpreuve` associée (même session sentinelle, retrouvée via l'ANCIENNE catégorie avant écrasement — `ancienne_cat` capturée avant modif) sont mis à jour ensemble, pour rester cohérents avec le pattern déjà en place à la création (H2a) et à la suppression (CHANTIER 5).
+
 ---
 
 ## Sauvegarde base de données

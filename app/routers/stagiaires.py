@@ -720,6 +720,91 @@ def supprimer_reprise_caces(id: int, co_id: int, data: SuppressionData, db: Sess
     return {"ok": True, "message": "CACES repris supprime"}
 
 
+@router.put("/{id}/reprises/caces/{co_id}")
+def modifier_reprise_caces(id: int, co_id: int, data: CacesRepriseCreate, db: Session = Depends(get_db)):
+    """Modifie un CACES repris interne. Bloque si le CACES a deja servi
+    (extension, dispense en cours, carte emise) : dans ce cas l'admin doit
+    d'abord annuler la dependance."""
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if data.date_echeance <= data.date_obtention:
+        raise HTTPException(status_code=400, detail="La date d'echeance doit etre posterieure a la date d'obtention.")
+
+    co = db.query(CacesObtenu).filter(CacesObtenu.id == co_id, CacesObtenu.stagiaire_id == id).first()
+    if not co:
+        raise HTTPException(status_code=404, detail="CACES repris introuvable")
+    if not co.ancien_numero:
+        raise HTTPException(status_code=400, detail="Ce CACES n'est pas une reprise (pas d'ancien numero)")
+
+    # BLOCAGE : ne pas modifier un CACES qui a deja servi.
+    from app.models.carte_caces import CarteCaces
+    ext = db.query(CacesObtenu).filter(
+        CacesObtenu.caces_initial_id == co.id, CacesObtenu.statut == "valide"
+    ).first()
+    if ext:
+        raise HTTPException(status_code=409, detail=(
+            "Modification impossible : un CACES valide a ete forme par extension de cette reprise. "
+            "Annulez d'abord le CACES concerne."
+        ))
+    disp = db.query(SessionCandidat).filter(
+        SessionCandidat.dispense_source_type == "caces",
+        SessionCandidat.dispense_source_id == co.id,
+    ).first()
+    if disp:
+        raise HTTPException(status_code=409, detail=(
+            "Modification impossible : ce CACES fonde une dispense de theorie pour un candidat "
+            "en session. Retirez d'abord la dispense."
+        ))
+    carte = db.query(CarteCaces).filter(
+        CarteCaces.stagiaire_id == id,
+        CarteCaces.famille == co.famille,
+        CarteCaces.statut == "emise",
+    ).first()
+    if carte:
+        raise HTTPException(status_code=409, detail=(
+            "Modification impossible : une carte CACES active (n. %s) a ete emise pour cette "
+            "famille et peut inclure ce CACES. Annulez ou remplacez d'abord la carte." % (
+                carte.numero_carte or "")
+        ))
+
+    # Unicite : si la categorie change, verifier qu'aucun autre CACES repris ne l'occupe deja.
+    if data.categorie != co.categorie:
+        conflit = db.query(CacesObtenu).filter(
+            CacesObtenu.stagiaire_id == id,
+            CacesObtenu.session_id == co.session_id,
+            CacesObtenu.categorie == data.categorie,
+            CacesObtenu.id != co.id,
+        ).first()
+        if conflit:
+            raise HTTPException(status_code=409, detail="Un CACES repris existe deja pour cette categorie.")
+
+    ancienne_cat = co.categorie
+
+    # Mise a jour du CacesObtenu
+    co.famille = data.famille
+    co.categorie = data.categorie
+    co.options_obtenues = data.options_obtenues or None
+    co.date_obtention = data.date_obtention
+    co.date_echeance = data.date_echeance
+    co.ancien_numero = data.ancien_numero
+
+    # Mise a jour de la SessionEpreuve associee (meme session sentinelle, ancienne categorie)
+    ep = db.query(SessionEpreuve).filter(
+        SessionEpreuve.stagiaire_id == id,
+        SessionEpreuve.session_id == co.session_id,
+        SessionEpreuve.categorie == ancienne_cat,
+    ).first()
+    if ep:
+        ep.famille = data.famille
+        ep.categorie = data.categorie
+        ep.options_obtenues = data.options_obtenues or None
+        ep.date = data.date_obtention
+        ep.testeur_id = data.testeur_id
+
+    db.commit()
+    return {"ok": True, "message": "CACES repris modifie", "id": co.id}
+
+
 @router.get("/{id}/reprises/orphelines")
 def get_reprises_orphelines(id: int, db: Session = Depends(get_db)):
     from app.models.testeur import Testeur
