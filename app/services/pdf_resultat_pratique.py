@@ -188,15 +188,13 @@ def _bloc_html(bloc: dict, est_base: bool, acquis: bool) -> str:
 # ── Synthèse multi-colonnes (gabarit unique : N colonnes = bases + options) ──
 
 def _fmt_hms(sec) -> str:
-    """Secondes -> H:MM:SS ou MM:SS."""
+    """Secondes -> format homogene h:min (arrondi a la minute).
+    Toujours h:mm, ex. 0:02 (2 min), 1:30 (1 h 30). Secondes non affichees."""
     if sec is None:
         return "--"
-    sec = int(sec)
-    h, r = divmod(sec, 3600)
-    m, sd = divmod(r, 60)
-    if h > 0:
-        return "%d:%02d:%02d" % (h, m, sd)
-    return "%d:%02d" % (m, sd)
+    total_min = int(round(int(sec) / 60.0))
+    h, m = divmod(total_min, 60)
+    return "%d:%02d" % (h, m)
 
 
 def _pct_style(pct):
@@ -282,7 +280,7 @@ def _temps_html(saisie, db) -> str:
       </tr></thead>
       <tbody>%s</tbody>
     </table>
-    <div class="synth-note">Temps exprimes en h:min:s. %% = temps realise rapporte au temps de reference.</div>
+    <div class="synth-note">Temps exprimes en h:min (heures:minutes). %% = temps realise rapporte au temps de reference.</div>
 """ % trs
 
 
