@@ -162,6 +162,20 @@
     }).catch(function () {});
   }
 
+  // Arrete TOUS les compteurs (CAT + options) et persiste leur pause.
+  // Appele a la validation finale : plus aucun chrono ne doit tourner.
+  function _arreterTousChronos() {
+    Object.keys(state.chronos || {}).forEach(function (key) {
+      var ch = state.chronos[key];
+      if (!ch) return;
+      if (ch.run || ch.timer) {
+        ch.run = false;
+        if (ch.timer) { clearInterval(ch.timer); ch.timer = null; }
+        _persistChrono(key, "pause");
+      }
+    });
+  }
+
   function _recalcPhases(gkey) {
     var j = state.jalons[gkey] || { pp: null, mn: null, fp: null };
     var h = state.horaires[gkey] || { pp: "", mn: "", fp: "" };
@@ -1533,6 +1547,8 @@
 
       var signature = signatureData();
       if (!signature) { toast("La signature du testeur est obligatoire"); return; }
+
+      _arreterTousChronos();
 
       api("POST", BASE + state.saisieId + "/valider", {
         testeur_id: parseInt(testeurId, 10),
