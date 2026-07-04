@@ -2481,6 +2481,16 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Implémentation :** comparaison `saisie.testeur_id != nouveau` AVANT d'écraser `saisie.testeur_id` ; si différent → `observations`, `justification_ecart`, `signature_testeur`, `testeur_nom` mis à `None`. Aucun changement si le testeur reposté est le même (évite un reset systématique à chaque fil-de-l'eau).
 
+### ✅ Chantier terminé : cache-busting des fichiers JS statiques (timestamp de fichier) (2026-07-04)
+
+**Besoin :** un déploiement modifiant un fichier `static/js/*.js` pouvait rester en cache navigateur/CDN, faisant tourner une version obsolète du script après un correctif poussé en prod.
+
+**Implémentation :**
+- `app/main.py` (~ligne 543) : helper `_static_mtime(relpath)` — `int(os.path.getmtime(os.path.join("static", relpath)))`, retourne `""` si le fichier est introuvable (`OSError`). Exposé comme global Jinja2 : `templates.env.globals['static_mtime'] = _static_mtime`.
+- `templates/saisie_pratique.html` : `<script src="/static/js/saisie_pratique.js?v={{ static_mtime('js/saisie_pratique.js') }}"></script>` — le paramètre `?v=` change automatiquement à chaque modification du fichier, invalidant le cache sans action manuelle.
+
+**Portée de ce chantier :** uniquement `saisie_pratique.html`/`saisie_pratique.js` pour l'instant. Le pattern `static_mtime('js/xxx.js')` est réutilisable sur n'importe quel autre template incluant un script statique — à étendre au reste du site si le besoin se confirme (pas fait par défaut pour limiter le changement à ce qui a été demandé).
+
 ---
 
 ## Sauvegarde base de données

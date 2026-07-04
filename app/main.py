@@ -540,11 +540,18 @@ def _get_date_validite_certificat():
         return doc.date_validite.strftime('%d/%m/%Y')
     return ""
 
+def _static_mtime(relpath):
+    try:
+        return int(_os.path.getmtime(_os.path.join("static", relpath)))
+    except OSError:
+        return ""
+
 templates.env.globals['nom_organisme'] = _get_nom_organisme
 templates.env.globals['logo_organisme'] = _get_logo_organisme
 templates.env.globals['numero_certificat'] = _get_numero_certificat
 templates.env.globals['get_config_organisme'] = _get_config_organisme
 templates.env.globals['date_validite_certificat'] = _get_date_validite_certificat
+templates.env.globals['static_mtime'] = _static_mtime
 
 class CSPMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: StarletteRequest, call_next):
