@@ -2513,6 +2513,12 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Avantage vs version précédente :** alignement en tableau 2 colonnes (plus lisible qu'un simple empilement vertical), et plus de bug de séparateur fantôme (les deux cellules sont indépendantes, pas de pseudo-élément `::before` conditionnel).
 
+### ✅ Chantier terminé : dashboard — retrait des emojis ✅ décoratifs (2026-07-04)
+
+**Fichier :** `templates/dashboard.html`
+
+**Correctif :** suppression des 8 occurrences de l'emoji ✅ devant des mentions courtes (« Aucun » dans les 5 sections de la carte « À traiter », badges « Actif » et dates de validité). Conforme à la règle de charte déjà en place : « privilégier CSS pur (caractères Unicode sobres, chiffres dans pastilles) plutôt que des emojis ». Les autres emojis du dashboard (👥, 🪪, 📋, ⚠️, ⚡, 🚩...) sont conservés — ce chantier ne visait que ✅.
+
 ---
 
 ## Sauvegarde base de données
