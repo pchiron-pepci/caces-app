@@ -278,7 +278,7 @@ def _temps_html(saisie, db) -> str:
         <th class="c">Fin poste</th>
         <th class="c">Ref.</th>
         <th class="c">Realise</th>
-        <th class="c">%</th>
+        <th class="c">%%</th>
       </tr></thead>
       <tbody>%s</tbody>
     </table>
