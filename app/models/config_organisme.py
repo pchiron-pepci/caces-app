@@ -31,3 +31,4 @@ class ConfigOrganisme(Base):
     reco_h_theorie_courte = Column(Float, nullable=True, default=2.0)
     reco_h_theorie_longue = Column(Float, nullable=True, default=4.0)
     reco_seuil_theorie = Column(Float, nullable=True, default=50.0)
+    reco_h_temps = Column(Float, nullable=True, default=1.0)

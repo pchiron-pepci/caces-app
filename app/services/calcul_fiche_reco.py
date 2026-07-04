@@ -55,6 +55,7 @@ def _charger_params(db):
         "seuil": SEUIL_THEORIE,
         "h_theo_courte": HEURES_THEORIE_COURTE,
         "h_theo_longue": HEURES_THEORIE_LONGUE,
+        "h_temps": 1.0,
     }
     try:
         from app.models.config_organisme import ConfigOrganisme
@@ -70,6 +71,8 @@ def _charger_params(db):
                 p["h_theo_courte"] = cfg.reco_h_theorie_courte
             if cfg.reco_h_theorie_longue is not None:
                 p["h_theo_longue"] = cfg.reco_h_theorie_longue
+            if cfg.reco_h_temps is not None:
+                p["h_temps"] = cfg.reco_h_temps
     except Exception:
         pass
     return p
@@ -109,6 +112,54 @@ def _theorie_echec(rt: ResultatTheorie, params=None) -> dict:
         "duree_heures": h,
         "duree_label": _fmt_heures(h),
     }
+
+
+def _reco_temps_par_groupe(saisie, db, params):
+    """Pour une saisie NON acquise (verifie en amont), calcule la reco temps
+    par group_key (CAT = categorie, OPT:<code> = option). Regle :
+      > 130%  -> variable pleine (temps eliminatoire)
+      100-130% -> moitie (a ameliorer)
+      <= 100% -> rien.
+    Renvoie (liste_blocs_temps, total_heures_temps)."""
+    from app.models.grille_pratique import CompteurTemps
+    h_temps = float(params.get("h_temps", 1.0) or 0.0)
+    rows = db.query(CompteurTemps).filter(CompteurTemps.saisie_id == saisie.id).all()
+    blocs = []
+    total = 0.0
+    for r in rows:
+        ref = r.ref_secondes
+        realise = r.cumul_secondes
+        if not ref or realise is None or ref <= 0:
+            continue
+        pct = round(realise * 100.0 / ref)
+        if pct <= 100:
+            continue
+        gk = r.group_key or ""
+        if gk == "CAT":
+            libelle = r.label or "Categorie"
+        elif gk.startswith("OPT:"):
+            libelle = r.label or ("Option " + gk[4:])
+        else:
+            libelle = r.label or gk
+        if pct > 130:
+            h = h_temps
+            niveau = "eliminatoire"
+        else:
+            h = h_temps / 2.0
+            niveau = "a_ameliorer"
+        h = round(h, 2)
+        total += h
+        blocs.append({
+            "group_key": gk,
+            "libelle": libelle,
+            "pct": pct,
+            "ref_secondes": ref,
+            "cumul_secondes": realise,
+            "niveau": niveau,
+            "duree_heures": h,
+            "duree_label": _fmt_heures(h),
+        })
+    return blocs, round(total, 2)
 
 
 def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str, params=None) -> dict:
@@ -225,8 +276,18 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str, params=
         nb_pour_duree = 1
     duree_h = _duree_pratique_heures(nb_pour_duree, a_elimination, params) if categorie_echouee else None
 
+    # ── Temps : uniquement si categorie/option NON acquise ──
+    temps_blocs = []
+    temps_total_h = 0.0
+    if categorie_echouee or options_a_repasser:
+        temps_blocs, temps_total_h = _reco_temps_par_groupe(saisie, db, params or {})
+        if temps_total_h:
+            duree_h = round((duree_h or 0.0) + temps_total_h, 2)
+
     return {
         "type": "pratique",
+        "temps_blocs": temps_blocs,
+        "temps_total_heures": temps_total_h,
         "categorie": saisie.categorie,
         "categorie_echouee": categorie_echouee,
         "base_reussie": base_reussie,

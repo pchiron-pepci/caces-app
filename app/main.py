@@ -104,6 +104,7 @@ def _run_startup_migrations():
         "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS reco_h_theorie_courte DOUBLE PRECISION DEFAULT 2.0",
         "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS reco_h_theorie_longue DOUBLE PRECISION DEFAULT 4.0",
         "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS reco_seuil_theorie DOUBLE PRECISION DEFAULT 50.0",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS reco_h_temps DOUBLE PRECISION DEFAULT 1.0",
         "ALTER TABLE item_pratique ADD COLUMN IF NOT EXISTS critere_evaluation TEXT",
         "ALTER TABLE saisie_pratique ADD COLUMN IF NOT EXISTS signature_testeur TEXT",
         "ALTER TABLE saisie_pratique ADD COLUMN IF NOT EXISTS testeur_id INTEGER",
