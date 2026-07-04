@@ -164,6 +164,7 @@
 
   // Arrete TOUS les compteurs (CAT + options) et persiste leur pause.
   // Appele a la validation finale : plus aucun chrono ne doit tourner.
+  // Expose sur window car appele depuis une autre IIFE (modale de validation).
   function _arreterTousChronos() {
     Object.keys(state.chronos || {}).forEach(function (key) {
       var ch = state.chronos[key];
@@ -175,6 +176,7 @@
       }
     });
   }
+  window._spArreterTousChronos = _arreterTousChronos;
 
   function _recalcPhases(gkey) {
     var j = state.jalons[gkey] || { pp: null, mn: null, fp: null };
@@ -1548,7 +1550,7 @@
       var signature = signatureData();
       if (!signature) { toast("La signature du testeur est obligatoire"); return; }
 
-      _arreterTousChronos();
+      if (window._spArreterTousChronos) window._spArreterTousChronos();
 
       api("POST", BASE + state.saisieId + "/valider", {
         testeur_id: parseInt(testeurId, 10),

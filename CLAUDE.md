@@ -2491,6 +2491,16 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Portée de ce chantier :** uniquement `saisie_pratique.html`/`saisie_pratique.js` pour l'instant. Le pattern `static_mtime('js/xxx.js')` est réutilisable sur n'importe quel autre template incluant un script statique — à étendre au reste du site si le besoin se confirme (pas fait par défaut pour limiter le changement à ce qui a été demandé).
 
+### ✅ Chantier terminé : correction de la vraie cause de `_arreterTousChronos` (portée inter-IIFE, pas le cache) (2026-07-04)
+
+**Fichier :** `static/js/saisie_pratique.js`
+
+**Diagnostic revu :** le cache-busting mtime (chantier précédent) était une amélioration légitime mais NE RÉSOLVAIT PAS le bug réel signalé — `_arreterTousChronos` était définie dans la 1ère IIFE (ligne ~167) et appelée depuis la 3e IIFE (ligne ~1551, bloc validation), deux portées JS hermétiques (cf. leçon déjà consignée sur la signature testeur, même fichier, même piège : « toujours colocaliser définition et appel sur ce fichier multi-IIFE »). L'appel levait une `ReferenceError` silencieuse côté navigateur, jamais un problème de cache.
+
+**Correctif :** `_arreterTousChronos` reste définie dans la 1ère IIFE mais est exposée globalement via `window._spArreterTousChronos = _arreterTousChronos;` (juste après sa définition). L'appel dans la 3e IIFE devient `if (window._spArreterTousChronos) window._spArreterTousChronos();` (garde défensive si l'ordre de chargement venait à changer).
+
+**Règle à retenir (fichier multi-IIFE `saisie_pratique.js`) :** toute fonction définie dans une IIFE et appelée depuis une autre DOIT être explicitement exposée sur `window._sp*` — jamais supposer une portée partagée entre les 3 IIFE de ce fichier.
+
 ---
 
 ## Sauvegarde base de données
