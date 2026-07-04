@@ -59,14 +59,13 @@
     }
     .nc-flag { margin-right: 0.2em; }
 }
-.table-referents .ref-contact .ref-tel { display:inline; }
-.table-referents .ref-contact .ref-mail { display:inline; color:#555; }
-.table-referents .ref-contact .ref-tel:not(:empty) + .ref-mail::before { content:" · "; color:#bbb; }
 @media (max-width: 640px) {
-    .table-referents .ref-contact .ref-tel,
-    .table-referents .ref-contact .ref-mail { display:block; }
-    .table-referents .ref-contact .ref-tel:not(:empty) + .ref-mail::before { content:none; }
-    .table-referents .ref-contact .ref-mail { margin-top:2px; word-break:break-all; }
+    .table-referents tr { display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; padding:6px 0; border-bottom:1px solid #f0f0f0; }
+    .table-referents td { border:none !important; padding:0 !important; }
+    .table-referents td:nth-child(1) { grid-column:1; }
+    .table-referents td:nth-child(2) { grid-column:2; color:#888; }
+    .table-referents td.ref-tel { grid-column:1; grid-row:2; }
+    .table-referents td.ref-mail { grid-column:2; grid-row:2; word-break:break-all; }
 }
 @media (max-width: 360px) {
     .stats-grid { grid-template-columns: 1fr; }
@@ -398,10 +397,8 @@
                     <tr>
                         <td><strong>{{ r.nom }} {{ r.prenom }}</strong></td>
                         <td style="font-size:12px;">{{ r.role_referent }}</td>
-                        <td class="ref-contact" style="font-size:12px;">
-                            <span class="ref-tel">{{ r.telephone or '—' }}</span>
-                            <span class="ref-mail">{{ r.email }}</span>
-                        </td>
+                        <td class="ref-tel" style="font-size:12px;">{{ r.telephone or '—' }}</td>
+                        <td class="ref-mail" style="font-size:12px;">{{ r.email }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

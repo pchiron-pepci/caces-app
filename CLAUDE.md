@@ -2503,15 +2503,15 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Règle à retenir (fichier multi-IIFE `saisie_pratique.js`) :** toute fonction définie dans une IIFE et appelée depuis une autre DOIT être explicitement exposée sur `window._sp*` — jamais supposer une portée partagée entre les 3 IIFE de ce fichier.
 
-### ✅ Chantier terminé : dashboard — email sous le téléphone dans la carte Référents en responsive (2026-07-04)
+### ✅ Chantier terminé : dashboard — carte Référents en grille 2×2 responsive (2026-07-04, remplace la version "empilement simple")
 
 **Fichier :** `templates/dashboard.html`
 
-**Avant :** téléphone et email dans deux `<td>` séparées → sur petit écran, l'email pouvait déborder ou s'écraser contre les autres colonnes.
+**Historique :** une 1re version (même jour) fusionnait téléphone+email dans un seul `<td class="ref-contact">` avec deux `<span>` empilés en `display:block` sous 640px. Un défaut cosmétique avait été noté (séparateur « · » toujours affiché même sans téléphone). **Cette version est REMPLACÉE** par une grille 2×2, plus structurée.
 
-**Correctif :** fusion des deux colonnes en une seule `<td class="ref-contact">` contenant `<span class="ref-tel">` + `<span class="ref-mail">`. CSS : sur écran large, affichés en ligne séparés par « · » ; sous 640px, empilés (`display:block`) avec l'email en dessous du téléphone (`margin-top:2px`, `word-break:break-all` pour les adresses longues).
+**Version actuelle :** 4 `<td>` distinctes (nom, rôle, `.ref-tel`, `.ref-mail`), inchangées en desktop. Sous 640px, `.table-referents tr` devient `display:grid; grid-template-columns:1fr 1fr` : ligne 1 = Nom (col.1) + Rôle (col.2, gris `#888`) ; ligne 2 = Téléphone (col.1) + Email (col.2, `word-break:break-all` pour les adresses longues). `border:none` + `padding:0` sur les `<td>` (mise en page pilotée entièrement par la grille du `<tr>`), séparateur visuel `border-bottom` sur la ligne entière.
 
-**Détail cosmétique connu (non bloquant) :** `r.telephone or '—'` rend `.ref-tel` toujours non vide (contient au moins le tiret cadratin) → le sélecteur `:not(:empty)` affiche systématiquement le séparateur « · », même sans téléphone renseigné. Effet visuel mineur (« — · email@... » au lieu de masquer le séparateur), à corriger seulement si signalé comme gênant.
+**Avantage vs version précédente :** alignement en tableau 2 colonnes (plus lisible qu'un simple empilement vertical), et plus de bug de séparateur fantôme (les deux cellules sont indépendantes, pas de pseudo-élément `::before` conditionnel).
 
 ---
 
