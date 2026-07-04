@@ -371,7 +371,17 @@ def enregistrer_testeur(session_id: int, saisie_id: int, data: EnregistrerTesteu
     saisie = db.query(SaisiePratique).filter(SaisiePratique.id == saisie_id).first()
     if not saisie:
         raise HTTPException(404, "Saisie introuvable")
-    saisie.testeur_id = data.testeur_id or None
+
+    nouveau = data.testeur_id or None
+    # Changement de testeur : les commentaires/signature/justification appartiennent
+    # a la personne du testeur, ils sont donc effaces. Notes et temps persistent.
+    if saisie.testeur_id != nouveau:
+        saisie.observations = None
+        saisie.justification_ecart = None
+        saisie.signature_testeur = None
+        saisie.testeur_nom = None
+
+    saisie.testeur_id = nouveau
     db.commit()
     return {"message": "Testeur enregistre", "testeur_id": saisie.testeur_id}
 

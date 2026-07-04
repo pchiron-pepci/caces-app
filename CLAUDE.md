@@ -2465,6 +2465,22 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 - `_habs_cat` : query sans filtre famille + `next(h for h if _norm_fam(h.famille) == _fam_n)`.
 - `_habs_fam` : idem, filtre Python sur `_fam_n`.
 
+### ✅ Chantier terminé : arrêt de tous les chronos à la validation finale (saisie pratique) (2026-07-04)
+
+**Fichier :** `static/js/saisie_pratique.js`
+
+**Problème :** à la validation finale d'une saisie pratique, un chronomètre (catégorie de base ou option) resté en cours d'exécution continuait de tourner après la fermeture de l'épreuve, sans être figé ni persisté en pause.
+
+**Correctif :** nouvelle fonction `_arreterTousChronos()` (juste après `_persistChrono`, ligne ~167) — parcourt `state.chronos`, arrête tout chrono `run`/`timer` actif (`clearInterval` + `_persistChrono(key, "pause")`). Appelée juste avant le `POST .../valider` (après le contrôle de signature obligatoire, ligne ~1551) : plus aucun chrono ne peut rester actif une fois la validation déclenchée.
+
+### ✅ Chantier terminé : nettoyage des champs testeur au changement de testeur (saisie pratique) (2026-07-04)
+
+**Fichier :** `app/routers/saisie_pratique.py` — route `POST /{session_id}/pratique/saisie/{saisie_id}/testeur`
+
+**Règle :** les observations, la justification d'écart, la signature et le nom du testeur sont des données PROPRES à la personne du testeur — si le testeur sélectionné change en cours de saisie, ces 4 champs sont réinitialisés (`None`) pour éviter qu'une signature/justification d'un premier testeur reste attribuée à tort à un second. Les notes par item et les temps (chronos) NE SONT PAS touchés (données objectives de l'évaluation, indépendantes du testeur).
+
+**Implémentation :** comparaison `saisie.testeur_id != nouveau` AVANT d'écraser `saisie.testeur_id` ; si différent → `observations`, `justification_ecart`, `signature_testeur`, `testeur_nom` mis à `None`. Aucun changement si le testeur reposté est le même (évite un reset systématique à chaque fil-de-l'eau).
+
 ---
 
 ## Sauvegarde base de données
