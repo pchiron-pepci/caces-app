@@ -436,6 +436,10 @@
                         <label>Théorie — note &lt; seuil</label>
                         <input type="number" id="config-reco-h-theo-longue" min="0" step="0.5" placeholder="4" style="width:120px;">
                     </div>
+                    <div style="margin-bottom:10px;">
+                        <label style="display:block; font-size:13px; color:#555; margin-bottom:4px;">Heures si temps dépassé (par groupe)</label>
+                        <input type="number" id="config-reco-h-temps" min="0" step="0.5" placeholder="1" style="width:120px;">
+                    </div>
                 </div>
             </div>
         </div>
@@ -1201,6 +1205,7 @@ async function chargerConfigOrganisme() {
     document.getElementById('config-reco-seuil-theorie').value = (data.reco_seuil_theorie != null ? data.reco_seuil_theorie : 50);
     document.getElementById('config-reco-h-theo-courte').value = (data.reco_h_theorie_courte != null ? data.reco_h_theorie_courte : 2);
     document.getElementById('config-reco-h-theo-longue').value = (data.reco_h_theorie_longue != null ? data.reco_h_theorie_longue : 4);
+    document.getElementById('config-reco-h-temps').value = (data.reco_h_temps != null ? data.reco_h_temps : 1);
     const preview = document.getElementById('config-logo-preview');
     const btnSuppr = document.getElementById('btn-suppr-logo');
     if (data.logo_base64) {
@@ -1299,6 +1304,7 @@ function sauvegarderConfigOrganisme() {
             reco_seuil_theorie: parseFloat(document.getElementById('config-reco-seuil-theorie').value) || 50,
             reco_h_theorie_courte: parseFloat(document.getElementById('config-reco-h-theo-courte').value) || 2,
             reco_h_theorie_longue: parseFloat(document.getElementById('config-reco-h-theo-longue').value) || 4,
+            reco_h_temps: parseFloat(document.getElementById('config-reco-h-temps').value) || 1,
         };
         const respNom = await fetch(`/admin/config-organisme?pin=${encodeURIComponent(pin)}`, {
             method: 'PUT',

@@ -242,6 +242,7 @@ class ConfigOrganismeUpdate(BaseModel):
     reco_h_theorie_courte: Optional[float] = None
     reco_h_theorie_longue: Optional[float] = None
     reco_seuil_theorie: Optional[float] = None
+    reco_h_temps: Optional[float] = None
 
 def _img_data_uri(b64: str, nom: str) -> str:
     if not b64 or not nom:
@@ -280,6 +281,7 @@ def get_config_organisme(db: Session = Depends(get_db)):
         "reco_h_theorie_courte": config.reco_h_theorie_courte if config.reco_h_theorie_courte is not None else 2.0,
         "reco_h_theorie_longue": config.reco_h_theorie_longue if config.reco_h_theorie_longue is not None else 4.0,
         "reco_seuil_theorie": config.reco_seuil_theorie if config.reco_seuil_theorie is not None else 50.0,
+        "reco_h_temps": config.reco_h_temps if config.reco_h_temps is not None else 1.0,
         "logo2_base64": config.logo2_base64 or "" if hasattr(config, 'logo2_base64') else "",
         "logo2_data_uri": _img_data_uri(config.logo2_base64, config.logo2_nom) if hasattr(config, 'logo2_base64') else "",
     }
@@ -321,6 +323,8 @@ def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session =
         config.reco_h_theorie_longue = data.reco_h_theorie_longue
     if data.reco_seuil_theorie is not None:
         config.reco_seuil_theorie = data.reco_seuil_theorie
+    if data.reco_h_temps is not None:
+        config.reco_h_temps = data.reco_h_temps
     db.commit()
     return {"message": "Configuration mise à jour"}
 

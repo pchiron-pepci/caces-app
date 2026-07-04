@@ -89,6 +89,22 @@ def _bloc_pratique(p, duree_label):
         libs = ", ".join(_esc(o["libelle"]) for o in p["options_a_repasser"])
         opt = f'<div class="opt">Catégorie obtenue, mais option(s) à repasser : {libs}</div>'
 
+    temps = ""
+    if p.get("temps_blocs"):
+        lignes_t = ""
+        for tb in p["temps_blocs"]:
+            if tb["niveau"] == "eliminatoire":
+                etiq = "temps éliminatoire (&gt; 130%)"
+            else:
+                etiq = "à améliorer (100–130%)"
+            lignes_t += (
+                '<li><strong>' + _esc(tb["libelle"]) + '</strong> — réalisé '
+                + str(tb["pct"]) + '% du temps de référence : ' + etiq
+                + ' &rarr; ' + _esc(tb["duree_label"]) + '</li>'
+            )
+        temps = ('<div class="temps"><div class="temps-titre">Maîtrise du temps :</div>'
+                 '<ul>' + lignes_t + '</ul></div>')
+
     return f"""
     <div class="bloc">
       <div class="bloc-head">Pratique catégorie {_esc(p['categorie'])} — non obtenue</div>
@@ -97,6 +113,7 @@ def _bloc_pratique(p, duree_label):
         {blocs or '<div>—</div>'}
         {elim}
         {opt}
+        {temps}
         <div class="duree">Durée de formation recommandée : <strong>{_esc(duree_label)}</strong></div>
       </div>
     </div>"""
@@ -222,6 +239,10 @@ def generer_pdf_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) ->
   .elim-titre {{ font-weight: bold; color: #a32d2d; font-size: 11px; }}
   .opt {{ background: #faeeda; border-radius: 5px; padding: 5px 9px; margin: 6px 0; font-size: 11px; color: #7a5a12; }}
   .duree {{ margin-top: 6px; font-size: 12px; color: {ANTHRACITE}; }}
+  .temps {{ margin-top: 6px; background: #fff8ef; border: 0.5px solid #f0d9b0;
+           border-radius: 5px; padding: 6px 10px; }}
+  .temps-titre {{ font-weight: bold; font-size: 11px; color: #b26a00; }}
+  .temps ul {{ margin: 4px 0 0; padding-left: 16px; font-size: 11px; color: #444; }}
   .total {{ background: {ANTHRACITE}; color: #fff; border-radius: 6px; padding: 10px 14px; margin: 10px 0 16px;
             display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; }}
   .cases {{ margin-bottom: 10px; }}
