@@ -977,6 +977,11 @@
       majBandeauTesteur();
       var _tid = e.target.value;
       if (_tid && state.saisieId) {
+        // Changement de testeur : le backend efface commentaires/signature/justification.
+        // On vide aussi l'etat front de reprise pour ne pas re-afficher ceux de l'ancien testeur.
+        state.repriseObservations = null;
+        state.repriseJustification = null;
+        state.repriseSignature = null;
         api("POST", BASE + state.saisieId + "/testeur", { testeur_id: parseInt(_tid, 10) })
           .catch(function () { /* silencieux : la validation finale le re-enregistrera */ });
       }

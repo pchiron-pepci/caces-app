@@ -2481,6 +2481,8 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 
 **Implémentation :** comparaison `saisie.testeur_id != nouveau` AVANT d'écraser `saisie.testeur_id` ; si différent → `observations`, `justification_ecart`, `signature_testeur`, `testeur_nom` mis à `None`. Aucun changement si le testeur reposté est le même (évite un reset systématique à chaque fil-de-l'eau).
 
+**Complément front (2026-07-04, `static/js/saisie_pratique.js`) :** le serveur effaçait bien les 4 champs en base, mais l'état JS déjà chargé en mémoire (`state.repriseObservations`, `state.repriseJustification`, `state.repriseSignature` — utilisés lignes ~1472-1484 pour pré-remplir le formulaire de validation à la reprise) restait affiché à l'écran tant que la page n'était pas rechargée. Le listener `change` sur `#sp-testeur-select` (~ligne 976) vide désormais ces 3 clés `state.*` dès la sélection d'un nouveau testeur, avant l'appel `POST .../testeur`.
+
 ### ✅ Chantier terminé : cache-busting des fichiers JS statiques (timestamp de fichier) (2026-07-04)
 
 **Besoin :** un déploiement modifiant un fichier `static/js/*.js` pouvait rester en cache navigateur/CDN, faisant tourner une version obsolète du script après un correctif poussé en prod.
