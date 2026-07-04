@@ -1097,6 +1097,24 @@ function construireFormFicheReco(data) {
             if (p.fautes_eliminatoires && p.fautes_eliminatoires.length) {
                 html += '<div style="margin-top:8px; background:#fcebeb; border:1px solid #e57373; border-radius:6px; padding:6px 9px;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:12px; font-weight:600; color:#a32d2d;">Faute(s) éliminatoire(s) :</div><div>' + _frInputDuree('fr-elim-' + cat, cat, 1) + '</div></div><ul style="margin:3px 0 0 18px; font-size:12px; color:#a32d2d;">' + p.fautes_eliminatoires.map(function (f) { return '<li>' + _frEsc(f) + '</li>'; }).join('') + '</ul></div>';
             }
+            if (p.temps_blocs && p.temps_blocs.length) {
+                var tiT = 0;
+                var tHtml = p.temps_blocs.map(function (tb) {
+                    var elim = (tb.niveau === 'eliminatoire');
+                    var pctBg = elim ? '#a32d2d' : '#e0a94a';
+                    var pctFg = elim ? '#ffffff' : '#5a3a00';
+                    var etiq = elim
+                        ? '<span style="color:#a32d2d; font-weight:600;">temps éliminatoire (&gt; 130%)</span>'
+                        : '<span style="color:#b26a00; font-weight:600;">à améliorer (100–130%)</span>';
+                    var champTid = 'fr-temps-' + cat + '-' + tiT; tiT++;
+                    return '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">'
+                        + '<div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#333;">'
+                        + '<span style="display:inline-block; min-width:40px; text-align:center; padding:2px 0; border-radius:4px; font-weight:700; background:' + pctBg + '; color:' + pctFg + ';">' + _frEsc(tb.pct) + '%</span>'
+                        + '<span><strong>' + _frEsc(tb.libelle) + '</strong> — ' + etiq + '</span></div>'
+                        + '<div>' + _frInputDuree(champTid, cat, tb.duree_heures) + '</div></div>';
+                }).join('');
+                html += '<div style="margin-top:8px; background:#fdf6ea; border-left:4px solid #b26a00; padding:8px 12px;"><div style="font-size:12px; font-weight:600; color:#b26a00; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Maîtrise du temps</div>' + tHtml + '</div>';
+            }
             html += '<div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:#f6f7f9; border-radius:6px; padding:7px 12px;"><span style="font-size:12px; font-weight:600; color:#2d2d2d;">Sous-total catégorie ' + _frEsc(cat) + '</span><span style="font-weight:700; font-size:14px; color:#2d2d2d;" data-fr-soustotal="' + _frEsc(cat) + '">—</span></div>';
         }
         html += optHtml + '</div></div>';

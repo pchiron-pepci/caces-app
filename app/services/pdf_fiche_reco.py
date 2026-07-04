@@ -85,7 +85,7 @@ def _bloc_pratique(p, duree_label):
         elim = f'<div class="elim"><div class="elim-titre">Faute(s) éliminatoire(s) :</div><ul>{items}</ul></div>'
 
     opt = ""
-    if p.get("options_a_repasser"):
+    if p.get("options_a_repasser") and p.get("base_reussie"):
         libs = ", ".join(_esc(o["libelle"]) for o in p["options_a_repasser"])
         opt = f'<div class="opt">Catégorie obtenue, mais option(s) à repasser : {libs}</div>'
 
@@ -93,17 +93,25 @@ def _bloc_pratique(p, duree_label):
     if p.get("temps_blocs"):
         lignes_t = ""
         for tb in p["temps_blocs"]:
-            if tb["niveau"] == "eliminatoire":
-                etiq = "temps éliminatoire (&gt; 130%)"
-            else:
-                etiq = "à améliorer (100–130%)"
+            elim = (tb["niveau"] == "eliminatoire")
+            etiq = "temps éliminatoire (dépassement &gt; 130%)" if elim else "à améliorer (100–130%)"
+            pct_bg = "#a32d2d" if elim else "#e0a94a"
+            pct_fg = "#ffffff" if elim else "#5a3a00"
+            duree_col = "#a32d2d" if elim else "#b26a00"
             lignes_t += (
-                '<li><strong>' + _esc(tb["libelle"]) + '</strong> — réalisé '
-                + str(tb["pct"]) + '% du temps de référence : ' + etiq
-                + ' &rarr; ' + _esc(tb["duree_label"]) + '</li>'
+                '<tr>'
+                '<td class="tt-pct"><span style="background:' + pct_bg + '; color:' + pct_fg + ';">'
+                + str(tb["pct"]) + '%</span></td>'
+                '<td class="tt-lib"><strong>' + _esc(tb["libelle"]) + '</strong> — ' + etiq + '</td>'
+                '<td class="tt-dur" style="color:' + duree_col + ';">' + _esc(tb["duree_label"]) + '</td>'
+                '</tr>'
             )
-        temps = ('<div class="temps"><div class="temps-titre">Maîtrise du temps :</div>'
-                 '<ul>' + lignes_t + '</ul></div>')
+        temps = (
+            '<div class="temps">'
+            '<div class="temps-titre">Maîtrise du temps</div>'
+            '<table class="temps-tbl">' + lignes_t + '</table>'
+            '</div>'
+        )
 
     return f"""
     <div class="bloc">
@@ -239,10 +247,17 @@ def generer_pdf_fiche_reco(session_id: int, stagiaire_id: int, db: DBSession) ->
   .elim-titre {{ font-weight: bold; color: #a32d2d; font-size: 11px; }}
   .opt {{ background: #faeeda; border-radius: 5px; padding: 5px 9px; margin: 6px 0; font-size: 11px; color: #7a5a12; }}
   .duree {{ margin-top: 6px; font-size: 12px; color: {ANTHRACITE}; }}
-  .temps {{ margin-top: 6px; background: #fff8ef; border: 0.5px solid #f0d9b0;
-           border-radius: 5px; padding: 6px 10px; }}
-  .temps-titre {{ font-weight: bold; font-size: 11px; color: #b26a00; }}
-  .temps ul {{ margin: 4px 0 0; padding-left: 16px; font-size: 11px; color: #444; }}
+  .temps {{ margin-top: 8px; background: #fdf6ea; border-left: 4px solid #b26a00;
+           padding: 7px 12px; }}
+  .temps-titre {{ font-weight: bold; font-size: 11px; color: #b26a00;
+                 text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }}
+  .temps-tbl {{ width: 100%; border-collapse: collapse; }}
+  .temps-tbl td {{ padding: 3px 0; font-size: 11px; color: #333; vertical-align: middle; }}
+  .tt-pct {{ width: 44px; }}
+  .tt-pct span {{ display: inline-block; width: 42px; text-align: center; padding: 2px 0;
+                 border-radius: 4px; font-weight: bold; font-size: 11px; }}
+  .tt-lib {{ padding-left: 8px; }}
+  .tt-dur {{ text-align: right; font-weight: bold; white-space: nowrap; }}
   .total {{ background: {ANTHRACITE}; color: #fff; border-radius: 6px; padding: 10px 14px; margin: 10px 0 16px;
             display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; }}
   .cases {{ margin-bottom: 10px; }}

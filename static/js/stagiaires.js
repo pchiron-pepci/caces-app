@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
                     + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
                     + (r.testeur_nom ? '<span style="color:#888;font-size:11px;">' + r.testeur_nom + '</span>' : '')
-                    + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">Supprimer</button>'
+                    + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
                     + '</div>';
             }).join('');
         }
@@ -517,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
                     + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
                     + justif
-                    + '<button type="button" data-action="suppr-caces-externe" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">Supprimer</button>'
+                    + '<button type="button" data-action="suppr-caces-externe" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
                     + '</div>';
             }).join('');
         }
@@ -544,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         + '<span style="color:#b26a00;font-weight:700;">' + _fmtDateRep(t.date_obtention) + '</span>'
                         + (t.testeur_nom ? '<span style="color:#888;font-size:11px;">' + t.testeur_nom + '</span>' : '')
                         + '<span style="color:#b26a00;font-size:10px;font-style:italic;">en attente d\'une pratique</span>'
-                        + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="theorie" data-id="' + t.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">Supprimer</button>'
+                        + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="theorie" data-id="' + t.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
                         + '</div>';
                 }).join('');
         }
@@ -564,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         + '<span style="color:#b26a00;font-weight:700;">' + _fmtDateRep(p.date_obtention) + '</span>'
                         + (p.testeur_nom ? '<span style="color:#888;font-size:11px;">' + p.testeur_nom + '</span>' : '')
                         + '<span style="color:#b26a00;font-size:10px;font-style:italic;">en attente d\'une théorie</span>'
-                        + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="pratique" data-id="' + p.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">Supprimer</button>'
+                        + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="pratique" data-id="' + p.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
                         + '</div>';
                 }).join('');
         }
