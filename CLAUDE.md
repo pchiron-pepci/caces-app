@@ -2864,6 +2864,18 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Vérifié avant application :** `flex-wrap: wrap` déjà présent sur `.table-stagiaires tbody tr:not(.hist-row)` (posé lors d'un chantier antérieur) — condition nécessaire pour que `flex: 0 0 50%` produise effectivement 2 colonnes plutôt qu'un simple rétrécissement sur une seule ligne.
 
+### ✅ Chantier terminé : dates Th./Pr. sous la référence de session en responsive (2026-07-05, commit c436859)
+
+**Fichiers :** `static/js/stagiaires.js` (`renderHistorique`, ligne 406), `templates/stagiaires.html`.
+
+**Contexte :** différent du chantier précédent (cartes de la table principale) — ici c'est l'en-tête cliquable de chaque session dans l'historique déplié d'un stagiaire (référence session, famille, badge statut, dates Théorie/Pratique), affiché sur une seule ligne `flex` avec `margin-left:auto` pour pousser les dates à droite.
+
+**Bug :** en dessous de 1023px, le span des dates (`dates.join(' · ')`) restait poussé à droite sur la même ligne que la référence/famille/badge → débordement hors de la carte sur petit écran, la ligne étant trop chargée pour la largeur disponible.
+
+**Correctif :** classe `sess-dates` ajoutée au span (JS) + règle CSS dans le `@media (max-width:1023px)` de `stagiaires.html` : `margin-left:0 !important` (annule le `margin-left:auto` inline qui poussait à droite), `flex:0 0 100%` (force le passage à la ligne, pleine largeur), séparateur visuel `border-top` en pointillés — les dates apparaissent désormais sous la ligne référence/famille/badge plutôt qu'à côté.
+
+**Vérifié avant application :** un seul appel à `dates.join(' · ')` dans tout le fichier (confirmé par diagnostic), donc l'ajout de la classe ne pouvait toucher que ce span précis. Ancre CSS d'insertion (`.toolbar-left`/`#search`) confirmée être bien à l'intérieur du même bloc `@media (max-width:1023px)` que le reste des règles responsive de cette page (vérifié par recherche de l'accolade `@media` englobante avant application, pas juste par correspondance textuelle).
+
 ---
 
 ## Sauvegarde base de données
