@@ -381,6 +381,8 @@ def get_caces_valides_stagiaire(id: int, db: Session = Depends(get_db)):
             "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
             "testeur_nom": testeur_nom,
             "testeur_id": (ep.testeur_id if ep else None),
+            "justificatif_nom": co.justificatif_nom or "",
+            "a_justificatif": bool(co.justificatif_cle),
         })
 
     return result
@@ -962,6 +964,43 @@ async def creer_caces_externe(
         msg = ("CACES externe enregistre, mais son echeance ne permet pas de servir de "
                "dispense/base d'extension aujourd'hui (hors de la fenetre des 12 mois).")
     return {"message": msg, "id": co.id, "exploitable": exploitable}
+
+
+@router.post("/{id}/reprises/caces/{co_id}/justificatif")
+async def upload_justificatif_reprise(
+    id: int, co_id: int,
+    fichier: UploadFile = File(...),
+    pin: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Attache (ou remplace) un justificatif R2 sur un CACES repris interne."""
+    if pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    co = db.query(CacesObtenu).filter(CacesObtenu.id == co_id, CacesObtenu.stagiaire_id == id).first()
+    if not co:
+        raise HTTPException(status_code=404, detail="CACES repris introuvable")
+    if not fichier or not fichier.filename:
+        raise HTTPException(status_code=400, detail="Aucun fichier fourni.")
+    nom = fichier.filename
+    ext = nom.rsplit(".", 1)[1].lower() if "." in nom else ""
+    if ext not in storage.EXTENSIONS_AUTORISEES:
+        raise HTTPException(status_code=400, detail="Type de fichier non autorise (PDF, Word ou Excel).")
+    contenu = await fichier.read()
+    if len(contenu) > storage.TAILLE_MAX:
+        raise HTTPException(status_code=400, detail="Fichier trop volumineux (10 Mo maximum).")
+    if not contenu:
+        raise HTTPException(status_code=400, detail="Fichier vide.")
+    if co.justificatif_cle:
+        try:
+            storage.delete_fichier(co.justificatif_cle)
+        except Exception:
+            pass
+    cle = storage.construire_cle("caces-reprises", nom)
+    storage.upload_fichier(contenu, cle, fichier.content_type or "application/octet-stream")
+    co.justificatif_cle = cle
+    co.justificatif_nom = nom[:255]
+    db.commit()
+    return {"ok": True, "justificatif_nom": co.justificatif_nom}
 
 
 @router.get("/{id}/caces-externe/{caces_id}/justificatif")
