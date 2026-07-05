@@ -383,6 +383,8 @@ def get_caces_valides_stagiaire(id: int, db: Session = Depends(get_db)):
             "testeur_id": (ep.testeur_id if ep else None),
             "justificatif_nom": co.justificatif_nom or "",
             "a_justificatif": bool(co.justificatif_cle),
+            "organisme_externe": co.organisme_externe or "",
+            "sous_traitance": bool(getattr(co, "sous_traitance", False)),
         })
 
     return result

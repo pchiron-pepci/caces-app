@@ -422,40 +422,64 @@ document.addEventListener('DOMContentLoaded', function () {
         let html = '<div style="margin-top:16px;">';
         html += '<div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">🏆 CACES® de l\'apprenant</div>';
 
-        if (!caces.length) {
-            html += '<p style="color:#bbb;font-size:13px;font-style:italic;margin:0;">Aucun CACES® validé.</p>';
-            html += '</div>';
+        if (!caces || !caces.length) {
+            html += '<p style="color:#bbb;font-size:13px;font-style:italic;margin:0;">Aucun CACES®.</p></div>';
             return html;
         }
 
-        html += '<div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
+        var otc = caces.filter(function (c) { return !c.organisme_externe; });
+        var st  = caces.filter(function (c) { return c.organisme_externe && c.sous_traitance; });
+        var ext = caces.filter(function (c) { return c.organisme_externe && !c.sous_traitance; });
 
-        // En-tête
-        html += '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;gap:0;">';
+        html += _sectionCaces('CACES de l\'organisme', otc, false);
+        html += _sectionCaces('CACES externes — sous-traitance', st, true);
+        html += _sectionCaces('CACES externes', ext, true);
+
+        html += '</div>';
+        return html;
+    }
+
+    // colExterne = true -> derniere colonne = organisme emetteur (au lieu du testeur)
+    function _sectionCaces(titre, liste, colExterne) {
+        if (!liste || !liste.length) return '';
+        var derColLabel = colExterne ? 'Organisme' : 'Testeur';
+        var html = '<div style="margin-top:14px;">';
+        html += '<div style="font-size:11px;font-weight:700;color:#5566aa;letter-spacing:0.4px;margin-bottom:6px;padding-top:8px;border-top:2px solid #e6e8ef;">' + titre + '</div>';
+        html += '<div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
+        html += '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;">';
         html += '<div style="width:60px;min-width:60px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">N°</div>';
         html += '<div style="width:70px;min-width:70px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Fam.</div>';
         html += '<div style="width:52px;min-width:52px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Cat.</div>';
         html += '<div style="width:80px;min-width:80px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Options</div>';
-        html += '<div style="flex:1;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Testeur</div>';
+        html += '<div style="flex:1;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">' + derColLabel + '</div>';
         html += '<div style="width:84px;min-width:84px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Obtention</div>';
         html += '<div style="width:84px;min-width:84px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Échéance</div>';
         html += '</div>';
 
-        caces.forEach(function (co, i) {
-            const bg = i % 2 === 0 ? '#fff' : '#f5f7ff';
-            const noFormate = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
-            const options = co.options_obtenues
+        liste.forEach(function (co, i) {
+            var bg = i % 2 === 0 ? '#fff' : '#f5f7ff';
+            var noFormate;
+            if (colExterne) {
+                noFormate = co.sous_traitance ? 'S/T' : 'EXT';
+            } else {
+                noFormate = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
+            }
+            var noBg = colExterne ? (co.sous_traitance ? '#0f6e56' : '#5f5e5a') : '#1a237e';
+            var options = co.options_obtenues
                 ? co.options_obtenues.split(',').map(function (o) {
                     return '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:0 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>';
                   }).join(' ')
                 : '<span style="color:#ccc;font-size:11px;">—</span>';
+            var derCol = colExterne
+                ? '<span style="color:#00695c;font-weight:700;">' + (co.organisme_externe || '—') + '</span>'
+                : (co.testeur_nom || '<span style="color:#ccc;">—</span>');
 
-            html += '<div style="display:flex;align-items:center;padding:8px 12px;background:' + bg + ';border-bottom:1px solid #eef0f6;gap:0;">';
-            html += '<div style="width:60px;min-width:60px;"><span style="background:#1a237e;color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;font-family:monospace;">' + noFormate + '</span></div>';
+            html += '<div style="display:flex;align-items:center;padding:8px 12px;background:' + bg + ';border-bottom:1px solid #eef0f6;">';
+            html += '<div style="width:60px;min-width:60px;"><span style="background:' + noBg + ';color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;font-family:monospace;">' + noFormate + '</span></div>';
             html += '<div style="width:70px;min-width:70px;font-size:12px;font-weight:700;color:#555;">' + co.famille + '</div>';
             html += '<div style="width:52px;min-width:52px;"><span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;">' + co.categorie + '</span></div>';
             html += '<div style="width:80px;min-width:80px;display:flex;flex-wrap:wrap;gap:2px;align-items:center;">' + options + '</div>';
-            html += '<div style="flex:1;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">' + (co.testeur_nom || '<span style="color:#ccc;">—</span>') + '</div>';
+            html += '<div style="flex:1;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">' + derCol + '</div>';
             html += '<div style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#1a237e;">' + formatDate(co.date_obtention) + '</div>';
             html += '<div style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#2e7d32;">' + formatDate(co.date_echeance) + '</div>';
             html += '</div>';

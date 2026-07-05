@@ -2765,6 +2765,18 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Règle à appliquer systématiquement :** avant d'insérer un nouveau libellé français dans une chaîne JS à guillemets simples de ce fichier (très majoritaire dans `stagiaires.js`), vérifier s'il contient une apostrophe ("l'", "d'", "qu'", "aujourd'hui"...) et l'échapper en `\'` si oui — pas seulement dans les scripts Python générateurs, aussi lors d'une édition directe.
 
+### ✅ Chantier terminé : `renderCacesValides` scindé en 3 sections (organisme / sous-traitance / externe) (2026-07-05)
+
+**Fichiers :** `app/routers/stagiaires.py`, `static/js/stagiaires.js`.
+
+**Besoin :** la liste "CACES® de l'apprenant" (fiche stagiaire) affichait tous les CACES validés en un seul tableau plat, sans distinguer leur origine (natif NORYX vs externe vs externe-sous-traitance).
+
+**Bug backend trouvé et corrigé AVANT d'appliquer le script front :** `renderCacesValides` (nouvelle version) filtre sur `c.organisme_externe` et `c.sous_traitance` — mais ces données viennent de `GET /{id}/caces-valides` (route `get_caces_valides_stagiaire`), une route **différente** de `GET /{id}/reprises` déjà corrigée au chantier `4dae010`. `get_caces_valides_stagiaire` ne renvoyait NI `organisme_externe` NI `sous_traitance` → sans correctif, tous les CACES seraient tombés dans la section "CACES de l'organisme" et les 2 autres sections seraient toujours restées vides, quelle que soit la donnée réelle en base. Corrigé en ajoutant les 2 champs au dict retourné (`"organisme_externe": co.organisme_externe or ""`, `"sous_traitance": bool(getattr(co, "sous_traitance", False))`), même pattern que la route sœur.
+
+**Front (`static/js/stagiaires.js`) :** `renderCacesValides` répartit désormais la liste en 3 sous-listes (`otc`/`st`/`ext` selon `organisme_externe`/`sous_traitance`) et délègue le rendu à une nouvelle fonction `_sectionCaces(titre, liste, colExterne)` factorisée — un tableau par section, masqué si vide (`if (!liste.length) return ''`). `colExterne` bascule la dernière colonne (Testeur ↔ Organisme émetteur) et la pastille de numéro (`N°` réel vs badge `S/T`/`EXT` coloré : vert `#0f6e56` si sous-traitance, gris `#5f5e5a` sinon).
+
+**Leçon reconduite :** avant d'appliquer un script front qui lit de nouveaux champs sur un objet de données, toujours vérifier que la route API qui ALIMENTE cet objet expose bien ces champs — un script peut être syntaxiquement irréprochable et fonctionnellement muet si la donnée n'arrive jamais jusqu'au front.
+
 ---
 
 ## Sauvegarde base de données
