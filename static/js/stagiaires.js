@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var derColLabel = colExterne ? 'Organisme' : 'Testeur';
         var html = '<div style="margin-top:14px;">';
         html += '<div style="font-size:11px;font-weight:700;color:#5566aa;letter-spacing:0.4px;margin-bottom:6px;padding-top:8px;border-top:2px solid #e6e8ef;">' + titre + '</div>';
-        html += '<div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
+        html += '<div class="co-hscroll"><div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
         html += '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;">';
         html += '<div style="width:60px;min-width:60px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">N°</div>';
         html += '<div style="width:70px;min-width:70px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Fam.</div>';
@@ -485,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function () {
             html += '</div>';
         });
 
-        html += '</div></div>';
+        html += '</div></div></div>';
         return html;
     }
 
