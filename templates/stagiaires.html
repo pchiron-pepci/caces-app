@@ -56,7 +56,7 @@
                 <td class="stag-email" data-label="Email">{{ s.email or '—' }}</td>
                 <td class="stag-tel" data-label="Tél.">{{ s.telephone or '—' }}</td>
                 <td class="stag-actions">
-                    <button style="background:none; border:1px solid #e0e0e0; border-radius:6px; padding:5px 8px; font-size:16px; cursor:pointer; line-height:1;"
+                    <button style="background:none; border:none; padding:4px 6px; font-size:18px; cursor:pointer; line-height:1;"
                         data-action="editer"
                         data-id="{{ s.id }}"
                         data-nom="{{ s.nom }}"
@@ -67,7 +67,7 @@
                         data-employeur="{{ s.employeur or '' }}"
                         data-note="{{ s.note or '' }}"
                         title="Modifier le stagiaire">✏️</button>
-                    <button style="background:none; border:1px solid #e0e0e0; border-radius:6px; padding:5px 8px; font-size:16px; cursor:pointer; line-height:1;"
+                    <button style="background:none; border:none; padding:4px 6px; font-size:18px; cursor:pointer; line-height:1;"
                         data-action="archiver"
                         data-id="{{ s.id }}"
                         data-nom="{{ s.nom }} {{ s.prenom }}"
