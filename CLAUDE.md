@@ -2662,6 +2662,12 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Méthode de vérification renforcée suite aux bugs répétés du jour :** avant d'appliquer le script complet, un diagnostic dédié (`s.count()` sur chaque ancre séparément, y compris la fonction `joindreJustifReprise` extraite par regex) a confirmé qu'exactement UNE ancre (`old_btn`, le bouton 📤) portait le même défaut d'espace finale parasite déjà rencontré 2 fois plus tôt dans la journée — corrigée avant application, pas après échec.
 
+### ✅ Chantier terminé : durcissement du sélecteur CSS de bascule mobile des boutons (2026-07-05)
+
+**Fichier :** `templates/stagiaires.html`
+
+**Correctif :** `.repr-row .repr-ident-btns` / `.repr-row .repr-actions-btns` (chantier `b6ed6ed`) remplacés par des sélecteurs plus spécifiques `.repr-row .repr-ident .repr-ident-btns` / `.repr-row .repr-actions .repr-actions-btns` — précise que le sous-groupe de boutons visé est bien celui imbriqué dans `.repr-ident` (resp. `.repr-actions`), pas une classe homonyme isolée qui pourrait apparaître ailleurs dans le DOM à l'avenir. `display:inline-flex` (au lieu de `flex`) sur `.repr-ident-btns` en mobile, cohérent avec son usage en `<span>` inline. Comportement fonctionnel inchangé (les règles `!important` l'emportent sur les styles inline de toute façon) — durcissement défensif, pas un correctif de bug observé.
+
 ---
 
 ## Sauvegarde base de données
