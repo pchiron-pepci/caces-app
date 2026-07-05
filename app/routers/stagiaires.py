@@ -380,6 +380,7 @@ def get_caces_valides_stagiaire(id: int, db: Session = Depends(get_db)):
             "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
             "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
             "testeur_nom": testeur_nom,
+            "testeur_id": (ep.testeur_id if ep else None),
         })
 
     return result

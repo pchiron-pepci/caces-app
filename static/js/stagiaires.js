@@ -471,7 +471,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return JSON.stringify({
             id: r.id, famille: r.famille, categorie: r.categorie,
             options_obtenues: r.options_obtenues || "", date_obtention: r.date_obtention,
-            date_echeance: r.date_echeance, ancien_numero: r.ancien_numero || ""
+            date_echeance: r.date_echeance, ancien_numero: r.ancien_numero || "",
+            testeur_id: r.testeur_id || ""
         }).replace(/"/g, "&quot;");
     }
 
@@ -492,6 +493,19 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('rep-date-obtention').value = r.date_obtention || '';
             document.getElementById('rep-date-echeance').value = r.date_echeance || '';
             document.getElementById('rep-ancien-numero').value = r.ancien_numero || '';
+            if (r.testeur_id) {
+                var sTest = document.getElementById('rep-testeur');
+                var _try = 0;
+                var _pre = setInterval(function () {
+                    _try++;
+                    if (sTest.querySelector('option[value="' + r.testeur_id + '"]')) {
+                        sTest.value = String(r.testeur_id);
+                        clearInterval(_pre);
+                    } else if (_try > 20) {
+                        clearInterval(_pre);
+                    }
+                }, 100);
+            }
         }, 350);
     }
 

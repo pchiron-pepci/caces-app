@@ -2570,6 +2570,18 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Règle à retenir (échappements multi-couches) :** ne jamais faire confiance à un script d'échappement imbriqué (Python string → JS string → attribut HTML) sans vérifier les OCTETS RÉELS produits dans le fichier cible — la relecture du script source ne suffit pas, les backslashes peuvent disparaître silencieusement à travers les couches. Préférer systématiquement les guillemets doubles pour les attributs HTML contenant du JSON (échappement `&quot;` uniquement), cohérent avec la convention déjà en place dans ce fichier.
 
+### ✅ Chantier terminé : pré-sélection du testeur en édition d'un CACES repris (2026-07-05)
+
+**Besoin :** le formulaire d'édition d'un CACES repris (chantier précédent) pré-remplissait famille/catégorie/dates/ancien numéro, mais pas le testeur (`#rep-testeur`) — champ pourtant obligatoire côté serveur (`CacesRepriseCreate.testeur_id`).
+
+**Back (`app/routers/stagiaires.py`, route `GET /{id}/reprises`, ~ligne 359-386) :** ajout de `"testeur_id": (ep.testeur_id if ep else None)` dans le dict retourné, à côté de `testeur_nom` déjà présent. **Attention route homonyme :** ce fichier a une 2e fonction avec un bloc de retour très similaire (`GET /familles/{stag_id}/...` ou équivalent, ~ligne 396-430) qui a déjà `testeur_id` — bien vérifier qu'on cible la route consommée par `fetch('/stagiaires/' + id + '/reprises')` (celle du tableau "🪪 Historique repris"), pas l'autre.
+
+**Front (`static/js/stagiaires.js`) :**
+- `_frReprToAttr(r)` : `testeur_id: r.testeur_id || ""` ajouté au JSON encodé dans l'attribut `data-reprise` (garde l'échappement `&quot;` déjà en place depuis le chantier précédent, PAS `&#39;`).
+- `ouvrirModalModifReprise` : après le `setTimeout` de pré-remplissage (350 ms, le temps du chargement async des catégories), un `setInterval` (100 ms, 20 tentatives max = 2 s) attend que l'option `<option value="{testeur_id}">` existe dans `#rep-testeur` (le fetch `/api/testeurs/` est lui-même asynchrone et peut ne pas être terminé à 350 ms) avant de faire `sTest.value = String(r.testeur_id)`. Auto-arrêt si l'option n'apparaît jamais (garde-fou anti-boucle infinie).
+
+**Piège évité en appliquant ce chantier :** le script fourni pour cette étape ciblait encore l'ancien échappement `.replace(/'/g, "&#39;")` dans `_frReprToAttr` — obsolète depuis la correction du chantier précédent (`&quot;`). Adapté pour insérer `testeur_id` dans le JSON SANS revenir à l'échappement simple-guillemet cassé.
+
 ---
 
 ## Sauvegarde base de données
