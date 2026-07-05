@@ -213,7 +213,10 @@
 }
 @media (max-width: 1023px) {
     .table-stagiaires thead { display: none; }
-    .table-stagiaires tbody { display: block; }
+    /* Confinement structurel : rien ne depasse la largeur de l'ecran */
+    .table-stagiaires { display: block; width: 100%; max-width: 100%; table-layout: fixed; }
+    .table-stagiaires tbody { display: block; width: 100%; max-width: 100%; }
+    .table-stagiaires tbody tr { max-width: 100%; box-sizing: border-box; }
     .table-stagiaires tbody tr:not(.hist-row) {
         display: flex; flex-wrap: wrap;
         border: 1px solid #c8d8f0; border-radius: 10px;
@@ -222,9 +225,9 @@
     .table-stagiaires tbody tr:not(.hist-row) td { border: none; }
     /* hist-row : pleine largeur sous la carte, pas de flex */
     .table-stagiaires tbody tr.hist-row { display: block; }
-    .table-stagiaires tbody tr.hist-row td { display: block; width: 100%; box-sizing: border-box; border: none; overflow: hidden; }
-    .hist-body { padding: 10px 8px !important; }
-    .table-stagiaires tbody tr.hist-row .co-hscroll { max-width: 100%; }
+    .table-stagiaires tbody tr.hist-row td { display: block; width: 100%; max-width: 100%; box-sizing: border-box; border: none; overflow: hidden; }
+    .hist-body { padding: 10px 8px !important; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+    .table-stagiaires tbody tr.hist-row .co-hscroll { width: 100%; max-width: 100%; overflow-x: auto; }
     /* Ligne 1 : photo */
     .table-stagiaires td.stag-photo {
         order: 1; flex: 0 0 50px;
