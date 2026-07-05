@@ -648,7 +648,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<div style="margin-top:10px;">'
             + '<div style="display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:6px;">'
             + '<strong style="color:#7b1fa2;font-size:13px;">🪪 Historique CACES internes</strong>'
-            + '<button data-action="ajouter-reprise" data-id="' + stagiaireId + '" style="background:#7b1fa2;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">🆕 Nouveau</button>'
+            + '<button data-action="ajouter-reprise" data-id="' + stagiaireId + '" style="background:#7b1fa2;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:16px;line-height:1;cursor:pointer;" title="Nouveau">🆕</button>'
             + '</div>'
             + lignes
             + '</div>';
@@ -700,7 +700,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<div style="margin-top:10px;">'
             + '<div style="display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:6px;">'
             + '<strong style="color:#00695c;font-size:13px;">🌐 CACES externes</strong>'
-            + '<button data-action="ajouter-caces-externe" data-id="' + stagiaireId + '" style="background:#00695c;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">🆕 Nouveau</button>'
+            + '<button data-action="ajouter-caces-externe" data-id="' + stagiaireId + '" style="background:#00695c;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:16px;line-height:1;cursor:pointer;" title="Nouveau">🆕</button>'
             + '</div>'
             + lignes
             + '</div>';
@@ -750,7 +750,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<div style="margin-top:14px;border-top:1px solid #ffe0b2;padding-top:10px;">'
             + '<div style="display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:6px;">'
             + '<strong style="color:#e65100;font-size:13px;">🧩 Orphelines reprises</strong>'
-            + '<button data-action="ajouter-orpheline" data-id="' + stagiaireId + '" style="background:#e65100;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">🆕 Nouveau</button>'
+            + '<button data-action="ajouter-orpheline" data-id="' + stagiaireId + '" style="background:#e65100;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:16px;line-height:1;cursor:pointer;" title="Nouveau">🆕</button>'
             + '</div>'
             + corps
             + '</div>';
