@@ -966,6 +966,26 @@ async def creer_caces_externe(
     return {"message": msg, "id": co.id, "exploitable": exploitable}
 
 
+@router.delete("/{id}/reprises/caces/{co_id}/justificatif")
+def supprimer_justificatif_reprise(id: int, co_id: int, data: SuppressionData, db: Session = Depends(get_db)):
+    """Supprime le justificatif R2 d'un CACES repris (le CACES lui-meme est conserve)."""
+    if data.pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    co = db.query(CacesObtenu).filter(CacesObtenu.id == co_id, CacesObtenu.stagiaire_id == id).first()
+    if not co:
+        raise HTTPException(status_code=404, detail="CACES repris introuvable")
+    if not co.justificatif_cle:
+        raise HTTPException(status_code=404, detail="Aucun justificatif a supprimer")
+    try:
+        storage.delete_fichier(co.justificatif_cle)
+    except Exception:
+        pass
+    co.justificatif_cle = None
+    co.justificatif_nom = None
+    db.commit()
+    return {"ok": True, "message": "Justificatif supprime"}
+
+
 @router.post("/{id}/reprises/caces/{co_id}/justificatif")
 async def upload_justificatif_reprise(
     id: int, co_id: int,

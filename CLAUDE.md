@@ -2648,6 +2648,20 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Constat mineur :** l'ancre du script fourni contenait aussi une espace finale parasite (`+ '</span>' ` avec espace, vs `+ '</span>'` réel dans le fichier) — détecté par un diagnostic ligne-par-ligne (`s.count(ligne)` sur chaque ligne de l'ancre) avant d'exécuter le remplacement complet, plutôt que de découvrir l'échec après coup.
 
+### ✅ Chantier terminé : mini-modale justificatif CACES repris (joindre / remplacer / supprimer) (2026-07-05)
+
+**Fichiers :** `app/routers/stagiaires.py`, `templates/stagiaires.html`, `static/js/stagiaires.js`.
+
+**Remplace l'ancien flux (chantier `0ad8c65`)** : `window.prompt()` pour le PIN + input file volant, sans possibilité de retirer un justificatif déjà joint. Passage à une vraie mini-modale.
+
+**Back — nouvelle route `DELETE /{id}/reprises/caces/{co_id}/justificatif`** (~ligne 969, juste avant la route `POST` existante) : PIN admin (`SuppressionData`, déjà utilisé ailleurs dans ce fichier), 404 si CACES introuvable ou si `justificatif_cle` déjà vide, purge R2 (`storage.delete_fichier`, `try/except` silencieux comme les autres suppressions), remet `justificatif_cle`/`justificatif_nom` à `None`. Le CACES lui-même n'est jamais touché.
+
+**Template — modale `#modal-justif-reprise`** (juste avant `#modal-suppr-reprise`, z-index 1100 — au-dessus des modales standards) : zone "fichier actuel" dynamique, input file, input PIN, zone erreur, bouton "Supprimer le fichier" (masqué par défaut, affiché seulement si un fichier existe déjà), boutons Annuler/Enregistrer.
+
+**Front — `joindreJustifReprise(stagiaireId, coId, aFichier, nomFichier)`** remplace l'ancienne version à `prompt()` : ouvre la modale, adapte le texte et l'affichage du bouton Supprimer selon `aFichier`. `_justifReprEnvoyer()` (POST FormData) et `_justifReprSupprimer()` (DELETE JSON body) partagent `_rechargerHistoStag(sid)` (invalide le cache d'historique + rappelle `toggleHistorique`, même pattern que `confirmerAjoutReprise`). Le bouton 📤 transmet désormais `data-a-fichier` et `data-nom-fichier` (au lieu de rien) pour préremplir la modale à l'ouverture.
+
+**Méthode de vérification renforcée suite aux bugs répétés du jour :** avant d'appliquer le script complet, un diagnostic dédié (`s.count()` sur chaque ancre séparément, y compris la fonction `joindreJustifReprise` extraite par regex) a confirmé qu'exactement UNE ancre (`old_btn`, le bouton 📤) portait le même défaut d'espace finale parasite déjà rencontré 2 fois plus tôt dans la journée — corrigée avant application, pas après échec.
+
 ---
 
 ## Sauvegarde base de données
