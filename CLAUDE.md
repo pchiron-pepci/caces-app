@@ -2622,6 +2622,14 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Appliqué sans bug d'échappement cette fois** (`node -c` valide directement) — contrairement aux 2 chantiers précédents sur ce même fichier le jour même.
 
+### ✅ Chantier terminé : réagencement boutons ligne "Historique repris" — modifier/supprimer avec le numéro (2026-07-05)
+
+**Fichiers :** `static/js/stagiaires.js`, `templates/stagiaires.html`.
+
+**Changement :** les boutons ✏️ Modifier et 🗑️ Supprimer, jusque-là dans `.repr-actions` (à droite, avec le justificatif), sont déplacés dans `.repr-ident` (groupe du numéro/famille/catégorie/options), via un sous-groupe `.repr-ident-btns` (`margin-left:6px` en desktop). `.repr-actions` ne contient plus que testeur + justificatif + bouton 📤.
+
+**Logique :** rapprocher les actions de modification/suppression de l'identifiant du CACES qu'elles affectent, plutôt que de les regrouper avec l'action justificatif (nature différente). En responsive (`@media max-width:1023px`), `.repr-ident` passe en `justify-content:space-between` et `.repr-ident-btns` garde `margin-left:auto !important` — les boutons restent poussés à droite de la ligne numéro même en colonne empilée.
+
 ---
 
 ## Sauvegarde base de données
