@@ -1023,6 +1023,70 @@ async def upload_justificatif_reprise(
     return {"ok": True, "justificatif_nom": co.justificatif_nom}
 
 
+@router.put("/{id}/caces-externe/{caces_id}")
+async def modifier_caces_externe(
+    id: int, caces_id: int,
+    famille: str = Form(...),
+    categorie: str = Form(...),
+    date_echeance: str = Form(...),
+    organisme: str = Form(...),
+    pin: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Modifie un CACES externe. Bloque si extension/dispense/carte dependante."""
+    from datetime import datetime as _dt
+    if pin != get_pin_admin(db):
+        raise HTTPException(status_code=403, detail="Code PIN incorrect")
+    if not organisme.strip():
+        raise HTTPException(status_code=400, detail="Le nom de l'organisme est obligatoire.")
+    try:
+        ech = _dt.strptime(date_echeance, "%Y-%m-%d").date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Date d'echeance invalide.")
+
+    co = db.query(CacesObtenu).filter(CacesObtenu.id == caces_id, CacesObtenu.stagiaire_id == id).first()
+    if not co:
+        raise HTTPException(status_code=404, detail="CACES externe introuvable")
+
+    from app.models.carte_caces import CarteCaces
+    ext = db.query(CacesObtenu).filter(CacesObtenu.caces_initial_id == co.id, CacesObtenu.statut == "valide").first()
+    if ext:
+        raise HTTPException(status_code=409, detail="Modification impossible : un CACES valide a ete forme par extension de ce CACES. Annulez-le d'abord.")
+    disp = db.query(SessionCandidat).filter(SessionCandidat.dispense_source_type == "caces", SessionCandidat.dispense_source_id == co.id).first()
+    if disp:
+        raise HTTPException(status_code=409, detail="Modification impossible : ce CACES fonde une dispense de theorie en cours. Retirez d'abord la dispense.")
+    carte = db.query(CarteCaces).filter(CarteCaces.stagiaire_id == id, CarteCaces.famille == co.famille, CarteCaces.statut == "emise").first()
+    if carte:
+        raise HTTPException(status_code=409, detail="Modification impossible : une carte CACES active (n. %s) a ete emise pour cette famille. Annulez ou remplacez-la d'abord." % (carte.numero_carte or ""))
+
+    ancienne_cat = co.categorie
+    if categorie != ancienne_cat:
+        conflit = db.query(CacesObtenu).filter(
+            CacesObtenu.stagiaire_id == id, CacesObtenu.session_id == co.session_id,
+            CacesObtenu.categorie == categorie, CacesObtenu.id != co.id,
+        ).first()
+        if conflit:
+            raise HTTPException(status_code=409, detail="Un CACES existe deja pour cette categorie dans les reprises.")
+
+    origine = _date_initiale_depuis_echeance(famille, ech)
+    co.famille = famille
+    co.categorie = categorie
+    co.date_obtention = origine
+    co.date_echeance = ech
+    co.organisme_externe = organisme.strip()[:200]
+
+    ep = db.query(SessionEpreuve).filter(
+        SessionEpreuve.stagiaire_id == id, SessionEpreuve.session_id == co.session_id,
+        SessionEpreuve.categorie == ancienne_cat,
+    ).first()
+    if ep:
+        ep.famille = famille
+        ep.categorie = categorie
+        ep.date = origine
+    db.commit()
+    return {"ok": True, "message": "CACES externe modifie"}
+
+
 @router.get("/{id}/caces-externe/{caces_id}/justificatif")
 def lire_justificatif_caces_externe(id: int, caces_id: int, request: Request, db: Session = Depends(get_db)):
     user = getattr(request.state, "user", None)

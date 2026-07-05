@@ -2689,6 +2689,21 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Différence avec "Historique repris" :** pas de duplication de boutons desktop/mobile ici — un seul bouton 🗑️ Supprimer, déjà placé dans `.cext-ident` (pas besoin de le faire remonter en mobile, il y est déjà). Anchor JS validé d'un seul bloc au diagnostic préalable (`s.count(old) == 1` directement, aucun défaut d'espace cette fois).
 
+### ✅ Chantier terminé : modification d'un CACES externe (route PUT + UI ✏️/📤) (2026-07-05)
+
+**Fichiers :** `app/routers/stagiaires.py`, `static/js/stagiaires.js`.
+
+**Back — `PUT /{id}/caces-externe/{caces_id}`** (~ligne 1027, juste avant la route GET justificatif) : miroir de `creer_caces_externe` (POST, déjà existante) — PIN admin, validation date, mêmes 3 gardes que les autres routes de modification/suppression CACES de la journée (extension valide dérivée / dispense en cours / carte émise), contrôle d'unicité si la catégorie change, recalcule `date_obtention` via `_date_initiale_depuis_echeance(famille, ech)` (déjà importée en tête de fichier, utilisée par `creer_caces_externe`) — cohérent avec la règle "l'origine est recalculée automatiquement" affichée dans la modale. Met à jour `CacesObtenu` ET la `SessionEpreuve` associée (même pattern que la route reprise interne).
+
+**Front — bouton ✏️ + 📤 dans `.cext-ident`** (à côté de 🗑️, avant `.cext-dates`) : `_cextToAttr(r)` encode `{id, organisme, famille, categorie, date_echeance}` en JSON, échappement `&quot;` (attribut en guillemets doubles, cohérent avec la convention posée au chantier `0ad8c65`). `ouvrirModalModifExterne` réutilise `ouvrirModalCacesExterne` (reset) puis pré-remplit + bascule le titre en "Modifier". `confirmerCacesExterne` bascule POST/PUT selon `_cextEditId`.
+
+**Réutilisation du bouton 📤 justificatif :** le même `data-action="joindre-justif-reprise"` / `joindreJustifReprise()` que pour les CACES repris internes est réutilisé tel quel pour les CACES externes — vérifié que les routes `POST`/`DELETE .../reprises/caces/{co_id}/justificatif` (chantiers précédents) ne filtrent que sur `CacesObtenu.id`/`stagiaire_id`, SANS test sur `ancien_numero` (contrairement à la route de suppression du CACES lui-même) — donc génériques malgré leur nom et leur docstring ("CACES repris interne"), utilisables tel quel pour un CACES externe.
+
+**3 écarts corrigés par rapport au script fourni (diagnostiqués AVANT exécution, méthode désormais systématique) :**
+1. Le script supposait une variable module-level `_cextStagiaireId` — le code réel utilise `window._cextStagiaireId` lu dans une variable locale `stagiaireId` à l'intérieur de `confirmerCacesExterne`. Ancre de remplacement du fetch reconstruite sur le code réel.
+2. Le fetch réel n'a pas de virgule finale après `body: fd` (le script en supposait une) — ancre corrigée en conséquence.
+3. Le script comptait sur **2 occurrences** de `function ouvrirModalCacesExterne(stagiaireId) {` après insertion des helpers (pour cibler "la bonne" par index) — logiquement impossible : un `.replace()` qui insère du texte AVANT une ancre en réutilisant cette même ancre comme suffixe ne crée jamais de duplicata, il en reste exactement UNE. Remplacé par une insertion directe et non ambiguë de `_cextEditId = null;` juste après la ligne de signature réelle (seule occurrence, confirmée par `grep` avant modification).
+
 ---
 
 ## Sauvegarde base de données

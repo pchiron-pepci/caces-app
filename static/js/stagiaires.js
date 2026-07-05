@@ -100,6 +100,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         else if (action === 'ajouter-reprise') { ouvrirModalReprise(btn.dataset.id); return; }
         else if (action === 'ajouter-caces-externe') { ouvrirModalCacesExterne(btn.dataset.id); return; }
+        else if (action === 'modifier-caces-externe') {
+            try { var _e = JSON.parse(btn.getAttribute('data-ext')); ouvrirModalModifExterne(btn.dataset.stag, _e); } catch (e) {}
+            return;
+        }
         else if (action === 'fermer-modal-caces-externe') { document.getElementById('modal-caces-externe').style.display = 'none'; return; }
         else if (action === 'confirmer-caces-externe') { confirmerCacesExterne(); return; }
         else if (action === 'suppr-caces-externe') { supprimerCacesExterne(btn.dataset.id, btn.dataset.stag); return; }
@@ -646,6 +650,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     + '<span class="cext-ident" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
                         + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
                         + '<span style="background:#00695c;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
+                        + '<button type="button" data-action="joindre-justif-reprise" data-id="' + r.id + '" data-stag="' + stagiaireId + '" data-a-fichier="' + (r.a_justificatif ? '1' : '0') + '" data-nom-fichier="' + (r.justificatif_nom || '') + '" style="background:#e0f2f1;color:#00695c;border:1px solid #b2dfdb;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="' + (r.a_justificatif ? 'Gerer le justificatif' : 'Joindre un justificatif') + '">📤</button>'
+                        + '<button type="button" data-action="modifier-caces-externe" data-ext="' + _cextToAttr(r) + '" data-stag="' + stagiaireId + '" style="background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
                         + '<button type="button" data-action="suppr-caces-externe" data-id="' + r.id + '" data-stag="' + stagiaireId + '" class="cext-suppr" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
                     + '</span>'
                     + '<span class="cext-dates" style="display:flex;align-items:center;gap:8px;">'
@@ -1038,7 +1044,33 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    var _cextEditId = null;
+
+    function _cextToAttr(r) {
+        return JSON.stringify({
+            id: r.id, organisme: r.organisme_externe || "", famille: r.famille,
+            categorie: r.categorie, date_echeance: r.date_echeance
+        }).replace(/"/g, "&quot;");
+    }
+
+    function ouvrirModalModifExterne(stagiaireId, r) {
+        ouvrirModalCacesExterne(stagiaireId);
+        _cextEditId = r.id;
+        var titre = document.querySelector('#modal-caces-externe h3');
+        if (titre) titre.textContent = 'Modifier un CACES externe';
+        document.getElementById('cext-organisme').value = r.organisme || '';
+        var sFam = document.getElementById('cext-famille');
+        sFam.value = r.famille;
+        sFam.dispatchEvent(new Event('change', { bubbles: true }));
+        setTimeout(function () {
+            var sCat = document.getElementById('cext-categorie');
+            if (sCat) { sCat.disabled = false; sCat.value = r.categorie; }
+            document.getElementById('cext-echeance').value = r.date_echeance || '';
+        }, 350);
+    }
+
     function ouvrirModalCacesExterne(stagiaireId) {
+        _cextEditId = null;
         window._cextStagiaireId = stagiaireId;
         document.getElementById('cext-organisme').value = '';
         document.getElementById('cext-categorie').innerHTML = '<option value="">— Choisir une famille d\'abord —</option>';
@@ -1076,8 +1108,11 @@ document.addEventListener('DOMContentLoaded', function () {
         var warnDiv = document.getElementById('cext-warn');
         errDiv.style.display = 'none';
         warnDiv.style.display = 'none';
-        fetch('/stagiaires/' + stagiaireId + '/caces-externe', {
-            method: 'POST',
+        var _url = '/stagiaires/' + stagiaireId + '/caces-externe';
+        var _method = 'POST';
+        if (_cextEditId) { _url = _url + '/' + _cextEditId; _method = 'PUT'; }
+        fetch(_url, {
+            method: _method,
             credentials: 'same-origin',
             body: fd
         }).then(function(r) {
