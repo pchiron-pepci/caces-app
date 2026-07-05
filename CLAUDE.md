@@ -2582,6 +2582,31 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Piège évité en appliquant ce chantier :** le script fourni pour cette étape ciblait encore l'ancien échappement `.replace(/'/g, "&#39;")` dans `_frReprToAttr` — obsolète depuis la correction du chantier précédent (`&quot;`). Adapté pour insérer `testeur_id` dans le JSON SANS revenir à l'échappement simple-guillemet cassé.
 
+### ✅ Chantier terminé (back uniquement) : justificatif R2 pour un CACES repris interne (2026-07-05)
+
+**Fichier :** `app/routers/stagiaires.py`
+
+**Route ajoutée :** `POST /{id}/reprises/caces/{co_id}/justificatif` (~ligne 970, juste avant `GET /{id}/caces-externe/{caces_id}/justificatif`) — PIN admin, upload multipart (`UploadFile`/`File`/`Form`, déjà importés en tête de fichier), mêmes gardes que l'upload externe (`storage.EXTENSIONS_AUTORISEES`, `storage.TAILLE_MAX`, fichier vide rejeté). Purge l'ancien `justificatif_cle` R2 avant remplacement. Clé construite avec le préfixe dédié `"caces-reprises"` (`storage.construire_cle`), distinct de `"caces-externes"` déjà utilisé — même bucket, préfixes séparés pour s'y retrouver.
+
+**Lecture : PAS de nouvelle route GET.** `GET /{id}/caces-externe/{caces_id}/justificatif` (existante) filtre uniquement sur `CacesObtenu.id == caces_id AND stagiaire_id == id`, sans distinction d'origine (externe vs repris) — directement réutilisable pour lire le justificatif d'un CACES repris en lui passant son `co.id`. Le nom de la route reste trompeur ("caces-externe") mais fonctionne pour toute origine.
+
+**Retour enrichi :** `GET /{id}/reprises` (H2a, tableau "🪪 Historique repris") renvoie désormais aussi `justificatif_nom` et `a_justificatif` (bool), à côté de `testeur_id`/`testeur_nom` déjà ajoutés au chantier précédent.
+
+**RESTE À FAIRE (non couvert par ce chantier) :** aucun bouton front (`static/js/stagiaires.js` / `templates/stagiaires.html`) ne déclenche encore cet upload/cette lecture sur les lignes "Historique repris" — ce chantier n'a livré que le socle serveur, sur le modèle du justificatif dispense (Carte 2/3 → 3/3, cf. section dédiée plus haut) qui avait suivi la même séquence back-puis-front.
+
+### ✅ Chantier terminé (front) : consulter / joindre le justificatif sur une ligne "Historique repris" (2026-07-05)
+
+**Fichier :** `static/js/stagiaires.js` — branche le back du chantier précédent (`POST .../reprises/caces/{co_id}/justificatif`, lecture via `GET .../caces-externe/{caces_id}/justificatif`).
+
+**Ligne CACES repris enrichie :** entre le nom du testeur et le bouton ✏️ Modifier, ajout de :
+- si `r.a_justificatif` : lien `📎 {justificatif_nom}` (`target="_blank"`, ouvre la lecture directement, cookie suffit) ;
+- sinon : mention ambre `⚠️ Sans justificatif` (non bloquant, même esprit que le badge dispense externe sans justificatif) ;
+- bouton `📤` (`data-action="joindre-justif-reprise"`) — libellé au survol adaptatif ("Joindre" ou "Remplacer" selon `a_justificatif`).
+
+**`joindreJustifReprise(stagiaireId, coId)` :** crée un `<input type="file">` dynamique (accept PDF/Word/Excel), déclenche la sélection, PIN admin via `window.prompt` (pas de modale dédiée — cohérent avec la simplicité de l'action), `FormData` + `fetch POST`. En cas de succès : invalide le cache de l'historique (`delete body.dataset.loaded`) et rappelle `toggleHistorique` pour recharger la ligne à jour (même pattern que `confirmerAjoutReprise`).
+
+**Bug d'échappement multi-couches recontré UNE 3e FOIS et corrigé :** `'Erreur lors de l\\'envoi'` dans le script fourni — le même piège que `data-reprise=\\'` (chantiers précédents) : le `\\'` censé produire l'apostrophe échappée `\'` en JS s'effondre en un simple `'` après les couches d'échappement Python, cassant la chaîne (`node -c` a immédiatement détecté l'erreur : `missing ) after argument list`). **Corrigé** en passant cette chaîne JS particulière en guillemets doubles (`"Erreur lors de l'envoi"`) plutôt qu'en tentant d'échapper l'apostrophe dans une chaîne à guillemets simples. **Constat cumulé sur 3 chantiers consécutifs** (data-reprise, ext.recommandation non lié mais même séance, et maintenant ce message d'erreur) : les scripts Python générant du JS avec des apostrophes littérales à l'intérieur de chaînes à guillemets simples sont systématiquement à re-vérifier via `node -c` avant de considérer la tâche terminée — ne jamais se fier à la relecture du script source.
+
 ---
 
 ## Sauvegarde base de données

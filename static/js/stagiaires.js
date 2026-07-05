@@ -105,6 +105,10 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (action === 'suppr-caces-externe') { supprimerCacesExterne(btn.dataset.id, btn.dataset.stag); return; }
         else if (action === 'fermer-modal-reprise') { document.getElementById('modal-reprise').style.display = 'none'; return; }
         else if (action === 'confirmer-ajout-reprise') { confirmerAjoutReprise(); return; }
+        else if (action === 'joindre-justif-reprise') {
+            joindreJustifReprise(btn.dataset.stag, btn.dataset.id);
+            return;
+        }
         else if (action === 'modifier-reprise-caces') {
             try { var _r = JSON.parse(btn.getAttribute('data-reprise')); ouvrirModalModifReprise(btn.dataset.stag, _r); } catch (e) {}
             return;
@@ -467,6 +471,39 @@ document.addEventListener('DOMContentLoaded', function () {
             + '</div>';
     }
 
+    function joindreJustifReprise(stagiaireId, coId) {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pdf,.doc,.docx,.xls,.xlsx';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.addEventListener('change', function () {
+            var f = input.files && input.files[0];
+            document.body.removeChild(input);
+            if (!f) return;
+            var pin = window.prompt('Code PIN administrateur pour joindre le justificatif :');
+            if (!pin) return;
+            var fd = new FormData();
+            fd.append('fichier', f);
+            fd.append('pin', pin);
+            fetch('/stagiaires/' + stagiaireId + '/reprises/caces/' + coId + '/justificatif', {
+                method: 'POST', credentials: 'same-origin', body: fd
+            }).then(function (r) {
+                return r.json().then(function (d) { return { ok: r.ok, data: d }; });
+            }).then(function (res) {
+                if (!res.ok) { alert(res.data.detail || "Erreur lors de l'envoi"); return; }
+                // Recharger l'historique du stagiaire
+                var body = document.getElementById('hist-body-' + stagiaireId);
+                if (body) { delete body.dataset.loaded; }
+                var b = document.querySelector('[data-action="historique"][data-id="' + stagiaireId + '"]');
+                var row = document.getElementById('hist-' + stagiaireId);
+                if (row) { row.style.display = 'none'; if (b) b.textContent = '▶'; }
+                if (b) toggleHistorique(String(stagiaireId), b);
+            }).catch(function () { alert('Erreur reseau'); });
+        });
+        input.click();
+    }
+
     function _frReprToAttr(r) {
         return JSON.stringify({
             id: r.id, famille: r.famille, categorie: r.categorie,
@@ -527,7 +564,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
                     + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
                     + (r.testeur_nom ? '<span style="color:#888;font-size:11px;">' + r.testeur_nom + '</span>' : '')
-                    + '<button type="button" data-action="modifier-reprise-caces" data-reprise="' + _frReprToAttr(r) + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
+                    + (r.a_justificatif
+                        ? '<a href="/stagiaires/' + stagiaireId + '/caces-externe/' + r.id + '/justificatif" target="_blank" style="margin-left:auto;color:#00695c;font-size:11px;text-decoration:underline;" title="Voir le justificatif">📎 ' + (r.justificatif_nom || 'Justificatif') + '</a>'
+                        : '<span style="margin-left:auto;color:#e65100;font-size:11px;" title="Aucun justificatif joint">⚠️ Sans justificatif</span>')
+                    + '<button type="button" data-action="joindre-justif-reprise" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#e0f2f1;color:#00695c;border:1px solid #b2dfdb;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="' + (r.a_justificatif ? 'Remplacer le justificatif' : 'Joindre un justificatif') + '">📤</button>'
+                    + '<button type="button" data-action="modifier-reprise-caces" data-reprise="' + _frReprToAttr(r) + '" data-stag="' + stagiaireId + '" style="background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
                     + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
                     + '</div>';
             }).join('');
