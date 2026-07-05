@@ -2636,6 +2636,18 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Correctif :** les 3 en-têtes de rubrique de la fiche stagiaire — "🪪 Historique CACES internes", et les 2 rubriques homologues externe/orphelines — utilisaient `justify-content:space-between`, poussant le bouton `+ Ajouter` tout à droite du bloc, loin du titre. Remplacé par `justify-content:flex-start;gap:12px` (au lieu de `gap:8px`) sur les 3 en-têtes identiques : le bouton colle désormais juste après le titre, avec un espacement légèrement agrandi pour la lisibilité.
 
+### ✅ Chantier terminé : boutons modifier/supprimer à droite en desktop, sur la ligne du n° en mobile (2026-07-05)
+
+**Fichiers :** `static/js/stagiaires.js`, `templates/stagiaires.html`.
+
+**Retour en arrière partiel sur le chantier précédent** ("boutons regroupés avec le numéro") : en DESKTOP, ✏️/🗑️ reviennent dans `.repr-actions` (groupe de droite, avec le justificatif) — plus lisible en ligne large. En MOBILE, un DUPLICATA des mêmes boutons reste sur la ligne du numéro (`.repr-ident-btns`), car en colonne empilée les regrouper avec le justificatif les éloignait trop de l'identifiant.
+
+**Mécanisme :** deux jeux de boutons identiques existent dans le DOM — `.repr-ident-btns` (caché par défaut, `display:none`) et `.repr-actions-btns` (visible par défaut, `display:flex`, dans `.repr-actions`). Le média-query `@media (max-width:1023px)` inverse les deux : `.repr-ident-btns { display:flex !important }` / `.repr-actions-btns { display:none !important }`. Pas de JS conditionnel — bascule purement CSS selon la largeur d'écran.
+
+**Piège évité en appliquant ce script (bash, pas JS cette fois) :** le script fourni utilisait `'''...''''` (une chaîne Python se terminant par un caractère `'` littéral suivi des 3 guillemets de fermeture) — cette construction a fait planter le parseur `bash` du heredoc (`unexpected EOF`), alors même que `<< 'PYEOF'` aurait dû neutraliser toute interprétation de guillemets côté shell. **Contournement :** écriture du script Python dans un fichier temporaire via l'outil `Write` (pas de heredoc bash) puis exécution par `python3 fichier.py` — élimine tout risque d'interaction entre les niveaux de citation bash/Python. Fichier temporaire supprimé après usage.
+
+**Constat mineur :** l'ancre du script fourni contenait aussi une espace finale parasite (`+ '</span>' ` avec espace, vs `+ '</span>'` réel dans le fichier) — détecté par un diagnostic ligne-par-ligne (`s.count(ligne)` sur chaque ligne de l'ancre) avant d'exécuter le remplacement complet, plutôt que de découvrir l'échec après coup.
+
 ---
 
 ## Sauvegarde base de données

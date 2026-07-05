@@ -562,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
                         + '<span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
                         + '<span style="display:flex;gap:2px;">' + opts + '</span>'
-                        + '<span class="repr-ident-btns" style="display:flex;align-items:center;gap:6px;margin-left:6px;">'
+                        + '<span class="repr-ident-btns" style="display:none;align-items:center;gap:6px;margin-left:auto;">'
                             + '<button type="button" data-action="modifier-reprise-caces" data-reprise="' + _frReprToAttr(r) + '" data-stag="' + stagiaireId + '" style="background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
                             + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
                         + '</span>'
@@ -577,6 +577,10 @@ document.addEventListener('DOMContentLoaded', function () {
                             ? '<a href="/stagiaires/' + stagiaireId + '/caces-externe/' + r.id + '/justificatif" target="_blank" style="color:#00695c;font-size:11px;text-decoration:underline;" title="Voir le justificatif">📎 ' + (r.justificatif_nom || 'Justificatif') + '</a>'
                             : '<span style="color:#e65100;font-size:11px;" title="Aucun justificatif joint">⚠️ Sans justificatif</span>')
                         + '<button type="button" data-action="joindre-justif-reprise" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#e0f2f1;color:#00695c;border:1px solid #b2dfdb;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="' + (r.a_justificatif ? 'Remplacer le justificatif' : 'Joindre un justificatif') + '">📤</button>'
+                        + '<span class="repr-actions-btns" style="display:flex;align-items:center;gap:8px;">'
+                            + '<button type="button" data-action="modifier-reprise-caces" data-reprise="' + _frReprToAttr(r) + '" data-stag="' + stagiaireId + '" style="background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
+                            + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
+                        + '</span>'
                     + '</span>'
                     + '</div>';
             }).join('');
