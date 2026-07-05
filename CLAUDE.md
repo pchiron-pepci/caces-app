@@ -2898,6 +2898,16 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Bilan du chantier `.co-hscroll` (3 commits cumulés : `5d0b1b4`, `ad677eb`, `7668894`) :** 3 tableaux à colonnes fixes protégés (`_sectionCaces`, `renderCartesEmises`, détail carte), scroll confiné dans le cadre visuel de la carte stagiaire sur mobile. `renderCacesExternes`/`renderOrphelinesReprises` restent exclus (patron flex-wrap déjà adéquat, cf. chantier précédent).
 
+### ✅ Chantier terminé : confinement structurel `table/tbody/tr` en responsive (2026-07-05, commit a0c3a04)
+
+**Fichier :** `templates/stagiaires.html`
+
+**Dernier verrou du débordement mobile :** malgré les 3 tableaux internes protégés (chantier précédent), l'élément racine `<table class="table-stagiaires">` lui-même n'avait aucune contrainte de largeur en mode carte responsive — `thead{display:none}` et `tbody{display:block}` étaient posés, mais ni la `<table>` ni ses `<tr>` n'avaient de `max-width:100%`, laissant une voie de débordement résiduelle si un contenu interne (ex. un `.co-hscroll` mal contenu) forçait malgré tout la largeur du parent.
+
+**Correctif (dans `@media max-width:1023px`) :** `.table-stagiaires { display:block; width:100%; max-width:100%; table-layout:fixed }`, `tbody { width:100%; max-width:100% }`, `tbody tr { max-width:100%; box-sizing:border-box }` — chaîne de contraintes de largeur du parent vers l'enfant, aucun maillon ne peut plus déborder. Renforcement symétrique de `.hist-body` et `.co-hscroll` (déjà posés au chantier précédent) : `width:100%; max-width:100%; box-sizing:border-box` ajoutés pour qu'ils respectent activement la largeur imposée plutôt que de simplement la plafonner passivement.
+
+**Détail cosmétique relevé, non corrigé (inerte, pas un bug) :** `table-layout:fixed` est déclaré sur un sélecteur qui a par ailleurs `display:block` — cette propriété n'a d'effet que sur un élément affiché en `display:table` (ou apparenté). Sur cet élément passé en `block`, elle est silencieusement ignorée par le navigateur. Aucune conséquence fonctionnelle (les autres contraintes `width`/`max-width` font le travail), mais à savoir si ce sélecteur repasse un jour en affichage tableau.
+
 ---
 
 ## Sauvegarde base de données
