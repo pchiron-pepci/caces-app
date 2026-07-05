@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function () {
             html += '<a href="/sessions/' + s.session_id + '" style="font-family:\'Barlow Condensed\',sans-serif; font-size:15px; font-weight:700; text-decoration:none; color:#1a3a8f;">' + s.reference + '</a>';
             html += '<span style="font-size:13px; color:#555; font-weight:600;">' + s.famille + '</span>';
             html += '<span style="' + badgeStyle + ' padding:2px 8px; border-radius:8px; font-size:11px; font-weight:600;">' + badgeLabel + '</span>';
-            if (dates.length) html += '<span style="font-size:11px; color:#888; margin-left:auto;">' + dates.join(' · ') + '</span>';
+            if (dates.length) html += '<span class="sess-dates" style="font-size:11px; color:#888; margin-left:auto;">' + dates.join(' · ') + '</span>';
             html += '</div>';
 
             // Corps repliable (caché par défaut)
