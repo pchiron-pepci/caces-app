@@ -1,5 +1,7 @@
-from datetime import date
+from datetime import date, datetime
+from io import BytesIO
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
 from app.models.caces_obtenu import CacesObtenu
@@ -85,3 +87,109 @@ def registre_caces(seuil: int = 6, db: DBSession = Depends(get_db)):
         "familles": familles,
         "lignes": lignes,
     }
+
+
+@router.get("/export")
+def registre_caces_export(
+    seuil: int = 6,
+    soc: str = "",
+    fam: str = "",
+    nat: str = "",
+    txt: str = "",
+    exp: str = "1",
+    ren: str = "1",
+    val: str = "0",
+    db: DBSession = Depends(get_db),
+):
+    """Export Excel de la vue filtree (memes filtres que le front)."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    _LIB_NAT = {"otc": "Organisme (OTC)", "st": "Sous-traitance", "ext": "Externe"}
+    _LIB_STA = {"exp": "Expire", "ren": "A renouveler", "val": "Valide"}
+    _show = {"exp": exp == "1", "ren": ren == "1", "val": val == "1"}
+    _txt = (txt or "").lower()
+
+    data = registre_caces(seuil=seuil, db=db)
+    lignes = data["lignes"]
+
+    def _garde(l):
+        if soc and l["societe"] != soc:
+            return False
+        if fam and l["famille"] != fam:
+            return False
+        if nat and l["nature"] != nat:
+            return False
+        if _txt and _txt not in (l["nom"] + " " + l["prenom"] + " " + l["societe"]).lower():
+            return False
+        if not _show.get(l["statut_echeance"], True):
+            return False
+        return True
+
+    lignes = [l for l in lignes if _garde(l)]
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Registre CACES"
+
+    entetes = ["Nom", "Prenom", "Societe", "Famille", "Categorie", "Options",
+               "Nature", "N", "Obtention", "Echeance", "Statut", "Session"]
+    ws.append(entetes)
+
+    head_fill = PatternFill("solid", fgColor="2D2D2D")
+    head_font = Font(color="FFFFFF", bold=True)
+    for c in ws[1]:
+        c.fill = head_fill
+        c.font = head_font
+        c.alignment = Alignment(horizontal="left", vertical="center")
+
+    def _fr(iso):
+        if not iso:
+            return ""
+        p = iso.split("-")
+        return p[2] + "/" + p[1] + "/" + p[0]
+
+    couleur_sta = {"exp": "A32D2D", "ren": "854F0B", "val": "3B6D11"}
+    for l in lignes:
+        ws.append([
+            l["nom"], l["prenom"], l["societe"], l["famille"], l["categorie"],
+            l["options_obtenues"], _LIB_NAT.get(l["nature"], l["nature"]),
+            l["numero"], _fr(l["date_obtention"]), _fr(l["date_echeance"]),
+            _LIB_STA.get(l["statut_echeance"], l["statut_echeance"]),
+            l["session_reference"],
+        ])
+        cell_sta = ws.cell(row=ws.max_row, column=11)
+        cell_sta.font = Font(color=couleur_sta.get(l["statut_echeance"], "000000"), bold=True)
+
+    largeurs = [16, 14, 22, 9, 9, 18, 18, 10, 12, 12, 15, 16]
+    for i, w in enumerate(largeurs, start=1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+
+    ws.freeze_panes = "A2"
+
+    ws.append([])
+    stamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+    filtres = []
+    if soc:
+        filtres.append("Societe=" + soc)
+    if fam:
+        filtres.append("Famille=" + fam)
+    if nat:
+        filtres.append("Nature=" + _LIB_NAT.get(nat, nat))
+    if txt:
+        filtres.append("Recherche=" + txt)
+    etats = [k for k, v in _show.items() if v]
+    filtres.append("Echeance=" + ",".join(_LIB_STA.get(e, e) for e in etats))
+    filtres.append("Seuil=" + str(seuil) + " mois")
+    ws.append(["Export du " + stamp + "  |  " + str(len(lignes)) + " ligne(s)  |  " + "  ".join(filtres)])
+    ws.cell(row=ws.max_row, column=1).font = Font(italic=True, color="6B6A65", size=9)
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    nom = "registre_caces_" + datetime.now().strftime("%Y%m%d_%H%M") + ".xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="' + nom + '"'},
+    )
