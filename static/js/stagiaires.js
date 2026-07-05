@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return html;
         }
 
-        html += '<div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
+        html += '<div class="co-hscroll"><div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
         html += '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;gap:0;">';
         html += '<div style="width:28px;min-width:28px;"></div>';
         html += '<div style="flex:1;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">N° Carte</div>';
@@ -799,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function () {
             html += '</div>';
         });
 
-        html += '</div></div>';
+        html += '</div></div></div>';
         return html;
     }
 
