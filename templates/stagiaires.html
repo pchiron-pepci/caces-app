@@ -255,12 +255,17 @@
     .table-stagiaires tbody tr:not(.hist-row)::before {
         content: ''; order: 3; flex: 0 0 100%; height: 0;
     }
-    /* Data-label cells (ligne 2+) */
+    /* Data-label cells (ligne 2+) : vraies cartes en grille 2 colonnes, pas d'etirement */
     .table-stagiaires tbody td[data-label] {
-        order: 4; flex: 1 1 130px;
+        order: 4; flex: 0 0 50%; box-sizing: border-box; max-width: 50%;
         display: flex; align-items: flex-start; flex-direction: column;
-        padding: 5px 10px; font-size: 13px;
+        padding: 6px 10px; font-size: 13px;
         border-top: 1px solid #e8f0f8;
+    }
+    /* colonne de droite : lisere separateur vertical */
+    .table-stagiaires tbody td.stag-employeur,
+    .table-stagiaires tbody td.stag-tel {
+        border-left: 1px solid #e8f0f8;
     }
     .table-stagiaires tbody td[data-label]::before {
         content: attr(data-label);
