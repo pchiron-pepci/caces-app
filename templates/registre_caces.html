@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Registre CACES®{% endblock %}
+
+{% block content %}
+<style>
+  .rc-wrap { --rc-bg:#f7f7f6; --rc-line:#e3e2df; --rc-line2:#edecea; --rc-head:#f1f0ee;
+             --rc-txt:#2d2d2d; --rc-mut:#6b6a65; --rc-accent:#cc0000; }
+  .rc-head-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .rc-title { font-size:1.5rem; font-weight:700; color:var(--rc-txt); margin:0; }
+  .rc-sub { font-size:13px; color:var(--rc-mut); margin-top:2px; }
+  .rc-panel { background:var(--rc-bg); border:1px solid var(--rc-line); border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .rc-seuil-btns { display:inline-flex; gap:6px; }
+  .rc-seuil { border:1.5px solid var(--rc-line); background:#fff; color:var(--rc-txt); padding:6px 15px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; line-height:1; }
+  .rc-seuil.actif { border-color:var(--rc-accent); background:var(--rc-accent); color:#fff; }
+  .rc-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:12px; }
+  .rc-filters label { font-size:12px; color:var(--rc-mut); display:block; margin-bottom:4px; font-weight:700; }
+  .rc-filters select, .rc-filters input { width:100%; height:38px; box-sizing:border-box; border:1.5px solid var(--rc-line); border-radius:8px; padding:0 10px; font-size:14px; background:#fff; color:var(--rc-txt); }
+  .rc-filters select:focus, .rc-filters input:focus { outline:none; border-color:var(--rc-accent); }
+  .rc-chips { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center; }
+  .rc-chip { display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; padding:6px 12px; border-radius:8px; border:1.5px solid var(--rc-line); background:#fff; user-select:none; }
+  .rc-chip input { width:auto; height:auto; margin:0; }
+  .rc-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .rc-count { margin-left:auto; font-size:13px; color:var(--rc-mut); }
+  .rc-tablewrap { overflow-x:auto; border:1px solid var(--rc-line); border-radius:12px; }
+  .rc-table { width:100%; border-collapse:collapse; font-size:13.5px; min-width:760px; }
+  .rc-table thead th { background:var(--rc-head); padding:11px 14px; text-align:left; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--rc-mut); white-space:nowrap; }
+  .rc-table thead th.sortable { cursor:pointer; }
+  .rc-table thead th.sortable:hover { color:var(--rc-txt); }
+  .rc-table tbody td { padding:10px 14px; border-top:1px solid var(--rc-line2); color:var(--rc-txt); }
+  .rc-table tbody tr:hover td { background:var(--rc-bg); }
+  .rc-nat { font-size:12px; padding:2px 9px; border-radius:20px; white-space:nowrap; font-weight:700; }
+  .rc-nat-otc { background:#e6f1fb; color:#0c447c; }
+  .rc-nat-st  { background:#e1f5ee; color:#0f6e56; }
+  .rc-nat-ext { background:#f1efe8; color:#444441; }
+  .rc-sta { display:inline-flex; align-items:center; gap:6px; font-weight:700; }
+  .rc-empty { padding:28px; text-align:center; color:var(--rc-mut); }
+</style>
+
+<div class="rc-wrap">
+  <div class="rc-head-row">
+    <div>
+      <h1 class="rc-title">📇 Registre CACES®</h1>
+      <div class="rc-sub">Vue transversale de tous les CACES® — cibler renouvellements et compléments</div>
+    </div>
+    <button id="rc-export" class="btn btn-secondary" data-action="rc-export">⬇️ Exporter Excel</button>
+  </div>
+
+  <div class="rc-panel">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="font-size:13px; color:var(--rc-mut); font-weight:700;">Seuil de relance</span>
+      <div class="rc-seuil-btns" id="rc-seuil-btns">
+        <button class="rc-seuil" data-action="rc-seuil" data-m="3">3 mois</button>
+        <button class="rc-seuil actif" data-action="rc-seuil" data-m="6">6 mois</button>
+        <button class="rc-seuil" data-action="rc-seuil" data-m="12">12 mois</button>
+      </div>
+      <span style="font-size:12px; color:var(--rc-mut);">échéance sous <b id="rc-seuil-lbl">6</b> mois = à renouveler</span>
+    </div>
+  </div>
+
+  <div class="rc-filters">
+    <div><label>Société</label><select id="rc-f-soc"><option value="">Toutes</option></select></div>
+    <div><label>Famille</label><select id="rc-f-fam"><option value="">Toutes</option></select></div>
+    <div><label>Nature</label><select id="rc-f-nat">
+      <option value="">Toutes</option>
+      <option value="otc">Organisme (OTC)</option>
+      <option value="st">Sous-traitance</option>
+      <option value="ext">Externe</option>
+    </select></div>
+    <div><label>Recherche</label><input type="text" id="rc-f-txt" placeholder="🔍 Nom ou société" autocomplete="off"></div>
+  </div>
+
+  <div class="rc-chips">
+    <span style="font-size:12px; color:var(--rc-mut); font-weight:700;">Échéance</span>
+    <label class="rc-chip"><input type="checkbox" id="rc-c-exp" checked><span class="rc-dot" style="background:#a32d2d;"></span> Expiré</label>
+    <label class="rc-chip"><input type="checkbox" id="rc-c-ren" checked><span class="rc-dot" style="background:#ba7517;"></span> À renouveler</label>
+    <label class="rc-chip"><input type="checkbox" id="rc-c-val"><span class="rc-dot" style="background:#3b6d11;"></span> Valide</label>
+    <span class="rc-count" id="rc-count"></span>
+  </div>
+
+  <div class="rc-tablewrap">
+    <table class="rc-table">
+      <thead>
+        <tr>
+          <th class="sortable" data-action="rc-sort" data-key="nom">Stagiaire</th>
+          <th class="sortable" data-action="rc-sort" data-key="societe">Société</th>
+          <th class="sortable" data-action="rc-sort" data-key="cat">Cat.</th>
+          <th>Nature</th>
+          <th class="sortable" data-action="rc-sort" data-key="date_obtention">Obtention</th>
+          <th class="sortable" data-action="rc-sort" data-key="date_echeance">Échéance</th>
+          <th class="sortable" data-action="rc-sort" data-key="statut_echeance">Statut</th>
+        </tr>
+      </thead>
+      <tbody id="rc-tbody">
+        <tr><td colspan="7" class="rc-empty">Chargement...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="/static/js/registre_caces.js?v={{ static_mtime('js/registre_caces.js') }}"></script>
+{% endblock %}

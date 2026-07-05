@@ -588,7 +588,7 @@ _PUBLIC_PATTERNS = [
 
 _GESTION_PATHS = frozenset({
     "/stagiaires", "/caces-obtenus", "/cartes-caces",
-    "/non-conformites", "/statistiques",
+    "/non-conformites", "/statistiques", "/registre-caces",
 })
 
 _403_HTML = (
@@ -626,7 +626,7 @@ def _verifier_role(path: str, method: str, role: str):
     if path == "/" and role == "terrain":
         return "/sessions"
     # Pages de gestion → admin + utilisateur seulement
-    if path in _GESTION_PATHS or path.startswith("/statistiques") or path.startswith("/api/statistiques"):
+    if path in _GESTION_PATHS or path.startswith("/statistiques") or path.startswith("/api/statistiques") or path.startswith("/api/registre-caces"):
         return role in ("admin", "utilisateur")
     # Actions interdites au terrain
     if role == "terrain":
@@ -2480,6 +2480,15 @@ def page_caces_obtenus(request: Request):
         request=request,
         name="caces_obtenus.html",
         context={"page": "caces_obtenus"}
+    )
+
+
+@app.get("/registre-caces")
+def page_registre_caces(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="registre_caces.html",
+        context={"page": "registre_caces"}
     )
 
 @app.get("/cartes-caces")
