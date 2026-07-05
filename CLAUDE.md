@@ -2757,6 +2757,14 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Constat méthodologique :** ce chantier est le premier où le script fourni contenait des étapes `s.replace()` SANS assertion de comptage (contrairement à tous les chantiers précédents qui utilisaient systématiquement `assert s.count(old) == 1`). Un remplacement non asserté qui ne matche pas échoue silencieusement — risque plus insidieux qu'un `AssertionError` qui arrête tout net. Réflexe retenu : ajouter un `print("label:", s.count(old))` sur CHAQUE remplacement avant l'écriture finale, assertion ou non dans le script d'origine.
 
+### ⚠️ Règle permanente — apostrophe littérale dans une chaîne JS à guillemets simples (2026-07-05)
+
+**Contexte :** renommage du titre "🏆 CACES® validés" → "🏆 CACES® de l'apprenant" (`static/js/stagiaires.js:423`) — remplacement textuel simple, sans aucune couche d'échappement Python/bash cette fois. Le script remplaçait juste une chaîne par une autre contenant une apostrophe FRANÇAISE LITTÉRALE ("l'apprenant"), insérée telle quelle dans une chaîne JS déjà délimitée par des guillemets SIMPLES (`html += '<div ...>...'`). Résultat : `SyntaxError: Unexpected identifier 'apprenant'` — la chaîne se refermait prématurément au niveau de l'apostrophe.
+
+**Différence avec les bugs d'échappement précédents de la journée (data-reprise, ext.recommandation, etc.) :** ceux-là étaient des artefacts de transformation Python→JS (backslashes qui disparaissent à travers plusieurs couches). Celui-ci est plus basique : **toute apostrophe française insérée en dur dans un texte destiné à une chaîne JS à guillemets simples DOIT être échappée (`\'`)**, qu'il y ait ou non des couches d'échappement Python en jeu. `node -c` a immédiatement révélé le problème — validé et corrigé avant tout commit.
+
+**Règle à appliquer systématiquement :** avant d'insérer un nouveau libellé français dans une chaîne JS à guillemets simples de ce fichier (très majoritaire dans `stagiaires.js`), vérifier s'il contient une apostrophe ("l'", "d'", "qu'", "aujourd'hui"...) et l'échapper en `\'` si oui — pas seulement dans les scripts Python générateurs, aussi lors d'une édition directe.
+
 ---
 
 ## Sauvegarde base de données

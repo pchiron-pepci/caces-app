@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderCacesValides(caces) {
         let html = '<div style="margin-top:16px;">';
-        html += '<div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">🏆 CACES® validés</div>';
+        html += '<div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">🏆 CACES® de l\'apprenant</div>';
 
         if (!caces.length) {
             html += '<p style="color:#bbb;font-size:13px;font-style:italic;margin:0;">Aucun CACES® validé.</p>';
