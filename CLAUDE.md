@@ -2607,6 +2607,21 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Bug d'échappement multi-couches recontré UNE 3e FOIS et corrigé :** `'Erreur lors de l\\'envoi'` dans le script fourni — le même piège que `data-reprise=\\'` (chantiers précédents) : le `\\'` censé produire l'apostrophe échappée `\'` en JS s'effondre en un simple `'` après les couches d'échappement Python, cassant la chaîne (`node -c` a immédiatement détecté l'erreur : `missing ) after argument list`). **Corrigé** en passant cette chaîne JS particulière en guillemets doubles (`"Erreur lors de l'envoi"`) plutôt qu'en tentant d'échapper l'apostrophe dans une chaîne à guillemets simples. **Constat cumulé sur 3 chantiers consécutifs** (data-reprise, ext.recommandation non lié mais même séance, et maintenant ce message d'erreur) : les scripts Python générant du JS avec des apostrophes littérales à l'intérieur de chaînes à guillemets simples sont systématiquement à re-vérifier via `node -c` avant de considérer la tâche terminée — ne jamais se fier à la relecture du script source.
 
+### ✅ Chantier terminé : responsive de la ligne "Historique repris" (2026-07-05)
+
+**Fichiers :** `static/js/stagiaires.js` (`renderReprisesHistorique`), `templates/stagiaires.html` (CSS).
+
+**Avant :** la ligne d'un CACES repris était un unique `flex` avec `flex-wrap:wrap` — sur petit écran, les éléments s'enroulaient de façon désordonnée (numéro, dates, actions mélangés selon la largeur disponible).
+
+**Correctif :** la ligne (`.repr-row`) est désormais structurée en 3 sous-groupes explicites via des `<span>` en `display:flex` :
+- `.repr-ident` : ancien numéro, famille, catégorie, options ;
+- `.repr-dates` : date d'obtention → date d'échéance ;
+- `.repr-actions` : testeur, justificatif (lien ou avertissement), boutons 📤/✏️/🗑️ (`margin-left:auto` en desktop pour les pousser à droite).
+
+**Responsive (`templates/stagiaires.html`, `@media (max-width: 1023px)`) :** `.repr-row` passe en `flex-direction:column`, les 3 sous-groupes s'empilent chacun en pleine largeur (`margin-left:0 !important`, `width:100%`), `.repr-actions` repasse en alignement à gauche (`justify-content:flex-start`) au lieu d'être poussé à droite.
+
+**Appliqué sans bug d'échappement cette fois** (`node -c` valide directement) — contrairement aux 2 chantiers précédents sur ce même fichier le jour même.
+
 ---
 
 ## Sauvegarde base de données

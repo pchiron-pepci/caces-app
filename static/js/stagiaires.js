@@ -556,20 +556,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 var opts = r.options_obtenues
                     ? r.options_obtenues.split(',').map(function(o){ return '<span style="background:#e8eaf6;color:#283593;border-radius:3px;padding:1px 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>'; }).join(' ')
                     : '<span style="color:#ccc;font-size:11px;">—</span>';
-                return '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #eef0f6;font-size:12px;flex-wrap:wrap;">'
-                    + '<span style="font-family:monospace;font-weight:700;color:#7b1fa2;white-space:nowrap;" title="Ancien numero (repris)">' + (r.ancien_numero || '—') + '</span>'
-                    + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
-                    + '<span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
-                    + '<span style="display:flex;gap:2px;">' + opts + '</span>'
-                    + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
-                    + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
-                    + (r.testeur_nom ? '<span style="color:#888;font-size:11px;">' + r.testeur_nom + '</span>' : '')
-                    + (r.a_justificatif
-                        ? '<a href="/stagiaires/' + stagiaireId + '/caces-externe/' + r.id + '/justificatif" target="_blank" style="margin-left:auto;color:#00695c;font-size:11px;text-decoration:underline;" title="Voir le justificatif">📎 ' + (r.justificatif_nom || 'Justificatif') + '</a>'
-                        : '<span style="margin-left:auto;color:#e65100;font-size:11px;" title="Aucun justificatif joint">⚠️ Sans justificatif</span>')
-                    + '<button type="button" data-action="joindre-justif-reprise" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#e0f2f1;color:#00695c;border:1px solid #b2dfdb;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="' + (r.a_justificatif ? 'Remplacer le justificatif' : 'Joindre un justificatif') + '">📤</button>'
-                    + '<button type="button" data-action="modifier-reprise-caces" data-reprise="' + _frReprToAttr(r) + '" data-stag="' + stagiaireId + '" style="background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
-                    + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
+                return '<div class="repr-row" style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #eef0f6;font-size:12px;flex-wrap:wrap;">'
+                    + '<span class="repr-ident" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+                        + '<span style="font-family:monospace;font-weight:700;color:#7b1fa2;white-space:nowrap;" title="Ancien numero (repris)">' + (r.ancien_numero || '—') + '</span>'
+                        + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
+                        + '<span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
+                        + '<span style="display:flex;gap:2px;">' + opts + '</span>'
+                    + '</span>'
+                    + '<span class="repr-dates" style="display:flex;align-items:center;gap:8px;">'
+                        + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
+                        + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
+                    + '</span>'
+                    + '<span class="repr-actions" style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">'
+                        + (r.testeur_nom ? '<span style="color:#888;font-size:11px;">' + r.testeur_nom + '</span>' : '')
+                        + (r.a_justificatif
+                            ? '<a href="/stagiaires/' + stagiaireId + '/caces-externe/' + r.id + '/justificatif" target="_blank" style="color:#00695c;font-size:11px;text-decoration:underline;" title="Voir le justificatif">📎 ' + (r.justificatif_nom || 'Justificatif') + '</a>'
+                            : '<span style="color:#e65100;font-size:11px;" title="Aucun justificatif joint">⚠️ Sans justificatif</span>')
+                        + '<button type="button" data-action="joindre-justif-reprise" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#e0f2f1;color:#00695c;border:1px solid #b2dfdb;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="' + (r.a_justificatif ? 'Remplacer le justificatif' : 'Joindre un justificatif') + '">📤</button>'
+                        + '<button type="button" data-action="modifier-reprise-caces" data-reprise="' + _frReprToAttr(r) + '" data-stag="' + stagiaireId + '" style="background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
+                        + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
+                    + '</span>'
                     + '</div>';
             }).join('');
         }
