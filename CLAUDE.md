@@ -2704,6 +2704,21 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 2. Le fetch réel n'a pas de virgule finale après `body: fd` (le script en supposait une) — ancre corrigée en conséquence.
 3. Le script comptait sur **2 occurrences** de `function ouvrirModalCacesExterne(stagiaireId) {` après insertion des helpers (pour cibler "la bonne" par index) — logiquement impossible : un `.replace()` qui insère du texte AVANT une ancre en réutilisant cette même ancre comme suffixe ne crée jamais de duplicata, il en reste exactement UNE. Remplacé par une insertion directe et non ambiguë de `_cextEditId = null;` juste après la ligne de signature réelle (seule occurrence, confirmée par `grep` avant modification).
 
+### ✅ Chantier terminé : ligne "CACES externes" alignée sur le patron responsive "Historique repris" (2026-07-05)
+
+**Fichiers :** `static/js/stagiaires.js`, `templates/stagiaires.html`.
+
+**Remplace/complète le chantier `8c52909`** ("responsive de la ligne CACES externes", qui affirmait "pas de duplication de boutons desktop/mobile" — affirmation désormais **obsolète**, l'ajout des boutons ✏️/📤 au chantier `d206185` a changé la donne).
+
+**Nouvelle structure, identique au patron "Historique repris" (`b6ed6ed`) :**
+- `.cext-ident` : famille, catégorie, `.cext-ident-btns` (✏️/🗑️, caché par défaut `display:none`, visible en mobile) ;
+- `.cext-dates` : dates + 🌐 organisme externe (déplacé depuis son ancien groupe `.cext-orga` autonome, fusionné ici) ;
+- `.cext-actions` : justificatif + 📤 + `.cext-actions-btns` (✏️/🗑️, visible par défaut `display:flex`, caché en mobile).
+
+**CSS (`@media max-width:1023px`) :** même bascule que `.repr-ident-btns`/`.repr-actions-btns` — `.cext-ident .cext-ident-btns { display:inline-flex !important }` / `.cext-actions .cext-actions-btns { display:none !important }`. Les 2 boutons `.cext-suppr` distincts (l'ancienne classe dédiée) ont été retirés — chaque instance de bouton supprimer n'a plus besoin de classe propre puisqu'elle est désormais dans un groupe dupliqué nommé.
+
+**Bilan des 2 lignes (interne + externe) :** patron unifié, mêmes noms de classes logiques (`-ident`, `-dates`, `-actions`, `-ident-btns`, `-actions-btns`), seul le préfixe change (`repr-` vs `cext-`).
+
 ---
 
 ## Sauvegarde base de données
