@@ -602,9 +602,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     + '<span class="repr-dates" style="display:flex;align-items:center;gap:8px;">'
                         + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
                         + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
+                        + (r.testeur_nom ? '<span style="color:#888;font-size:11px;margin-left:8px;">' + r.testeur_nom + '</span>' : '')
                     + '</span>'
                     + '<span class="repr-actions" style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">'
-                        + (r.testeur_nom ? '<span style="color:#888;font-size:11px;">' + r.testeur_nom + '</span>' : '')
                         + (r.a_justificatif
                             ? '<a href="/stagiaires/' + stagiaireId + '/caces-externe/' + r.id + '/justificatif" target="_blank" style="color:#00695c;font-size:11px;text-decoration:underline;" title="Voir le justificatif">📎 ' + (r.justificatif_nom || 'Justificatif') + '</a>'
                             : '<span style="color:#e65100;font-size:11px;" title="Aucun justificatif joint">⚠️ Sans justificatif</span>')

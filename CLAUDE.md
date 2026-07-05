@@ -2668,6 +2668,14 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Correctif :** `.repr-row .repr-ident-btns` / `.repr-row .repr-actions-btns` (chantier `b6ed6ed`) remplacés par des sélecteurs plus spécifiques `.repr-row .repr-ident .repr-ident-btns` / `.repr-row .repr-actions .repr-actions-btns` — précise que le sous-groupe de boutons visé est bien celui imbriqué dans `.repr-ident` (resp. `.repr-actions`), pas une classe homonyme isolée qui pourrait apparaître ailleurs dans le DOM à l'avenir. `display:inline-flex` (au lieu de `flex`) sur `.repr-ident-btns` en mobile, cohérent avec son usage en `<span>` inline. Comportement fonctionnel inchangé (les règles `!important` l'emportent sur les styles inline de toute façon) — durcissement défensif, pas un correctif de bug observé.
 
+### ✅ Chantier terminé : testeur déplacé de `.repr-actions` vers `.repr-dates` (2026-07-05)
+
+**Fichier :** `static/js/stagiaires.js`
+
+**Correctif :** le nom du testeur (`r.testeur_nom`) était affiché en tête de `.repr-actions` (groupe de droite, avec justificatif + boutons) — regroupement peu logique (le testeur n'est pas une "action"). Déplacé en fin de `.repr-dates` (juste après la date d'échéance, `margin-left:8px`), à côté des autres informations factuelles de la ligne. `.repr-actions` ne contient plus que justificatif + boutons ✏️/🗑️ (desktop) / 📤.
+
+**Piège d'espace parasite rencontré une 4e fois et anticipé cette fois** (diagnostic `s.count()` par ancre AVANT application, comme établi au chantier précédent) : l'ancre `repr-dates` fournie se terminait par `+ '</span>' ` (espace final) au lieu de `+ '</span>'` réel — `.rstrip()` appliqué systématiquement sur les 2 ancres avant de lancer le remplacement, zéro échec à l'exécution.
+
 ---
 
 ## Sauvegarde base de données
