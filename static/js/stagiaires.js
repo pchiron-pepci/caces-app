@@ -651,6 +651,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
                         + '<span style="background:#00695c;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
                         + (r.options_obtenues ? '<span style="display:flex;gap:2px;">' + r.options_obtenues.split(',').map(function(o){ return '<span style="background:#e0f2f1;color:#00695c;border-radius:3px;padding:1px 4px;font-size:10px;font-weight:700;">' + o.trim() + '</span>'; }).join(' ') + '</span>' : '')
+                        + (r.sous_traitance ? '<span style="background:#e6f1fb;color:#0c447c;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:700;" title="Passe en sous-traitance via l\'organisme habilite">S/T</span>' : '')
                         + '<span class="cext-ident-btns" style="display:none;align-items:center;gap:6px;margin-left:auto;">'
                             + '<button type="button" data-action="modifier-caces-externe" data-ext="' + _cextToAttr(r) + '" data-stag="' + stagiaireId + '" style="background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
                             + '<button type="button" data-action="suppr-caces-externe" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
@@ -1059,7 +1060,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return JSON.stringify({
             id: r.id, organisme: r.organisme_externe || "", famille: r.famille,
             categorie: r.categorie, date_echeance: r.date_echeance,
-            options_obtenues: r.options_obtenues || ""
+            options_obtenues: r.options_obtenues || "",
+            sous_traitance: !!r.sous_traitance
         }).replace(/"/g, "&quot;");
     }
 
@@ -1077,6 +1079,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (sCat) { sCat.disabled = false; sCat.value = r.categorie; }
             document.getElementById('cext-echeance').value = r.date_echeance || '';
             document.getElementById('cext-options').value = r.options_obtenues || '';
+            document.getElementById('cext-soustraitance').checked = !!r.sous_traitance;
         }, 350);
     }
 
@@ -1088,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('cext-categorie').disabled = true;
         document.getElementById('cext-echeance').value = '';
         document.getElementById('cext-options').value = '';
+        document.getElementById('cext-soustraitance').checked = false;
         document.getElementById('cext-fichier').value = '';
         document.getElementById('cext-pin').value = '';
         document.getElementById('cext-error').style.display = 'none';
@@ -1114,6 +1118,7 @@ document.addEventListener('DOMContentLoaded', function () {
         fd.append('date_echeance', document.getElementById('cext-echeance').value);
         fd.append('organisme', document.getElementById('cext-organisme').value);
         fd.append('options', document.getElementById('cext-options').value.trim());
+        fd.append('sous_traitance', document.getElementById('cext-soustraitance').checked ? 'true' : 'false');
         fd.append('pin', document.getElementById('cext-pin').value);
         var fichierInput = document.getElementById('cext-fichier');
         if (fichierInput.files && fichierInput.files[0]) { fd.append('fichier', fichierInput.files[0]); }

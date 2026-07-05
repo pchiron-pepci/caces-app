@@ -25,6 +25,7 @@ class CacesObtenu(Base):
     organisme_externe = Column(String(200), nullable=True)   # OF emetteur si CACES externe (marque le CACES comme externe)
     justificatif_cle = Column(String(500), nullable=True)     # cle R2 du fichier preuve (CACES externe)
     justificatif_nom = Column(String(255), nullable=True)     # nom original du fichier preuve
+    sous_traitance = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (

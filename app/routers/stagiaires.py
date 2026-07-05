@@ -425,6 +425,7 @@ def get_reprises_stagiaire(id: int, db: Session = Depends(get_db)):
             "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
             "ancien_numero": co.ancien_numero or "",
             "organisme_externe": co.organisme_externe or "",
+            "sous_traitance": bool(getattr(co, "sous_traitance", False)),
             "justificatif_nom": co.justificatif_nom or "",
             "a_justificatif": bool(co.justificatif_cle),
             "testeur_nom": testeur_nom,
@@ -885,6 +886,7 @@ async def creer_caces_externe(
     date_echeance: str = Form(...),
     organisme: str = Form(...),
     options: str = Form(""),
+    sous_traitance: bool = Form(False),
     pin: str = Form(...),
     fichier: UploadFile = File(None),
     db: Session = Depends(get_db),
@@ -944,6 +946,7 @@ async def creer_caces_externe(
         numero_ordre=None,
         organisme_externe=organisme.strip()[:200],
         options_obtenues=(options.strip() or None),
+        sous_traitance=bool(sous_traitance),
         justificatif_cle=cle,
         justificatif_nom=nom_fichier,
     )
@@ -1033,6 +1036,7 @@ async def modifier_caces_externe(
     date_echeance: str = Form(...),
     organisme: str = Form(...),
     options: str = Form(""),
+    sous_traitance: bool = Form(False),
     pin: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -1078,6 +1082,7 @@ async def modifier_caces_externe(
     co.date_echeance = ech
     co.organisme_externe = organisme.strip()[:200]
     co.options_obtenues = options.strip() or None
+    co.sous_traitance = bool(sous_traitance)
 
     ep = db.query(SessionEpreuve).filter(
         SessionEpreuve.stagiaire_id == id, SessionEpreuve.session_id == co.session_id,

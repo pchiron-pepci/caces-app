@@ -2735,6 +2735,28 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 - `_cextToAttr(r)` : `options_obtenues` ajouté au JSON transporté par `data-ext` — **attention, l'échappement réel de cette fonction est `.replace(/"/g, "&quot;")` seul** (posé au chantier `d206185`), PAS le double `&#39;`/`&quot;` que le script fourni supposait à tort (déjà halluciné 2 fois aujourd'hui sur des fonctions différentes) — corrigé avant application, comme d'habitude désormais.
 - Affichage sur la ligne : pastilles individuelles (une par code, séparateur `,`) juste après le badge catégorie dans `.cext-ident`, même style visuel que les options du CACES repris interne (fond `#e0f2f1`, texte `#00695c`).
 
+### ✅ Chantier terminé : indicateur "sous-traitance" sur le CACES externe (2026-07-05)
+
+**Fichiers :** `app/models/caces_obtenu.py`, `app/main.py` (migration), `app/routers/stagiaires.py`, `templates/stagiaires.html`, `static/js/stagiaires.js`.
+
+**Besoin :** distinguer un CACES externe passé "par notre intermédiaire" (sous-traitance auprès d'un OF partenaire habilité) d'un CACES externe apporté indépendamment par le candidat (ex. ancien employeur).
+
+**Modèle :** `CacesObtenu.sous_traitance` (`Boolean`, `nullable=False`, `default=False`) + migration startup idempotente `ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS sous_traitance BOOLEAN DEFAULT FALSE` dans `_MIGRATIONS` (`app/main.py`).
+
+**Back :** `sous_traitance: bool = Form(False)` ajouté aux signatures POST (`creer_caces_externe`) et PUT (`modifier_caces_externe`), écrit sur `CacesObtenu` aux deux endroits. Exposé dans le retour de `GET /{id}/reprises` via `"sous_traitance": bool(getattr(co, "sous_traitance", False))` — `getattr` avec défaut plutôt qu'accès direct, filet de sécurité si un vieux `CacesObtenu` en base avait été chargé avant la migration (non nécessaire en pratique car `nullable=False` + `default=False`, mais coûte rien).
+
+**Template :** case à cocher `#cext-soustraitance` dans un encadré bleu clair (`#e6f1fb`/`#0c447c`) sous le champ Options, avec texte explicatif complet (coché = passé par notre intermédiaire, décoché = obtenu indépendamment) — la nuance métier est écrite en toutes lettres pour éviter toute ambiguïté à la saisie.
+
+**Front :** case envoyée dans le FormData (`'true'`/`'false'`), réinitialisée à la création, pré-cochée en édition selon `r.sous_traitance`. Badge `S/T` (fond bleu clair, cohérent avec l'encadré de la modale) affiché sur la ligne juste après les pastilles d'options, uniquement si `r.sous_traitance` est vrai.
+
+**4 écarts corrigés par rapport au script fourni (diagnostiqués systématiquement avant exécution, comme pour tous les chantiers précédents de la journée) :**
+1. L'ancre du modèle (`justificatif_nom = Column(...)`) omettait le commentaire final `# nom original du fichier preuve` déjà présent sur la ligne réelle. Un remplacement basé sur l'ancre tronquée aurait inséré la nouvelle colonne AU MILIEU de la ligne existante, laissant le commentaire orphelin accolé à la mauvaise colonne (`sous_traitance     # nom original du fichier preuve` — sémantiquement faux). Corrigé en incluant la ligne complète dans l'ancre.
+2. Insertion dans `_MIGRATIONS` avec une indentation de 4 espaces au lieu des 8 espaces utilisés par toutes les entrées existantes de la liste — sans conséquence sur la validité Python (whitespace libre dans un littéral de liste) mais incohérent visuellement ; corrigé pour respecter la convention du fichier.
+3. L'ancre du retour d'historique supposait `"organisme_externe": co.organisme_externe,` collée juste après `"options_obtenues"` — en réalité 3 autres clés s'intercalent (`date_obtention`, `date_echeance`, `ancien_numero`) ET la ligne réelle a un suffixe `or ""` absent de l'ancre fournie. Le `.replace()` du script n'avait PAS d'assertion sur ce point précis (contrairement aux autres étapes) → aurait échoué SILENCIEUSEMENT, laissant `sous_traitance` absent de l'API malgré un script "réussi" en apparence. Corrigé avec l'ancre réelle exacte.
+4. `_cextToAttr` : 4e occurrence du même piège d'échappement halluciné (`&#39;`+`&quot;` au lieu du simple `&quot;` réellement en place depuis le chantier `d206185`).
+
+**Constat méthodologique :** ce chantier est le premier où le script fourni contenait des étapes `s.replace()` SANS assertion de comptage (contrairement à tous les chantiers précédents qui utilisaient systématiquement `assert s.count(old) == 1`). Un remplacement non asserté qui ne matche pas échoue silencieusement — risque plus insidieux qu'un `AssertionError` qui arrête tout net. Réflexe retenu : ajouter un `print("label:", s.count(old))` sur CHAQUE remplacement avant l'écriture finale, assertion ou non dans le script d'origine.
+
 ---
 
 ## Sauvegarde base de données

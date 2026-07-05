@@ -68,6 +68,7 @@ Base.metadata.create_all(bind=engine)
 # ─────────────────────────────────────────────────────────────────────────────
 def _run_startup_migrations():
     _MIGRATIONS = [
+        "ALTER TABLE caces_obtenus ADD COLUMN IF NOT EXISTS sous_traitance BOOLEAN DEFAULT FALSE",
         # document_officiel
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS date_validite TIMESTAMP",
         "ALTER TABLE document_officiel ADD COLUMN IF NOT EXISTS numero_certificat VARCHAR(100)",
