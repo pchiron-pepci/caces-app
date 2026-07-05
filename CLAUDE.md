@@ -2908,6 +2908,23 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Détail cosmétique relevé, non corrigé (inerte, pas un bug) :** `table-layout:fixed` est déclaré sur un sélecteur qui a par ailleurs `display:block` — cette propriété n'a d'effet que sur un élément affiché en `display:table` (ou apparenté). Sur cet élément passé en `block`, elle est silencieusement ignorée par le navigateur. Aucune conséquence fonctionnelle (les autres contraintes `width`/`max-width` font le travail), mais à savoir si ce sélecteur repasse un jour en affichage tableau.
 
+### ✅ Chantier terminé : abandon du scroll horizontal au profit de cartes empilées, sur les 3 tableaux `.co-hscroll` (2026-07-05, commit 5c0ba6d)
+
+**Fichiers :** `static/js/stagiaires.js` (`_sectionCaces`, `renderCartesEmises`, `chargerCacesCarteStag`), `templates/stagiaires.html` (CSS).
+
+**Changement de stratégie :** le scroll horizontal posé sur 3 commits (`5d0b1b4`, `ad677eb`, `7668894`) est remplacé par un empilement en cartes (comme `.repr-row`/`.cext-row` avant lui) — plus de geste de scroll requis sur mobile, tout le contenu est visible verticalement.
+
+**⚠️ Risque de régression détecté et corrigé AVANT de committer :** le script initial ne convertissait QUE `_sectionCaces` (classes `csec-*` + CSS dédiée) mais désactivait `.co-hscroll` **globalement** (`overflow-x:visible !important` sans scoping). Comme `renderCartesEmises` et `chargerCacesCarteStag` (détail d'une carte, popup au clic ▶) utilisent aussi `.co-hscroll` sans avoir reçu de classes de repli, cette désactivation globale aurait **supprimé leur protection existante sans rien pour la remplacer** — leurs colonnes à largeur fixe seraient revenues à un rendu cassé sur mobile, annulant silencieusement 2 des 3 chantiers précédents. Signalé à l'utilisateur avant application ; décision prise d'étendre le même traitement aux 2 tableaux restants plutôt que de scoper la règle CSS à `_sectionCaces` seul.
+
+**Extension réalisée (au-delà du script fourni) :**
+- `renderCartesEmises` (5 colonnes : toggle ▶, N° Carte, Famille, Émission, Statut) → classes `carte-head-row`/`carte-row`/`carte-toggle`/`carte-num`/`carte-fam`/`carte-em`/`carte-sta`.
+- `chargerCacesCarteStag` (7 colonnes : Cat., Libellé, Options, N°, Obtention, Échéance, Testeur) → classes `cdet-head-row`/`cdet-row`/`cdet-cat`/`cdet-lib`/`cdet-opt`/`cdet-no`/`cdet-obt`/`cdet-ech`/`cdet-test`.
+- CSS : approche volontairement plus simple que celle de `_sectionCaces` (pas de groupement 2-3 lignes pixel-perfect imposé) — reset générique des largeurs fixes (`width:auto !important; min-width:0 !important`) + `flex-wrap:wrap` + préfixes `::before` sur les champs secondaires (`data-label`) pour garder le contexte visuel une fois les colonnes reflow. Suffisant pour éliminer tout débordement/coupure, sans viser la même polish visuelle que le tableau CACES (qui avait un design explicite fourni).
+
+**Ancre CSS mouvante (2e fois sur ce fichier le même jour) :** l'ancre `.toolbar-left`/`#search` fournie par le script ne correspondait plus au fichier réel — le chantier `c436859` (dates Th./Pr.) avait entretemps inséré `.sess-dates {...}` juste après `#search`, décalant la position de la accolade fermante `}` du bloc `@media`. Diagnostiqué par recherche de contenu (`grep`) avant application plutôt que blocage sur l'assertion — nouvelle ancre reconstruite sur le contenu réel (`.sess-dates {...}\n}`).
+
+**Bilan cumulé responsive stagiaires.html (2026-07-05, 6 chantiers) :** grille 2 colonnes cartes (`6240289`) → dates Th./Pr. sous la référence (`c436859`) → scroll horizontal 3 tableaux (`5d0b1b4`+`ad677eb`) → confinement scroll dans la carte (`7668894`) → confinement structurel table/tbody/tr (`a0c3a04`) → **abandon du scroll pour un empilement en cartes sur les 3 mêmes tableaux (`5c0ba6d`)**. Le scroll horizontal aura été une étape intermédiaire, pas la solution finale retenue.
+
 ---
 
 ## Sauvegarde base de données
