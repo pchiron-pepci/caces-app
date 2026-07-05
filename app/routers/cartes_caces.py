@@ -177,6 +177,7 @@ def get_familles(stagiaire_id: int, db: DBSession = Depends(get_db)):
     rows = db.query(CacesObtenu.famille).filter(
         CacesObtenu.stagiaire_id == stagiaire_id,
         CacesObtenu.statut == "valide",
+        CacesObtenu.organisme_externe.is_(None),
     ).distinct().all()
     return sorted([r[0] for r in rows])
 
@@ -188,7 +189,7 @@ def get_caces_valides(stagiaire_id: int, famille: str, db: DBSession = Depends(g
         raise HTTPException(status_code=404)
     cos = (
         db.query(CacesObtenu)
-        .filter(CacesObtenu.stagiaire_id == stagiaire_id, CacesObtenu.famille == famille, CacesObtenu.statut == "valide")
+        .filter(CacesObtenu.stagiaire_id == stagiaire_id, CacesObtenu.famille == famille, CacesObtenu.statut == "valide", CacesObtenu.organisme_externe.is_(None))
         .order_by(CacesObtenu.categorie)
         .all()
     )
@@ -240,6 +241,7 @@ def get_caces_carte(carte_id: int, db: DBSession = Depends(get_db)):
             CacesObtenu.stagiaire_id == carte.stagiaire_id,
             CacesObtenu.famille == carte.famille,
             CacesObtenu.statut == "valide",
+            CacesObtenu.organisme_externe.is_(None),
         )
         .order_by(CacesObtenu.categorie)
         .all()
@@ -349,7 +351,7 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
     # Fallback legacy : CACES® valides actuels
     cos = (
         db.query(CacesObtenu)
-        .filter(CacesObtenu.stagiaire_id == carte.stagiaire_id, CacesObtenu.famille == carte.famille, CacesObtenu.statut == "valide")
+        .filter(CacesObtenu.stagiaire_id == carte.stagiaire_id, CacesObtenu.famille == carte.famille, CacesObtenu.statut == "valide", CacesObtenu.organisme_externe.is_(None))
         .all()
     )
     t_map = _testeurs_map(cos, db)
@@ -373,7 +375,7 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
         raise HTTPException(status_code=400, detail="Photo manquante — impossible d'émettre la carte")
     cos = (
         db.query(CacesObtenu)
-        .filter(CacesObtenu.stagiaire_id == stagiaire_id, CacesObtenu.famille == famille, CacesObtenu.statut == "valide")
+        .filter(CacesObtenu.stagiaire_id == stagiaire_id, CacesObtenu.famille == famille, CacesObtenu.statut == "valide", CacesObtenu.organisme_externe.is_(None))
         .all()
     )
     if not cos:

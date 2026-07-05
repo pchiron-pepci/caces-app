@@ -2777,6 +2777,16 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Leçon reconduite :** avant d'appliquer un script front qui lit de nouveaux champs sur un objet de données, toujours vérifier que la route API qui ALIMENTE cet objet expose bien ces champs — un script peut être syntaxiquement irréprochable et fonctionnellement muet si la donnée n'arrive jamais jusqu'au front.
 
+### ✅ Chantier terminé : exclusion des CACES externes de l'émission de carte (2026-07-05)
+
+**Fichier :** `app/routers/cartes_caces.py`
+
+**Règle appliquée (cohérente avec la spec moteur déjà verrouillée, section "PROVENANCE") :** un CACES externe (`organisme_externe` renseigné, sous-traitance ou non) ne doit **jamais** apparaître sur une carte CACES® émise par NORYX — « on ne certifie pas ce qu'on n'a pas testé ». Filtre `CacesObtenu.organisme_externe.is_(None)` ajouté à 5 requêtes distinctes : `get_familles` (familles proposées à la sélection carte, ligne 180), `get_caces_valides` (tableau de sélection, ligne 192), 2 requêtes de fallback affichage carte déjà émise (lignes 244 et 354), et surtout **`emettre_carte`** (ligne 378 — la route qui fige réellement le snapshot `caces_json` à l'émission).
+
+**Bug du script fourni détecté et corrigé AVANT exécution :** l'ancre censée cibler `emettre_carte` (repérée "ligne 376" dans le commentaire du script) était en réalité un DOUBLON de l'ancre `get_caces_valides` — même texte de requête, aucune occurrence distincte dans le fichier réel (vérifié par recherche de toutes les occurrences du texte, une seule trouvée, à la ligne de `get_caces_valides`). Appliquer les 2 remplacements séquentiellement sur cette ancre dupliquée aurait fait échouer le 2e (texte déjà transformé par le 1er) — via un `AssertionError` bloquant, sans corruption du fichier, mais la vraie route `emettre_carte` (celle qui compte le plus : c'est elle qui grave le CACES sur la carte) serait restée NON PROTÉGÉE si l'erreur n'avait pas été relevée avant exécution. Localisée manuellement la vraie requête (`.filter(...).all()` sans `.order_by()`, lignes 374-378) et construit une ancre correcte et unique à cet emplacement.
+
+**Méthode de vérification qui a permis de l'attraper :** recherche de TOUTES les occurrences de chaque ancre (pas seulement `count() == 1` sur le fichier final, mais aussi les NUMÉROS DE LIGNE de chaque match) pour confirmer que les 5 ancres visent bien 5 emplacements distincts avant d'exécuter quoi que ce soit — pas seulement après échec.
+
 ---
 
 ## Sauvegarde base de données
