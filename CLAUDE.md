@@ -2630,6 +2630,12 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Logique :** rapprocher les actions de modification/suppression de l'identifiant du CACES qu'elles affectent, plutôt que de les regrouper avec l'action justificatif (nature différente). En responsive (`@media max-width:1023px`), `.repr-ident` passe en `justify-content:space-between` et `.repr-ident-btns` garde `margin-left:auto !important` — les boutons restent poussés à droite de la ligne numéro même en colonne empilée.
 
+### ✅ Chantier terminé : bouton "+ Ajouter" collé au titre des 3 rubriques d'historique (2026-07-05)
+
+**Fichier :** `static/js/stagiaires.js`
+
+**Correctif :** les 3 en-têtes de rubrique de la fiche stagiaire — "🪪 Historique CACES internes", et les 2 rubriques homologues externe/orphelines — utilisaient `justify-content:space-between`, poussant le bouton `+ Ajouter` tout à droite du bloc, loin du titre. Remplacé par `justify-content:flex-start;gap:12px` (au lieu de `gap:8px`) sur les 3 en-têtes identiques : le bouton colle désormais juste après le titre, avec un espacement légèrement agrandi pour la lisibilité.
+
 ---
 
 ## Sauvegarde base de données
