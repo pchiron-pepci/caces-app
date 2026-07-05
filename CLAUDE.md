@@ -2842,6 +2842,16 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 2. **Heredoc bash cassé** sur la première tentative (`unexpected EOF`) — script unique combinant 2 `cat > fichier << EOF` (HTML + JS) et 4 blocs `python3 - << PYEOF` dans une seule commande bash compound trop longue et trop riche en guillemets/apostrophes imbriqués. Contourné en écrivant les 2 fichiers neufs via l'outil `Write` (pas de heredoc) et les 4 modifications `main.py`/`base.html` via un script Python unique dans un fichier temporaire exécuté séparément — aucune perte de contenu, juste une exécution mieux compartimentée. Rien n'avait été écrit avant l'échec (vérifié via `git status` — bash valide la syntaxe du compound command AVANT d'exécuter quoi que ce soit).
 3. **Faux échec de vérification** : la commande de validation finale du script fourni utilisait `python -c "ast.parse(open(...).read())"` sans encodage — même piège `UnicodeDecodeError` (cp1252 Windows) déjà rencontré et documenté au chantier précédent. Corrigé préventivement cette fois en utilisant `io.open(..., encoding="utf-8")` dès le départ, sans attendre l'échec.
 
+### ✅ Chantier terminé : téléphone + email dans l'export Excel du registre CACES (2026-07-05, commit d0c1fab)
+
+**Fichier :** `app/routers/registre_caces.py`
+
+**Ajout :** 2 colonnes "Telephone" et "Email" dans l'export Excel, entre "Societe" et "Famille" — lues directement sur `Stagiaire.telephone`/`Stagiaire.email` (déjà chargé dans le dict `stagiaires` de `registre_caces()`, aucune requête supplémentaire). Champs ajoutés au JSON de la vue `GET /api/registre-caces` (rétrocompatible — le front `registre_caces.js` ignore simplement ces nouvelles clés qu'il ne consomme pas encore, aucune régression d'affichage écran).
+
+**3 ajustements mécaniques synchronisés (14 colonnes désormais au lieu de 12) :** liste `entetes` (+2 titres), tuple `ws.append([...])` (+2 valeurs à la même position), `largeurs` (+2 largeurs), et **décalage de l'index de la colonne colorée** (`cell_sta = ws.cell(..., column=11)` → `column=13`, puisque "Statut" est repoussé de la 11e à la 13e position). Vérifié par comptage : 14 en-têtes = 14 valeurs = 14 largeurs, colonne 13 = "Statut" (confirmé par position dans la liste `entetes`).
+
+**Répétition des mêmes écueils d'infrastructure** (3e fois consécutive sur ce type de script) : répertoire de travail erroné (`~/caces-app` au lieu de `~/caces-app/caces-app`) et vérification finale sans encodage UTF-8 — les deux anticipés et corrigés avant exécution, sans incident cette fois (contrairement au chantier `965554a` où le 2e problème avait cassé le heredoc bash). Cette fois le script Python était appliqué via un fichier temporaire écrit par `Write`, pas un heredoc bash direct — plus aucun risque de ce type depuis l'adoption systématique de cette méthode.
+
 ---
 
 ## Sauvegarde base de données
