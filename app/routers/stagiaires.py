@@ -884,6 +884,7 @@ async def creer_caces_externe(
     categorie: str = Form(...),
     date_echeance: str = Form(...),
     organisme: str = Form(...),
+    options: str = Form(""),
     pin: str = Form(...),
     fichier: UploadFile = File(None),
     db: Session = Depends(get_db),
@@ -942,6 +943,7 @@ async def creer_caces_externe(
         statut="valide",
         numero_ordre=None,
         organisme_externe=organisme.strip()[:200],
+        options_obtenues=(options.strip() or None),
         justificatif_cle=cle,
         justificatif_nom=nom_fichier,
     )
@@ -1030,6 +1032,7 @@ async def modifier_caces_externe(
     categorie: str = Form(...),
     date_echeance: str = Form(...),
     organisme: str = Form(...),
+    options: str = Form(""),
     pin: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -1074,6 +1077,7 @@ async def modifier_caces_externe(
     co.date_obtention = origine
     co.date_echeance = ech
     co.organisme_externe = organisme.strip()[:200]
+    co.options_obtenues = options.strip() or None
 
     ep = db.query(SessionEpreuve).filter(
         SessionEpreuve.stagiaire_id == id, SessionEpreuve.session_id == co.session_id,
@@ -1083,6 +1087,7 @@ async def modifier_caces_externe(
         ep.famille = famille
         ep.categorie = categorie
         ep.date = origine
+        ep.options_obtenues = options.strip() or None
     db.commit()
     return {"ok": True, "message": "CACES externe modifie"}
 

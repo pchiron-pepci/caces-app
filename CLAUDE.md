@@ -2719,6 +2719,22 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Bilan des 2 lignes (interne + externe) :** patron unifié, mêmes noms de classes logiques (`-ident`, `-dates`, `-actions`, `-ident-btns`, `-actions-btns`), seul le préfixe change (`repr-` vs `cext-`).
 
+### ✅ Chantier terminé : options sur le CACES externe (POST + PUT + affichage) (2026-07-05)
+
+**Fichiers :** `app/routers/stagiaires.py`, `templates/stagiaires.html`, `static/js/stagiaires.js`.
+
+**Besoin :** le CACES externe n'avait pas de champ options (PE/TEL), à la différence du CACES repris interne qui en a un depuis le module H2a.
+
+**Back :** `options: str = Form("")` ajouté aux signatures `creer_caces_externe` (POST) ET `modifier_caces_externe` (PUT). POST : `options_obtenues=(options.strip() or None)` à la création du `CacesObtenu`. PUT : `co.options_obtenues = options.strip() or None` + propagation sur la `SessionEpreuve` liée (`ep.options_obtenues`) — cohérent avec la mise à jour déjà faite pour famille/catégorie/date dans cette même route.
+
+**Template :** champ `#cext-options` (texte libre, ex. "PE,TEL") ajouté dans la modale `#modal-caces-externe`, juste après le champ échéance.
+
+**Front (`static/js/stagiaires.js`) :**
+- `FormData` : `fd.append('options', ...)` dans `confirmerCacesExterne`.
+- Reset création (`ouvrirModalCacesExterne`) et pré-remplissage édition (`ouvrirModalModifExterne`) du champ.
+- `_cextToAttr(r)` : `options_obtenues` ajouté au JSON transporté par `data-ext` — **attention, l'échappement réel de cette fonction est `.replace(/"/g, "&quot;")` seul** (posé au chantier `d206185`), PAS le double `&#39;`/`&quot;` que le script fourni supposait à tort (déjà halluciné 2 fois aujourd'hui sur des fonctions différentes) — corrigé avant application, comme d'habitude désormais.
+- Affichage sur la ligne : pastilles individuelles (une par code, séparateur `,`) juste après le badge catégorie dans `.cext-ident`, même style visuel que les options du CACES repris interne (fond `#e0f2f1`, texte `#00695c`).
+
 ---
 
 ## Sauvegarde base de données
