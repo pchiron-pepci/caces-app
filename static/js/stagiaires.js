@@ -353,9 +353,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const badgeLabel = STATUT_LABEL[s.statut] || s.statut;
 
             let dates = [];
-            if (s.date_theorie) dates.push('Th. ' + formatDate(s.date_theorie));
+            if (s.date_theorie) dates.push(formatDate(s.date_theorie));
             if (s.date_pratique_debut) {
-                let prat = 'Pr. ' + formatDate(s.date_pratique_debut);
+                let prat = formatDate(s.date_pratique_debut);
                 if (s.date_pratique_fin && s.date_pratique_fin !== s.date_pratique_debut) {
                     prat += ' → ' + formatDate(s.date_pratique_fin);
                 }
