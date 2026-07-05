@@ -2789,6 +2789,28 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 ---
 
+### ✅ Chantier créé : registre CACES à plat — backend (2026-07-05, commit ab7e9c4)
+
+**Fichiers :** `app/routers/registre_caces.py` (nouveau), `app/main.py` (2 lignes : import + `include_router`).
+
+**Objectif :** une vue à plat de TOUS les `CacesObtenu` (hors `statut='annule'`), destinée à une page de relance/complément (societe, échéances, nature d'obtention) — pas encore de front à ce stade, back seul livré.
+
+**Route `GET /api/registre-caces?seuil=6` :**
+- `_nature(co)` : 3 valeurs — `"otc"` (interne, y compris CACES repris puisqu'ils n'ont pas `organisme_externe`), `"st"` (externe + `sous_traitance=True`), `"ext"` (externe sans sous-traitance). Réutilise les 2 champs posés au chantier `4dae010`.
+- `_statut_echeance(ech, aujourdhui, seuil_mois)` : `"exp"` (échéance dépassée), `"ren"` (échéance dans les `seuil_mois` prochains mois, défaut 6), `"val"` (au-delà, ou `date_echeance` NULL — cas CACES repris legacy sans échéance connue).
+- Anti-N+1 : `stagiaires` et `sessions` préchargés en dict `{id: obj}` avant la boucle sur les `CacesObtenu`.
+- `numero` affiché : `ancien_numero` (reprise) sinon `numero_ordre` formaté sur 4 chiffres — même règle que partout ailleurs dans l'app (H5).
+- Tri par défaut : échéance croissante, `None` (pas d'échéance) relégué en fin de liste.
+- Réponse : `{seuil, aujourdhui, total, societes[], familles[], lignes[]}` — `societes`/`familles` = listes dédupliquées triées, destinées à peupler des menus déroulants côté front (à construire).
+
+**Chemin d'exécution de la commande fourni corrigé avant lancement :** le script démarrait par `cd ~/caces-app` (racine parente contenant aussi des scripts Python hors-repo comme `calcul_fiche_reco.py`) au lieu de `~/caces-app/caces-app` (le vrai dépôt git, utilisé partout ailleurs dans cette session) — `git pull`, la création du fichier et les 2 `sed` sur `app/main.py` auraient tous visé le mauvais répertoire ou échoué. Corrigé en repartant du bon répertoire avant exécution.
+
+**Faux échec de vérification (pas un bug réel) :** l'étape `python -c "ast.parse(open('app/main.py').read())"` du script fourni a levé `UnicodeDecodeError` — `open()` sans `encoding=` utilise `cp1252` par défaut sous Windows, incompatible avec les accents/emojis UTF-8 du fichier. Les 2 `sed -i` (edits réels) avaient déjà réussi et étaient corrects (`sed` traite les octets, insensible à l'encodage tant que motif/remplacement sont ASCII) — seule la vérification Python était en cause. Revérifié avec `io.open(..., encoding="utf-8")`, confirmé valide, poursuite manuelle du commit/push interrompu par le `&&` cassé.
+
+**RESTE À FAIRE :** aucun front pour l'instant — page dédiée à construire (tableau + filtres société/famille/nature + surlignage selon `statut_echeance`).
+
+---
+
 ## Sauvegarde base de données
 
 **Filet de securite principal = Render natif** (dashboard base `caces-db` > Recovery) : Point-in-Time Recovery (3 jours Hobby, 7 jours Pro) + Export logique (retention 7j) + bouton "Restore database" integre. C'est la reference d'exploitation, rien a coder.
