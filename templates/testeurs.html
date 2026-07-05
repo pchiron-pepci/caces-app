@@ -70,7 +70,7 @@
             </div>
             <div style="display:flex; gap:6px; flex-shrink:0;">
                 {% if user_role != 'terrain' %}
-                <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                <button style="background:none;border:none;padding:4px 6px;font-size:18px;line-height:1;cursor:pointer;"
                     data-action="editer"
                     data-id="{{ t.id }}"
                     data-nom="{{ t.nom }}"
@@ -98,7 +98,7 @@
                     data-autorisation-nom="{{ t.autorisation_conduite_nom or '' }}"
                     data-etat="{{ t.etat or 'actif' }}"
                     data-utilisateur-id="{{ t.utilisateur_id or '' }}">✏️</button>
-                <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;"
+                <button style="background:none;border:none;padding:4px 6px;font-size:18px;line-height:1;cursor:pointer;"
                     data-action="archiver"
                     data-id="{{ t.id }}"
                     data-nom="{{ t.nom }} {{ t.prenom }}">🗑️</button>
