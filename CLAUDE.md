@@ -2819,7 +2819,21 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Sidebar :** entrée "📇 Registre CACES®" insérée juste après "🏆 CACES® Obtenus", cohérent avec l'ordre logique (CACES obtenus → registre transversal → cartes).
 
-**⚠️ Fonctionnalité non câblée à surveiller :** le bouton "⬇️ Exporter Excel" (`registre_caces.js:exporter()`) construit une URL vers `/api/registre-caces/export?...` — **cette route n'existe pas côté serveur**. Cliquer sur le bouton renverra un 404. Aucun export Excel n'a été demandé/livré dans ce chantier ni le précédent ; à construire si le besoin se confirme (probablement `openpyxl` ou équivalent, filtré selon les mêmes paramètres que l'affichage).
+**⚠️ Fonctionnalité non câblée à surveiller (RÉSOLU — voir chantier export ci-dessous) :** le bouton "⬇️ Exporter Excel" (`registre_caces.js:exporter()`) construit une URL vers `/api/registre-caces/export?...` — cette route n'existait pas côté serveur au moment de ce chantier front. Cliquer sur le bouton renvoyait un 404.
+
+### ✅ Chantier terminé : export Excel `/api/registre-caces/export` (2026-07-05, commit 14b80b1)
+
+**Fichiers :** `requirements.txt` (+`openpyxl==3.1.5`), `app/routers/registre_caces.py` (nouvelle route + imports `datetime`, `BytesIO`, `StreamingResponse`).
+
+**Comble le trou signalé au chantier précédent :** le bouton front appelait déjà cette URL, qui renvoyait 404. Route ajoutée avec la même signature de filtres que le JS envoie (`seuil`, `soc`, `fam`, `nat`, `txt`, `exp`/`ren`/`val` en `"0"`/`"1"`).
+
+**Fonctionnement :** appelle directement `registre_caces(seuil=seuil, db=db)` (fonction Python, pas une requête HTTP) pour récupérer le jeu complet, puis réapplique EXACTEMENT la même logique de filtrage que `registre_caces.js:render()` (société, famille, nature, texte, cases à cocher statut d'échéance) — les 2 implémentations (JS et Python) doivent rester synchronisées si les règles de filtrage changent un jour, sinon export et affichage écran divergeront silencieusement.
+
+**Mise en forme du fichier Excel (`openpyxl`) :** en-tête fond anthracite `#2D2D2D`/texte blanc gras (charte NORYX), colonne Statut colorée par ligne (rouge `#A32D2D` expiré / ambre `#854F0B` à renouveler / vert `#3B6D11` valide — mêmes couleurs que les pastilles à l'écran), largeurs de colonnes fixées, `freeze_panes="A2"` (ligne d'en-tête figée au défilement), ligne de pied italique grise résumant les filtres actifs + horodatage + nombre de lignes exportées (traçabilité de ce qui a été extrait).
+
+**Téléchargement :** `StreamingResponse` avec `Content-Disposition: attachment`, nom de fichier horodaté `registre_caces_{YYYYMMDD_HHMM}.xlsx` — cohérent avec le pattern déjà en place pour l'export ZIP session (`export-zip`).
+
+**`openpyxl` installé et vérifié importable en environnement de dev** (`pip install openpyxl==3.1.5`, sans le flag `--break-system-packages` du script fourni — inutile sur ce Python Windows non « externally-managed », omis sans incident).
 
 **Cette fois, aucun bug d'ancre côté front** (fichiers neufs, pas de remplacement dans du texte existant) — les seuls écueils rencontrés étaient d'infrastructure (répertoire de travail, heredoc bash imbriqué cassé sur les guillemets multiples de `registre_caces.js`, faux échec d'encodage Windows sur la vérification) — voir plus bas.
 
