@@ -2676,6 +2676,19 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Piège d'espace parasite rencontré une 4e fois et anticipé cette fois** (diagnostic `s.count()` par ancre AVANT application, comme établi au chantier précédent) : l'ancre `repr-dates` fournie se terminait par `+ '</span>' ` (espace final) au lieu de `+ '</span>'` réel — `.rstrip()` appliqué systématiquement sur les 2 ancres avant de lancer le remplacement, zéro échec à l'exécution.
 
+### ✅ Chantier terminé : responsive de la ligne "CACES externes" (2026-07-05)
+
+**Fichiers :** `static/js/stagiaires.js` (`renderCacesExternes`), `templates/stagiaires.html` (CSS).
+
+**Même traitement que la ligne "Historique repris"** (chantier `45b5b98`) mais appliqué à la rubrique CACES externes (`🌐 organisme`). Structure en 3 sous-groupes explicites via `<span>` :
+- `.cext-ident` : famille, catégorie, bouton 🗑️ Supprimer (`.cext-suppr`, collé à droite du groupe via `margin-left:auto`) ;
+- `.cext-dates` : date d'obtention → date d'échéance ;
+- `.cext-orga` (🌐 nom de l'organisme externe) et `.cext-justif` (lien/avertissement justificatif) : deux groupes séparés, pas fusionnés.
+
+**Responsive (`@media max-width:1023px`) :** `.cext-row` passe en `flex-direction:column`, `.cext-ident` reste sur une ligne interne (`justify-content:space-between`, le bouton supprimer file à droite), `.cext-orga` et `.cext-justif` s'empilent chacun en pleine largeur (`margin-left:0 !important; width:100%`).
+
+**Différence avec "Historique repris" :** pas de duplication de boutons desktop/mobile ici — un seul bouton 🗑️ Supprimer, déjà placé dans `.cext-ident` (pas besoin de le faire remonter en mobile, il y est déjà). Anchor JS validé d'un seul bloc au diagnostic préalable (`s.count(old) == 1` directement, aucun défaut d'espace cette fois).
+
 ---
 
 ## Sauvegarde base de données

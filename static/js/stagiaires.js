@@ -642,14 +642,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 var justif = r.a_justificatif
                     ? '<a href="/stagiaires/' + stagiaireId + '/caces-externe/' + r.id + '/justificatif" target="_blank" style="color:#00695c;font-size:11px;text-decoration:underline;" title="Voir le justificatif">📎 ' + (r.justificatif_nom || 'Justificatif') + '</a>'
                     : '<span style="color:#e65100;font-size:11px;" title="Aucun justificatif joint">⚠️ Sans justificatif</span>';
-                return '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #eef0f6;font-size:12px;flex-wrap:wrap;">'
-                    + '<span style="font-weight:700;color:#00695c;">🌐 ' + r.organisme_externe + '</span>'
-                    + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
-                    + '<span style="background:#00695c;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
-                    + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
-                    + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
-                    + justif
-                    + '<button type="button" data-action="suppr-caces-externe" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
+                return '<div class="cext-row" style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid #eef0f6;font-size:12px;flex-wrap:wrap;">'
+                    + '<span class="cext-ident" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+                        + '<span style="font-weight:700;color:#555;">' + r.famille + '</span>'
+                        + '<span style="background:#00695c;color:#fff;border-radius:4px;padding:0 5px;font-weight:800;">' + r.categorie + '</span>'
+                        + '<button type="button" data-action="suppr-caces-externe" data-id="' + r.id + '" data-stag="' + stagiaireId + '" class="cext-suppr" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
+                    + '</span>'
+                    + '<span class="cext-dates" style="display:flex;align-items:center;gap:8px;">'
+                        + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
+                        + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
+                    + '</span>'
+                    + '<span class="cext-orga" style="font-weight:700;color:#00695c;">🌐 ' + r.organisme_externe + '</span>'
+                    + '<span class="cext-justif" style="margin-left:auto;">' + justif + '</span>'
                     + '</div>';
             }).join('');
         }
