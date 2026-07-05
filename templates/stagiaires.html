@@ -76,7 +76,7 @@
             </tr>
             <tr id="hist-{{ s.id }}" class="hist-row" style="display:none;">
                 <td colspan="7" style="padding:0; background:#f8f9ff; border-top:none;">
-                    <div id="hist-body-{{ s.id }}" style="padding:12px 20px;"></div>
+                    <div id="hist-body-{{ s.id }}" class="hist-body" style="padding:12px 20px;"></div>
                 </td>
             </tr>
             {% endfor %}
@@ -222,7 +222,9 @@
     .table-stagiaires tbody tr:not(.hist-row) td { border: none; }
     /* hist-row : pleine largeur sous la carte, pas de flex */
     .table-stagiaires tbody tr.hist-row { display: block; }
-    .table-stagiaires tbody tr.hist-row td { display: block; width: 100%; box-sizing: border-box; border: none; }
+    .table-stagiaires tbody tr.hist-row td { display: block; width: 100%; box-sizing: border-box; border: none; overflow: hidden; }
+    .hist-body { padding: 10px 8px !important; }
+    .table-stagiaires tbody tr.hist-row .co-hscroll { max-width: 100%; }
     /* Ligne 1 : photo */
     .table-stagiaires td.stag-photo {
         order: 1; flex: 0 0 50px;

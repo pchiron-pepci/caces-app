@@ -838,7 +838,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     + '<div style="flex:1;font-size:10px;color:#666;">' + (co.testeur_nom || '—') + '</div>'
                     + '</div>';
             }).join('');
-            el.innerHTML = '<div style="border:1px solid #dde3f0;border-radius:6px;overflow:hidden;">' + header + rows + '</div>';
+            el.innerHTML = '<div class="co-hscroll"><div style="border:1px solid #dde3f0;border-radius:6px;overflow:hidden;">' + header + rows + '</div></div>';
         } catch (_) {
             el.innerHTML = '<span style="color:#c62828;font-size:12px;">Erreur de chargement.</span>';
         }
