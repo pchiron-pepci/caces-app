@@ -61,6 +61,8 @@ def registre_caces(seuil: int = 6, db: DBSession = Depends(get_db)):
             "nom": s.nom if s else "?",
             "prenom": s.prenom if s else "?",
             "societe": (s.employeur if s else "") or "",
+            "telephone": (s.telephone if s else "") or "",
+            "email": (s.email if s else "") or "",
             "famille": co.famille,
             "categorie": co.categorie,
             "options_obtenues": co.options_obtenues or "",
@@ -132,7 +134,7 @@ def registre_caces_export(
     ws = wb.active
     ws.title = "Registre CACES"
 
-    entetes = ["Nom", "Prenom", "Societe", "Famille", "Categorie", "Options",
+    entetes = ["Nom", "Prenom", "Societe", "Telephone", "Email", "Famille", "Categorie", "Options",
                "Nature", "N", "Obtention", "Echeance", "Statut", "Session"]
     ws.append(entetes)
 
@@ -152,16 +154,17 @@ def registre_caces_export(
     couleur_sta = {"exp": "A32D2D", "ren": "854F0B", "val": "3B6D11"}
     for l in lignes:
         ws.append([
-            l["nom"], l["prenom"], l["societe"], l["famille"], l["categorie"],
+            l["nom"], l["prenom"], l["societe"], l["telephone"], l["email"],
+            l["famille"], l["categorie"],
             l["options_obtenues"], _LIB_NAT.get(l["nature"], l["nature"]),
             l["numero"], _fr(l["date_obtention"]), _fr(l["date_echeance"]),
             _LIB_STA.get(l["statut_echeance"], l["statut_echeance"]),
             l["session_reference"],
         ])
-        cell_sta = ws.cell(row=ws.max_row, column=11)
+        cell_sta = ws.cell(row=ws.max_row, column=13)
         cell_sta.font = Font(color=couleur_sta.get(l["statut_echeance"], "000000"), bold=True)
 
-    largeurs = [16, 14, 22, 9, 9, 18, 18, 10, 12, 12, 15, 16]
+    largeurs = [16, 14, 22, 15, 26, 9, 9, 18, 18, 10, 12, 12, 15, 16]
     for i, w in enumerate(largeurs, start=1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
 
