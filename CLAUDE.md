@@ -2876,6 +2876,18 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Vérifié avant application :** un seul appel à `dates.join(' · ')` dans tout le fichier (confirmé par diagnostic), donc l'ajout de la classe ne pouvait toucher que ce span précis. Ancre CSS d'insertion (`.toolbar-left`/`#search`) confirmée être bien à l'intérieur du même bloc `@media (max-width:1023px)` que le reste des règles responsive de cette page (vérifié par recherche de l'accolade `@media` englobante avant application, pas juste par correspondance textuelle).
 
+### ✅ Chantier terminé : scroll horizontal des tableaux à colonnes fixes en responsive (2026-07-05, commits 5d0b1b4 + ad677eb)
+
+**Fichiers :** `static/js/stagiaires.js` (`_sectionCaces`, `renderCartesEmises`), `templates/stagiaires.html` (classe `.co-hscroll`).
+
+**Bug :** `_sectionCaces` (tableaux "CACES de l'apprenant") et `renderCartesEmises` (tableau "Cartes émises") utilisent tous deux une structure à colonnes de largeur FIXE (`width:60px`, `flex:1`, `width:84px`...) — sur petit écran, ces colonnes se faisaient couper/chevaucher au lieu de s'adapter, aucun mécanisme de secours.
+
+**Correctif :** classe `.co-hscroll` (CSS : `overflow-x:auto` + `-webkit-overflow-scrolling:touch` pour l'inertie tactile iOS, `> div { min-width:460px }` pour empêcher l'écrasement des colonnes) ajoutée en `<style>` dans `stagiaires.html`, juste avant le premier `@media`. Chaque tableau enveloppé d'une `<div class="co-hscroll">` supplémentaire autour de son conteneur `border:1px solid #c8d8f0...` existant — un scroll horizontal apparaît sous 460px de large plutôt qu'un rendu cassé.
+
+**Portée volontairement limitée à 2 fonctions sur 4 candidates :** `renderCacesExternes` et `renderOrphelinesReprises` (les 2 rubriques "Historique de reprise") utilisent un patron structurellement DIFFÉRENT — des lignes `flex` avec `flex-wrap:wrap` (le même patron `.repr-ident`/`.repr-dates`/`.repr-actions` posé aux chantiers `45b5b98`/`a787633`) qui se replient déjà nativement sur petit écran, sans colonnes de largeur fixe à préserver. Les envelopper dans `.co-hscroll` n'aurait eu aucun effet utile (pas de contenu à faire défiler, puisque rien n'est tronqué) — vérifié par lecture du code des 2 fonctions avant de les exclure, pas par supposition.
+
+**Piège de comptage anticipé :** le motif d'ouverture `border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;` suivi de `display:flex;...background:#f0f2f7;...` existe à l'identique dans `_sectionCaces` ET `renderCartesEmises` (2 occurrences) — mais avec un détail différenciant (`gap:0;` présent uniquement dans `renderCartesEmises`), ce qui a permis de construire 2 ancres distinctes sans ambiguïté. Idem pour la fermeture (`html += '</div></div>';\n return html;\n }`, 2 occurrences avant traitement) — vérifié par recherche des NUMÉROS DE LIGNE de chaque occurrence pour confirmer qu'elles appartiennent bien à 2 fonctions séparées (443→488 pour `_sectionCaces`, 759→802 pour `renderCartesEmises`) avant tout remplacement séquentiel (`.replace(..., 1)` ne traite que la première occurrence trouvée — l'ordre d'apparition dans le fichier doit être connu à l'avance, pas supposé).
+
 ---
 
 ## Sauvegarde base de données
