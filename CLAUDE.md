@@ -2556,6 +2556,20 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Mise à jour synchronisée :** le `CacesObtenu` ET la `SessionEpreuve` associée (même session sentinelle, retrouvée via l'ANCIENNE catégorie avant écrasement — `ancienne_cat` capturée avant modif) sont mis à jour ensemble, pour rester cohérents avec le pattern déjà en place à la création (H2a) et à la suppression (CHANTIER 5).
 
+### ✅ Chantier terminé : UI — bouton modifier sur les lignes CACES repris (module H5) (2026-07-05)
+
+**Fichier :** `static/js/stagiaires.js` (`renderReprisesHistorique`, `ouvrirModalReprise`, dispatcher de clic, `confirmerAjoutReprise`).
+
+**Objectif :** brancher la route `PUT /{id}/reprises/caces/{co_id}` (chantier précédent) sur un bouton ✏️ dans le tableau "🪪 Historique repris", en réutilisant la modale d'ajout existante en mode édition.
+
+**Bug bloquant corrigé pendant l'application (script fourni cassé) :** le script proposait d'encoder le payload JSON du CACES repris dans un attribut `data-reprise` délimité par des guillemets simples ÉCHAPPÉS (`\'`). Après les 3 couches d'échappement traversées (Python triple-quoted string → JS → attribut HTML), les backslashes disparaissaient et le JS généré contenait deux littéraux de chaîne adjacents sans opérateur (`data-reprise='' + _frReprToAttr(r) + ''...`) → `SyntaxError` au chargement de la page (vérifié en appliquant le remplacement sur une copie jetable du fichier et en inspectant les octets réels produits, pas seulement en relisant le script source). **Corrigé** en repassant l'attribut en guillemets DOUBLES (convention déjà utilisée par tous les autres `data-*` de ce bouton, ex. `data-stag="..."`) et en échappant les guillemets doubles du JSON en `&quot;` dans `_frReprToAttr` (au lieu d'échapper les apostrophes en `&#39;`). Le navigateur décode automatiquement `&quot;` → `"` à la lecture via `getAttribute`, donc `JSON.parse` fonctionne sans décodage manuel.
+
+**2e bug corrigé (logique, pas de syntaxe) :** le script ne réinitialisait jamais le titre de la modale après un passage en mode édition — `#modal-reprise h3` serait resté bloqué sur "Modifier un CACES repris" pour tous les ajouts suivants. Corrigé en ajoutant la réinitialisation du titre (`🪪 Ajouter un CACES repris`) directement dans `ouvrirModalReprise()`, qui s'exécute AVANT le passage en mode édition (`ouvrirModalModifReprise` appelle `ouvrirModalReprise` puis écrase le titre ensuite) — donc aucun conflit d'ordre.
+
+**Fonctionnement :** `_repriseEditId` (variable module-level) distingue ajout (`null`) d'édition (id du CACES). `ouvrirModalModifReprise(stagiaireId, r)` pré-remplit tous les champs (famille déclenche le `change` pour charger les catégories, puis sélection différée de 350 ms le temps du fetch catégories). `confirmerAjoutReprise()` bascule `POST .../reprises` (ajout) vs `PUT .../reprises/caces/{id}` (édition) selon `_repriseEditId`.
+
+**Règle à retenir (échappements multi-couches) :** ne jamais faire confiance à un script d'échappement imbriqué (Python string → JS string → attribut HTML) sans vérifier les OCTETS RÉELS produits dans le fichier cible — la relecture du script source ne suffit pas, les backslashes peuvent disparaître silencieusement à travers les couches. Préférer systématiquement les guillemets doubles pour les attributs HTML contenant du JSON (échappement `&quot;` uniquement), cohérent avec la convention déjà en place dans ce fichier.
+
 ---
 
 ## Sauvegarde base de données

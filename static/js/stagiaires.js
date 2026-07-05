@@ -105,6 +105,10 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (action === 'suppr-caces-externe') { supprimerCacesExterne(btn.dataset.id, btn.dataset.stag); return; }
         else if (action === 'fermer-modal-reprise') { document.getElementById('modal-reprise').style.display = 'none'; return; }
         else if (action === 'confirmer-ajout-reprise') { confirmerAjoutReprise(); return; }
+        else if (action === 'modifier-reprise-caces') {
+            try { var _r = JSON.parse(btn.getAttribute('data-reprise')); ouvrirModalModifReprise(btn.dataset.stag, _r); } catch (e) {}
+            return;
+        }
         else if (action === 'ajouter-orpheline') { ouvrirModalOrpheline(btn.dataset.id); return; }
         else if (action === 'fermer-modal-orpheline') { document.getElementById('modal-orpheline').style.display = 'none'; return; }
         else if (action === 'orph-type-theorie') { orphChoisirType('theorie'); return; }
@@ -463,6 +467,34 @@ document.addEventListener('DOMContentLoaded', function () {
             + '</div>';
     }
 
+    function _frReprToAttr(r) {
+        return JSON.stringify({
+            id: r.id, famille: r.famille, categorie: r.categorie,
+            options_obtenues: r.options_obtenues || "", date_obtention: r.date_obtention,
+            date_echeance: r.date_echeance, ancien_numero: r.ancien_numero || ""
+        }).replace(/"/g, "&quot;");
+    }
+
+    function ouvrirModalModifReprise(stagiaireId, r) {
+        ouvrirModalReprise(stagiaireId);
+        _repriseEditId = r.id;
+        var titre = document.querySelector('#modal-reprise h3');
+        if (titre) titre.textContent = 'Modifier un CACES repris';
+        var sFam = document.getElementById('rep-famille');
+        sFam.value = r.famille;
+        // Declenche le chargement des categories pour la famille, puis pre-selectionne.
+        var evt = new Event('change', { bubbles: true });
+        sFam.dispatchEvent(evt);
+        setTimeout(function () {
+            var sCat = document.getElementById('rep-categorie');
+            if (sCat) { sCat.disabled = false; sCat.value = r.categorie; }
+            document.getElementById('rep-options').value = r.options_obtenues || '';
+            document.getElementById('rep-date-obtention').value = r.date_obtention || '';
+            document.getElementById('rep-date-echeance').value = r.date_echeance || '';
+            document.getElementById('rep-ancien-numero').value = r.ancien_numero || '';
+        }, 350);
+    }
+
     function renderReprisesHistorique(reprises, stagiaireId) {
         var lignes = '';
         var reprisesLocales = (reprises || []).filter(function(r) { return !r.organisme_externe; });
@@ -481,7 +513,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     + '<span style="color:#1a237e;font-weight:700;">' + _fmtDateRep(r.date_obtention) + '</span>'
                     + '<span style="color:#2e7d32;font-weight:700;">→ ' + _fmtDateRep(r.date_echeance) + '</span>'
                     + (r.testeur_nom ? '<span style="color:#888;font-size:11px;">' + r.testeur_nom + '</span>' : '')
-                    + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
+                    + '<button type="button" data-action="modifier-reprise-caces" data-reprise="' + _frReprToAttr(r) + '" data-stag="' + stagiaireId + '" style="margin-left:auto;background:#ede7f6;color:#5e35b1;border:1px solid #d1c4e9;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Modifier">✏️</button>'
+                    + '<button type="button" data-action="ouvrir-suppr-reprise" data-type="caces" data-id="' + r.id + '" data-stag="' + stagiaireId + '" style="background:#fce4e4;color:#c62828;border:1px solid #f8bbd0;border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;" title="Supprimer">🗑️</button>'
                     + '</div>';
             }).join('');
         }
@@ -677,8 +710,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Reprise d'historique ───────────────────────────────────────────────
     var _repriseStagiaireId = null;
 
+    var _repriseEditId = null;
+
     function ouvrirModalReprise(stagiaireId) {
         _repriseStagiaireId = stagiaireId;
+        _repriseEditId = null;
+        var _repTitre = document.querySelector('#modal-reprise h3');
+        if (_repTitre) _repTitre.textContent = '🪪 Ajouter un CACES repris';
         document.getElementById('rep-categorie').innerHTML = '<option value="">— Choisir une famille d\'abord —</option>';
         document.getElementById('rep-categorie').disabled = true;
         document.getElementById('rep-options').value = '';
@@ -1005,8 +1043,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!payload.famille || !payload.categorie || !payload.date_obtention || !payload.date_echeance || !payload.ancien_numero || !payload.testeur_id || !payload.pin) {
             err.textContent = 'Tous les champs (sauf options) sont obligatoires.'; err.style.display = 'block'; return;
         }
-        fetch('/stagiaires/' + _repriseStagiaireId + '/reprises', {
-            method: 'POST',
+        var _url = '/stagiaires/' + _repriseStagiaireId + '/reprises';
+        var _method = 'POST';
+        if (_repriseEditId) { _url = '/stagiaires/' + _repriseStagiaireId + '/reprises/caces/' + _repriseEditId; _method = 'PUT'; }
+        fetch(_url, {
+            method: _method,
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
             body: JSON.stringify(payload),
