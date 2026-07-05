@@ -2888,6 +2888,16 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Piège de comptage anticipé :** le motif d'ouverture `border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;` suivi de `display:flex;...background:#f0f2f7;...` existe à l'identique dans `_sectionCaces` ET `renderCartesEmises` (2 occurrences) — mais avec un détail différenciant (`gap:0;` présent uniquement dans `renderCartesEmises`), ce qui a permis de construire 2 ancres distinctes sans ambiguïté. Idem pour la fermeture (`html += '</div></div>';\n return html;\n }`, 2 occurrences avant traitement) — vérifié par recherche des NUMÉROS DE LIGNE de chaque occurrence pour confirmer qu'elles appartiennent bien à 2 fonctions séparées (443→488 pour `_sectionCaces`, 759→802 pour `renderCartesEmises`) avant tout remplacement séquentiel (`.replace(..., 1)` ne traite que la première occurrence trouvée — l'ordre d'apparition dans le fichier doit être connu à l'avance, pas supposé).
 
+### ✅ Chantier terminé : confinement du scroll horizontal dans la carte stagiaire (2026-07-05, commit 7668894)
+
+**Fichiers :** `static/js/stagiaires.js` (détail carte CACES, `chargerCacesCarteStag` ~l.841), `templates/stagiaires.html` (`.hist-body`, règles `.hist-row`).
+
+**3e tableau à colonnes fixes trouvé et enveloppé :** le détail dépliable d'une carte CACES émise (liste des CACES de cette carte, affichée en cliquant ▶ sur une ligne de `renderCartesEmises`) avait la MÊME structure à colonnes fixes que les 2 tableaux traités au chantier précédent (`_sectionCaces`, `renderCartesEmises`) — mais générée par une fonction distincte (`chargerCacesCarteStag`, chargement asynchrone au clic), donc non couverte par les 2 premiers correctifs. Enveloppé dans `.co-hscroll` de la même façon.
+
+**Confinement structurel additionnel (au-delà du simple wrapping) :** même avec les 3 tableaux enveloppés, le scroll horizontal pouvait déborder du cadre visuel de la carte stagiaire elle-même sur très petit écran, car `#hist-body-{{ s.id }}` (le conteneur qui héberge tout l'historique déplié) avait un padding fixe `12px 20px` (non responsive) et `tr.hist-row td` n'avait pas de `overflow:hidden` pour contenir un enfant plus large que lui. Corrigé par 3 règles ajoutées dans `@media (max-width:1023px)` : `overflow:hidden` sur `tr.hist-row td` (empêche tout débordement visuel du contenu enfant hors de la cellule), `.hist-body { padding:10px 8px !important }` (réduit l'espace perdu sur les bords, maximise la largeur utile pour le contenu et son scroll), `.table-stagiaires tbody tr.hist-row .co-hscroll { max-width:100% }` (borne explicitement chaque zone de scroll à la largeur du conteneur parent, jamais au-delà).
+
+**Bilan du chantier `.co-hscroll` (3 commits cumulés : `5d0b1b4`, `ad677eb`, `7668894`) :** 3 tableaux à colonnes fixes protégés (`_sectionCaces`, `renderCartesEmises`, détail carte), scroll confiné dans le cadre visuel de la carte stagiaire sur mobile. `renderCacesExternes`/`renderOrphelinesReprises` restent exclus (patron flex-wrap déjà adéquat, cf. chantier précédent).
+
 ---
 
 ## Sauvegarde base de données
