@@ -2809,6 +2809,25 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **RESTE À FAIRE :** aucun front pour l'instant — page dédiée à construire (tableau + filtres société/famille/nature + surlignage selon `statut_echeance`).
 
+### ✅ Chantier terminé : page `/registre-caces` — front complet (2026-07-05, commit 965554a)
+
+**Fichiers :** `templates/registre_caces.html` (nouveau), `static/js/registre_caces.js` (nouveau, IIFE), `app/main.py` (route page + `_GESTION_PATHS` + garde `_verifier_role`), `templates/base.html` (entrée sidebar).
+
+**Page :** tableau triable (colonnes cliquables `data-action="rc-sort"`), 3 filtres (société/famille/nature via `<select>` peuplés dynamiquement depuis la réponse API), recherche texte, 3 cases à cocher pour le statut d'échéance (Expiré/À renouveler/Valide — "Valide" décoché par défaut, les 2 autres cochés : la page s'ouvre centrée sur ce qui nécessite une action), 3 boutons de seuil de relance (3/6/12 mois) qui redéclenchent un fetch avec le nouveau seuil. Tout en CSP-safe (`data-action`, aucun `onclick` inline), cohérent avec la règle du projet.
+
+**Accès :** page ajoutée à `_GESTION_PATHS` (comme `/statistiques`, `/caces-obtenus`...) → réservée admin/utilisateur, terrain redirigé. Garde symétrique sur l'API : `path.startswith("/api/registre-caces")` ajouté à la même condition dans `_verifier_role` — sans ce garde, un terrain authentifié aurait pu appeler l'API JSON directement même en étant bloqué sur la page HTML (incohérence déjà vue et corrigée sur d'autres routes du projet).
+
+**Sidebar :** entrée "📇 Registre CACES®" insérée juste après "🏆 CACES® Obtenus", cohérent avec l'ordre logique (CACES obtenus → registre transversal → cartes).
+
+**⚠️ Fonctionnalité non câblée à surveiller :** le bouton "⬇️ Exporter Excel" (`registre_caces.js:exporter()`) construit une URL vers `/api/registre-caces/export?...` — **cette route n'existe pas côté serveur**. Cliquer sur le bouton renverra un 404. Aucun export Excel n'a été demandé/livré dans ce chantier ni le précédent ; à construire si le besoin se confirme (probablement `openpyxl` ou équivalent, filtré selon les mêmes paramètres que l'affichage).
+
+**Cette fois, aucun bug d'ancre côté front** (fichiers neufs, pas de remplacement dans du texte existant) — les seuls écueils rencontrés étaient d'infrastructure (répertoire de travail, heredoc bash imbriqué cassé sur les guillemets multiples de `registre_caces.js`, faux échec d'encodage Windows sur la vérification) — voir plus bas.
+
+**Écueils d'infrastructure rencontrés et contournés :**
+1. **Répertoire de travail erroné** (2e fois consécutive sur ce type de script) : la commande démarrait par `cd ~/caces-app` au lieu de `~/caces-app/caces-app`. Corrigé avant exécution.
+2. **Heredoc bash cassé** sur la première tentative (`unexpected EOF`) — script unique combinant 2 `cat > fichier << EOF` (HTML + JS) et 4 blocs `python3 - << PYEOF` dans une seule commande bash compound trop longue et trop riche en guillemets/apostrophes imbriqués. Contourné en écrivant les 2 fichiers neufs via l'outil `Write` (pas de heredoc) et les 4 modifications `main.py`/`base.html` via un script Python unique dans un fichier temporaire exécuté séparément — aucune perte de contenu, juste une exécution mieux compartimentée. Rien n'avait été écrit avant l'échec (vérifié via `git status` — bash valide la syntaxe du compound command AVANT d'exécuter quoi que ce soit).
+3. **Faux échec de vérification** : la commande de validation finale du script fourni utilisait `python -c "ast.parse(open(...).read())"` sans encodage — même piège `UnicodeDecodeError` (cp1252 Windows) déjà rencontré et documenté au chantier précédent. Corrigé préventivement cette fois en utilisant `io.open(..., encoding="utf-8")` dès le départ, sans attendre l'échec.
+
 ---
 
 ## Sauvegarde base de données
