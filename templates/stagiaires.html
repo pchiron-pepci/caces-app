@@ -293,6 +293,68 @@
         padding-top: 3px;
         border-top: 1px dashed #eee;
     }
+
+    /* Tableaux CACES en cartes empilees : plus de scroll horizontal en responsive */
+    .co-hscroll { overflow-x: visible !important; }
+    .co-hscroll > div { min-width: 0 !important; }
+    .csec-head-row { display: none !important; }
+    .csec-row {
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        row-gap: 4px;
+        padding: 8px 10px !important;
+    }
+    .csec-row .csec-no,
+    .csec-row .csec-fam,
+    .csec-row .csec-cat { width: auto !important; min-width: 0 !important; margin-right: 8px; }
+    .csec-row .csec-opt { width: auto !important; min-width: 0 !important; margin-left: auto; }
+    .csec-row .csec-der {
+        flex: 0 0 100% !important; width: 100% !important; max-width: 100% !important;
+        white-space: normal !important; overflow: visible !important;
+        padding: 2px 0 0 0 !important;
+    }
+    .csec-row .csec-obt,
+    .csec-row .csec-ech {
+        width: auto !important; min-width: 0 !important; flex: 1 1 45%;
+    }
+    .csec-row .csec-der::before,
+    .csec-row .csec-obt::before,
+    .csec-row .csec-ech::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 9px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.04em; color: #99a; margin-bottom: 1px;
+    }
+
+    /* Tableau "Cartes emises" : meme logique (plus de scroll horizontal, wrap naturel) */
+    .carte-head-row { display: none !important; }
+    .carte-row { flex-wrap: wrap !important; row-gap: 4px; padding: 8px 10px !important; }
+    .carte-row > div { width: auto !important; min-width: 0 !important; flex: 0 0 auto !important; }
+    .carte-row .carte-num { flex: 1 1 100px !important; }
+    .carte-row .carte-fam,
+    .carte-row .carte-em { margin-right: 10px; }
+    .carte-row .carte-fam::before,
+    .carte-row .carte-em::before {
+        content: attr(data-label);
+        font-size: 9px; font-weight: 700; text-transform: uppercase;
+        color: #99a; margin-right: 3px;
+    }
+
+    /* Detail d'une carte (CACES inclus) : meme logique */
+    .cdet-head-row { display: none !important; }
+    .cdet-row { flex-wrap: wrap !important; row-gap: 4px; padding: 6px 8px !important; }
+    .cdet-row > div { width: auto !important; min-width: 0 !important; flex: 0 0 auto !important; }
+    .cdet-row .cdet-lib { flex: 1 1 100% !important; padding: 2px 0; }
+    .cdet-row .cdet-obt,
+    .cdet-row .cdet-ech,
+    .cdet-row .cdet-test { margin-right: 10px; margin-top: 3px; }
+    .cdet-row .cdet-obt::before,
+    .cdet-row .cdet-ech::before,
+    .cdet-row .cdet-test::before {
+        content: attr(data-label);
+        font-size: 9px; font-weight: 700; text-transform: uppercase;
+        color: #99a; margin-right: 3px;
+    }
 }
 </style>
 <div id="reprise-data" data-familles='{{ familles_reprise | tojson }}' style="display:none;"></div>

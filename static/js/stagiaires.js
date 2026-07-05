@@ -446,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var html = '<div style="margin-top:14px;">';
         html += '<div style="font-size:11px;font-weight:700;color:#5566aa;letter-spacing:0.4px;margin-bottom:6px;padding-top:8px;border-top:2px solid #e6e8ef;">' + titre + '</div>';
         html += '<div class="co-hscroll"><div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
-        html += '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;">';
+        html += '<div class="csec-head-row" style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;">';
         html += '<div style="width:60px;min-width:60px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">N°</div>';
         html += '<div style="width:70px;min-width:70px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Fam.</div>';
         html += '<div style="width:52px;min-width:52px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Cat.</div>';
@@ -474,14 +474,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? '<span style="color:#00695c;font-weight:700;">' + (co.organisme_externe || '—') + '</span>'
                 : (co.testeur_nom || '<span style="color:#ccc;">—</span>');
 
-            html += '<div style="display:flex;align-items:center;padding:8px 12px;background:' + bg + ';border-bottom:1px solid #eef0f6;">';
-            html += '<div style="width:60px;min-width:60px;"><span style="background:' + noBg + ';color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;font-family:monospace;">' + noFormate + '</span></div>';
-            html += '<div style="width:70px;min-width:70px;font-size:12px;font-weight:700;color:#555;">' + co.famille + '</div>';
-            html += '<div style="width:52px;min-width:52px;"><span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;">' + co.categorie + '</span></div>';
-            html += '<div style="width:80px;min-width:80px;display:flex;flex-wrap:wrap;gap:2px;align-items:center;">' + options + '</div>';
-            html += '<div style="flex:1;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">' + derCol + '</div>';
-            html += '<div style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#1a237e;">' + formatDate(co.date_obtention) + '</div>';
-            html += '<div style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#2e7d32;">' + formatDate(co.date_echeance) + '</div>';
+            html += '<div class="csec-row" style="display:flex;align-items:center;padding:8px 12px;background:' + bg + ';border-bottom:1px solid #eef0f6;">';
+            html += '<div class="csec-no" style="width:60px;min-width:60px;"><span style="background:' + noBg + ';color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;font-family:monospace;">' + noFormate + '</span></div>';
+            html += '<div class="csec-fam" style="width:70px;min-width:70px;font-size:12px;font-weight:700;color:#555;">' + co.famille + '</div>';
+            html += '<div class="csec-cat" style="width:52px;min-width:52px;"><span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;">' + co.categorie + '</span></div>';
+            html += '<div class="csec-opt" style="width:80px;min-width:80px;display:flex;flex-wrap:wrap;gap:2px;align-items:center;">' + options + '</div>';
+            html += '<div class="csec-der" data-label="' + derColLabel + '" style="flex:1;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">' + derCol + '</div>';
+            html += '<div class="csec-obt" data-label="Obtention" style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#1a237e;">' + formatDate(co.date_obtention) + '</div>';
+            html += '<div class="csec-ech" data-label="Échéance" style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#2e7d32;">' + formatDate(co.date_echeance) + '</div>';
             html += '</div>';
         });
 
@@ -767,7 +767,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         html += '<div class="co-hscroll"><div style="border:1px solid #c8d8f0;border-radius:10px;overflow:hidden;">';
-        html += '<div style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;gap:0;">';
+        html += '<div class="carte-head-row" style="display:flex;align-items:center;background:#f0f2f7;border-bottom:1px solid #dde3f0;padding:7px 12px;gap:0;">';
         html += '<div style="width:28px;min-width:28px;"></div>';
         html += '<div style="flex:1;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">N° Carte</div>';
         html += '<div style="width:70px;min-width:70px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Famille</div>';
@@ -784,15 +784,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const opacity = emise ? '' : 'opacity:0.65;';
 
             html += '<div style="border-bottom:1px solid #eef0f6;' + opacity + '">';
-            html += '<div style="display:flex;align-items:center;padding:8px 12px;background:' + bg + ';gap:0;">';
-            html += '<div style="width:28px;min-width:28px;text-align:center;">'
+            html += '<div class="carte-row" style="display:flex;align-items:center;padding:8px 12px;background:' + bg + ';gap:0;">';
+            html += '<div class="carte-toggle" style="width:28px;min-width:28px;text-align:center;">'
                 + '<button data-action="toggle-caces-carte" data-carte-id="' + c.id + '" data-loaded="0" '
                 + 'style="background:none;border:none;cursor:pointer;font-size:11px;color:#2d2d2d;padding:1px 4px;line-height:1;" '
                 + 'title="Voir les CACES® de cette carte">▶</button></div>';
-            html += '<div style="flex:1;"><span style="font-family:monospace;font-size:12px;font-weight:700;color:#1a237e;">' + c.numero_carte + '</span></div>';
-            html += '<div style="width:70px;min-width:70px;font-size:12px;font-weight:700;color:#555;">' + c.famille + '</div>';
-            html += '<div style="width:90px;min-width:90px;font-size:12px;color:#666;">' + formatDate(c.date_generation) + '</div>';
-            html += '<div style="width:76px;min-width:76px;">' + badgeHtml + '</div>';
+            html += '<div class="carte-num" style="flex:1;"><span style="font-family:monospace;font-size:12px;font-weight:700;color:#1a237e;">' + c.numero_carte + '</span></div>';
+            html += '<div class="carte-fam" data-label="Famille" style="width:70px;min-width:70px;font-size:12px;font-weight:700;color:#555;">' + c.famille + '</div>';
+            html += '<div class="carte-em" data-label="Émission" style="width:90px;min-width:90px;font-size:12px;color:#666;">' + formatDate(c.date_generation) + '</div>';
+            html += '<div class="carte-sta" style="width:76px;min-width:76px;">' + badgeHtml + '</div>';
             html += '</div>';
             html += '<div id="stag-caces-detail-' + c.id + '" style="display:none;padding:10px 12px 14px 40px;background:#f7f8fc;border-top:1px solid #e8eef8;">'
                 + '<span style="color:#888;font-size:12px;">Chargement…</span></div>';
@@ -812,7 +812,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 el.innerHTML = '<span style="color:#888;font-size:12px;font-style:italic;">Aucun CACES® valide actuel pour cette famille.</span>';
                 return;
             }
-            const header = '<div style="display:flex;align-items:center;gap:0;padding:4px 8px;border-bottom:1px solid #dde3f0;background:#eef0f8;">'
+            const header = '<div class="cdet-head-row" style="display:flex;align-items:center;gap:0;padding:4px 8px;border-bottom:1px solid #dde3f0;background:#eef0f8;">'
                 + '<div style="width:50px;min-width:50px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;">Cat.</div>'
                 + '<div style="flex:1;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;">Libellé</div>'
                 + '<div style="width:52px;min-width:52px;font-size:9px;color:#888;font-weight:700;text-transform:uppercase;">Options</div>'
@@ -828,14 +828,14 @@ document.addEventListener('DOMContentLoaded', function () {
                       }).join(' ')
                     : '<span style="color:#ccc;">—</span>';
                 const noFormate = co.ancien_numero ? co.ancien_numero : (co.numero_ordre ? String(co.numero_ordre).padStart(4, '0') : '—');
-                return '<div style="display:flex;align-items:center;gap:0;padding:5px 8px;border-bottom:1px solid #e8eef0;">'
-                    + '<div style="width:50px;min-width:50px;"><span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;">' + co.categorie + '</span></div>'
-                    + '<div style="flex:1;font-size:11px;color:#444;">' + (co.categorie_libelle || '—') + '</div>'
-                    + '<div style="width:52px;min-width:52px;display:flex;flex-wrap:wrap;gap:2px;">' + opts + '</div>'
-                    + '<div style="width:54px;min-width:54px;"><span style="background:#e8eaf6;font-family:monospace;font-size:11px;padding:1px 5px;border-radius:3px;">' + noFormate + '</span></div>'
-                    + '<div style="width:80px;min-width:80px;font-size:11px;color:#444;">' + formatDate(co.date_obtention) + '</div>'
-                    + '<div style="width:80px;min-width:80px;font-size:11px;font-weight:700;color:#2e7d32;">' + formatDate(co.date_echeance) + '</div>'
-                    + '<div style="flex:1;font-size:10px;color:#666;">' + (co.testeur_nom || '—') + '</div>'
+                return '<div class="cdet-row" style="display:flex;align-items:center;gap:0;padding:5px 8px;border-bottom:1px solid #e8eef0;">'
+                    + '<div class="cdet-cat" style="width:50px;min-width:50px;"><span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;">' + co.categorie + '</span></div>'
+                    + '<div class="cdet-lib" style="flex:1;font-size:11px;color:#444;">' + (co.categorie_libelle || '—') + '</div>'
+                    + '<div class="cdet-opt" style="width:52px;min-width:52px;display:flex;flex-wrap:wrap;gap:2px;">' + opts + '</div>'
+                    + '<div class="cdet-no" style="width:54px;min-width:54px;"><span style="background:#e8eaf6;font-family:monospace;font-size:11px;padding:1px 5px;border-radius:3px;">' + noFormate + '</span></div>'
+                    + '<div class="cdet-obt" data-label="Obtention" style="width:80px;min-width:80px;font-size:11px;color:#444;">' + formatDate(co.date_obtention) + '</div>'
+                    + '<div class="cdet-ech" data-label="Échéance" style="width:80px;min-width:80px;font-size:11px;font-weight:700;color:#2e7d32;">' + formatDate(co.date_echeance) + '</div>'
+                    + '<div class="cdet-test" data-label="Testeur" style="flex:1;font-size:10px;color:#666;">' + (co.testeur_nom || '—') + '</div>'
                     + '</div>';
             }).join('');
             el.innerHTML = '<div class="co-hscroll"><div style="border:1px solid #dde3f0;border-radius:6px;overflow:hidden;">' + header + rows + '</div></div>';
