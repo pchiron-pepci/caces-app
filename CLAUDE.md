@@ -2852,6 +2852,18 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Répétition des mêmes écueils d'infrastructure** (3e fois consécutive sur ce type de script) : répertoire de travail erroné (`~/caces-app` au lieu de `~/caces-app/caces-app`) et vérification finale sans encodage UTF-8 — les deux anticipés et corrigés avant exécution, sans incident cette fois (contrairement au chantier `965554a` où le 2e problème avait cassé le heredoc bash). Cette fois le script Python était appliqué via un fichier temporaire écrit par `Write`, pas un heredoc bash direct — plus aucun risque de ce type depuis l'adoption systématique de cette méthode.
 
+### ✅ Chantier terminé : cartes mobiles stagiaires en grille 2 colonnes (2026-07-05, commit 6240289)
+
+**Fichier :** `templates/stagiaires.html`
+
+**Bug :** en mode carte responsive (`<1024px`), les 4 cellules `td[data-label]` (Né(e) le, Employeur, Email, Tél.) utilisaient `flex: 1 1 130px` — chaque cellule s'étirait pour occuper l'espace disponible plutôt que de former une grille régulière, donnant un rendu visuellement désorganisé (largeurs incohérentes selon le contenu).
+
+**Correctif :** `flex: 0 0 50%` (au lieu de `1 1 130px`) + `box-sizing: border-box` + `max-width: 50%` — force exactement 2 cellules par ligne, sans étirement (le `0` en `flex-grow` empêche toute cellule de prendre plus de place que sa moitié, quel que soit son contenu). Padding vertical légèrement augmenté (5px → 6px) pour compenser visuellement la mise en grille.
+
+**Séparateur visuel ajouté :** `border-left` sur `.stag-employeur` et `.stag-tel` (les 2 cellules de la colonne de droite dans l'ordre du DOM : Né(e)le|Employeur puis Email|Tél.) — liseré vertical `#e8f0f8` cohérent avec le `border-top` déjà en place entre les lignes, complète visuellement le quadrillage 2×2.
+
+**Vérifié avant application :** `flex-wrap: wrap` déjà présent sur `.table-stagiaires tbody tr:not(.hist-row)` (posé lors d'un chantier antérieur) — condition nécessaire pour que `flex: 0 0 50%` produise effectivement 2 colonnes plutôt qu'un simple rétrécissement sur une seule ligne.
+
 ---
 
 ## Sauvegarde base de données
