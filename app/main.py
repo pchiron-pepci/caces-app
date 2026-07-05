@@ -48,6 +48,7 @@ from sqlalchemy import text, or_
 from app.routers import stagiaires, testeurs, admin, sessions, upload, auth, statistiques
 from app.routers import non_conformites
 from app.routers import caces_obtenus
+from app.routers import registre_caces
 from app.routers import cartes_caces
 from app.routers import dev
 from app.routers import consentements
@@ -781,6 +782,7 @@ app.include_router(auth.router)
 app.include_router(statistiques.router)
 app.include_router(non_conformites.router)
 app.include_router(caces_obtenus.router)
+app.include_router(registre_caces.router)
 app.include_router(cartes_caces.router)
 app.include_router(fiches_reco.router)
 app.include_router(dev.router)
