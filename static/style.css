@@ -748,5 +748,5 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
 .carto-card-actions button { flex: 1; }
 
 /* Bouton Sauvegarder testeur - ardoise chaud */
-#btn-sauvegarder { background: #6b6a65 !important; color: #fff !important; }
-#btn-sauvegarder:hover { background: #2d2d2d !important; }
+#btn-sauvegarder { background: #e3e2df !important; color: #2d2d2d !important; border: 1px solid #d4d3cf !important; }
+#btn-sauvegarder:hover { background: #d4d3cf !important; }
