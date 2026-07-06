@@ -762,3 +762,13 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
   }
   .corps-testeur > div:first-child { border-top: none; padding-top: 0 !important; }
 }
+
+/* Carte testeur - date expiration sous le CACES en responsive */
+@media (max-width: 1023px) {
+  .carte-ligne-exp .carte-exp {
+    display: block;
+    margin-left: 0 !important;
+    margin-top: 2px;
+    width: fit-content;
+  }
+}
