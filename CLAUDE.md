@@ -2926,6 +2926,14 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Bilan cumulé responsive stagiaires.html (2026-07-05, 6 chantiers) :** grille 2 colonnes cartes (`6240289`) → dates Th./Pr. sous la référence (`c436859`) → scroll horizontal 3 tableaux (`5d0b1b4`+`ad677eb`) → confinement scroll dans la carte (`7668894`) → confinement structurel table/tbody/tr (`a0c3a04`) → **abandon du scroll pour un empilement en cartes sur les 3 mêmes tableaux (`5c0ba6d`)**. Le scroll horizontal aura été une étape intermédiaire, pas la solution finale retenue.
 
+### ✅ Chantier terminé : lien de consultation manquant sur l'attestation prévention + uniformisation icônes documents testeur (2026-07-06, commit 7bfb441)
+
+**Fichiers :** `templates/testeurs.html`, `static/js/testeurs.js`.
+
+**Bug fonctionnel corrigé (pas seulement cosmétique) :** parmi les 4 blocs documents de la modale testeur (attestation prévention, visite médicale, évaluation, autorisation de conduite), 3 avaient déjà un lien 📥 "Consulter" (`modal-visite-dl`, `modal-eval-dl`, `modal-autorisation-dl`) — mais **l'attestation prévention n'en avait jamais eu** : upload et suppression étaient possibles, mais aucun moyen de consulter le fichier déjà enregistré. Ajouté `<a id="modal-prev-dl">` sur le modèle des 3 autres, branché dans `editer()` (`static/js/testeurs.js`) : `href` construit dynamiquement (`/api/upload/attestation-prevention/${id}/download`, route confirmée existante dans `app/routers/upload.py`), affiché/masqué en miroir de `btn-suppr-prev` selon `hasPrev`.
+
+**Uniformisation visuelle des 4 blocs :** tous les boutons "Consulter" (📥), "Supprimer" (🗑️) et "Uploader" (📤) passent en icône seule sans fond (`background:none;border:none`), cohérent avec le style déjà adopté sur les autres boutons de cette page (crayon/corbeille de ligne, boutons "Nouveau"). Avant : mélange de classes `btn btn-secondary`/`btn btn-danger` avec texte, tailles de police (11px) et paddings incohérents entre les 4 blocs.
+
 ---
 
 ## Sauvegarde base de données
