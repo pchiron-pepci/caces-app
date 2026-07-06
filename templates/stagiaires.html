@@ -356,6 +356,10 @@
         color: #99a; margin-right: 3px;
     }
 }
+/* Contenu depliage stagiaire borne a gauche en desktop */
+@media (min-width: 1024px) {
+    .hist-body > * { max-width: 800px; }
+}
 </style>
 <div id="reprise-data" data-familles='{{ familles_reprise | tojson }}' style="display:none;"></div>
 
