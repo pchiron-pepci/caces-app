@@ -2939,6 +2939,22 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 ---
 
+### ✅ Chantier terminé : date d'expiration optionnelle sur une carte testeur, à l'upload (2026-07-06, commit f8a2149)
+
+**Fichiers :** `templates/testeurs.html` (modale "Ajouter une carte"), `app/routers/upload.py` (route `POST /cartes-testeur/{testeur_id}`), `static/js/testeurs.js`.
+
+**Suite directe du chantier précédent** (`carte_testeur.date_expiration`, commit `f8c520a`) : le champ existe désormais en base, cette étape permet de le RENSEIGNER à l'upload et de le RENVOYER dans la liste des cartes (`GET .../cartes-testeur/{id}` → `"date_expiration": c.date_expiration.isoformat() if ... else None`).
+
+**Back :** `date_expiration: str = Form(None)` ajouté à la signature (import `Form` ajouté à `from fastapi import ...`, absent jusque-là dans ce fichier). Parsing défensif : `date.fromisoformat(date_expiration)` dans un `try/except ValueError` → `None` si le format est invalide plutôt qu'un 500. Champ optionnel de bout en bout (aucun contrôle bloquant si absent).
+
+**Bug fonctionnel corrigé, hors script fourni :** le script ne livrait que le champ HTML + la route backend — **le JS ne lisait ni n'envoyait jamais le nouveau champ** (`fd.append('file', ...)` seul dans le `FormData`, rien pour `date_expiration`). Sans ce correctif, la date saisie dans la modale ne serait JAMAIS arrivée au serveur : le paramètre `Form(None)` aurait systématiquement reçu `None`, la fonctionnalité aurait semblé exister visuellement tout en étant inopérante. Corrigé en ajoutant `fd.append('date_expiration', expiration)` (si renseigné) dans le handler `ajouter-carte-confirm`.
+
+**2e point d'ouverture de la modale corrigé également :** la modale "Ajouter une carte" a DEUX déclencheurs distincts dans ce fichier — `btn-modal-ajouter-carte` (bouton dans la modale d'édition testeur) et `data-action="carte-ajouter"` (délégation globale, indentation différente donc non détecté par un simple remplacement textuel sur l'autre bloc). Les deux réinitialisent maintenant `ajouter-carte-expiration` à l'ouverture, pour éviter qu'une date saisie puis annulée ne persiste visuellement à la prochaine ouverture via l'autre chemin.
+
+**Leçon reconduite (déjà notée au chantier `a16de65`) :** un script qui ajoute un champ de formulaire + une route backend n'est complet que si le lien JS entre les deux (lecture du champ, inclusion dans la requête) est aussi vérifié — la présence d'un champ HTML ne garantit jamais qu'il est effectivement transmis.
+
+---
+
 ## Sauvegarde base de données
 
 **Filet de securite principal = Render natif** (dashboard base `caces-db` > Recovery) : Point-in-Time Recovery (3 jours Hobby, 7 jours Pro) + Export logique (retention 7j) + bouton "Restore database" integre. C'est la reference d'exploitation, rien a coder.
