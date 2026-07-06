@@ -704,6 +704,10 @@ def _verifier_role(path: str, method: str, role: str):
             r"^/stagiaires/\d+/(consultation|photo-upload|photo)$", base
         ):
             return False
+        # Terrain en lecture seule sur ses documents : ecriture /api/upload/* interdite
+        # (upload, suppression, modification date d'expiration). GET (/download) reste autorise.
+        if method != "GET" and base.startswith("/api/upload"):
+            return False
     return True
 
 class AccessMiddleware(BaseHTTPMiddleware):
