@@ -2955,6 +2955,20 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 ---
 
+### ✅ Chantier terminé : affichage + édition inline de la date d'expiration carte testeur (2026-07-06, commit 2182186)
+
+**Fichiers :** `app/routers/upload.py` (route `PATCH /carte/{carte_id}/date-expiration`), `templates/testeurs.html` (carte dépliée + template caché des cartes), `static/js/testeurs.js` (rendu modale + édition inline).
+
+**Suite du chantier `f8a2149`** (date d'expiration à l'upload) : cette étape ajoute l'AFFICHAGE (pastille colorée sur la carte dépliée, seuils 90/180 jours restants → rouge/orange/vert) et l'ÉDITION après coup, sans passer par un ré-upload — clic sur la pastille dans la modale → `<input type="date">` inline → `PATCH` au blur/Enter, sans PIN (donnée jugée non critique, à la différence de la plupart des autres actions de cette page).
+
+**Route `PATCH /carte/{carte_id}/date-expiration` :** corps JSON `{date_expiration: "AAAA-MM-JJ" | ""}` via `pydantic.BaseModel` (1er usage de Pydantic dans `upload.py` — import ajouté). Chaîne vide → `NULL` en base (permet d'effacer une date déjà saisie). Date invalide → 400 avec message clair, jamais un 500.
+
+**⚠️ 3e chantier consécutif où le script fourni contenait un bug fonctionnel réel, cette fois un TYPE D'ERREUR NOUVEAU (pas une ancre décalée ni un JS non câblé, mais une garde de script trop générique) :** l'étape 2/4 (ajout de `data-expiration` sur le `<div data-carte-id="...">` caché, qui alimente `c.dataset.expiration` en JS) contenait une garde `if "data-expiration=" in t: skip`. Cette recherche de sous-chaîne a matché un attribut **totalement différent, déjà présent ailleurs dans le même fichier** (`data-expiration="{{ t.date_expiration_habilitation or '' }}"`, ligne 84 — l'expiration de l'HABILITATION du testeur, un champ sans rapport) → le script a conclu à tort que son propre ajout était "déjà présent" et a sauté l'écriture réelle. Résultat si non détecté : toute la fonctionnalité d'affichage/édition de la partie 4 (qui lit `c.dataset.expiration`) aurait semblé fonctionner (aucune erreur JS, aucun crash) tout en affichant systématiquement "exp. —" pour toutes les cartes, quelle que soit la donnée réelle en base — un bug **silencieux**, sans message d'erreur nulle part, détecté uniquement par relecture manuelle du fichier après exécution (`grep 'data-carte-id="{{ c.id }}"'` a montré l'attribut manquant). Corrigé en appliquant le remplacement directement via l'outil `Edit`.
+
+**Généralisation de la leçon :** les gardes anti-double-application de type `if "<motif>" in fichier: skip` sont un piège dès que le motif recherché n'est pas EXCLUSIVEMENT lié au changement visé — toujours préférer une recherche du texte APRÈS remplacement complet (`new_string in fichier`) plutôt qu'un fragment générique (`"data-expiration=" in fichier`) qui peut matcher un homonyme ailleurs dans un fichier de 900+ lignes. Vérifier le résultat final par `grep` sur l'anchor MODIFIÉE (pas seulement sur l'absence d'erreur) reste la seule garantie fiable.
+
+---
+
 ## Sauvegarde base de données
 
 **Filet de securite principal = Render natif** (dashboard base `caces-db` > Recovery) : Point-in-Time Recovery (3 jours Hobby, 7 jours Pro) + Export logique (retention 7j) + bouton "Restore database" integre. C'est la reference d'exploitation, rien a coder.
