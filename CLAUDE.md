@@ -252,6 +252,9 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `migrate_r483_r487_r490.py` | Swap libellés R483↔R487, déplace cats A/B vers R483, crée cats 1/2/3 sous R487, supprime cats parasites R483 et R490/2-3/OPT-TEL | à exécuter |
 | `migrate_cloture_terrain.py` | `ALTER TABLE sessions ADD COLUMN date_cloture_terrain TIMESTAMP` | **à exécuter sur prod (Render Shell)** |
 | `migrate_justificatif_theorie.py` | `ALTER TABLE resultats_theorie ADD COLUMN justificatif_pdf TEXT` + `justificatif_nom VARCHAR(255)` | **à exécuter sur prod (Render Shell)** |
+| `migrate_carte_testeur_expiration.py` | `ALTER TABLE carte_testeur ADD COLUMN IF NOT EXISTS date_expiration DATE` (2026-07-06, commit `f8c520a`) | **à exécuter sur prod (Render Shell)** — voir note ci-dessous |
+
+**⚠️ Incohérence de pattern à noter (`carte_testeur.date_expiration`, 2026-07-06) :** cette table a déjà une migration `cle VARCHAR(500)` intégrée dans `_MIGRATIONS` (`app/main.py`), qui s'exécute automatiquement à chaque démarrage de l'app — pattern majoritaire pour les colonnes récentes du projet. `date_expiration` a été demandée comme script **autonome** à lancer manuellement, rompant avec cette convention pour cette même table. Conséquence concrète : contrairement à `cle`, cette nouvelle colonne **ne sera pas créée automatiquement en prod** au prochain déploiement — `python migrate_carte_testeur_expiration.py` doit être lancé explicitement sur Render Shell, sans quoi tout code lisant/écrivant `CarteTesteur.date_expiration` échouera en base (colonne inexistante).
 
 Ordre d'exécution sur prod (toutes migrations puis init_options) :
 ```
