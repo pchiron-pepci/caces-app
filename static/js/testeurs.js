@@ -361,9 +361,9 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
             row.style.cssText = 'display:flex; align-items:center; gap:8px;';
             row.innerHTML =
                 '<span style="font-size:12px;color:#2e7d32;">' + c.dataset.famille + ' : ' + c.dataset.nom + '</span>' +
-                '<a href="/api/upload/carte/' + c.dataset.carteId + '/download" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;" target="_blank">📥</a>' +
-                '<button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"' +
-                ' data-action="carte-modal-supprimer" data-carte-id="' + c.dataset.carteId + '">🗑️</button>';
+                '<a href="/api/upload/carte/' + c.dataset.carteId + '/download" style="text-decoration:none;padding:2px 4px;font-size:18px;line-height:1;" title="Consulter" target="_blank">📥</a>' +
+                '<button style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;"' +
+                ' data-action="carte-modal-supprimer" data-carte-id="' + c.dataset.carteId + '" title="Supprimer">🗑️</button>';
             cartesList.appendChild(row);
         });
     }
