@@ -750,3 +750,15 @@ html.sidebar-expanded .nav-item.active { padding-left: 17px; border-left: 3px so
 /* Bouton Sauvegarder testeur - ardoise chaud */
 #btn-sauvegarder { background: #e3e2df !important; color: #2d2d2d !important; border: 1px solid #d4d3cf !important; }
 #btn-sauvegarder:hover { background: #d4d3cf !important; }
+
+/* Carte testeur responsive - briques empilees */
+@media (max-width: 1023px) {
+  .corps-testeur { grid-template-columns: 1fr !important; }
+  .corps-testeur > div {
+    border-right: none !important;
+    border-left: none !important;
+    padding: 12px 0 !important;
+    border-top: 1px solid #e8ecf4;
+  }
+  .corps-testeur > div:first-child { border-top: none; padding-top: 0 !important; }
+}
