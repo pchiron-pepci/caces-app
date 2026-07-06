@@ -1,28 +1,31 @@
 ﻿document.addEventListener('DOMContentLoaded', function() {
 
-    document.getElementById('search').addEventListener('keyup', filtrer);
+    var _srch = document.getElementById('search'); if (_srch) _srch.addEventListener('keyup', filtrer);
     const _chkInactifs = document.getElementById('chk-inactifs');
     if (_chkInactifs) _chkInactifs.addEventListener('change', filtrer);
     filtrer();
-    document.getElementById('btn-changer-etat').addEventListener('click', changerEtatTesteur);
-    document.getElementById('btn-nouveau-testeur').addEventListener('click', ouvrirFormulaire);
-    document.getElementById('btn-sauvegarder').addEventListener('click', sauvegarder);
-    document.getElementById('btn-fermer-modal').addEventListener('click', fermerModal);
-    document.getElementById('btn-fermer-pin').addEventListener('click', fermerPin);
-    document.getElementById('btn-fermer-prevention').addEventListener('click', fermerPrevention);
-    document.getElementById('btn-fermer-controle').addEventListener('click', fermerControle);
+    var _bce = document.getElementById('btn-changer-etat'); if (_bce) _bce.addEventListener('click', changerEtatTesteur);
+    var _bnt = document.getElementById('btn-nouveau-testeur'); if (_bnt) _bnt.addEventListener('click', ouvrirFormulaire);
+    var _bsv = document.getElementById('btn-sauvegarder'); if (_bsv) _bsv.addEventListener('click', sauvegarder);
+    var _bfm = document.getElementById('btn-fermer-modal'); if (_bfm) _bfm.addEventListener('click', fermerModal);
+    var _bfp = document.getElementById('btn-fermer-pin'); if (_bfp) _bfp.addEventListener('click', fermerPin);
+    var _bfpr = document.getElementById('btn-fermer-prevention'); if (_bfpr) _bfpr.addEventListener('click', fermerPrevention);
+    var _bfc = document.getElementById('btn-fermer-controle'); if (_bfc) _bfc.addEventListener('click', fermerControle);
     document.getElementById('btn-fermer-ajouter-carte').addEventListener('click', function() {
         document.getElementById('modal-ajouter-carte').style.display = 'none';
     });
 
     // --- Attestation prévention ---
-    document.getElementById('btn-upload-prevention').addEventListener('click', function() {
+    var _bup = document.getElementById('btn-upload-prevention');
+    if (_bup) _bup.addEventListener('click', function() {
         document.getElementById('modal-prev-file').click();
     });
-    document.getElementById('modal-prev-file').addEventListener('change', function() {
+    var _mpf = document.getElementById('modal-prev-file');
+    if (_mpf) _mpf.addEventListener('change', function() {
         ouvrirModalPrevention(document.getElementById('testeur-id').value, this);
     });
-    document.getElementById('btn-suppr-prev').addEventListener('click', function() {
+    var _bsp = document.getElementById('btn-suppr-prev');
+    if (_bsp) _bsp.addEventListener('click', function() {
         const testeurId = document.getElementById('testeur-id').value;
         const nom = document.getElementById('modal-prev-info').textContent;
         ouvrirPinAction(`Supprimer l'attestation "${nom}" ?`, async function(pin) {
