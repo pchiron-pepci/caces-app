@@ -1,8 +1,8 @@
 """
 init_questions_r486.py
 Reinitialise les grilles et questions theoriques R.486 (PEMP).
-5 grilles x 100 questions. Structure : 4 themes (14 / 26 / 54 / 6 = 100 pts).
-Textes lus sur les fiches INRS V1 - 12/2024 ; reponses issues du corrige officiel.
+5 grilles x 100 questions = 500. Structure : 4 themes (14 / 26 / 54 / 6 = 100 pts).
+Textes lus sur les fiches INRS V1 - 12/2024 ; reponses = corrige officiel INRS (croise, 0 divergence).
 Convention images/audio : R486_G{grille}_T{theme}_Q{numero} (underscores, matching upload.py).
 """
 
@@ -63,7 +63,7 @@ GRILLES_R486 = {
         ],
         3: [
             (1, "La mise en place d'une PEMP sur un sol non stabilisé peut causer son renversement", True),
-            (2, "La rupture d'un flexible hydraulique ne peut pas causer le renversement de la PEMP", False),
+            (2, "La rupture d'un flexible hydraulique ne peut pas causer le renversement de la PEMP", True),
             (3, "La surcharge de la plate-forme d'une PEMP peut causer son renversement", True),
             (4, "Il est autorisé de monter sur la plinthe de la plate-forme pour atteindre un endroit inaccessible", False),
             (5, "L'utilisateur peut souder un point d'ancrage supplémentaire dans la plate-forme sans consulter le constructeur de la PEMP", False),
@@ -81,7 +81,7 @@ GRILLES_R486 = {
             (17, "Lors du travail en coactivité d'une PEMP et d'une grue mobile, des mesures organisationnelles doivent être mises en place pour limiter les risques de collision", True),
             (18, "Sur la voie publique, il n'est pas nécessaire de baliser la zone de travail d'une PEMP", False),
             (19, "La distance minimale à respecter entre une ligne électrique nue sous une tension de 60000 V et le point conducteur le plus proche d'une PEMP est de 6 m", False),
-            (20, "La distance minimale à respecter entre une ligne électrique nue sous une tension de 25 kV et le point conducteur le plus proche d'une grue de chargement est de 3 m", False),
+            (20, "La distance minimale à respecter entre une ligne électrique nue sous une tension de 25 kV et le point conducteur le plus proche d'une grue de chargement est de 3 m", True),
             (21, "Le conducteur peut stationner la PEMP au bord d'une fouille", False),
             (22, "Le conducteur de la PEMP peut réaliser une manœuvre depuis la plate-forme sans aucune visibilité sur le sol", False),
             (23, "L'élévation de la plateforme peut permettre d'améliorer la visibilité lors de la translation de la PEMP", True),
@@ -89,7 +89,7 @@ GRILLES_R486 = {
             (25, "Lors de l'utilisation d'un poste à souder dans une PEMP, un extincteur doit être disponible dans la plate-forme", True),
             (26, "Les bouteilles de gaz doivent être éloignées de la zone de soudure", True),
             (27, "Le tirage de câbles électriques par un opérateur situé dans la plate-forme ne présente aucun risque", False),
-            (28, "Le conducteur de PEMP ne doit pas commencer un chantier lorsque la météo prévoit des rafales de vent à plus de 45 km/h toute la journée", False),
+            (28, "Le conducteur de PEMP ne doit pas commencer un chantier lorsque la météo prévoit des rafales de vent à plus de 45 km/h toute la journée", True),
             (29, "Par temps orageux, le conducteur dans la plate-forme n'est pas exposé et peut travailler sans risques", False),
             (30, "Avec une PEMP, il est autorisé de circuler sur un sol verglacé", False),
             (31, "Le poste de secours peut être utilisé en cas de malaise du conducteur sur la plate-forme", True),
@@ -127,14 +127,456 @@ GRILLES_R486 = {
         ],
     },
 
-    # Grilles 2 a 5 : a completer (transcription en cours)
+    2: {
+        1: [
+            (1, "Lors de la mise sur le marché de la PEMP, le constructeur doit établir et délivrer une déclaration CE de conformité", True),
+            (2, "Le constructeur est responsable du maintien en bon état de la PEMP", False),
+            (3, "Le responsable de chantier ne peut pas imposer au conducteur d'effectuer une manœuvre dangereuse avec la PEMP", True),
+            (4, "Rien n'impose à l'employeur de remédier aux observations formulées lors des VGP (vérifications générales périodiques) réglementaires", False),
+            (5, "Le conducteur titulaire d'un CACES® R.486 de catégorie C peut conduire une PEMP sans autorisation de conduite", False),
+            (6, "Le conducteur peut utiliser une PEMP en l'absence d'accompagnateur au sol", False),
+            (7, "Sur la voie publique, le conducteur de PEMP doit respecter le Code de la route", True),
+            (8, "Un accompagnateur au sol sans autorisation de conduite a le droit de manœuvrer le poste de dépannage de la PEMP", False),
+            (9, "Pour aider le conducteur de la PEMP situé dans la plate-forme, l'accompagnateur au sol peut manœuvrer la PEMP à partir du poste bas", False),
+            (10, "Le contrôleur de la [Carsat/Cramif/CGSS] vérifie la conformité de la PEMP", False),
+            (11, "L'inspecteur du travail rédige le certificat de conformité des PEMP d'occasion", False),
+            (12, "Cet équipement appartient à la catégorie B de la recommandation CACES® R.486", True),
+            (13, "Cet équipement placé sur un chariot élévateur appartient à la catégorie A de la recommandation CACES® R.486", False),
+            (14, "Le CACES® R.486 de catégorie C permet de délivrer une autorisation de conduite \"hors production\" pour cet équipement", True),
+        ],
+        2: [
+            (1, "[3] est la plate-forme", True),
+            (2, "[4] est le châssis", True),
+            (3, "La vitesse maximale de vent autorisée est l'une des caractéristiques générales d'une PEMP", True),
+            (4, "Le nombre minimal de personnes autorisées dans la plate-forme est l'une des caractéristiques générales d'une PEMP", False),
+            (5, "Les vérins de stabilisateurs peuvent être relevés lorsque la plate-forme est en élévation", False),
+            (6, "Les commandes de levage doivent revenir en position neutre lorsque l'opérateur les relâche", True),
+            (7, "Le poste de commande dans la plate-forme est toujours prioritaire sur le poste de secours", False),
+            (8, "Le poste de commande situé sur le châssis de la PEMP est le poste de commande principal", False),
+            (9, "L'arceau métallique [1] protège les leviers de commande contre une action involontaire", True),
+            (10, "Le bouton [5] commande les mouvements du bras pendulaire", True),
+            (11, "Le limiteur de charge coupe les mouvements d'élévation en cas de surcharge de la plate-forme", True),
+            (12, "Le poste de secours ne comporte jamais de bouton d'arrêt d'urgence", False),
+            (13, "Cet équipement est un indicateur de dévers", True),
+            (14, "Le liquide contenu dans une batterie au plomb ne présente aucun danger", False),
+            (15, "L'équilibre d'une PEMP du groupe B est principalement assuré par son contrepoids", True),
+            (16, "Les basculeurs [1] et [2] permettent de commander la mise en station horizontale automatique de la PEMP", False),
+            (17, "L'équilibre est assuré lorsque : M1 = 100 kg et M2 = 50 kg, L1 = 2 m et L2 = 1 m", False),
+            (18, "L'équilibre est assuré lorsque : M1 = 100 kg et M2 = 400 kg, L1 = 2 m et L2 = 0,50 m", True),
+            (19, "Le télescopage de la plate-forme à l'extérieur de son polygone de sustentation améliore la stabilité de la PEMP", False),
+            (20, "Sur une PEMP du groupe A, la descente de la plate-forme ne dégrade pas la stabilité", True),
+            (21, "Il est possible de travailler à une hauteur de 12 m avec un déport de 6 m", False),
+            (22, "Il est possible de travailler à une hauteur de 9 m avec un déport de 5 m", True),
+            (23, "Il est possible de travailler à une hauteur de 13 m avec un déport de 4 m", True),
+            (24, "Il est possible de travailler à une hauteur de 15 m sans déport", False),
+            (25, "Une PEMP ne doit jamais être calée au moyen de briques creuses", True),
+            (26, "Sur un sol incliné et irrégulier, il faut déplacer la PEMP avec la plate-forme en position haute", False),
+        ],
+        3: [
+            (1, "Le dépassement de la charge maximale autorisée peut causer le renversement de la PEMP", True),
+            (2, "Pour une intervention de courte durée, il n'est pas obligatoire de déployer les stabilisateurs", False),
+            (3, "À l'extérieur, le transport d'objets encombrants avec une PEMP augmente le risque de renversement", True),
+            (4, "Pour augmenter la hauteur de travail, le conducteur peut utiliser un escabeau dans la plate-forme", False),
+            (5, "Il est autorisé de sortir de la plate-forme d'une PEMP en position haute pour accéder sur une terrasse", False),
+            (6, "Dans la plate-forme, les EPI antichutes réduisent le risque d'éjection en cas de heurt de la PEMP avec un obstacle", True),
+            (7, "Pendant l'utilisation de la PEMP, l'accompagnateur au sol doit rester à l'extérieur de la zone balisée", True),
+            (8, "L'accompagnateur n'est pas concerné par le risque de heurt de personnes lors des déplacements de la PEMP", False),
+            (9, "Ce geste indique au conducteur la hauteur disponible sous la plate-forme", True),
+            (10, "Avec une PEMP de CMU 450 kg / 4 personnes, il est autorisé d'élever 3 personnes avec une charge de 140 kg dans la plate-forme", False),
+            (11, "Il est interdit de monter sur le garde-corps de la PEMP pour augmenter la hauteur de travail", True),
+            (12, "Il est interdit d'utiliser les garde-corps de la PEMP comme support de charge", True),
+            (13, "Si nécessaire, le balisage doit évoluer en fonction de l'avancement des travaux", True),
+            (14, "Le balisage réduit le risque de chute d'outil sur une personne évoluant au sol", True),
+            (15, "Les produits longs peuvent être posés sur les garde-corps de la PEMP", False),
+            (16, "À proximité d'une voie publique, le conducteur doit maintenir le gabarit de la PEMP en dehors du volume de circulation", True),
+            (17, "L'élévation de la plate-forme peut permettre d'améliorer la visibilité sur les obstacles au sol lors de la translation de la PEMP", True),
+            (18, "Il est autorisé de stationner une PEMP dans la zone de débattement d'une porte sectionnelle en service", False),
+            (19, "La distance minimale à respecter entre une ligne électrique nue sous une tension de 50000 V et le point conducteur le plus proche d'une PEMP est de 5 m", True),
+            (20, "Le conducteur d'une PEMP peut circuler sans risques en bordure d'une fouille", False),
+            (21, "Lors d'une intervention à proximité d'un réseau électrique aérien, le conducteur de la PEMP doit être titulaire d'une AIPR", True),
+            (22, "Lorsque la visibilité est réduite, le conducteur doit réduire la vitesse des mouvements de la PEMP", True),
+            (23, "L'accompagnateur doit toujours rester visible du conducteur", True),
+            (24, "Lors d'une intervention de nuit, il n'est pas nécessaire de prévoir des moyens d'éclairage", False),
+            (25, "La PEMP ne doit pas être utilisée comme masse électrique lors de la réalisation de travaux de soudure depuis la plate-forme", True),
+            (26, "Les équipements électro-portatifs utilisés dans la plate-forme d'une PEMP doivent toujours être de classe II", False),
+            (27, "Avec une PEMP de capacité 2 personnes, il est permis de tirer horizontalement sur un câble jusqu'à 800 N de tension", False),
+            (28, "À l'extérieur, le conducteur peut continuer son activité avec la PEMP lorsque la vitesse de vent dépasse 45 km/h", False),
+            (29, "Par temps orageux, le conducteur doit arrêter immédiatement toute activité avec la PEMP et la mettre en position hors service", True),
+            (30, "Le conducteur doit cesser tout déplacement de la PEMP lorsque la zone d'intervention est verglacée", True),
+            (31, "Le poste de dépannage fonctionne lorsque la source d'énergie principale de la PEMP est défaillante", True),
+            (32, "Pour être autorisé à utiliser le poste de secours, l'accompagnateur doit avoir reçu une formation adéquate", True),
+            (33, "Une PEMP équipée d'un gyrophare est toujours prioritaire lors de ses déplacements", False),
+            (34, "La manœuvre d'une PEMP sous un pont roulant en fonctionnement ne présente aucun risque", False),
+            (35, "À l'intérieur des bâtiments, une PEMP à moteur thermique ne peut être utilisée que dans des locaux suffisamment ventilés", True),
+            (36, "Les gaz d'échappement d'une PEMP à moteur thermique peuvent causer une intoxication au monoxyde de carbone", True),
+            (37, "Lors de la charge d'une batterie d'accumulateurs au plomb, les gaz produits peuvent provoquer une explosion", True),
+            (38, "Le changement d'un flexible hydraulique ne nécessite aucune consignation mécanique", False),
+            (39, "Il est interdit de fumer pendant le remplissage du réservoir de carburant", True),
+            (40, "Pendant le plein de carburant, le moteur thermique de la PEMP peut être maintenu en marche", False),
+            (41, "La consommation d'une boisson alcoolisée pendant le repas n'influe pas sur la capacité du salarié à conduire une PEMP", False),
+            (42, "L'écoute de musique au casque pendant la conduite de la PEMP améliore la concentration du conducteur", False),
+            (43, "Il est interdit d'utiliser à l'extérieur une PEMP dont la limite de vent est de 0 km/h", True),
+            (44, "Lorsque la PEMP est en position repliée, les valeurs de la pente latérale (dévers) et de la pente longitudinale maximales autorisées sont toujours identiques", False),
+            (45, "Une PEMP dont la pente maximale autorisée est de 5% peut circuler sur une rampe de longueur 20 m et de dénivelé 1 m", True),
+            (46, "Lorsque la plate-forme de la PEMP ne comporte pas de point d'ancrage pour EPI, les opérateurs peuvent relier leurs EPI antichute à la lisse supérieure du garde-corps", False),
+            (47, "Dans une PEMP, l'utilisation d'une longe antichute avec absorbeur d'énergie n'est pas appropriée", False),
+            (48, "Lorsqu'elle a été balisée, il n'y a aucun risque à pénétrer dans la zone d'évolution d'une PEMP", False),
+            (49, "Le balisage de la zone d'évolution réduit le risque de heurt de la PEMP par d'autres engins mobiles", True),
+            (50, "Lorsque la PEMP est munie d'un gyrophare, il n'est pas utile de baliser sa zone d'évolution", False),
+            (51, "Ce panneau impose de tourner à droite à l'intersection suivante", True),
+            (52, "Ce pictogramme indique que la PEMP est munie d'un dispositif automatique de protection du conducteur contre les risques d'écrasement", False),
+            (53, "Le bouton [4] commande le mouvement de télescopage du bras intermédiaire", True),
+            (54, "Ce pictogramme spécifie la valeur maximale autorisée pour l'effort horizontal exercé par les opérateurs dans la plate-forme", True),
+        ],
+        4: [
+            (1, "Un flexible hydraulique qui fuit légèrement ne crée pas de risque", False),
+            (2, "L'utilisation d'un liquide hydraulique inapproprié peut endommager les composants de la PEMP", True),
+            (3, "Lorsqu'il constate un défaut de fonctionnement sur un stabilisateur, le conducteur peut attendre la fin du chantier pour le signaler et demander sa réparation", False),
+            (4, "Lorsque le rapport mentionne qu'un stabilisateur était défaillant lors de la dernière VGP (vérification générale périodique), le conducteur doit s'assurer que les réparations ont été réalisées avant d'utiliser la PEMP", True),
+            (5, "Sur les vérins de ciseaux, un arrêt d'axe manquant peut être remplacé par un boulon", False),
+            (6, "Les éléments de bras télescopique ne doivent jamais être graissés", False),
+        ],
+    },
+
+    3: {
+        1: [
+            (1, "Lors de la mise sur le marché de la PEMP, le constructeur doit fournir une notice d'instructions", True),
+            (2, "L'employeur n'est pas responsable du maintien en bon état de la PEMP", False),
+            (3, "Le chef de chantier peut annuler le CACES® d'un conducteur de PEMP", False),
+            (4, "Le responsable de l'entreprise de travail temporaire délivre l'autorisation de conduite aux intérimaires qu'il emploie", False),
+            (5, "L'accompagnateur doit être titulaire d'une autorisation de conduite pour utiliser le poste de dépannage d'une PEMP", True),
+            (6, "Un salarié titulaire d'une autorisation de conduite pour chariot à poste de conduite élévable peut conduire une PEMP", False),
+            (7, "Le conducteur de la PEMP peut exercer son droit de retrait lorsqu'un responsable lui impose de réaliser une manœuvre dangereuse", True),
+            (8, "Sur la voie publique, le Code de la route ne s'applique pas à la conduite d'une PEMP", False),
+            (9, "Le conducteur doit procéder à la vérification de la PEMP lors de sa prise de poste, avant toute utilisation", True),
+            (10, "Le contrôleur de la [Carsat/Cramif/CGSS] contribue à la prévention des accidents du travail sur les chantiers", True),
+            (11, "L'inspecteur du travail est en charge des VGP (vérifications générales périodiques) des PEMP", False),
+            (12, "Cet équipement appartient à la catégorie A de la recommandation CACES® R.486", False),
+            (13, "Cet équipement appartient à la catégorie B de la recommandation CACES® R.486", True),
+            (14, "Le CACES® R.486 de catégorie C permet de délivrer une autorisation de conduite \"hors production\" pour cette PEMP", True),
+        ],
+        2: [
+            (1, "[1] est un stabilisateur", True),
+            (2, "[5] est le bras télescopique", True),
+            (3, "La hauteur maximale de travail est l'une des caractéristiques générales d'une PEMP", True),
+            (4, "La portée autorisée est l'une des caractéristiques générales d'une PEMP", True),
+            (5, "Cet axe permet de bloquer la rotation de la tourelle de la PEMP pendant son transport", True),
+            (6, "Le limiteur de débit du circuit hydraulique limite la vitesse des mouvements de la PEMP", True),
+            (7, "[1] est la pompe du poste de dépannage", True),
+            (8, "La manœuvre de secours peut être commandée par la mise en route du moteur électrique auxiliaire", True),
+            (9, "Dans cette position, le sélecteur à clé permet l'utilisation du poste de commande principal de la PEMP", True),
+            (10, "Le bouton [3] commande les mouvements du bras intermédiaire", True),
+            (11, "L'indicateur de dévers interrompt les mouvements d'élévation en cas de dépassement du dévers autorisé", False),
+            (12, "Les clapets pilotés évitent la descente de la plate-forme en cas de rupture de flexible hydraulique", True),
+            (13, "Ce dispositif situé sous le plancher de la plate-forme détecte un dépassement de la charge autorisée", True),
+            (14, "La chute d'un outil ou d'une pièce métallique entre les bornes d'une batterie au plomb peut provoquer son explosion", True),
+            (15, "La vitesse maximale de vent autorisée est indiquée sur la plaque constructeur de la PEMP", True),
+            (16, "La position du centre de gravité d'une PEMP est identique dans toutes les positions de la plate-forme", False),
+            (17, "Si M1 = 250 kg, M2 = 500 kg, L1 = 2 m et L2 = 1 m, la balance est à l'équilibre", True),
+            (18, "Les pneus gonflés à la mousse peuvent être remplacés par des pneus avec chambre à air", False),
+            (19, "Le déplacement de la PEMP sur un sol incliné dégrade sa stabilité", True),
+            (20, "L'augmentation de la charge dans la plate-forme n'a pas d'influence sur la stabilité d'une PEMP", False),
+            (21, "Il est possible de travailler à une hauteur de 18 m avec un déport de 16 m", False),
+            (22, "Il est possible de travailler à une hauteur de 22 m avec un déport de 6 m", True),
+            (23, "Il est possible de travailler à une hauteur de 14 m avec un déport de 12 m", True),
+            (24, "Il est possible de travailler à une hauteur de 20 m avec un déport de 12 m", False),
+            (25, "Sur un sol meuble, l'utilisation de plaques de répartition adaptées améliore la stabilité de la PEMP", True),
+            (26, "Il est possible de manœuvrer une PEMP en bordure d'un talus sans risques", False),
+        ],
+        3: [
+            (1, "Le dépassement du nombre de personnes autorisées dans la plate-forme peut causer le renversement de la PEMP", True),
+            (2, "Avec une PEMP sur pneumatiques, il est autorisé de descendre une marche", False),
+            (3, "La dépose d'un équipement dans la plate-forme en élévation peut causer le renversement de la PEMP", True),
+            (4, "Pour gagner du temps, il est autorisé de bloquer la sous-lisse relevable en position haute", False),
+            (5, "Lorsque la plate-forme comporte un portillon à ouverture vers l'extérieur, la PEMP reste immobile jusqu'à ce qu'il soit verrouillé", True),
+            (6, "Lorsqu'il lui manque moins de 40 cm pour accéder à la zone d'intervention, le conducteur peut monter sur la sous-lisse du garde-corps", False),
+            (7, "Ce geste impose au conducteur l'arrêt immédiat de tous les mouvements", False),
+            (8, "L'accompagnateur doit se positionner dans la zone d'évolution de la PEMP", False),
+            (9, "Le conducteur doit en permanence adapter sa vitesse en fonction de son environnement de travail", True),
+            (10, "Il est autorisé d'utiliser une PEMP lorsque des rafales de vent dépassent momentanément la limite fixée par le constructeur", False),
+            (11, "Lorsque la PEMP n'est pas utilisée, le conducteur peut laisser la plate-forme en position haute", False),
+            (12, "Une PEMP ne doit pas être utilisée pour lever une charge suspendue sous la plate-forme", True),
+            (13, "Travailler sous la plate-forme ne présente aucun risque", False),
+            (14, "La zone de travail doit être balisée avant l'utilisation de la PEMP", True),
+            (15, "Le plancher de la plate-forme ne doit pas permettre la chute d'un objet de 15 mm de diamètre", True),
+            (16, "Sur la voie publique, la présence d'un gyrophare sur la PEMP permet d'éviter toute collision avec un véhicule", False),
+            (17, "Le conducteur doit adapter sa vitesse en fonction des obstacles qui limitent son champ visuel", True),
+            (18, "Sur un chantier clos, il n'y a aucun risque de collision avec d'autres engins", False),
+            (19, "La distance minimale à respecter entre une ligne électrique nue sous une tension de 5000 V et le point conducteur le plus proche d'une PEMP est de 2 m", False),
+            (20, "Une PEMP ne doit pas circuler ou stationner au-dessus d'une cavité", True),
+            (21, "Le conducteur doit prévoir une distance de sécurité suffisante avec les véhicules qui circulent autour de la PEMP", True),
+            (22, "En l'absence de visibilité au sol, le conducteur de la PEMP est autorisé à manœuvrer sans l'assistance d'un accompagnateur", False),
+            (23, "L'accompagnateur doit toujours être en communication avec le conducteur", True),
+            (24, "En cas de luminosité insuffisante, il est nécessaire de mettre en place un éclairage complémentaire de la zone", True),
+            (25, "Depuis la plate-forme, il est permis d'exercer un effort horizontal de 500 N", False),
+            (26, "Pour exécuter des travaux de meulage depuis une PEMP, il n'est pas nécessaire d'établir un permis de feu", False),
+            (27, "L'intervention à proximité d'une antenne de radiodiffusion active présente un risque pour la santé", True),
+            (28, "Avant toute intervention, le conducteur doit s'informer des conditions climatiques", True),
+            (29, "Par temps orageux, le conducteur peut continuer à utiliser une PEMP après en avoir relié le châssis à un piquet de terre", False),
+            (30, "Par temps orageux, le conducteur peut poursuivre son activité en positionnant la PEMP à proximité d'un paratonnerre", False),
+            (31, "Lors d'une manœuvre de dépannage, il faut rétracter les éléments télescopiques avant d'agir sur les mouvements de descente des bras", True),
+            (32, "Le poste de secours peut être actionné par le conducteur de la PEMP depuis la plate-forme de travail", False),
+            (33, "Dans un hall d'atelier, il est interdit de survoler une PEMP en cours de manœuvre avec un appareil de levage", True),
+            (34, "Une PEMP qui circule dans la zone d'interférence d'une grue à tour est toujours prioritaire", False),
+            (35, "Les gaz d'échappement d'une PEMP à moteur Diesel n'ont pas d'effets néfastes sur la santé", False),
+            (36, "Des aérosols présents dans l'air de locaux non ventilés ne présentent pas de risque pour la santé", False),
+            (37, "Il est interdit de fumer lors de la mise à niveau de l'électrolyte dans les batteries", True),
+            (38, "Il ne faut jamais mettre des outils métalliques en contact avec les bornes de la batterie", True),
+            (39, "Pendant le plein de carburant le conducteur ne doit pas répondre aux appels sur son téléphone mobile", True),
+            (40, "Il est autorisé de consulter ses SMS en faisant le plein de carburant", False),
+            (41, "La consommation d'un seul verre de vin à la pause déjeuner n'a aucune incidence sur la conduite d'une PEMP l'après-midi", False),
+            (42, "Cela ne crée aucun risque d'envoyer un SMS pendant la conduite d'une PEMP", False),
+            (43, "La charge maximale d'utilisation d'une PEMP correspond au nombre maximal de personnes qui peuvent prendre place dans la plate-forme auquel est ajouté le poids d'une caisse à outils", True),
+            (44, "Une PEMP peut être utilisée pour exercer une force de traction horizontale de 400 N", False),
+            (45, "Une PEMP dont le dévers maximal autorisé est de 3° peut se déplacer avec la plate-forme en position haute sur une pente de 40 m de long avec un dénivelé de 3 m", False),
+            (46, "Il est recommandé que le conducteur d'une PEMP porte un casque sans jugulaire", False),
+            (47, "Les harnais et longes doivent être vérifiés avant chaque utilisation", True),
+            (48, "Le balisage de la zone d'évolution d'une PEMP informe les personnes qui évoluent à proximité de l'existence de risques potentiels", True),
+            (49, "Le balisage de la zone d'évolution d'une PEMP informe les conducteurs des engins mobiles circulant à proximité de l'existence d'un risque de collision", True),
+            (50, "Le balisage de la zone d'évolution d'une PEMP n'est pas utile en présence d'un surveillant", False),
+            (51, "Dans l'enceinte d'une entreprise, ce panneau ne concerne pas les PEMP", False),
+            (52, "Ce panneau signifie \"Attention danger\"", True),
+            (53, "Ce panneau est un stop", False),
+            (54, "Ce panonceau indique la force d'appui d'un stabilisateur", True),
+        ],
+        4: [
+            (1, "S'il constate une fuite sur un clapet piloté pendant la prise de poste, le conducteur ne doit pas débuter l'intervention", True),
+            (2, "Lorsqu'il s'aperçoit qu'un distributeur hydraulique fuit pendant l'utilisation de la PEMP, le conducteur peut entreprendre de le remplacer lui-même", False),
+            (3, "Lorsqu'un patin de stabilisateur est manquant, la répartition peut être assurée par la mise en place d'un bastaing", False),
+            (4, "Une PEMP dont le châssis est fissuré doit être signalée et mise à l'arrêt", True),
+            (5, "Le conducteur peut remplacer un axe manquant par un élément similaire", False),
+            (6, "Le manque de graisse sur les coulisseaux nécessite un graissage avant l'utilisation de la PEMP", True),
+        ],
+    },
+
+    4: {
+        1: [
+            (1, "Le constructeur n'est pas responsable du marquage CE de la PEMP", False),
+            (2, "L'employeur doit s'assurer que les conducteurs de PEMP ont reçu une formation à la conduite adéquate", True),
+            (3, "Le chef de chantier délivre le CACES® à un conducteur de PEMP intérimaire", False),
+            (4, "L'entreprise de travail temporaire est responsable de la formation à la conduite des intérimaires", True),
+            (5, "Le conducteur peut être accompagné d'un passager ne possédant pas d'autorisation de conduite", True),
+            (6, "Le conducteur est dispensé de la vérification à la prise de poste de la PEMP avant son utilisation", False),
+            (7, "En fin de poste, le conducteur doit signaler toute anomalie constatée sur la PEMP", True),
+            (8, "L'accompagnateur peut effectuer les manœuvres de sauvetage depuis la plate-forme", False),
+            (9, "L'accompagnateur doit toujours être positionné au sol", True),
+            (10, "Le contrôleur de la [Carsat/Cramif/CGSS] peut suspendre l'autorisation de conduite d'un conducteur de PEMP", False),
+            (11, "L'inspecteur du travail n'a pas en charge d'effectuer la vérification de l'état de conformité de la PEMP", True),
+            (12, "Cette PEMP appartient à la catégorie A de la recommandation CACES® R.486", True),
+            (13, "Cette PEMP n'appartient pas à la catégorie B de la recommandation CACES® R.486", False),
+            (14, "Le CACES® R.486 de catégorie C permet de délivrer une autorisation de conduite \"hors production\" pour cet équipement", False),
+        ],
+        2: [
+            (1, "[1] est un stabilisateur", True),
+            (2, "[4] est un bras télescopique", False),
+            (3, "Le nombre maximal de personnes autorisées dans la plate-forme est l'une des caractéristiques générales d'une PEMP", True),
+            (4, "La hauteur maximale de travail est l'une des caractéristiques générales d'une PEMP", True),
+            (5, "Dans cette configuration, la tige du vérin reste immobile", True),
+            (6, "Le détecteur de dévers permet de surveiller que l'assiette de la PEMP reste dans les limites prévues par le constructeur", True),
+            (7, "Il s'agit du poste de commande de secours de la PEMP", True),
+            (8, "Ces composants font partie du poste de commande principal de la PEMP", False),
+            (9, "Le bouton [3] commande l'élévation de la plate-forme", True),
+            (10, "Le bouton [2] permet de sélectionner le poste de commande utilisé", False),
+            (11, "Le clapet antiretour piloté n'a aucun effet en cas de rupture de flexible", False),
+            (12, "Ce capteur interdit le repli des stabilisateurs lorsque le bras de relevage n'est pas en position route", True),
+            (13, "L'appui sur cette pédale active le poste de commande principal", True),
+            (14, "L'électrolyte des batteries est un produit corrosif", True),
+            (15, "Lorsque la plate-forme descend, la position du centre de gravité de la PEMP varie", True),
+            (16, "L'installation d'une banderole sur le garde-corps d'une PEMP ne modifie pas sa surface au vent", False),
+            (17, "Si M1 = 2000 kg, M2 = 500 kg, L1 = 0,25 m et L2 = 1 m, la balance est à l'équilibre", True),
+            (18, "L'augmentation de la surface au vent d'une PEMP n'a pas d'influence sur sa stabilité", False),
+            (19, "L'augmentation de la charge a une influence sur la stabilité", True),
+            (20, "La mise en place de cales adaptées sous les patins des stabilisateurs permet d'éviter un tassement du sol sous les appuis de la PEMP", True),
+            (21, "Il est possible de travailler à deux personnes à une hauteur de 42 m avec un déport de 9 m", False),
+            (22, "Il est possible de travailler seul à une hauteur de 43 m avec un déport de 12 m", True),
+            (23, "Il est possible de travailler à une hauteur de 24 m avec un déport de 12 m", True),
+            (24, "Il est possible de travailler à une hauteur de 9 m avec un déport de 21 m", False),
+            (25, "Un sol hétérogène peut subir un tassement différentiel susceptible de provoquer le renversement de la PEMP", True),
+            (26, "Ce stabilisateur est correctement positionné", False),
+        ],
+        3: [
+            (1, "Les extensions ont toujours la même capacité de charge que la plate-forme elle-même", False),
+            (2, "Lorsqu'une PEMP est conçue pour évoluer en extérieur, le vent n'est pas un facteur de risque de renversement", False),
+            (3, "Les plaques de répartition ne doivent jamais être positionnées au-dessus d'une excavation", True),
+            (4, "L'utilisation d'un tabouret de 20 cm de hauteur sur le plancher de la plate-forme n'augmente pas le risque de chute", False),
+            (5, "Le plancher de la plate-forme doit toujours être propre et exempt de débris", True),
+            (6, "Les passagers doivent avoir les deux pieds posés sur le plancher de la plate-forme", True),
+            (7, "Ce geste indique au conducteur la distance disponible avant de heurter un obstacle sur le flanc de la PEMP", False),
+            (8, "Laisser les mains sur la rampe de sécurité lors des manœuvres de la PEMP ou de la plate-forme ne crée aucun risque", False),
+            (9, "Lors de la mise en place des stabilisateurs, le conducteur doit avoir une vision directe sur la zone où ils se déploient", True),
+            (10, "Lorsque la PEMP n'est pas utilisée, le conducteur peut laisser la plate-forme en position haute", False),
+            (11, "L'utilisation de la PEMP comme monte-matériaux est autorisée", False),
+            (12, "Le tirage de câble avec la PEMP est autorisé", False),
+            (13, "La présence d'une plinthe sur le portillon d'accès est facultative", False),
+            (14, "Le balisage au sol permet d'éviter que les intervenants au sol ne puissent être atteints par un objet tombant depuis la plate-forme", True),
+            (15, "Il est interdit d'adosser des matériaux contre les garde-corps de la plate-forme", True),
+            (16, "Lorsque l'orientation de la tourelle dépasse 180°, l'inversion des commandes de direction et de translation est automatique", False),
+            (17, "Lors de la translation de la PEMP, la plate-forme doit être maintenue en position basse afin de limiter les angles morts", False),
+            (18, "Il n'est pas utile de ralentir à l'approche d'un croisement", False),
+            (19, "Sur la voie publique, le conducteur doit s'assurer que le gabarit de la PEMP reste en permanence à l'extérieur du volume de circulation des véhicules routiers", True),
+            (20, "Lors de la stabilisation de la PEMP sur un terrain compact, il faut respecter a > b et d > 2 m", True),
+            (21, "La distance minimale qui doit être respectée avec un conducteur nu sous tension de 50000 V est de 5 mètres", True),
+            (22, "Il n'est pas nécessaire de mettre en œuvre des mesures particulières lorsque la visibilité entre le sol et la plate-forme n'est plus assurée pendant l'intervention", False),
+            (23, "Lors de la translation de la PEMP, il faut adapter sa vitesse en fonction de la visibilité", True),
+            (24, "Lorsqu'il n'y a pas de visibilité directe entre la plate-forme et le sol, la communication par talkie walkie entre le conducteur et l'accompagnateur est suffisante", False),
+            (25, "Lorsque le conducteur de la PEMP porte un détecteur de lignes électriques, il est protégé contre le risque d'électrocution", False),
+            (26, "Il est autorisé d'utiliser le châssis de la PEMP comme masse lors de travaux de soudure", False),
+            (27, "Avec une PEMP conçue pour 1 personne, il est interdit de produire un effort horizontal (tirer ou pousser) supérieur à 200 N depuis la plate-forme", True),
+            (28, "Lors d'une intervention, il faut prendre en compte la vitesse du vent à la hauteur maximale de travail", True),
+            (29, "Avant une intervention, il n'est pas nécessaire de s'informer de l'évolution des conditions climatiques sur le site", False),
+            (30, "En cas d'orage, il suffit au conducteur de raccorder le châssis de la PEMP à la terre pour pouvoir poursuivre son intervention", False),
+            (31, "Le poste de secours permet de ramener au sol un conducteur inconscient dans la plate-forme", True),
+            (32, "Une PEMP en contact avec une ligne électrique sous tension peut être dégagée au moyen du poste de dépannage", False),
+            (33, "Lors d'une intervention nécessitant l'action combinée d'une PEMP et d'une grue mobile, un chef de manœuvre doit coordonner les opérations", True),
+            (34, "Sur un chantier, l'interférence entre une grue à tour et une PEMP peut être gérée en créant une zone interdite de survol pour la grue", True),
+            (35, "Lors de l'utilisation d'une PEMP à moteur thermique dans un local mal aéré, les risques d'intoxication ne concernent que les occupants de ce local", False),
+            (36, "L'exposition aux gaz d'échappement d'un moteur diesel augmente les risques de cancer", True),
+            (37, "La recherche d'une fuite hydraulique doit être effectuée à main nue, pour être certain de la localiser", False),
+            (38, "Des câbles de connexion de batterie endommagés peuvent être à l'origine d'un incendie de la PEMP", True),
+            (39, "Le plein de carburant doit être effectué moteur à l'arrêt", True),
+            (40, "Un bidon de carburant de secours peut être conservé dans le compartiment moteur de la PEMP", False),
+            (41, "La consommation de cannabis améliore la concentration", False),
+            (42, "Lors des manœuvres, le conducteur de la PEMP peut dialoguer sans risques avec un passager situé dans la plate-forme", False),
+            (43, "Il est interdit d'utiliser la PEMP en élévation lorsqu'elle se trouve sur un porte-engin", True),
+            (44, "En cas de besoin, il est autorisé d'utiliser une échelle pour accéder à la plate-forme lorsqu'elle est en élévation", False),
+            (45, "Il est permis de tirer des charges avec une PEMP", False),
+            (46, "La lisse du garde-corps peut être utilisée comme un point d'ancrage pour les EPI", False),
+            (47, "La longe du dispositif antichute doit être suffisamment courte pour empêcher l'éjection du conducteur hors de la plate-forme", True),
+            (48, "Le balisage permet d'éviter que des objets chutant de la plate-forme heurtent des piétons", True),
+            (49, "Le balisage matérialise la zone d'évolution de la PEMP pour les conducteurs des autres engins", True),
+            (50, "Il est autorisé de circuler avec un engin automoteur à l'intérieur de la zone balisée pour la PEMP", False),
+            (51, "Ce panneau prévient le conducteur de la PEMP de la présence d'un passage piéton à 150 m", False),
+            (52, "Ce pictogramme avertit de l'existence de risques de brûlure", False),
+            (53, "L'allumage de ce voyant rouge signale le dépassement du dévers admissible", True),
+            (54, "Ces pictogrammes correspondent au sens de déplacement en translation de la PEMP", True),
+        ],
+        4: [
+            (1, "Un flexible hydraulique endommagé dont l'âme métallique est en bon état doit être remplacé", True),
+            (2, "Sur une PEMP, il est autorisé d'utiliser un flexible hydraulique pour remplacer une canalisation rigide endommagée", False),
+            (3, "Le conducteur de la PEMP peut utiliser une masse pour redresser lui-même un stabilisateur déformé", False),
+            (4, "Un boulon d'assemblage manquant entre le châssis du porteur et le faux châssis de la PEMP doit être immédiatement remplacé", True),
+            (5, "Lorsque le niveau d'huile hydraulique est insuffisant, un appoint doit être réalisé avant toute utilisation de la PEMP", True),
+            (6, "Un dispositif d'arrêt (goupille…) manquant sur un axe de la charpente de la PEMP ne nécessite pas un remplacement immédiat", False),
+        ],
+    },
+
+    5: {
+        1: [
+            (1, "Le constructeur de la PEMP doit s'assurer de son adéquation aux tâches à réaliser", False),
+            (2, "Le constructeur de la PEMP vérifie tous les 6 mois sa conformité à la réglementation européenne", False),
+            (3, "L'employeur s'assure de l'aptitude médicale du salarié avant de l'autoriser à conduire une PEMP", True),
+            (4, "Le responsable de l'entreprise de travail temporaire établit l'autorisation de conduite des intérimaires", False),
+            (5, "Lorsqu'il détient le CACES® approprié, un salarié peut utiliser une PEMP sans autorisation de conduite", False),
+            (6, "Un salarié peut décider de conduire une PEMP sans formation", False),
+            (7, "Lorsqu'il travaille dans l'équipe d'après-midi, le conducteur de la PEMP est dispensé d'effectuer la prise de poste si elle a déjà été faite par l'équipe du matin", False),
+            (8, "L'accompagnateur peut réaliser sa fonction de surveillance depuis la plate-forme de travail", False),
+            (9, "S'il est chargé de manœuvrer la PEMP pour porter secours au conducteur, l'accompagnateur doit être titulaire d'une autorisation de conduite", True),
+            (10, "Le médecin du travail n'est pas chargé de s'assurer de la bonne santé du conducteur", True),
+            (11, "Le contrôleur de la [Carsat/Cramif/CGSS] est responsable de la prévention des risques dans l'entreprise", False),
+            (12, "Cette PEMP appartient à la catégorie A de la recommandation CACES® R.486", False),
+            (13, "Cette PEMP appartient à la catégorie B de la recommandation CACES® R.486", True),
+            (14, "Le CACES® R.486 de catégorie C permet de délivrer une autorisation de conduite \"hors production\" pour cet équipement", False),
+        ],
+        2: [
+            (1, "[5] est un bras télescopique", True),
+            (2, "Ce tube horizontal est la lisse du garde-corps", False),
+            (3, "La taille des pneumatiques est l'une des caractéristiques générales d'une PEMP", False),
+            (4, "L'effort horizontal admissible est l'une des caractéristiques générales d'une PEMP", True),
+            (5, "Ce vérin permet le relevage du bras télescopique", False),
+            (6, "Sur une PEMP, le limiteur de pression hydraulique n'est pas un limiteur de charge", True),
+            (7, "Il s'agit du poste de commande principal de la PEMP", False),
+            (8, "Le poste de commande principal est toujours prioritaire par rapport au poste de dépannage", False),
+            (9, "[4] commande le mouvement de télescopage", True),
+            (10, "[2] commande l'inclinaison du panier", False),
+            (11, "Le limiteur de charge coupe le mouvement de translation de la PEMP", False),
+            (12, "Le limiteur de dévers n'est pas actif lorsque la PEMP est en position transport", True),
+            (13, "Cette pédale limite le risque de mouvement non intentionnel commandé depuis la plate-forme", True),
+            (14, "Les PEMP mues par un moteur thermique présentent un risque d'incendie", True),
+            (15, "Un panneau de contreplaqué embarqué dans la plate-forme augmente la surface au vent de la PEMP", True),
+            (16, "Le centre de gravité de cette charge homogène se trouve approximativement au point bleu", False),
+            (17, "Si M1 = 300 kg, M2 = 150 kg, L1 = 1 m et L2 = 2 m, la balance reste en équilibre", True),
+            (18, "Si L2 = 2 x L1 et M1 = M2, la balance penche du côté de M2", True),
+            (19, "Le déploiement et la mise en place des stabilisateurs améliore la stabilité de la PEMP", True),
+            (20, "L'augmentation de la portée n'a pas d'influence sur la stabilité de la PEMP", False),
+            (21, "Il est possible de travailler à 6 personnes à une hauteur de 34 m avec un déport de 27 m", False),
+            (22, "Il est possible de travailler avec 250 kg dans la plate-forme à une hauteur de 36 m avec un déport de 22 m", True),
+            (23, "Il est possible de travailler seul à une hauteur de 48 m avec un déport de 15 m", True),
+            (24, "Il est possible de travailler seul à une hauteur de 52 m avec un déport de 4 m", False),
+            (25, "Un sol compacté améliore la stabilité de la PEMP", True),
+            (26, "Une surface de roulement irrégulière ne crée pas de risques lors des déplacements de la PEMP", False),
+        ],
+        3: [
+            (1, "Les zones de positionnement de la PEMP doivent être définies", True),
+            (2, "Il est possible de manœuvrer les stabilisateurs lorsque la plate-forme est en élévation", False),
+            (3, "La descente d'un trottoir avec la PEMP ne crée pas de risque de renversement", False),
+            (4, "Il est recommandé de tenir la lisse du garde-corps pendant l'élévation de la plate-forme", True),
+            (5, "Il n'est pas permis d'utiliser un point d'ancrage pour EPI extérieur à la plate-forme", True),
+            (6, "Il est autorisé de s'asseoir sur la lisse supérieure du garde-corps de la plate-forme", False),
+            (7, "Lors des mouvements, toutes les parties du corps doivent rester à l'intérieur de la plate-forme", True),
+            (8, "Le balisage dispense le conducteur de surveiller la zone d'évolution de la PEMP", False),
+            (9, "Cette position de conduite réduit les risques de heurt avec des obstacles", False),
+            (10, "En général, une PEMP automotrice peut être remorquée pour la déplacer d'un chantier à un autre", False),
+            (11, "Il est toléré de tirer une charge accrochée à la plate-forme de la PEMP", False),
+            (12, "Il est autorisé d'ajouter une extension de plancher non prévue par le fabricant de la PEMP", False),
+            (13, "La manutention d'outils en hauteur crée un risque de chute d'objet", True),
+            (14, "Le conducteur de la PEMP ne doit pas survoler des intervenants en contrebas lors des mouvements de la plate-forme", True),
+            (15, "Il est toléré d'adosser temporairement des charges aux garde-corps de la plate-forme", False),
+            (16, "Ce geste indique une distance horizontale avec un obstacle", True),
+            (17, "Avant tout déplacement de la PEMP, il faut vérifier la hauteur libre disponible", True),
+            (18, "Une PEMP peut être positionnée de façon temporaire à une intersection sans signalisation", False),
+            (19, "La distance minimale qui doit être respectée avec un conducteur nu sous tension de 63 kV est de 3 mètres", False),
+            (20, "En l'absence de consignation, une ligne électrique aérienne nue doit toujours être considérée sous tension", True),
+            (21, "Lors du choix des zones de circulation de la PEMP, il faut tenir compte de sa largeur de passage minimale", True),
+            (22, "La manœuvre de la PEMP dans l'obscurité ne crée aucun risque", False),
+            (23, "L'accompagnateur au sol permet de pallier le manque de visibilité du conducteur", True),
+            (24, "Le manque de visibilité peut occasionner un risque de renversement de la PEMP", True),
+            (25, "Il est autorisé de dérouler un touret de câble depuis la plate-forme en élévation", False),
+            (26, "Pour finaliser un travail en hauteur, le conducteur peut sortir temporairement de la plate-forme", False),
+            (27, "Il n'est pas nécessaire de disposer d'un extincteur embarqué pour effectuer des travaux d'oxycoupage depuis la plate-forme", False),
+            (28, "Lorsque la météo prévoit des vents soufflant à plus de 45 km/h, il est autorisé d'utiliser une PEMP", False),
+            (29, "Lors de l'utilisation d'une PEMP à l'extérieur, la foudre ne crée aucun risque", False),
+            (30, "Par temps orageux, il est autorisé d'utiliser une PEMP si elle est située à proximité d'une grue à tour", False),
+            (31, "En mode dépannage, tous les dispositifs de sécurité sont inactifs", True),
+            (32, "Le poste de secours peut être utilisé pour réaliser le levage de matériaux avec la PEMP", False),
+            (33, "Lors de l'utilisation conjointe d'une PEMP et d'une grue mobile pour l'assemblage de charpente métallique, il est nécessaire de mettre en place des mesures organisationnelles particulières", True),
+            (34, "Une PEMP peut évoluer librement sous une charge suspendue à une grue à tour", False),
+            (35, "Pour pouvoir utiliser en sécurité une PEMP à moteur thermique dans un local clos, il suffit d'en ouvrir la porte d'accès", False),
+            (36, "L'inhalation des gaz d'échappement d'une PEMP à moteur thermique présente un risque pour la santé", True),
+            (37, "Une fuite de GPL sous forme liquide peut causer des brûlures graves", True),
+            (38, "Le nettoyage entre les ciseaux d'une PEMP nécessite la mise en place d'une procédure de consignation mécanique", True),
+            (39, "Le gazole est un produit moins facilement inflammable que l'essence", True),
+            (40, "Le plein de carburant peut être effectué lorsque le moteur de la PEMP est en marche", False),
+            (41, "La consommation de cannabis améliore les réflexes", False),
+            (42, "Pendant la conduite d'une PEMP, l'envoi de SMS crée des risques importants", True),
+            (43, "La vitesse de vent maximale autorisée d'une PEMP conçue pour une utilisation intérieure est de 5 km/h", False),
+            (44, "L'aptitude au franchissement des pentes et le dévers autorisé sont des caractéristiques différentes", True),
+            (45, "La pente moyenne d'une rampe de longueur 25 m avec un dénivelé de 2 m est de 5%", False),
+            (46, "Dans la plate-forme, les opérateurs peuvent utiliser des longes antichute de grande longueur", False),
+            (47, "Dans une PEMP, l'utilisation d'un enrouleur automatique est déconseillée", False),
+            (48, "Le balisage délimite la zone d'évolution de la PEMP", True),
+            (49, "Le public doit respecter le balisage autour d'une PEMP", True),
+            (50, "Sur un chantier clos, le balisage n'est pas nécessaire", False),
+            (51, "Ce sélecteur permet le transfert des commandes entre les postes haut et bas", True),
+            (52, "Ce panneau prévient de la présence d'une zone de travaux", True),
+            (53, "Ce pictogramme signifie qu'il ne faut pas pousser ou tirer un objet situé à l'extérieur de la plate-forme", True),
+            (54, "L'organe de service qui comporte ce pictogramme est la vanne de descente de secours d'une PEMP de type A", True),
+        ],
+        4: [
+            (1, "Lorsque le niveau d'huile hydraulique est en dessous du minimum, le conducteur de la PEMP doit le signaler immédiatement", True),
+            (2, "Un flexible hydraulique entaillé doit être remplacé", True),
+            (3, "Une fuite minime sur un seul des 4 vérins stabilisateurs n'a aucune incidence sur la sécurité de la PEMP", False),
+            (4, "Avant toute intervention sur un vérin de levage d'une PEMP à ciseaux, la béquille de maintenance doit être mise en place", True),
+            (5, "L'absence d'arrêt d'axe sur un vérin de PEMP ne nécessite pas une intervention immédiate", False),
+            (6, "Une déformation locale sur la poutre extensible d'une PEMP nécessite sa mise à l'arrêt", True),
+        ],
+    },
+
 }
 
 POINTS_THEME = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0}
 
 
 def get_image_url(grille: int, theme: int, question: int) -> str:
-    # Convention underscore (matching upload.py : filename.split("_"))
     return f"R486_G{grille}_T{theme}_Q{question}"
 
 
@@ -142,71 +584,40 @@ def main():
     db = SessionLocal()
     try:
         print("=== Reinitialisation grilles R486 ===\n")
-
         nb_util = db.query(UtilisationGrille).join(GrilleTheorie).filter(
-            GrilleTheorie.famille == "R486"
-        ).count()
+            GrilleTheorie.famille == "R486").count()
         if nb_util > 0:
             print(f"ATTENTION : {nb_util} utilisation(s) de grille R486 seront supprimees.")
-
         grilles_existantes = db.query(GrilleTheorie).filter(
-            GrilleTheorie.famille == "R486"
-        ).all()
+            GrilleTheorie.famille == "R486").all()
         for g in grilles_existantes:
             db.query(UtilisationGrille).filter(UtilisationGrille.grille_id == g.id).delete()
             db.query(ReponseGrille).filter(ReponseGrille.grille_id == g.id).delete()
             db.delete(g)
         db.commit()
         print(f"OK : {len(grilles_existantes)} grille(s) existante(s) supprimee(s)\n")
-
         total_questions = 0
         for grille_num, themes in GRILLES_R486.items():
-            grille = GrilleTheorie(
-                famille="R486",
-                numero=grille_num,
-                annee=2024,
-                actif=True
-            )
-            db.add(grille)
-            db.flush()
-
+            grille = GrilleTheorie(famille="R486", numero=grille_num, annee=2024, actif=True)
+            db.add(grille); db.flush()
             nb_q = 0
             for theme_num, questions in themes.items():
                 for (q_num, texte, reponse) in questions:
-                    rg = ReponseGrille(
-                        grille_id=grille.id,
-                        theme=theme_num,
-                        numero_question=q_num,
-                        reponse_correcte=reponse,
-                        points=POINTS_THEME[theme_num],
-                        texte_question=texte,
-                        image_url=get_image_url(grille_num, theme_num, q_num)
-                    )
-                    db.add(rg)
+                    db.add(ReponseGrille(
+                        grille_id=grille.id, theme=theme_num, numero_question=q_num,
+                        reponse_correcte=reponse, points=POINTS_THEME[theme_num],
+                        texte_question=texte, image_url=get_image_url(grille_num, theme_num, q_num)))
                     nb_q += 1
-
-            db.commit()
-            total_questions += nb_q
+            db.commit(); total_questions += nb_q
             print(f"OK Grille {grille_num} - {nb_q} questions creees (id={grille.id})")
-
         print(f"\nOK Total : {total_questions} questions pour {len(GRILLES_R486)} grille(s) R486\n")
-
         print("Verification :")
         for grille_num in GRILLES_R486:
             g = db.query(GrilleTheorie).filter(
-                GrilleTheorie.famille == "R486",
-                GrilleTheorie.numero == grille_num
-            ).first()
-            counts = {}
-            for t in range(1, 5):
-                c = db.query(ReponseGrille).filter(
-                    ReponseGrille.grille_id == g.id,
-                    ReponseGrille.theme == t
-                ).count()
-                counts[t] = c
-            tot = sum(counts.values())
-            print(f"  Grille {grille_num} : T1={counts[1]} T2={counts[2]} T3={counts[3]} T4={counts[4]} => {tot}")
-
+                GrilleTheorie.famille == "R486", GrilleTheorie.numero == grille_num).first()
+            counts = {t: db.query(ReponseGrille).filter(
+                ReponseGrille.grille_id == g.id, ReponseGrille.theme == t).count() for t in range(1,5)}
+            print(f"  Grille {grille_num} : T1={counts[1]} T2={counts[2]} T3={counts[3]} T4={counts[4]} => {sum(counts.values())}")
     finally:
         db.close()
 
