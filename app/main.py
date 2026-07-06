@@ -622,9 +622,7 @@ def _verifier_role(path: str, method: str, role: str):
     # /admin* → admin uniquement
     if path.startswith("/admin"):
         return role == "admin"
-    # Dashboard → terrain redirigé vers /sessions
-    if path == "/" and role == "terrain":
-        return "/sessions"
+    # Dashboard → accessible au terrain en lecture (blocs filtres dans le template)
     # Pages de gestion → admin + utilisateur seulement
     if path in _GESTION_PATHS or path.startswith("/statistiques") or path.startswith("/api/statistiques") or path.startswith("/api/registre-caces"):
         return role in ("admin", "utilisateur")
@@ -906,6 +904,8 @@ def export_zip_session(session_id: int, request: Request, pin: str = "", db: DBS
 @app.get("/")
 def dashboard(request: Request):
     from datetime import date, timedelta
+    _u_dash = getattr(request.state, "user", None)
+    _user_role_dash = _u_dash.role if _u_dash else None
     today = date.today()
     limite_4ans = today - timedelta(days=4*365)
     limite_2ans = today - timedelta(days=2*365)
@@ -1070,6 +1070,7 @@ def dashboard(request: Request):
                 "lieux_cdt": lieux_cdt,
                 "stagiaires_sans_photo": stagiaires_sans_photo,
                 "caces_a_valider": caces_a_valider,
+                "user_role": _user_role_dash,
             }
         )
     finally:

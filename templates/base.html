@@ -145,7 +145,7 @@ if (role !== 'admin') {
 }
 if (role === 'terrain') {
     // terrain ne voit que Sessions et sa fiche perso
-    const cachePrefixes = ['/', '/stagiaires', '/caces-obtenus', '/cartes-caces', '/non-conformites', '/statistiques', '/registre-caces'];
+    const cachePrefixes = ['/stagiaires', '/caces-obtenus', '/cartes-caces', '/non-conformites', '/statistiques', '/registre-caces'];
     document.querySelectorAll('.nav-item').forEach(link => {
         try {
             const p = new URL(link.href).pathname;
