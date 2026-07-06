@@ -98,6 +98,10 @@
                     data-visite-date="{{ t.visite_medicale_date or '' }}"
                     data-has-autorisation="{{ 'true' if t.autorisation_conduite_cle else 'false' }}"
                     data-autorisation-nom="{{ t.autorisation_conduite_nom or '' }}"
+                    data-nda="{{ t.numero_nda or '' }}"
+                    data-has-rcp="{{ 'true' if t.rcp_cle else 'false' }}"
+                    data-rcp-nom="{{ t.rcp_nom or '' }}"
+                    data-rcp-date="{{ t.rcp_date or '' }}"
                     data-etat="{{ t.etat or 'actif' }}"
                     data-utilisateur-id="{{ t.utilisateur_id or '' }}">✏️</button>
                 <button style="background:none;border:none;padding:4px 6px;font-size:18px;line-height:1;cursor:pointer;"

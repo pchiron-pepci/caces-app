@@ -15,6 +15,34 @@
         document.getElementById('modal-ajouter-carte').style.display = 'none';
     });
 
+
+    // --- RCP (responsabilite civile pro) ---
+    var _bur = document.getElementById('btn-upload-rcp');
+    if (_bur) _bur.addEventListener('click', function() {
+        const dateVal = document.getElementById('modal-rcp-date').value;
+        if (!dateVal) { alert('Veuillez saisir une date d\'expiration RCP.'); return; }
+        document.getElementById('modal-rcp-file').click();
+    });
+    var _mrf = document.getElementById('modal-rcp-file');
+    if (_mrf) _mrf.addEventListener('change', function() {
+        if (!this.files || this.files.length === 0) return;
+        const file = this.files[0];
+        const testeurId = document.getElementById('testeur-id').value;
+        const dateVal = document.getElementById('modal-rcp-date').value;
+        ouvrirPinAction('Uploader "' + file.name + '" comme RCP ?', async function(pin) {
+            const fd = new FormData();
+            fd.append('file', file);
+            return fetch('/api/upload/rcp/' + testeurId + '?pin=' + encodeURIComponent(pin) + '&date_rcp=' + encodeURIComponent(dateVal), { method: 'POST', body: fd });
+        });
+    });
+    var _bsr = document.getElementById('btn-suppr-rcp');
+    if (_bsr) _bsr.addEventListener('click', function() {
+        const testeurId = document.getElementById('testeur-id').value;
+        ouvrirPinAction('Supprimer la RCP ?', async function(pin) {
+            return fetch('/api/upload/rcp/' + testeurId + '?pin=' + encodeURIComponent(pin), { method: 'DELETE' });
+        });
+    });
+
     // --- Attestation prévention ---
     var _bup = document.getElementById('btn-upload-prevention');
     if (_bup) _bup.addEventListener('click', function() {
@@ -249,6 +277,9 @@ function ouvrirFormulaire() {
     document.getElementById('section-habs-modal').style.display = 'none';
     document.getElementById('section-documents').style.display = 'none';
     document.getElementById('modal-prev-file').value = '';
+    var _fnda2 = document.getElementById('f-nda'); if (_fnda2) _fnda2.value = '';
+    var _rcpd = document.getElementById('modal-rcp-date'); if (_rcpd) _rcpd.value = '';
+    var _rcpf = document.getElementById('modal-rcp-file'); if (_rcpf) _rcpf.value = '';
     document.getElementById('modal').style.display = 'flex';
 }
 
@@ -301,6 +332,24 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
 
     // Évaluation
     document.getElementById('modal-eval-date').value = evalDate || '';
+    // NDA + RCP : lus via le bouton editer courant (evite d'alourdir la signature)
+    var _btnEd = document.querySelector('[data-action="editer"][data-id="' + id + '"]');
+    var _nda = _btnEd ? (_btnEd.dataset.nda || '') : '';
+    var _hasRcp = _btnEd ? (_btnEd.dataset.hasRcp === 'true') : false;
+    var _rcpNom = _btnEd ? (_btnEd.dataset.rcpNom || '') : '';
+    var _rcpDate = _btnEd ? (_btnEd.dataset.rcpDate || '') : '';
+    var _fnda = document.getElementById('f-nda'); if (_fnda) _fnda.value = _nda;
+    var _rcpDateEl = document.getElementById('modal-rcp-date'); if (_rcpDateEl) _rcpDateEl.value = _rcpDate || '';
+    if (_hasRcp) {
+        document.getElementById('modal-rcp-info').textContent = _rcpNom || 'rcp.pdf';
+        document.getElementById('modal-rcp-dl').href = '/api/upload/rcp/' + id + '/download';
+        document.getElementById('modal-rcp-dl').style.display = '';
+        document.getElementById('btn-suppr-rcp').style.display = '';
+    } else {
+        document.getElementById('modal-rcp-info').textContent = 'Aucune RCP';
+        document.getElementById('modal-rcp-dl').style.display = 'none';
+        document.getElementById('btn-suppr-rcp').style.display = 'none';
+    }
     if (hasEval === 'true') {
         document.getElementById('modal-eval-info').textContent = evalNom || 'evaluation.pdf';
         document.getElementById('modal-eval-dl').href = `/api/upload/evaluation/${id}/download`;
@@ -396,6 +445,7 @@ async function sauvegarder() {
         email: document.getElementById('f-email').value || null,
         telephone: document.getElementById('f-tel').value || null,
         numero_inrs: document.getElementById('f-inrs').value || null,
+        numero_nda: (document.getElementById('f-nda') ? document.getElementById('f-nda').value : '') || null,
         date_habilitation: document.getElementById('f-habilitation').value || null,
         date_expiration_habilitation: document.getElementById('f-expiration').value || null,
         visite_medicale: document.getElementById('f-visite').value || null,
