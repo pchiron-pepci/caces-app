@@ -2983,6 +2983,8 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Règle à retenir pour ce fichier :** toute nouvelle condition `{% if user_role != 'terrain' %}` ajoutée autour d'un élément dans `testeurs.html` DOIT être accompagnée d'une garde `if (el)` sur l'`addEventListener` correspondant dans `testeurs.js`, sous peine de reproduire ce même crash silencieux pour le rôle terrain.
 
+**Cas concret de cette règle appliquée dès le chantier suivant (2026-07-06, commit `584c8e8`) :** masquage de la barre de recherche `#search` + case "œil inactifs" pour le terrain (nouveau bloc `{% if user_role != 'terrain' %}` dans `.toolbar-left`). Avant d'appliquer, vérifié que `filtrer()` (`static/js/testeurs.js`) lit `document.getElementById('search').value` **sans garde**, et surtout qu'elle est appelée **sans condition dès `DOMContentLoaded`** (ligne 6, `filtrer();`) — donc AVANT même les gardes `if (el)` déjà posées sur les autres boutons. Sans le correctif jumeau (`const _s = document.getElementById('search'); if (!_s) return;`), masquer la barre de recherche aurait immédiatement reproduit le crash documenté ci-dessus, cette fois pour TOUS les rôles terrain dès le chargement de la page (pas seulement au clic sur un bouton). Les deux parties du script (template + JS) livrées et vérifiées dans le même commit — jamais l'une sans l'autre sur ce fichier.
+
 ---
 
 ## Sauvegarde base de données
