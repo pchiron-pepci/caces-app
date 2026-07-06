@@ -172,8 +172,8 @@
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-top:12px; margin-bottom:8px;">RCP (responsabilité civile pro)</div>
                 {% if t.rcp_date %}
                     {% set age_rcp = (t.rcp_date - today).days %}
-                    {% if age_rcp < 90 %}{% set bgr = '#ffebee' %}{% set fgr = '#c62828' %}
-                    {% elif age_rcp < 180 %}{% set bgr = '#fff3e0' %}{% set fgr = '#e65100' %}
+                    {% if age_rcp < 0 %}{% set bgr = '#ffebee' %}{% set fgr = '#c62828' %}
+                    {% elif age_rcp < 60 %}{% set bgr = '#fff3e0' %}{% set fgr = '#e65100' %}
                     {% else %}{% set bgr = '#e8f5e9' %}{% set fgr = '#2e7d32' %}{% endif %}
                     {% if t.rcp_cle %}<a href="/api/upload/rcp/{{ t.id }}/download" class="badge" style="background:{{ bgr }};color:{{ fgr }};font-size:11px;text-decoration:none;">{{ t.rcp_date.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:{{ bgr }};color:{{ fgr }};font-size:11px;">{{ t.rcp_date.strftime('%d/%m/%Y') }}</span>{% endif %}
                 {% elif t.rcp_cle %}

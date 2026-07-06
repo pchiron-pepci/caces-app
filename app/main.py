@@ -911,6 +911,7 @@ def dashboard(request: Request):
     limite_2ans = today - timedelta(days=2*365)
     seuil_carte_orange = today + timedelta(days=180)
     seuil_carte_rouge = today + timedelta(days=90)
+    seuil_rcp_orange = today + timedelta(days=60)
     db = SessionLocal()
     try:
         testeurs_list = db.query(Testeur).filter(
@@ -998,6 +999,11 @@ def dashboard(request: Request):
                     alertes.append({"label": "Carte " + _ct.famille + " expire le " + _ct.date_expiration.strftime("%d/%m/%Y"), "couleur": "rouge"})
                 elif _ct.date_expiration < seuil_carte_orange:
                     alertes.append({"label": "Carte " + _ct.famille + " expire le " + _ct.date_expiration.strftime("%d/%m/%Y"), "couleur": "orange"})
+            if t.rcp_date:
+                if t.rcp_date < today:
+                    alertes.append({"label": "RCP expirée le " + t.rcp_date.strftime("%d/%m/%Y"), "couleur": "rouge"})
+                elif t.rcp_date < seuil_rcp_orange:
+                    alertes.append({"label": "RCP expire le " + t.rcp_date.strftime("%d/%m/%Y"), "couleur": "orange"})
             if alertes:
                 alertes_testeurs.append({"testeur": t, "alertes": alertes})
         familles_carto = db.query(Famille).filter(Famille.actif == True).order_by(Famille.code).all()
