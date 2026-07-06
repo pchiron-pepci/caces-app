@@ -885,3 +885,69 @@ def maj_date_expiration_carte(carte_id: int, body: _DateExpirationBody):
         return {"message": "Date mise a jour", "date_expiration": carte.date_expiration.isoformat() if carte.date_expiration else None}
     finally:
         db.close()
+
+
+@router.post("/rcp/{testeur_id}")
+async def upload_rcp(testeur_id: int, date_rcp: str = None, file: UploadFile = File(...)):
+    """Upload RCP (responsabilite civile pro) — sans PIN (document interne)."""
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Format PDF uniquement")
+    contents = await file.read()
+    cle = storage.construire_cle("testeurs/rcp", file.filename)
+    storage.upload_fichier(contents, cle, "application/pdf")
+    from app.models.testeur import Testeur
+    from datetime import datetime
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t:
+            raise HTTPException(status_code=404, detail="Testeur non trouve")
+        if t.rcp_cle:
+            try: storage.delete_fichier(t.rcp_cle)
+            except Exception: pass
+        t.rcp_cle = cle
+        t.rcp_nom = file.filename
+        if date_rcp:
+            try:
+                t.rcp_date = datetime.strptime(date_rcp, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        db.commit()
+    finally:
+        db.close()
+    return {"message": "RCP uploadee"}
+
+
+@router.get("/rcp/{testeur_id}/download")
+def telecharger_rcp(testeur_id: int):
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if not t or not t.rcp_cle:
+            raise HTTPException(status_code=404, detail="RCP non disponible")
+        nom = f"{t.nom}_{t.prenom}_{t.rcp_nom or 'rcp.pdf'}"
+        url = storage.generer_url_presignee(t.rcp_cle, nom_telechargement=nom, inline=False)
+        return RedirectResponse(url=url)
+    finally:
+        db.close()
+
+
+@router.delete("/rcp/{testeur_id}")
+def supprimer_rcp(testeur_id: int):
+    """Suppression RCP — sans PIN (document interne)."""
+    from app.models.testeur import Testeur
+    db = SessionLocal()
+    try:
+        t = db.query(Testeur).filter(Testeur.id == testeur_id).first()
+        if t:
+            if t.rcp_cle:
+                try: storage.delete_fichier(t.rcp_cle)
+                except Exception: pass
+            t.rcp_cle = None
+            t.rcp_nom = None
+            t.rcp_date = None
+            db.commit()
+    finally:
+        db.close()
+    return {"message": "RCP supprimee"}

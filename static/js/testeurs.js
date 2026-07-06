@@ -24,23 +24,22 @@
         document.getElementById('modal-rcp-file').click();
     });
     var _mrf = document.getElementById('modal-rcp-file');
-    if (_mrf) _mrf.addEventListener('change', function() {
+    if (_mrf) _mrf.addEventListener('change', async function() {
         if (!this.files || this.files.length === 0) return;
         const file = this.files[0];
         const testeurId = document.getElementById('testeur-id').value;
         const dateVal = document.getElementById('modal-rcp-date').value;
-        ouvrirPinAction('Uploader "' + file.name + '" comme RCP ?', async function(pin) {
-            const fd = new FormData();
-            fd.append('file', file);
-            return fetch('/api/upload/rcp/' + testeurId + '?pin=' + encodeURIComponent(pin) + '&date_rcp=' + encodeURIComponent(dateVal), { method: 'POST', body: fd });
-        });
+        const fd = new FormData();
+        fd.append('file', file);
+        const resp = await fetch('/api/upload/rcp/' + testeurId + '?date_rcp=' + encodeURIComponent(dateVal), { method: 'POST', body: fd });
+        if (resp.ok) { location.reload(); } else { alert('Erreur lors de l\'upload de la RCP.'); }
     });
     var _bsr = document.getElementById('btn-suppr-rcp');
-    if (_bsr) _bsr.addEventListener('click', function() {
+    if (_bsr) _bsr.addEventListener('click', async function() {
+        if (!confirm('Supprimer la RCP ?')) return;
         const testeurId = document.getElementById('testeur-id').value;
-        ouvrirPinAction('Supprimer la RCP ?', async function(pin) {
-            return fetch('/api/upload/rcp/' + testeurId + '?pin=' + encodeURIComponent(pin), { method: 'DELETE' });
-        });
+        const resp = await fetch('/api/upload/rcp/' + testeurId, { method: 'DELETE' });
+        if (resp.ok) { location.reload(); } else { alert('Erreur lors de la suppression.'); }
     });
 
     // --- Attestation prévention ---
