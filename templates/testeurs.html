@@ -142,14 +142,14 @@
                 {% if t.evaluation_date %}
                     {% set age_e = (today - t.evaluation_date).days %}
                     {% if age_e < 365 %}
-                        {% if t.evaluation_cle %}<a href="/api/upload/evaluation/{{ t.id }}/download" class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;text-decoration:none;">✅ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">✅ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</span>{% endif %}
+                        {% if t.evaluation_cle %}<a href="/api/upload/evaluation/{{ t.id }}/download" class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;text-decoration:none;">{{ t.evaluation_date.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;">{{ t.evaluation_date.strftime('%d/%m/%Y') }}</span>{% endif %}
                     {% elif age_e < 730 %}
                         {% if t.evaluation_cle %}<a href="/api/upload/evaluation/{{ t.id }}/download" class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;text-decoration:none;">⚠️ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;">⚠️ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</span>{% endif %}
                     {% else %}
                         {% if t.evaluation_cle %}<a href="/api/upload/evaluation/{{ t.id }}/download" class="badge" style="background:#ffebee;color:#c62828;font-size:11px;text-decoration:none;">❌ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ {{ t.evaluation_date.strftime('%d/%m/%Y') }}</span>{% endif %}
                     {% endif %}
                 {% elif t.evaluation_cle %}
-                    <a href="/api/upload/evaluation/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.evaluation_nom or 'evaluation.pdf' }}</a>
+                    <a href="/api/upload/evaluation/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">{{ t.evaluation_nom or 'evaluation.pdf' }}</a>
                 {% else %}
                     <span style="color:#888; font-size:12px;">—</span>
                 {% endif %}
@@ -158,21 +158,21 @@
                     {% if t.attestation_prevention_date %}
                         {% set age = (today - t.attestation_prevention_date).days %}
                         {% if age < 1460 %}
-                            <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;text-decoration:none;">✅ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
+                            <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;text-decoration:none;">{{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
                         {% elif age < 1825 %}
                             <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;text-decoration:none;">⚠️ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
                         {% else %}
                             <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#ffebee;color:#c62828;font-size:11px;text-decoration:none;">❌ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
                         {% endif %}
                     {% else %}
-                        <a href="/api/upload/attestation-prevention/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</a>
+                        <a href="/api/upload/attestation-prevention/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">{{ t.attestation_prevention_nom or 'attestation.pdf' }}</a>
                     {% endif %}
                 {% else %}
                     <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
                 {% endif %}
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-top:12px; margin-bottom:8px;">Autorisation de conduite</div>
                 {% if t.autorisation_conduite_cle %}
-                    <a href="/api/upload/autorisation-conduite/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.autorisation_conduite_nom or 'autorisation.pdf' }}</a>
+                    <a href="/api/upload/autorisation-conduite/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">{{ t.autorisation_conduite_nom or 'autorisation.pdf' }}</a>
                 {% else %}
                     <span style="color:#888; font-size:12px;">—</span>
                 {% endif %}
