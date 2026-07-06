@@ -270,9 +270,12 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     // Attestation prévention
     if (hasPrev === 'true') {
         document.getElementById('modal-prev-info').textContent = prevNom || 'attestation.pdf';
+        document.getElementById('modal-prev-dl').href = `/api/upload/attestation-prevention/${id}/download`;
+        document.getElementById('modal-prev-dl').style.display = '';
         document.getElementById('btn-suppr-prev').style.display = '';
     } else {
         document.getElementById('modal-prev-info').textContent = 'Aucune attestation';
+        document.getElementById('modal-prev-dl').style.display = 'none';
         document.getElementById('btn-suppr-prev').style.display = 'none';
     }
 

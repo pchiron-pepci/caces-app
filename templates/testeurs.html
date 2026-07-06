@@ -285,6 +285,7 @@
                     <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Attestation prévention</div>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <span id="modal-prev-info" style="font-size:12px; color:#666;">Aucune attestation</span>
+                        <a id="modal-prev-dl" href="#" style="text-decoration:none;padding:2px 4px;font-size:18px;line-height:1;display:none;" title="Consulter" target="_blank">📥</a>
                         <button id="btn-suppr-prev" style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;display:none;" title="Supprimer">🗑️</button>
                         <input type="file" id="modal-prev-file" accept=".pdf" style="display:none;">
                         <button id="btn-upload-prevention" style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;" title="Uploader">📤</button>
@@ -299,36 +300,36 @@
                     <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Visite médicale</div>
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
                         <span id="modal-visite-info" style="font-size:12px; color:#666;">Aucune visite</span>
-                        <a id="modal-visite-dl" href="#" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;display:none;" target="_blank">📥</a>
-                        <button class="btn btn-danger" id="btn-suppr-visite" style="padding:4px 10px;font-size:11px;display:none;">🗑️ Supprimer</button>
+                        <a id="modal-visite-dl" href="#" style="text-decoration:none;padding:2px 4px;font-size:18px;line-height:1;display:none;" title="Consulter" target="_blank">📥</a>
+                        <button id="btn-suppr-visite" style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;display:none;" title="Supprimer">🗑️</button>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="date" id="modal-visite-date" style="width:170px;max-width:100%;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:12px;">
                         <input type="file" id="modal-visite-file" accept=".pdf" style="display:none;">
-                        <button class="btn btn-secondary" id="btn-upload-visite" style="padding:4px 10px;font-size:11px;">📤 Uploader</button>
+                        <button id="btn-upload-visite" style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;" title="Uploader">📤</button>
                     </div>
                 </div>
                 <div>
                     <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Dernière évaluation</div>
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
                         <span id="modal-eval-info" style="font-size:12px; color:#666;">Aucune évaluation</span>
-                        <a id="modal-eval-dl" href="#" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;display:none;" target="_blank">📥</a>
-                        <button class="btn btn-danger" id="btn-suppr-eval" style="padding:4px 10px;font-size:11px;display:none;">🗑️ Supprimer</button>
+                        <a id="modal-eval-dl" href="#" style="text-decoration:none;padding:2px 4px;font-size:18px;line-height:1;display:none;" title="Consulter" target="_blank">📥</a>
+                        <button id="btn-suppr-eval" style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;display:none;" title="Supprimer">🗑️</button>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <input type="date" id="modal-eval-date" style="width:170px;max-width:100%;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:12px;">
                         <input type="file" id="modal-eval-file" accept=".pdf" style="display:none;">
-                        <button class="btn btn-secondary" id="btn-upload-eval" style="padding:4px 10px;font-size:11px;">📤 Uploader</button>
+                        <button id="btn-upload-eval" style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;" title="Uploader">📤</button>
                     </div>
                 </div>
                 <div>
                     <div style="font-size:12px; color:#555; font-weight:600; margin-bottom:6px;">Autorisation de conduite</div>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <span id="modal-autorisation-info" style="font-size:12px; color:#666;">Aucune autorisation</span>
-                        <a id="modal-autorisation-dl" href="#" class="btn btn-secondary" style="padding:3px 8px;font-size:11px;display:none;" target="_blank">📥</a>
-                        <button class="btn btn-danger" id="btn-suppr-autorisation" style="padding:4px 10px;font-size:11px;display:none;">🗑️ Supprimer</button>
+                        <a id="modal-autorisation-dl" href="#" style="text-decoration:none;padding:2px 4px;font-size:18px;line-height:1;display:none;" title="Consulter" target="_blank">📥</a>
+                        <button id="btn-suppr-autorisation" style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;display:none;" title="Supprimer">🗑️</button>
                         <input type="file" id="modal-autorisation-file" accept=".pdf" style="display:none;">
-                        <button class="btn btn-secondary" id="btn-upload-autorisation" style="padding:4px 10px;font-size:11px;">📤 Uploader</button>
+                        <button id="btn-upload-autorisation" style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;" title="Uploader">📤</button>
                     </div>
                 </div>
             </div>
