@@ -144,12 +144,16 @@ if (role !== 'admin') {
     });
 }
 if (role === 'terrain') {
-    // terrain ne voit que Sessions et Testeurs
+    // terrain ne voit que Sessions et sa fiche perso
     const cachePrefixes = ['/', '/stagiaires', '/caces-obtenus', '/cartes-caces', '/non-conformites', '/statistiques'];
     document.querySelectorAll('.nav-item').forEach(link => {
         try {
             const p = new URL(link.href).pathname;
             if (cachePrefixes.includes(p)) link.style.display = 'none';
+            if (p === '/testeurs') {
+                const txt = link.querySelector('.nav-item-text');
+                if (txt) txt.textContent = 'Mes informations';
+            }
         } catch(e) {}
     });
 }
