@@ -2971,6 +2971,20 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 ---
 
+### ✅ Chantier terminé : crash JS bloquant en rôle terrain sur la page testeurs (2026-07-06, commit 3362a84)
+
+**Fichier :** `static/js/testeurs.js`
+
+**Bug réel diagnostiqué avant correction (pas supposé sur la seule foi du script fourni) :** `templates/testeurs.html` n'a que 3 blocs `{% if user_role != 'terrain' %}` (lignes 15, 66, 72) — dont un seul concerne un élément ciblé par `document.getElementById()` en JS : le bouton `btn-nouveau-testeur` (ligne 15-17). Pour le rôle terrain, ce bouton n'existe pas dans le DOM → `document.getElementById('btn-nouveau-testeur').addEventListener(...)` (ligne 8 du fichier JS, exécutée tôt dans le handler `DOMContentLoaded`) levait une `TypeError` non interceptée, qui **interrompait l'exécution de tout le reste du script** — y compris l'attache des listeners de dépliage de carte testeur (`toggle-carte`, en délégation plus loin dans le fichier). Symptôme observé : impossible de déplier une carte testeur en rôle terrain, sans message d'erreur visible côté utilisateur (seule la console navigateur montrait la `TypeError`).
+
+**Correction :** chaque accès direct `document.getElementById(id).addEventListener(...)` sur les 8 boutons/éléments du haut de fichier (`search`, `btn-changer-etat`, `btn-nouveau-testeur`, `btn-sauvegarder`, `btn-fermer-modal`, `btn-fermer-pin`, `btn-fermer-prevention`, `btn-fermer-controle`) + le bloc "Attestation prévention" (`btn-upload-prevention`, `modal-prev-file`, `btn-suppr-prev`) passe par une variable intermédiaire avec garde `if (el) el.addEventListener(...)`.
+
+**Précision importante (vérifiée avant application, pas après) :** sur les 9 accès sécurisés, **un seul était la cause réelle du crash** (`btn-nouveau-testeur`) — les 8 autres éléments existent TOUJOURS dans le DOM, quel que soit le rôle (aucun n'est dans un bloc conditionnel Jinja). Leur sécurisation est un durcissement défensif sans effet fonctionnel observable (les `if` sont systématiquement vrais), pas un correctif supplémentaire de bug. Distinction faite en amont via lecture complète des `{% if user_role %}` du template avant d'accepter le diagnostic du script tel quel.
+
+**Règle à retenir pour ce fichier :** toute nouvelle condition `{% if user_role != 'terrain' %}` ajoutée autour d'un élément dans `testeurs.html` DOIT être accompagnée d'une garde `if (el)` sur l'`addEventListener` correspondant dans `testeurs.js`, sous peine de reproduire ce même crash silencieux pour le rôle terrain.
+
+---
+
 ## Sauvegarde base de données
 
 **Filet de securite principal = Render natif** (dashboard base `caces-db` > Recovery) : Point-in-Time Recovery (3 jours Hobby, 7 jours Pro) + Export logique (retention 7j) + bouton "Restore database" integre. C'est la reference d'exploitation, rien a coder.
