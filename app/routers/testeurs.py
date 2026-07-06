@@ -19,6 +19,7 @@ class TesteurCreate(BaseModel):
     email: Optional[str] = None
     telephone: Optional[str] = None
     numero_inrs: Optional[str] = None
+    numero_nda: Optional[str] = None
     date_habilitation: Optional[date] = None
     date_expiration_habilitation: Optional[date] = None
     visite_medicale: Optional[date] = None
@@ -38,6 +39,7 @@ class TesteurResponse(BaseModel):
     email: Optional[str] = None
     telephone: Optional[str] = None
     numero_inrs: Optional[str] = None
+    numero_nda: Optional[str] = None
     date_habilitation: Optional[date] = None
     date_expiration_habilitation: Optional[date] = None
     visite_medicale: Optional[date] = None
