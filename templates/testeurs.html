@@ -105,8 +105,8 @@
                 {% endif %}
             </div>
         </div>
-        <!-- Corps : 4 colonnes -->
-        <div id="corps-{{ t.id }}" style="display:none; grid-template-columns:1fr 1fr 1fr 1fr; padding:16px 20px; gap:0;">
+        <!-- Corps : 3 colonnes -->
+        <div id="corps-{{ t.id }}" style="display:none; grid-template-columns:1fr 1fr 1fr; padding:16px 20px; gap:0;">
             <!-- Habilitations CACES® -->
             <div style="padding-right:16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Habilitations CACES®</div>
@@ -123,28 +123,6 @@
                     <span style="color:#888; font-size:12px;">—</span>
                 {% endif %}
             </div>
-            <!-- Attestation prévention -->
-            <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
-                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Attestation prévention</div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    {% if t.attestation_prevention_cle %}
-                        {% if t.attestation_prevention_date %}
-                            {% set age = (today - t.attestation_prevention_date).days %}
-                            {% if age < 1460 %}
-                                <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;text-decoration:none;">✅ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
-                            {% elif age < 1825 %}
-                                <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;text-decoration:none;">⚠️ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
-                            {% else %}
-                                <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#ffebee;color:#c62828;font-size:11px;text-decoration:none;">❌ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
-                            {% endif %}
-                        {% else %}
-                            <a href="/api/upload/attestation-prevention/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</a>
-                        {% endif %}
-                    {% else %}
-                        <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
-                    {% endif %}
-                </div>
-            </div>
             <!-- Carte(s) CACES® -->
             <div style="padding:0 16px; border-right:1px solid #e8ecf4;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Carte(s) CACES®</div>
@@ -158,7 +136,7 @@
                     <div style="color:#888; font-size:12px;">—</div>
                 {% endif %}
             </div>
-            <!-- Dernière évaluation + Autorisation de conduite -->
+            <!-- Documents empiles : Derniere evaluation > Attestation prevention > Autorisation de conduite -->
             <div style="padding-left:16px;">
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Dernière évaluation</div>
                 {% if t.evaluation_date %}
@@ -174,6 +152,23 @@
                     <a href="/api/upload/evaluation/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.evaluation_nom or 'evaluation.pdf' }}</a>
                 {% else %}
                     <span style="color:#888; font-size:12px;">—</span>
+                {% endif %}
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-top:12px; margin-bottom:8px;">Attestation prévention</div>
+                {% if t.attestation_prevention_cle %}
+                    {% if t.attestation_prevention_date %}
+                        {% set age = (today - t.attestation_prevention_date).days %}
+                        {% if age < 1460 %}
+                            <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:11px;text-decoration:none;">✅ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
+                        {% elif age < 1825 %}
+                            <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#fff3e0;color:#e65100;font-size:11px;text-decoration:none;">⚠️ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
+                        {% else %}
+                            <a href="/api/upload/attestation-prevention/{{ t.id }}/download" class="badge" style="background:#ffebee;color:#c62828;font-size:11px;text-decoration:none;">❌ {{ t.attestation_prevention_date.strftime('%d/%m/%Y') }}</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="/api/upload/attestation-prevention/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">✅ {{ t.attestation_prevention_nom or 'attestation.pdf' }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="badge" style="background:#ffebee;color:#c62828;font-size:11px;">❌ Absente</span>
                 {% endif %}
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-top:12px; margin-bottom:8px;">Autorisation de conduite</div>
                 {% if t.autorisation_conduite_cle %}
