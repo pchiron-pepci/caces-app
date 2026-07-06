@@ -115,6 +115,7 @@
         <div id="corps-{{ t.id }}" class="corps-testeur" style="display:none; grid-template-columns:1fr 1fr 1fr; padding:16px 20px; gap:0;">
             <!-- Habilitations CACES® -->
             <div style="padding-right:16px; border-right:1px solid #e8ecf4;">
+                <div style="font-size:12px; margin-bottom:12px;"><span style="font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; font-size:10px;">N° NDA :</span> <span style="color:#2d2d2d;">{{ t.numero_nda or '—' }}</span></div>
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Habilitations CACES®</div>
                 {% if t.habilitations %}
                     <div style="display:flex; flex-direction:column; gap:4px;">
@@ -165,6 +166,18 @@
                     {% endif %}
                 {% elif t.evaluation_cle %}
                     <a href="/api/upload/evaluation/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">{{ t.evaluation_nom or 'evaluation.pdf' }}</a>
+                {% else %}
+                    <span style="color:#888; font-size:12px;">—</span>
+                {% endif %}
+                <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-top:12px; margin-bottom:8px;">RCP (responsabilité civile pro)</div>
+                {% if t.rcp_date %}
+                    {% set age_rcp = (t.rcp_date - today).days %}
+                    {% if age_rcp < 90 %}{% set bgr = '#ffebee' %}{% set fgr = '#c62828' %}
+                    {% elif age_rcp < 180 %}{% set bgr = '#fff3e0' %}{% set fgr = '#e65100' %}
+                    {% else %}{% set bgr = '#e8f5e9' %}{% set fgr = '#2e7d32' %}{% endif %}
+                    {% if t.rcp_cle %}<a href="/api/upload/rcp/{{ t.id }}/download" class="badge" style="background:{{ bgr }};color:{{ fgr }};font-size:11px;text-decoration:none;">{{ t.rcp_date.strftime('%d/%m/%Y') }}</a>{% else %}<span class="badge" style="background:{{ bgr }};color:{{ fgr }};font-size:11px;">{{ t.rcp_date.strftime('%d/%m/%Y') }}</span>{% endif %}
+                {% elif t.rcp_cle %}
+                    <a href="/api/upload/rcp/{{ t.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">{{ t.rcp_nom or 'rcp.pdf' }}</a>
                 {% else %}
                     <span style="color:#888; font-size:12px;">—</span>
                 {% endif %}
