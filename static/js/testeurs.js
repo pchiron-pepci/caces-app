@@ -323,13 +323,24 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     if (habsDivs.length === 0) {
         habsList.innerHTML = '<span style="font-size:12px;color:#888;">Aucune habilitation</span>';
     } else {
+        // Lecture seule, une ligne par famille (gestion dans Administration > Habilitations testeurs)
+        const parFamille = {};
+        const ordre = [];
         habsDivs.forEach(function(h) {
+            const fam = h.dataset.habFamille || (h.dataset.habLabel || '').split(' ')[0] || '?';
+            const cat = h.dataset.habCategorie || (h.dataset.habLabel || '').split(' ').slice(1).join(' ');
+            if (!parFamille[fam]) { parFamille[fam] = []; ordre.push(fam); }
+            if (cat && parFamille[fam].indexOf(cat) < 0) parFamille[fam].push(cat);
+        });
+        ordre.sort();
+        ordre.forEach(function(fam) {
+            const cats = parFamille[fam].sort();
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:4px;';
+            row.style.cssText = 'display:flex; align-items:baseline; gap:8px; margin-bottom:4px; font-size:12px;';
+            const catsTxt = cats.length ? cats.join(', ') : '—';
             row.innerHTML =
-                '<span class="badge blue" style="font-size:12px;">' + h.dataset.habLabel + '</span>' +
-                '<button class="btn btn-danger" style="padding:3px 8px;font-size:11px;"' +
-                ' data-action="supprimer-hab" data-hab-id="' + h.dataset.habId + '" data-hab-label="' + h.dataset.habLabel + '">🗑️</button>';
+                '<span class="badge blue" style="font-size:12px; font-weight:700; white-space:nowrap;">' + fam + '</span>' +
+                '<span style="color:#444;">' + catsTxt + '</span>';
             habsList.appendChild(row);
         });
     }
