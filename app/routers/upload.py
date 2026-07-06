@@ -3,7 +3,7 @@ import base64
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from fastapi.responses import Response, RedirectResponse
 from app.services import storage
 from app.database import SessionLocal
@@ -356,7 +356,8 @@ def liste_cartes_testeur(testeur_id: int):
         ).order_by(CarteTesteur.famille).all()
         return [
             {"id": c.id, "famille": c.famille, "nom_fichier": c.nom_fichier,
-             "date_upload": c.date_upload.strftime("%d/%m/%Y") if c.date_upload else None}
+             "date_upload": c.date_upload.strftime("%d/%m/%Y") if c.date_upload else None,
+             "date_expiration": c.date_expiration.isoformat() if c.date_expiration else None}
             for c in cartes
         ]
     finally:
@@ -364,7 +365,7 @@ def liste_cartes_testeur(testeur_id: int):
 
 
 @router.post("/cartes-testeur/{testeur_id}")
-async def upload_nouvelle_carte_testeur(testeur_id: int, pin: str, famille: str, file: UploadFile = File(...)):
+async def upload_nouvelle_carte_testeur(testeur_id: int, pin: str, famille: str, date_expiration: str = Form(None), file: UploadFile = File(...)):
     if pin != _get_pin_admin():
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
     if famille not in FAMILLES_VALIDES:
@@ -378,12 +379,20 @@ async def upload_nouvelle_carte_testeur(testeur_id: int, pin: str, famille: str,
     from datetime import datetime
     db = SessionLocal()
     try:
+        exp = None
+        if date_expiration:
+            from datetime import date as _date
+            try:
+                exp = _date.fromisoformat(date_expiration)
+            except ValueError:
+                exp = None
         carte = CarteTesteur(
             testeur_id=testeur_id,
             famille=famille,
             nom_fichier=file.filename,
             cle=cle,
-            date_upload=datetime.utcnow()
+            date_upload=datetime.utcnow(),
+            date_expiration=exp
         )
         db.add(carte)
         db.commit()

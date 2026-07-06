@@ -107,6 +107,7 @@
         carteAjouterTesteurId = document.getElementById('testeur-id').value;
         document.getElementById('ajouter-carte-famille').value = 'R482';
         document.getElementById('ajouter-carte-file').value = '';
+        document.getElementById('ajouter-carte-expiration').value = '';
         document.getElementById('ajouter-carte-pin').value = '';
         document.getElementById('ajouter-carte-error').style.display = 'none';
         document.getElementById('modal-ajouter-carte').style.display = 'flex';
@@ -123,6 +124,8 @@
         }
         const fd = new FormData();
         fd.append('file', fileInput.files[0]);
+        const expiration = document.getElementById('ajouter-carte-expiration').value;
+        if (expiration) fd.append('date_expiration', expiration);
         const resp = await fetch(
             `/api/upload/cartes-testeur/${carteAjouterTesteurId}?pin=${encodeURIComponent(pin)}&famille=${famille}`,
             { method: 'POST', body: fd }
@@ -175,6 +178,7 @@
             carteAjouterTesteurId = btn.dataset.id;
             document.getElementById('ajouter-carte-famille').value = 'R482';
             document.getElementById('ajouter-carte-file').value = '';
+            document.getElementById('ajouter-carte-expiration').value = '';
             document.getElementById('ajouter-carte-pin').value = '';
             document.getElementById('ajouter-carte-error').style.display = 'none';
             document.getElementById('modal-ajouter-carte').style.display = 'flex';
