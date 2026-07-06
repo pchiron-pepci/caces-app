@@ -293,7 +293,7 @@ python init_questions_r482.py
 | Haute | Grille statuts sessions 4 états (Ouverte / À réutiliser / Validée terrain / Clôturée) | ✅ fait |
 | Haute | Bouton + route clôture terrain (POST /sessions/{id}/cloturer-terrain, PIN) | ✅ fait |
 | Haute | Harmoniser affichage statut sessions dans dashboard.html (actuellement logique séparée inline) | ✅ fait |
-| Haute | Suppression habilitation testeur — hard delete avec PIN (modal testeurs) | en cours |
+| Haute | Suppression habilitation testeur — hard delete avec PIN (modal testeurs) | ❌ abandonné (voir note ci-dessous) |
 | Haute | Cartes CACES® PDF (format CR80, WeasyPrint) | ✅ fait |
 | Haute | Annuler/supprimer résultat épreuve pratique (avec PIN) | ✅ fait |
 | Haute | CACES® Obtenus — calcul auto + validation + page /caces-obtenus | ✅ fait |
@@ -727,14 +727,15 @@ session-REF.zip
 - try/except indépendant par pièce ; `_sanitize()` remplace `/\:*?"<>| ` dans les noms de fichiers
 - Helper `_nom_candidat(stagiaire_id, stagiaires)` → `NOM_Prenom` ou `stagXXX`
 
-### Chantier en cours : suppression habilitation (hard delete)
-Objectif : ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505).
+### ❌ Chantier abandonné : suppression habilitation depuis la modal testeurs (2026-07-06)
 
-Fichiers à modifier :
-- `app/routers/admin.py` — route `DELETE /admin/habilitation/{id}` : ajouter `pin`, vérification PIN, remplacer soft delete par `db.delete()`
-- `templates/admin.html` — `demanderPin()` : passer `pin` au callback ; `desactiverHabTesteur()` : transmettre `?pin=` à l'API
-- `templates/testeurs.html` — ajouter divs cachés `#habs-{id}` + section `#section-habs-modal` dans la modal
-- `static/js/testeurs.js` — `editer()` : peupler la liste habilitations ; ajouter `supprimerHab()` + handler `supprimer-hab`
+**Objectif initial (jamais complété) :** ajouter un bouton 🗑️ dans la modal de modification d'un testeur existant pour supprimer définitivement une habilitation (hard delete SQL + PIN 1505). Une version partielle avait été codée dans `static/js/testeurs.js` (`supprimerHab()` + dispatcher `supprimer-hab`, section `#section-habs-modal` dans `templates/testeurs.html`).
+
+**Décision inverse prise (commit `088b41d`) :** plutôt que de terminer ce chantier, la modale testeurs passe les habilitations en **lecture seule** — une ligne par famille (ex. "R.482 : A, B, C, F"), sans aucun bouton d'action, avec une mention explicite "(gestion dans Administration › Habilitations testeurs)". La gestion des habilitations (activer/désactiver/supprimer) est **entièrement centralisée dans Administration → Habilitations testeurs**, qui dispose déjà d'un mécanisme complet et fonctionnel (`admin.html` : `desactiverHabTesteur()`/`supprimerHabTesteur()`, indépendant de tout ce qui précède) — la modal testeurs n'a donc jamais eu besoin de sa propre suppression.
+
+**Code mort résiduel, non nettoyé (à faire si besoin un jour) :** `static/js/testeurs.js` conserve `supprimerHab()` (fonction, ~ligne 408) et le dispatcher `if (btn.dataset.action === 'supprimer-hab')` (~ligne 171) — plus aucun bouton dans le DOM ne déclenche ce chemin depuis le retrait du 🗑️ de cette modale. Inoffensif (jamais atteint), mais à supprimer par cohérence lors d'un futur ménage de ce fichier.
+
+**Fichiers concernés par le changement final :** `templates/testeurs.html` (attributs `data-hab-famille`/`data-hab-categorie` séparés + mention d'aide sous le titre), `static/js/testeurs.js` (rendu regroupé par famille, catégories triées et dédupliquées, sans bouton).
 
 ### ✅ Chantier terminé : page detail_theorie.html — header redesigné + bouton impression (commit 5927e82)
 
