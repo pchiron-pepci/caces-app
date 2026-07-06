@@ -451,9 +451,10 @@ document.addEventListener('DOMContentLoaded', function () {
         html += '<div style="width:70px;min-width:70px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Fam.</div>';
         html += '<div style="width:52px;min-width:52px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Cat.</div>';
         html += '<div style="width:80px;min-width:80px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Options</div>';
-        html += '<div style="flex:1;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">' + derColLabel + '</div>';
+        html += '<div style="width:160px;min-width:160px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">' + derColLabel + '</div>';
         html += '<div style="width:84px;min-width:84px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Obtention</div>';
         html += '<div style="width:84px;min-width:84px;font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Échéance</div>';
+        html += '<div style="flex:1;"></div>';
         html += '</div>';
 
         liste.forEach(function (co, i) {
@@ -479,9 +480,10 @@ document.addEventListener('DOMContentLoaded', function () {
             html += '<div class="csec-fam" style="width:70px;min-width:70px;font-size:12px;font-weight:700;color:#555;">' + co.famille + '</div>';
             html += '<div class="csec-cat" style="width:52px;min-width:52px;"><span style="background:#1a237e;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;">' + co.categorie + '</span></div>';
             html += '<div class="csec-opt" style="width:80px;min-width:80px;display:flex;flex-wrap:wrap;gap:2px;align-items:center;">' + options + '</div>';
-            html += '<div class="csec-der" data-label="' + derColLabel + '" style="flex:1;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">' + derCol + '</div>';
+            html += '<div class="csec-der" data-label="' + derColLabel + '" style="width:160px;min-width:160px;font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">' + derCol + '</div>';
             html += '<div class="csec-obt" data-label="Obtention" style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#1a237e;">' + formatDate(co.date_obtention) + '</div>';
             html += '<div class="csec-ech" data-label="Échéance" style="width:84px;min-width:84px;font-size:12px;font-weight:700;color:#2e7d32;">' + formatDate(co.date_echeance) + '</div>';
+            html += '<div style="flex:1;"></div>';
             html += '</div>';
         });
 
