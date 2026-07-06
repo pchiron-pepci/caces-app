@@ -185,6 +185,8 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 
 `rouvrir-terrain` n'est PAS whitelisté — réservé admin/utilisateur.
 
+**Blocage complémentaire (2026-07-06, commit `d771013`) : écriture `/api/upload/*` interdite au terrain.** Toute méthode `!= GET` vers un chemin commençant par `/api/upload` (upload/suppression d'attestation prévention, visite médicale, évaluation, autorisation de conduite, carte testeur, `PATCH` date d'expiration…) est bloquée pour le rôle terrain — le `GET .../download` reste autorisé (lecture seule). Vérifié avant application qu'aucun fichier/template accessible au terrain (`session_detail.js`, `saisie_pratique.js`, `saisie_degrade.js`, `test_theorie.html`, `saisie_degrade.html`, `session_detail.html`) ne référence `/api/upload` — tous les uploads légitimes du terrain (dispense, justificatifs formation/théorie/pratique) passent par `/api/sessions/*`, un préfixe distinct et déjà géré par ses propres exceptions ci-dessus. Aucune régression attendue.
+
 ---
 
 ## Règles métier
