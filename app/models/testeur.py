@@ -37,3 +37,7 @@ class Testeur(Base):
     evaluation_date = Column(Date, nullable=True)
     autorisation_conduite_cle = Column(String(500), nullable=True)
     autorisation_conduite_nom = Column(String(200), nullable=True)
+    numero_nda = Column(String(50), nullable=True)
+    rcp_cle = Column(String(500), nullable=True)
+    rcp_nom = Column(String(200), nullable=True)
+    rcp_date = Column(Date, nullable=True)
