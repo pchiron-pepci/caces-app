@@ -467,7 +467,8 @@ function changerEtatTesteur() {
 }
 
 function filtrer() {
-    const q = document.getElementById('search').value.toLowerCase();
+    const _s = document.getElementById('search'); if (!_s) return;
+    const q = _s.value.toLowerCase();
     const showInactifs = !!(document.getElementById('chk-inactifs') || {}).checked;
     const lbl = document.getElementById('lbl-inactifs');
     if (lbl) {
