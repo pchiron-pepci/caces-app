@@ -362,12 +362,18 @@ function editer(id, nom, prenom, statut, entreprise, inrs, email, tel, habilitat
     } else {
         cartesDivs.forEach(function(c) {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex; align-items:center; gap:8px;';
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
             row.innerHTML =
                 '<span style="font-size:12px;color:#2e7d32;">' + c.dataset.famille + ' : ' + c.dataset.nom + '</span>' +
                 '<a href="/api/upload/carte/' + c.dataset.carteId + '/download" style="text-decoration:none;padding:2px 4px;font-size:18px;line-height:1;" title="Consulter" target="_blank">📥</a>' +
                 '<button style="background:none;border:none;padding:2px 4px;font-size:18px;line-height:1;cursor:pointer;"' +
                 ' data-action="carte-modal-supprimer" data-carte-id="' + c.dataset.carteId + '" title="Supprimer">🗑️</button>';
+            const expSpan = document.createElement('span');
+            expSpan.style.cssText = 'font-size:11px;cursor:pointer;padding:1px 7px;border-radius:4px;' + _expStyle(c.dataset.expiration);
+            expSpan.title = 'Cliquer pour modifier la date d\'expiration';
+            expSpan.textContent = c.dataset.expiration ? ('exp. ' + _frDate(c.dataset.expiration)) : 'exp. —';
+            expSpan.addEventListener('click', function() { _editerDateExp(c.dataset.carteId, c.dataset.expiration, expSpan); });
+            row.appendChild(expSpan);
             cartesList.appendChild(row);
         });
     }
@@ -472,4 +478,50 @@ function filtrer() {
         }
         card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
+}
+
+
+function _frDate(iso) {
+    if (!iso) return '';
+    const p = iso.split('-');
+    return p[2] + '/' + p[1] + '/' + p[0];
+}
+
+function _expStyle(iso) {
+    if (!iso) return 'background:#f0f0f0;color:#999;';
+    const d = new Date(iso), now = new Date();
+    const jours = Math.round((d - now) / 86400000);
+    if (jours < 90) return 'background:#ffebee;color:#c62828;';
+    if (jours < 180) return 'background:#fff3e0;color:#e65100;';
+    return 'background:#e8f5e9;color:#2e7d32;';
+}
+
+function _editerDateExp(carteId, valeurIso, spanEl) {
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.value = valeurIso || '';
+    input.style.cssText = 'font-size:11px;padding:2px 4px;border:1px solid #ccc;border-radius:4px;';
+    spanEl.replaceWith(input);
+    input.focus();
+    let done = false;
+    async function valider() {
+        if (done) return; done = true;
+        const nouvelle = input.value || '';
+        try {
+            const resp = await fetch('/api/upload/carte/' + carteId + '/date-expiration', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date_expiration: nouvelle })
+            });
+            if (!resp.ok) throw new Error('maj');
+        } catch (e) { /* on reaffiche quand meme la valeur saisie */ }
+        const span = document.createElement('span');
+        span.style.cssText = 'font-size:11px;cursor:pointer;padding:1px 7px;border-radius:4px;' + _expStyle(nouvelle);
+        span.title = 'Cliquer pour modifier la date d\'expiration';
+        span.textContent = nouvelle ? ('exp. ' + _frDate(nouvelle)) : 'exp. —';
+        span.addEventListener('click', function() { _editerDateExp(carteId, nouvelle, span); });
+        input.replaceWith(span);
+    }
+    input.addEventListener('blur', valider);
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter') input.blur(); });
 }

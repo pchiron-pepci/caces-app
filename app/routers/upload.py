@@ -8,6 +8,7 @@ from fastapi.responses import Response, RedirectResponse
 from app.services import storage
 from app.database import SessionLocal
 from app.config_utils import get_pin_admin as _gpa
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/upload", tags=["Upload"])
 
@@ -855,3 +856,32 @@ def liste_audios():
         return {"audios": audios}
     except Exception as e:
         return {"audios": [], "error": str(e)}
+
+
+class _DateExpirationBody(BaseModel):
+    date_expiration: str | None = None
+
+
+@router.patch("/carte/{carte_id}/date-expiration")
+def maj_date_expiration_carte(carte_id: int, body: _DateExpirationBody):
+    """Met a jour uniquement la date d'expiration d'une carte testeur.
+    Pas de PIN (donnee non critique). Date recue dans le corps (ISO ou vide)."""
+    from app.models.carte_testeur import CarteTesteur
+    from datetime import date as _date
+    db = SessionLocal()
+    try:
+        carte = db.query(CarteTesteur).filter(CarteTesteur.id == carte_id).first()
+        if not carte:
+            raise HTTPException(status_code=404, detail="Carte introuvable")
+        val = (body.date_expiration or "").strip()
+        if val:
+            try:
+                carte.date_expiration = _date.fromisoformat(val)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Date invalide (format attendu AAAA-MM-JJ)")
+        else:
+            carte.date_expiration = None
+        db.commit()
+        return {"message": "Date mise a jour", "date_expiration": carte.date_expiration.isoformat() if carte.date_expiration else None}
+    finally:
+        db.close()

@@ -128,8 +128,17 @@
                 <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#999; margin-bottom:8px;">Carte(s) CACES®</div>
                 {% if t.cartes %}
                     {% for c in t.cartes %}
-                    <div style="margin-bottom:4px;">
+                    <div style="margin-bottom:6px;">
                         <a href="/api/upload/carte/{{ c.id }}/download" style="font-size:11px;color:#2e7d32;text-decoration:none;">{{ c.famille }} : {{ c.nom_fichier }}</a>
+                        {% if c.date_expiration %}
+                            {% set age_c = (c.date_expiration - today).days %}
+                            {% if age_c < 90 %}{% set bgc = '#ffebee' %}{% set fgc = '#c62828' %}
+                            {% elif age_c < 180 %}{% set bgc = '#fff3e0' %}{% set fgc = '#e65100' %}
+                            {% else %}{% set bgc = '#e8f5e9' %}{% set fgc = '#2e7d32' %}{% endif %}
+                            <span class="badge" style="background:{{ bgc }};color:{{ fgc }};font-size:10px;margin-left:4px;">exp. {{ c.date_expiration.strftime('%d/%m/%Y') }}</span>
+                        {% else %}
+                            <span style="font-size:10px;color:#aaa;margin-left:4px;">exp. —</span>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 {% else %}
@@ -198,7 +207,7 @@
 {% for t in testeurs %}
 <div id="cartes-{{ t.id }}" style="display:none;">
     {% for c in t.cartes %}
-    <div data-carte-id="{{ c.id }}" data-famille="{{ c.famille }}" data-nom="{{ c.nom_fichier }}"></div>
+    <div data-carte-id="{{ c.id }}" data-famille="{{ c.famille }}" data-nom="{{ c.nom_fichier }}" data-expiration="{{ c.date_expiration.isoformat() if c.date_expiration else '' }}"></div>
     {% endfor %}
 </div>
 {% endfor %}
