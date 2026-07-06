@@ -208,8 +208,19 @@
     <div style="background:white; border-radius:16px; padding:32px; width:700px; max-width:95vw; max-height:90vh; overflow-y:auto;">
         <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:24px;" id="modal-title">Nouveau testeur</h2>
         <input type="hidden" id="testeur-id">
+        <div class="form-field" id="ligne-etat" style="margin-bottom:16px;">
+            <label>État</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <select id="f-etat" style="flex:1; max-width:220px;">
+                    <option value="actif">Actif</option>
+                    <option value="suspendu">Suspendu</option>
+                    <option value="sorti">Sorti</option>
+                </select>
+                <button type="button" class="btn btn-secondary" id="btn-changer-etat" style="font-size:12px;padding:4px 10px;">💾 Appliquer</button>
+            </div>
+        </div>
         <div class="form-grid">
-            <div class="form-field">
+            <div class="form-field" style="grid-column: span 2;">
                 <label>Nom *</label>
                 <input type="text" id="f-nom" placeholder="JOSSELIN">
             </div>
@@ -224,17 +235,6 @@
                     <option value="independant">Indépendant</option>
                     <option value="entreprise">Entreprise</option>
                 </select>
-            </div>
-            <div class="form-field">
-                <label>État</label>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <select id="f-etat">
-                        <option value="actif">✅ Actif</option>
-                        <option value="suspendu">⚠️ Suspendu</option>
-                        <option value="sorti">🚪 Sorti</option>
-                    </select>
-                    <button type="button" class="btn btn-secondary" id="btn-changer-etat" style="font-size:12px;padding:4px 10px;">💾 Appliquer</button>
-                </div>
             </div>
             <div class="form-field">
                 <label>Entreprise</label>
