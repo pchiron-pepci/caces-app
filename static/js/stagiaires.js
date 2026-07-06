@@ -3,15 +3,15 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Recherche + filtre inactifs ────────────────────────────────────────
     function filtrer() {
         var q = ((document.getElementById('search') || {}).value || '').toLowerCase();
-        var showInactifs = !!(document.getElementById('chk-inactifs') || {}).checked;
+        var masquerInactifs = !!(document.getElementById('chk-inactifs') || {}).checked;
         var lbl = document.getElementById('lbl-inactifs');
         if (lbl) {
-            lbl.style.background = showInactifs ? '#e3f2fd' : '#f0f2f7';
-            lbl.style.borderColor = showInactifs ? '#1565c0' : '#c8d8f0';
+            lbl.style.background = masquerInactifs ? '#e3f2fd' : '#f0f2f7';
+            lbl.style.borderColor = masquerInactifs ? '#1565c0' : '#c8d8f0';
         }
         document.querySelectorAll('#tbody tr:not(.hist-row)').forEach(function (tr) {
             var sid = tr.dataset.stagiaireId;
-            if (tr.dataset.inactif && !showInactifs) {
+            if (tr.dataset.inactif && masquerInactifs) {
                 tr.style.display = 'none';
                 if (sid) { var h = document.getElementById('hist-' + sid); if (h) h.style.display = 'none'; }
                 return;
