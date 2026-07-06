@@ -386,7 +386,7 @@ Variables de contexte passées au template `dashboard.html` :
 - `referents` : Utilisateur avec role_referent renseigné et actif
 - `nc_ouvertes` : NonConformite statut in (ouvert, en_cours) desc date
 - `sessions_actives` : Session statut in (planifiee, en_cours) order by date_theorie/date_pratique_debut
-- `alertes_testeurs` : liste de `{"testeur": Testeur, "alertes": [{"label": str, "couleur": "rouge"|"orange"}]}` — attestation prévention (absente→rouge, >4ans→orange), visite médicale (absente→rouge, >2ans→orange), date_prochain_controle dépassée→rouge
+- `alertes_testeurs` : liste de `{"testeur": Testeur, "alertes": [{"label": str, "couleur": "rouge"|"orange"}]}` — attestation prévention (absente→rouge, >4ans→orange), visite médicale (absente→rouge, >2ans→orange), date_prochain_controle dépassée→rouge, carte(s) CACES® testeur avec `date_expiration` renseignée (2026-07-06, commit `bf40c27`) : échéance <90j→rouge, <180j→orange (une entrée par carte concernée, libellé `"Carte {famille} expire le JJ/MM/AAAA"`)
 - `caces_a_valider` : liste de dicts `{id, stagiaire_nom, stagiaire_prenom, famille, categorie}` — CacesObtenu statut=a_valider
 
 Carte **⚡ À traiter** (pleine largeur, grid-column 1/-1) regroupe en sections séparées par trait grisé : Sessions non clôturées, CACES® à valider, Non-conformités ouvertes, Alertes testeurs, Candidats sans photo. Chaque section affiche le compteur et "✅ Aucun" si vide. Remplace les anciennes cartes séparées "Sessions non clôturées", "Non-conformités ouvertes" et "Alertes".
