@@ -780,6 +780,8 @@ async def associer_audios(pin: str):
                 grille_num = int(parts[1][1:])
                 theme = int(parts[2][1:])
                 question = int(parts[3][1:])
+                # 5e partie = voix : _H (masculine, defaut) ou _F (feminine)
+                voix = parts[4] if len(parts) > 4 else "H"
                 grille = db.query(GrilleTheorie).filter(
                     GrilleTheorie.numero == grille_num,
                     GrilleTheorie.famille == famille
@@ -791,7 +793,10 @@ async def associer_audios(pin: str):
                         ReponseGrille.numero_question == question
                     ).first()
                     if rq:
-                        rq.audio_url = url
+                        if voix == "F":
+                            rq.audio_url_f = url
+                        else:
+                            rq.audio_url = url
                         updated += 1
             except Exception as e:
                 print(f"Erreur parsing audio {filename}: {e}")
