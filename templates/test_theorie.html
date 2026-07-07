@@ -722,6 +722,21 @@
             cursor: pointer;
             font-family: inherit;
         }
+        .voix-choix-wrap { display: flex; gap: 10px; justify-content: center; margin: 10px 0 2px; }
+        .voix-choix-btn {
+            display: flex; align-items: center; gap: 6px;
+            background: #fff; border: 2px solid var(--noryx-gris-clair);
+            border-radius: 999px; padding: 8px 18px; font-size: 15px;
+            color: var(--noryx-anthracite); cursor: pointer; font-family: inherit;
+        }
+        .voix-choix-btn.actif { border-color: var(--noryx-rouge); background: #fff5f5; font-weight: 700; }
+        .voix-switch-qcm { display: inline-flex; gap: 6px; margin-left: 8px; vertical-align: middle; }
+        .voix-switch-qcm button {
+            background: #fff; border: 2px solid var(--noryx-gris-clair);
+            border-radius: 999px; padding: 4px 12px; font-size: 13px;
+            color: var(--noryx-anthracite); cursor: pointer; font-family: inherit;
+        }
+        .voix-switch-qcm button.actif { border-color: var(--noryx-rouge); background: #fff5f5; font-weight: 700; }
         .checkbox-confirm {
             display: flex;
             gap: 10px;
@@ -892,6 +907,11 @@
             <button class="sel2-voix-btn" data-action="lire-voix" type="button">🔊 Lire à voix haute</button>
         </div>
 
+        <div class="voix-choix-wrap">
+            <button class="voix-choix-btn actif" data-action="choisir-voix" data-voix="H" type="button">👨 Voix homme</button>
+            <button class="voix-choix-btn" data-action="choisir-voix" data-voix="F" type="button">👩 Voix femme</button>
+        </div>
+
         <label class="checkbox-confirm">
             <input type="checkbox" id="confirm-identite">
             <span>Je certifie etre la personne designe ci-dessus et m'engage a repondre seul aux questions, sans aide exterieure ni support de cours.</span>
@@ -964,6 +984,10 @@
         <button class="btn-reecouter" data-action="relire-question" type="button" aria-label="Réécouter la question">
             <span class="btn-reecouter-ico">&#128266;</span> Réécouter
         </button>
+        <span class="voix-switch-qcm">
+            <button data-action="switch-voix" data-voix="H" type="button" id="qcm-voix-h" class="actif">👨</button>
+            <button data-action="switch-voix" data-voix="F" type="button" id="qcm-voix-f">👩</button>
+        </span>
 
         <div class="question-text" id="q-texte">Chargement...</div>
 
@@ -1521,6 +1545,42 @@ function _lireTexteSysteme(texte) {
     window.speechSynthesis.speak(u);
 }
 
+var _voixChoisie = 'H';  // 'H' = homme (audio), 'F' = femme (audio_f)
+
+function _urlSelonVoix(q) {
+    if (!q) return null;
+    if (_voixChoisie === 'F') return q.audio_f || q.audio || null;
+    return q.audio || q.audio_f || null;
+}
+
+function _majBoutonsVoixQcm() {
+    var h = document.getElementById('qcm-voix-h');
+    var f = document.getElementById('qcm-voix-f');
+    if (h) h.classList.toggle('actif', _voixChoisie === 'H');
+    if (f) f.classList.toggle('actif', _voixChoisie === 'F');
+}
+
+function choisirVoix(v, lireEchantillon) {
+    _voixChoisie = (v === 'F') ? 'F' : 'H';
+    document.querySelectorAll('[data-action="choisir-voix"]').forEach(function(b) {
+        b.classList.toggle('actif', b.dataset.voix === _voixChoisie);
+    });
+    _majBoutonsVoixQcm();
+    if (lireEchantillon) {
+        var phrase = "Bonjour, cette voix lira les questions de votre epreuve theorique. Si vous preferez cette voix, selectionnez-la.";
+        _lireTexteSysteme(phrase);
+    }
+}
+
+function switchVoixQcm(v) {
+    _voixChoisie = (v === 'F') ? 'F' : 'H';
+    _majBoutonsVoixQcm();
+    var q = questions[questionActuelle];
+    _audioUrlCourante = _urlSelonVoix(q);
+    var texte = document.getElementById('q-texte') ? document.getElementById('q-texte').textContent : '';
+    lireQuestion(_audioUrlCourante, texte);
+}
+
 function lireQuestion(audioUrl, texte) {
     _couperAudioEnCours();
     if (audioUrl) {
@@ -1557,7 +1617,8 @@ function afficherQuestion(idx) {
 
     document.getElementById('q-texte').textContent = q.texte;
 
-    _audioUrlCourante = q.audio || null;
+    _audioUrlCourante = _urlSelonVoix(q);
+    _majBoutonsVoixQcm();
     lireQuestion(_audioUrlCourante, q.texte);
 
     const btnV = document.getElementById('btn-vrai');
@@ -1743,6 +1804,8 @@ document.getElementById('ecran-qcm').addEventListener('click', function(e) {
         else suivant();
     } else if (action === 'relire-question') {
         relireQuestion();
+    } else if (action === 'switch-voix') {
+        switchVoixQcm(btn.dataset.voix);
     } else if (action === 'voir-recap') {
         afficherRecap();
     }
@@ -1769,6 +1832,8 @@ document.getElementById('ecran-selection').addEventListener('click', function(e)
 });
 document.getElementById('ecran-identite').addEventListener('click', function(e) {
     if (e.target.closest('[data-action="lire-voix"]')) { lireIdentiteVoixHaute(); return; }
+    var cv = e.target.closest('[data-action="choisir-voix"]');
+    if (cv) { choisirVoix(cv.dataset.voix, true); return; }
     if (e.target.closest('[data-action="confirmer-identite"]')) { allerConsignes(); return; }
     if (e.target.closest('[data-action="pas-moi"]')) { demanderPinFormateur(); return; }
     if (e.target.closest('[data-action="pin-debloquer"]')) { verifierPinFormateur(); return; }
