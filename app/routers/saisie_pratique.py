@@ -714,6 +714,25 @@ def supprimer(session_id: int, saisie_id: int, data: SupprimerSaisie,
     # on supprime completement la SessionEpreuve liee (meme triplet),
     # au lieu de la vider et laisser une ligne d'epreuve fantome.
     jour = db.query(JourTest).filter(JourTest.id == saisie.jour_test_id).first()
+
+    # BLOCAGE METIER : suppression interdite si un CACES VALIDE s'appuie sur cette saisie.
+    # Un CACES valide est une preuve opposable (carte potentiellement emise) : on ne detruit
+    # pas la saisie qui le fonde. Le triplet (stagiaire, session, categorie) identifie le CACES.
+    from app.models.caces_obtenu import CacesObtenu as _CacesObtenu
+    if jour:
+        _caces_valide = db.query(_CacesObtenu).filter(
+            _CacesObtenu.stagiaire_id == saisie.stagiaire_id,
+            _CacesObtenu.session_id == jour.session_id,
+            _CacesObtenu.categorie == saisie.categorie,
+            _CacesObtenu.statut == "valide",
+        ).first()
+        if _caces_valide:
+            raise HTTPException(
+                409,
+                "Suppression impossible : un CACES valide s'appuie sur cette saisie "
+                f"(categorie {saisie.categorie}). Annulez d'abord le CACES correspondant."
+            )
+
     epreuve_supprimee = False
     if jour:
         epreuve = db.query(SessionEpreuve).filter(
