@@ -2552,3 +2552,67 @@ def attestation_reussite_pdf(session_id: int, stagiaire_id: int,
         media_type="application/pdf",
         headers={"Content-Disposition": 'inline; filename="attestation_reussite.pdf"'},
     )
+
+
+# ── VISIBILITE TERRAIN PAR SESSION ────────────────────────────────
+def _personnes_affectees_session(db, session_id: int):
+    """Retourne [{user_id, nom, prenom}] dedoublonne : formateurs + testeurs (via utilisateur_id)."""
+    user_ids = set()
+    _jf_ids = [r.id for r in db.query(JourFormation.id).filter(
+        JourFormation.session_id == session_id, JourFormation.actif == True
+    ).all()]
+    if _jf_ids:
+        for r in db.query(AffectationFormation.user_id).filter(
+            AffectationFormation.jour_formation_id.in_(_jf_ids)
+        ).distinct().all():
+            if r.user_id:
+                user_ids.add(r.user_id)
+    _t_ids = {r.testeur_id for r in db.query(JourTest.testeur_id).filter(
+        JourTest.session_id == session_id, JourTest.actif == True,
+        JourTest.testeur_id.isnot(None)
+    ).all() if r.testeur_id}
+    if _t_ids:
+        for t in db.query(Testeur).filter(Testeur.id.in_(_t_ids)).all():
+            if t.utilisateur_id:
+                user_ids.add(t.utilisateur_id)
+    if not user_ids:
+        return []
+    users = db.query(Utilisateur).filter(Utilisateur.id.in_(user_ids)).order_by(
+        Utilisateur.nom, Utilisateur.prenom
+    ).all()
+    return [{"user_id": u.id, "nom": u.nom, "prenom": u.prenom or ""} for u in users]
+
+
+@router.get("/{session_id}/visibilite")
+def get_visibilite(session_id: int, db: DBSession = Depends(get_db),
+                   current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    if current_user.role not in ("admin", "utilisateur"):
+        raise HTTPException(403, "Acces non autorise")
+    from app.models.session_visibilite import SessionVisibilite
+    personnes = _personnes_affectees_session(db, session_id)
+    coches = {r.user_id for r in db.query(SessionVisibilite.user_id).filter(
+        SessionVisibilite.session_id == session_id
+    ).all()}
+    for p in personnes:
+        p["visible"] = p["user_id"] in coches
+    return personnes
+
+
+class VisibiliteBody(BaseModel):
+    user_ids: List[int] = []
+
+
+@router.put("/{session_id}/visibilite")
+def save_visibilite(session_id: int, data: VisibiliteBody,
+                    db: DBSession = Depends(get_db),
+                    current_user: Utilisateur = Depends(get_utilisateur_courant)):
+    if current_user.role not in ("admin", "utilisateur"):
+        raise HTTPException(403, "Acces non autorise")
+    from app.models.session_visibilite import SessionVisibilite
+    affectees = {p["user_id"] for p in _personnes_affectees_session(db, session_id)}
+    voulus = {uid for uid in data.user_ids if uid in affectees}
+    db.query(SessionVisibilite).filter(SessionVisibilite.session_id == session_id).delete()
+    for uid in voulus:
+        db.add(SessionVisibilite(session_id=session_id, user_id=uid))
+    db.commit()
+    return {"message": "Visibilite enregistree", "count": len(voulus)}

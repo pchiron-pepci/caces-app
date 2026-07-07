@@ -292,6 +292,20 @@ except Exception as _e:
 try:
     with engine.connect() as _conn:
         _conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS session_visibilite (
+                id SERIAL PRIMARY KEY,
+                session_id INTEGER NOT NULL REFERENCES sessions(id),
+                user_id INTEGER NOT NULL REFERENCES utilisateurs(id),
+                UNIQUE (session_id, user_id)
+            )
+        """))
+        _conn.commit()
+except Exception as _e:
+    print(f"[migration] session_visibilite: {_e}", flush=True)
+
+try:
+    with engine.connect() as _conn:
+        _conn.execute(text("""
             CREATE TABLE IF NOT EXISTS config_organisme (
                 id SERIAL PRIMARY KEY,
                 nom_organisme VARCHAR(200),
