@@ -12,6 +12,11 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/upload", tags=["Upload"])
 
+try:
+    from app.templates_instance import _to_paris
+except Exception:
+    _to_paris = lambda d: d
+
 def _get_pin_admin() -> str:
     db = SessionLocal()
     try:
@@ -142,7 +147,7 @@ def derniere_association():
         if not log:
             return {"date": None, "nb_images": None, "total_cloudinary": total_cloudinary}
         return {
-            "date": log.date_association.strftime("%d/%m/%Y %H:%M"),
+            "date": _to_paris(log.date_association).strftime("%d/%m/%Y %H:%M"),
             "nb_images": log.nb_images,
             "total_cloudinary": total_cloudinary
         }
@@ -850,7 +855,7 @@ def derniere_association_audio():
     db = SessionLocal()
     try:
         log = db.query(AssociationAudioLog).order_by(AssociationAudioLog.date_association.desc()).first()
-        date_str = log.date_association.strftime("%d/%m/%Y %H:%M") if log else None
+        date_str = _to_paris(log.date_association).strftime("%d/%m/%Y %H:%M") if log else None
         nb_audios = log.nb_audios if log else 0
     finally:
         db.close()
