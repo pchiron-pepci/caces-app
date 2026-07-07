@@ -768,13 +768,22 @@ async def associer_audios(pin: str):
     db = SessionLocal()
     updated = 0
     try:
-        result = cloudinary.api.resources(
-            type="upload",
-            prefix="caces_questions/audio/",
-            max_results=500,
-            resource_type="video"
-        )
-        for resource in result.get("resources", []):
+        # Pagination Cloudinary : recuperer TOUS les fichiers (au-dela de 500)
+        all_resources = []
+        next_cursor = None
+        while True:
+            page = cloudinary.api.resources(
+                type="upload",
+                prefix="caces_questions/audio/",
+                max_results=500,
+                resource_type="video",
+                next_cursor=next_cursor
+            )
+            all_resources.extend(page.get("resources", []))
+            next_cursor = page.get("next_cursor")
+            if not next_cursor:
+                break
+        for resource in all_resources:
             public_id = resource["public_id"]
             filename = public_id.split("/")[-1]
             url = resource["secure_url"]
