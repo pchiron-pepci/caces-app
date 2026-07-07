@@ -1546,6 +1546,8 @@ function _lireTexteSysteme(texte) {
 }
 
 var _voixChoisie = 'H';  // 'H' = homme (audio), 'F' = femme (audio_f)
+var _echantillonH = {{ (echantillon_h or '') | tojson }};
+var _echantillonF = {{ (echantillon_f or '') | tojson }};
 
 function _urlSelonVoix(q) {
     if (!q) return null;
@@ -1567,8 +1569,19 @@ function choisirVoix(v, lireEchantillon) {
     });
     _majBoutonsVoixQcm();
     if (lireEchantillon) {
-        var phrase = "Bonjour, cette voix lira les questions de votre epreuve theorique. Si vous preferez cette voix, selectionnez-la.";
-        _lireTexteSysteme(phrase);
+        var urlEch = (_voixChoisie === 'F') ? _echantillonF : _echantillonH;
+        if (urlEch) {
+            try {
+                var ae = new Audio(urlEch);
+                ae.play().catch(function() {
+                    _lireTexteSysteme("Bonjour, cette voix lira les questions de votre epreuve theorique.");
+                });
+            } catch (e) {
+                _lireTexteSysteme("Bonjour, cette voix lira les questions de votre epreuve theorique.");
+            }
+        } else {
+            _lireTexteSysteme("Bonjour, cette voix lira les questions de votre epreuve theorique. Si vous preferez cette voix, selectionnez-la.");
+        }
     }
 }
 
