@@ -1498,6 +1498,25 @@ def page_session_detail(request: Request, session_id: int):
         ).order_by(Categorie.code).all() if famille else []
         categories = [c.code for c in categories_obj]
         ut_par_cat = {c.code: c.ut_pratique for c in categories_obj}
+        # Immuabilite historique : inclure les categories reellement presentes dans
+        # cette session (via SessionEpreuve), meme si desactivees depuis dans la cartographie.
+        # Le filtre actif ci-dessus ne concerne QUE les categories proposables ; une
+        # session deja saisie doit toujours afficher ses categories d'origine.
+        codes_deja = set(categories)
+        codes_epreuves = {e.categorie for e in epreuves if e.categorie}
+        codes_manquants = codes_epreuves - codes_deja
+        if codes_manquants and famille:
+            cats_hist = db.query(Categorie).filter(
+                Categorie.famille_id == famille.id,
+                Categorie.code.in_(codes_manquants),
+                Categorie.est_option == False
+            ).order_by(Categorie.code).all()
+            for c in cats_hist:
+                if c.code not in codes_deja:
+                    categories.append(c.code)
+                    ut_par_cat[c.code] = c.ut_pratique
+                    codes_deja.add(c.code)
+            categories = sorted(categories)
         # Formation : toutes les catégories de la famille, sans filtre habilitation
         categories_formation_obj = db.query(Categorie).filter(
             Categorie.famille_id == (famille.id if famille else 0),
