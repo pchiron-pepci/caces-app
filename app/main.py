@@ -818,6 +818,7 @@ def page_projection_theorie(session_id: int, jour_id: int, request: Request, db:
                     "texte": q.get("texte") or "",
                     "image": q.get("image") or None,
                     "audio": q.get("audio") or None,
+                    "audio_f": q.get("audio_f") or None,
                 })
                 seq += 1
     except ValueError:
