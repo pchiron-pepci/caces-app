@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session as DBSession
+from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.session_epreuve import SessionEpreuve
 from app.models.jour_test import JourTest, JourTestCandidat
@@ -724,6 +725,19 @@ def supprimer(session_id: int, saisie_id: int, data: SupprimerSaisie,
             db.delete(epreuve)
             epreuve_supprimee = True
 
+    # compteur_temps n'est PAS en cascade ORM : suppression explicite des chronos lies
+    # avant le delete de la saisie, sinon ForeignKeyViolation (compteur_temps_saisie_id_fkey).
+    from app.models.grille_pratique import CompteurTemps as _CompteurTemps
+    db.query(_CompteurTemps).filter(_CompteurTemps.saisie_id == saisie.id).delete(synchronize_session=False)
+
     db.delete(saisie)  # cascade ORM -> blocs, notes, eliminatoires
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            409,
+            "Suppression impossible : cette saisie est encore reference par d'autres donnees. "
+            "Contactez l'administrateur."
+        )
     return {"message": "Supprimee", "epreuve_supprimee": epreuve_supprimee}
