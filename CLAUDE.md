@@ -3050,7 +3050,9 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **Réglages génération (`generer_audio_r486.py`) :** SSML, débit 95%, sigles épelés à la française (PEMP, EPI, VGP, GPL, ROPS, FOPS, SMS, CE, AIPR), CACES prononcé « quacèsse », catégories A/B/C et types 1A/3B épelés, N→Newton, classe II→classe 2, km/h→kilomètre heure, kV→kilovolts, [1]→repère 1, [Carsat/Cramif/CGSS]→Carsat, CMU développé.
 
-**Commits :** migration colonne (6952f2f), modèle ORM (33787fc), upload _H/_F (a5b7816), exposition audio_f (c886bd3), front tablette (d5aa1b7), projection salle (73ed447).
+**Commits :** migration colonne (6952f2f), modèle ORM (33787fc), upload _H/_F (a5b7816), exposition audio_f (c886bd3), front tablette (d5aa1b7), projection salle (73ed447), script génération audio (0600544), auto-migration démarrage (bd4c034).
+
+**Migration prod : automatique.** `audio_url_f` est dans `_run_startup_migrations` (`app/main.py`, à côté de `audio_url`) → la colonne est créée au prochain déploiement, aucune commande manuelle sur Render Shell requise. Le script `migrate_audio_url_f.py` reste dispo en secours/local (SQLite : les `ADD COLUMN IF NOT EXISTS` du démarrage échouent en WARN non-fatal, syntaxe non supportée par SQLite mais OK en PostgreSQL).
 
 **Ergonomie :**
 - Tablette (timer global) : choix de voix à l'écran d'identité (hors timer) + mini-switch 👨/👩 à côté de « Réécouter » pour réécouter une question dans l'autre voix. Le switch n'affecte pas le timer (global, pas par question).
