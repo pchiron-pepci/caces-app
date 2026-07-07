@@ -1705,16 +1705,27 @@ def page_session_detail(request: Request, session_id: int):
         try:
             _tf_rows = db.query(Testeur).filter(
                 Testeur.utilisateur_id != None,
-                Testeur.actif == True
+                Testeur.actif == True,
+                Testeur.etat == "actif"
             ).all()
             if _tf_rows:
                 _testeur_by_user = {t.utilisateur_id: t for t in _tf_rows}
                 _tf_ids = [t.id for t in _tf_rows]
+                from datetime import date as _date_hab
+                def _norm_fam_local(v):
+                    return (v or "").replace(".", "").replace(" ", "").upper()
+                _fam_sess_norm = _norm_fam_local(session.famille)
+                _auj = _date_hab.today()
                 for _h in db.query(HabilitationTesteur).filter(
                     HabilitationTesteur.testeur_id.in_(_tf_ids),
-                    HabilitationTesteur.famille == session.famille,
                     HabilitationTesteur.actif == True
                 ).all():
+                    if _norm_fam_local(_h.famille) != _fam_sess_norm:
+                        continue
+                    if _h.date_integration is not None and _h.date_integration > _auj:
+                        continue
+                    if _h.date_expiration is not None and _h.date_expiration <= _auj:
+                        continue
                     _habs_by_tid.setdefault(_h.testeur_id, []).append(_h.categorie)
                 _tu_list = db.query(Utilisateur).filter(
                     Utilisateur.id.in_(list(_testeur_by_user.keys())),
@@ -1722,11 +1733,14 @@ def page_session_detail(request: Request, session_id: int):
                 ).order_by(Utilisateur.nom, Utilisateur.prenom).all()
                 for _u2 in _tu_list:
                     _tf = _testeur_by_user.get(_u2.id)
+                    _habs_u = sorted(_habs_by_tid.get(_tf.id, [])) if _tf else []
+                    if not _habs_u:
+                        continue
                     utilisateurs_testeurs.append({
                         "user_id": _u2.id,
                         "nom": _u2.nom,
                         "prenom": _u2.prenom or "",
-                        "habs": sorted(_habs_by_tid.get(_tf.id, [])) if _tf else [],
+                        "habs": _habs_u,
                     })
         except Exception as _e:
             print(f"[utilisateurs_testeurs error]: {_e}", flush=True)
