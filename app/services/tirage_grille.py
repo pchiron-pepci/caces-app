@@ -143,6 +143,7 @@ def get_questions_phase2(session_id: int, famille: str, db: DBSession) -> dict:
                 "texte": q.texte_question,
                 "image": q.image_url,
                 "audio": q.audio_url,
+                "audio_f": q.audio_url_f,
                 "grille_id": ut.grille_id,
             }
             for q in questions
