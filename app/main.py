@@ -197,6 +197,7 @@ def _run_startup_migrations():
         "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS declenche_par_id INTEGER",
         # reponses_grilles
         "ALTER TABLE reponses_grilles ADD COLUMN IF NOT EXISTS audio_url VARCHAR(500)",
+        "ALTER TABLE reponses_grilles ADD COLUMN IF NOT EXISTS audio_url_f VARCHAR(500)",
         # justificatifs
         "ALTER TABLE justificatifs ADD COLUMN IF NOT EXISTS libelle VARCHAR(300)",
         "ALTER TABLE justificatifs ADD COLUMN IF NOT EXISTS uploade_par_role VARCHAR(20)",
