@@ -3070,3 +3070,19 @@ Au choix de voix (écran identité tablette), on joue un **vrai MP3 d'échantill
 - **Consommation :** `page_test_theorie` / `page_test_theorie_start` injectent `echantillon_h`/`echantillon_f` dans le contexte ; `test_theorie.html` les expose en JS (`_echantillonH`/`_echantillonF` via `tojson`, `""` si absent) ; `choisirVoix()` joue `new Audio(url)` avec repli TTS si URL vide ou `play()` rejeté (commit c25ebb2).
 - **Robustesse :** aucune config ⇒ URLs `""` ⇒ repli TTS silencieux. La projection salle n'a pas d'intro échantillon (les boutons H/F n'y changent que la voix des questions).
 
+### ✅ Lot de correctifs (2026-07-07)
+
+**Pagination Cloudinary (association upload).** `associer_audios` (commit a9f8b63) et `associer_images` (commit 7b0cd01) faisaient un seul appel `max_results=500` → au-delà de 500 fichiers, la moitié n'était jamais associée (bloquant pour la double voix : ~1000 MP3 = 500 questions × 2 voix). Corrigé par une boucle `while True` sur `next_cursor` jusqu'à épuisement (`app/routers/upload.py`). Restent volontairement plafonnés à 500 les 2 **compteurs cosmétiques** (`derniere_association`, `liste_audios`) — n'affectent que des totaux affichés, pas l'association réelle.
+
+**Heure d'association UTC → Paris (commit d8bab66).** Les dates « dernière association » (images + audio) s'affichaient en UTC. Corrigé via `_to_paris()` (`app/templates_instance.py`, gère le naïf comme UTC + bascule été/hiver `ZoneInfo`) sur les 2 affichages de `upload.py`. Import avec repli identité sûr.
+
+**Immuabilité historique (2 correctifs).** Une session/donnée déjà saisie doit toujours refléter son état d'origine, indépendamment des désactivations ultérieures dans la cartographie :
+- **Catégories** (commit bc14aef, `page_session_detail`) : réinclut les catégories réellement présentes dans les `SessionEpreuve` de la session même si désactivées depuis (rechargées par `code` dans la famille, non-option). Limite connue : une catégorie *supprimée* (pas juste désactivée) ne peut être réaffichée.
+- **Testeur affecté** (commit 6a2cb93, écran « modifier jour ») : le testeur historiquement affecté à un jour est réinjecté dans la liste même s'il est désactivé, pour rester sélectionné et éviter l'écrasement à la sauvegarde. Bonus : liste des testeurs désormais triée (`order_by(nom, prenom)`).
+
+**Modale d'affectation testeur — filtre complet (commit 8e66d73, `app/main.py`).** Un testeur n'apparaît dans la modale (jours de test / théorie) que si : (a) fiche active (`Testeur.actif == True` **et** `Testeur.etat == "actif"`), **et** (b) ≥1 habilitation valide dans la famille de la session — comparaison famille **normalisée** (`_norm_fam_local` : `R.482`==`R482`), `HabilitationTesteur.actif`, `date_integration <= aujourd'hui` (entrée incluse), `date_expiration > aujourd'hui` ou nulle (sortie stricte, vide = pas d'échéance). Les testeurs sans habilitation valide sont exclus (`if not _habs_u: continue`).
+
+**Suppression saisie pratique — robustesse + blocage métier (`app/routers/saisie_pratique.py`).** Deux commits :
+- **Fix technique (b80b782) :** `compteur_temps` n'est pas en cascade ORM (seul FK non-cascade vers `saisie_pratique` ; `SaisieBloc` l'est déjà) → `DELETE` explicite des chronos avant `db.delete(saisie)`, sinon `ForeignKeyViolation` → 500. `commit` enveloppé : `IntegrityError` → **409** clair au lieu d'un 500 brut.
+- **Blocage métier (465b3c2) :** suppression interdite si un `CacesObtenu` `statut="valide"` existe pour le triplet (stagiaire, session, catégorie) → **409** « Annulez d'abord le CACES correspondant ». Préserve l'immuabilité des preuves opposables (carte potentiellement émise).
+
