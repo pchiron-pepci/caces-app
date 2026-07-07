@@ -3040,3 +3040,22 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 - Sauvegarde recommandée avant exécution : `pg_dump "$DATABASE_URL" --no-owner --no-acl -f /tmp/backup_$(date +%Y%m%d_%H%M).sql` sur le Render Shell.
 
 ---
+
+
+### ✅ R.486 double voix (audio H/F) — chantier complet (2026-07-06)
+
+**Principe :** chaque question théorique dispose de deux pistes audio — voix masculine (Rémi) et féminine (Léa), générées par Amazon Polly (neural, eu-west-3). Colonne `audio_url` = voix Homme (défaut), nouvelle colonne `audio_url_f` = voix Femme.
+
+**Nommage fichiers :** `R486_G{grille}_T{theme}_Q{numero}_{H|F}.mp3` (suffixe voix en 5e position, lu par `upload.py` via `parts[4]`). Échantillons d'intro : `R486_ECHANTILLON_{H|F}.mp3`.
+
+**Réglages génération (`generer_audio_r486.py`) :** SSML, débit 95%, sigles épelés à la française (PEMP, EPI, VGP, GPL, ROPS, FOPS, SMS, CE, AIPR), CACES prononcé « quacèsse », catégories A/B/C et types 1A/3B épelés, N→Newton, classe II→classe 2, km/h→kilomètre heure, kV→kilovolts, [1]→repère 1, [Carsat/Cramif/CGSS]→Carsat, CMU développé.
+
+**Commits :** migration colonne (6952f2f), modèle ORM (33787fc), upload _H/_F (a5b7816), exposition audio_f (c886bd3), front tablette (d5aa1b7), projection salle (73ed447).
+
+**Ergonomie :**
+- Tablette (timer global) : choix de voix à l'écran d'identité (hors timer) + mini-switch 👨/👩 à côté de « Réécouter » pour réécouter une question dans l'autre voix. Le switch n'affecte pas le timer (global, pas par question).
+- Projection salle (déroulé auto, timer par question) : boutons 👨 Homme / 👩 Femme dans la barre de contrôle, bouton actif surligné en rouge.
+- Fallback : `_urlSelonVoix` retombe sur l'autre voix si la voulue manque, puis synthèse navigateur si aucun MP3.
+
+**À faire pour étendre à R.482 :** aucune modif code (infra générique). Générer les MP3 `R482_..._{H|F}.mp3` + échantillons, uploader, associer.
+
