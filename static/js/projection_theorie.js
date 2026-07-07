@@ -24,6 +24,7 @@
     // setTimeout 100 ms CSP-safe + clearTimeout anti-chevauchement.
     var _speakTimer = null;
     var _audioEnCours = null;
+    var _voixProj = 'H';  // 'H' homme (q.audio), 'F' femme (q.audio_f)
 
     // Voix système (navigateur) — secours si pas de MP3 ou échec de lecture.
     function _parlerSysteme(text) {
@@ -46,7 +47,7 @@
         cancelSpeech();
         var q = questions[idx];
         if (!q) return;
-        var audioUrl = q.audio || null;
+        var audioUrl = (_voixProj === 'F') ? (q.audio_f || q.audio || null) : (q.audio || q.audio_f || null);
         var texte = q.texte || '';
         if (audioUrl) {
             var a = new Audio(audioUrl);
@@ -211,6 +212,13 @@
         var btn = e.target.closest('[data-action]');
         if (!btn) return;
         switch (btn.dataset.action) {
+            case 'proj-voix':
+                _voixProj = (btn.dataset.voix === 'F') ? 'F' : 'H';
+                var bh = document.getElementById('proj-voix-h');
+                var bf = document.getElementById('proj-voix-f');
+                if (bh) bh.style.outline = (_voixProj === 'H') ? '2px solid #cc0000' : 'none';
+                if (bf) bf.style.outline = (_voixProj === 'F') ? '2px solid #cc0000' : 'none';
+                break;
             case 'playpause':
                 if (playing) pause(false); else play();
                 break;
