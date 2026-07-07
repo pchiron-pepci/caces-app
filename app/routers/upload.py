@@ -64,12 +64,20 @@ async def associer_images(pin: str):
     db = SessionLocal()
     updated = 0
     try:
-        result = cloudinary.api.resources(
-            type="upload",
-            prefix="caces_questions/",
-            max_results=500
-        )
-        resources = result.get("resources", [])
+        # Pagination Cloudinary : recuperer TOUS les fichiers (au-dela de 500)
+        resources = []
+        next_cursor = None
+        while True:
+            page = cloudinary.api.resources(
+                type="upload",
+                prefix="caces_questions/",
+                max_results=500,
+                next_cursor=next_cursor
+            )
+            resources.extend(page.get("resources", []))
+            next_cursor = page.get("next_cursor")
+            if not next_cursor:
+                break
         for resource in resources:
             public_id = resource["public_id"]
             filename = public_id.split("/")[-1]
