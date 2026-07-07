@@ -1362,7 +1362,13 @@ def page_modifier_jour(request: Request, session_id: int, jour_id: int):
     try:
         session = db.query(Session).filter(Session.id == session_id).first()
         jour = db.query(JourTest).filter(JourTest.id == jour_id).first()
-        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
+        testeurs_list = db.query(Testeur).filter(Testeur.actif == True).order_by(Testeur.nom, Testeur.prenom).all()
+        # Immuabilite : si le jour est deja affecte a un testeur desactive depuis,
+        # l'inclure dans la liste pour qu'il reste selectionne (sinon risque d'ecrasement).
+        if jour and jour.testeur_id and all(t.id != jour.testeur_id for t in testeurs_list):
+            t_hist = db.query(Testeur).filter(Testeur.id == jour.testeur_id).first()
+            if t_hist:
+                testeurs_list = list(testeurs_list) + [t_hist]
         return templates.TemplateResponse(
             request=request,
             name="modifier_jour.html",
