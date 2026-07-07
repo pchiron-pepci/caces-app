@@ -776,6 +776,18 @@ async def associer_audios(pin: str):
             url = resource["secure_url"]
             try:
                 parts = filename.upper().split("_")
+                # Echantillons d'intro : R486_ECHANTILLON_H / _F -> config organisme
+                if len(parts) >= 3 and parts[1] == "ECHANTILLON":
+                    voix_ech = parts[2].split(".")[0]
+                    from app.models.config_organisme import ConfigOrganisme
+                    cfg = db.query(ConfigOrganisme).first()
+                    if cfg:
+                        if voix_ech == "F":
+                            cfg.echantillon_audio_f = url
+                        else:
+                            cfg.echantillon_audio_h = url
+                        updated += 1
+                    continue
                 famille = parts[0]
                 grille_num = int(parts[1][1:])
                 theme = int(parts[2][1:])
