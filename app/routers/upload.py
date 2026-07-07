@@ -76,6 +76,10 @@ async def associer_images(pin: str):
             url = resource["secure_url"]
             try:
                 parts = filename.upper().split("_")
+                # Ne pas traiter les fichiers AUDIO comme des images :
+                # audio = 5 parties (..._H/_F) ou echantillon (ECHANTILLON_x)
+                if len(parts) >= 5 or (len(parts) >= 2 and parts[1] == "ECHANTILLON"):
+                    continue
                 famille = parts[0]
                 grille_num = int(parts[1][1:])
                 theme = int(parts[2][1:])
