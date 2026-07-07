@@ -3061,3 +3061,12 @@ Les deux routes de suppression de CACES (externe et repris) partagent désormais
 
 **À faire pour étendre à R.482 :** aucune modif code (infra générique). Générer les MP3 `R482_..._{H|F}.mp3` + échantillons, uploader, associer.
 
+#### Échantillons audio d'intro (sous-chantier, complet)
+
+Au choix de voix (écran identité tablette), on joue un **vrai MP3 d'échantillon** de la voix concernée au lieu d'une phrase TTS navigateur.
+
+- **Stockage :** colonnes `echantillon_audio_h` / `echantillon_audio_f` sur `config_organisme` (une paire par organisme). Auto-migration démarrage (`app/main.py`, commit 1ed8283) + champs modèle ORM (commit 8f10c69).
+- **Alimentation :** pas d'UI dédiée — le flux existant suffit. Uploader `R486_ECHANTILLON_{H|F}.mp3` sous `caces_questions/audio/`, puis `associer_audios` détecte `parts[1]=="ECHANTILLON"` et range l'URL dans `config_organisme` (commit 61bc00d). En parallèle, `associer_images` ignore désormais tout fichier audio (≥5 parties ou `ECHANTILLON`) pour ne pas écraser `image_url` avec une URL audio (commit c17ac81).
+- **Consommation :** `page_test_theorie` / `page_test_theorie_start` injectent `echantillon_h`/`echantillon_f` dans le contexte ; `test_theorie.html` les expose en JS (`_echantillonH`/`_echantillonF` via `tojson`, `""` si absent) ; `choisirVoix()` joue `new Audio(url)` avec repli TTS si URL vide ou `play()` rejeté (commit c25ebb2).
+- **Robustesse :** aucune config ⇒ URLs `""` ⇒ repli TTS silencieux. La projection salle n'a pas d'intro échantillon (les boutons H/F n'y changent que la voix des questions).
+
