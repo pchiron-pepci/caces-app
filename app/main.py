@@ -198,6 +198,8 @@ def _run_startup_migrations():
         # reponses_grilles
         "ALTER TABLE reponses_grilles ADD COLUMN IF NOT EXISTS audio_url VARCHAR(500)",
         "ALTER TABLE reponses_grilles ADD COLUMN IF NOT EXISTS audio_url_f VARCHAR(500)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS echantillon_audio_h VARCHAR(500)",
+        "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS echantillon_audio_f VARCHAR(500)",
         # justificatifs
         "ALTER TABLE justificatifs ADD COLUMN IF NOT EXISTS libelle VARCHAR(300)",
         "ALTER TABLE justificatifs ADD COLUMN IF NOT EXISTS uploade_par_role VARCHAR(20)",
