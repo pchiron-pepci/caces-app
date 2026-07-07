@@ -22,6 +22,7 @@ class ReponseGrille(Base):
     texte_question = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=True)
     audio_url = Column(String(500), nullable=True)
+    audio_url_f = Column(String(500), nullable=True)  # 2e voix (feminine)
 
 class UtilisationGrille(Base):
     __tablename__ = "utilisations_grilles"
