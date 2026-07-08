@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, Text, DateTime
 from app.database import Base
 
 class GrilleTheorie(Base):
@@ -31,3 +31,6 @@ class UtilisationGrille(Base):
     grille_id = Column(Integer, ForeignKey("grilles_theorie.id"), nullable=False)
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
     annee = Column(Integer, nullable=False)
+    famille = Column(String(10), nullable=True)
+    date_tirage = Column(DateTime, nullable=True)
+    declenche_par_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=True)

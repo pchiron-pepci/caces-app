@@ -14,6 +14,7 @@ class ConfigOrganisme(Base):
     revue_direction_date = Column(Date, nullable=True)
     pin_formateur = Column(String(20), nullable=True)
     mode_saisie_pratique = Column(String(20), nullable=True, default="binaire")
+    mode_tirage_theorie = Column(String(20), nullable=True, default="grille_complete")
     pin_admin = Column(String(20), nullable=True)
     prochain_numero_caces = Column(Integer, nullable=True)
     adresse = Column(Text, nullable=True)
