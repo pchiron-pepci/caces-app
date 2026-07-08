@@ -411,6 +411,14 @@
                     </select>
                     <small style="color:#888; display:block; margin-top:4px;">Détermine la finesse de notation à l'écran de saisie pratique. Enregistré avec le bouton en bas de page.</small>
                 </div>
+                <div class="form-field" style="grid-column:1 / -1;">
+                    <label for="config-mode-tirage">Mode de tirage théorique</label>
+                    <select id="config-mode-tirage" style="font-size:15px; padding:8px; border:1px solid #d0d4dc; border-radius:8px; max-width:480px;">
+                        <option value="grille_complete">Grille complète (référentiel INRS V2)</option>
+                        <option value="themes">Assemblage par thème (anticipation)</option>
+                    </select>
+                    <small style="color:#888; display:block; margin-top:4px;">Mode conforme au référentiel INRS en vigueur. L'assemblage par thème anticipe une évolution différée par l'INRS ; son activation relève de votre responsabilité d'OTC. Changer de mode nécessite au préalable une remise à zéro des familles ayant des tirages en cours.</small>
+                </div>
             </div>
             <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e0e0e0;">
                 <h3 style="font-size:16px; color:#2d2d2d; margin-bottom:4px;">⏱️ Durées standards — fiche de recommandation</h3>
@@ -1200,6 +1208,7 @@ async function chargerConfigOrganisme() {
     document.getElementById('config-pin-formateur').value = data.pin_formateur || '1234';
     document.getElementById('config-prochain-numero').value = data.prochain_numero_caces || 1;
     document.getElementById('config-mode-saisie').value = data.mode_saisie_pratique || 'binaire';
+    document.getElementById('config-mode-tirage').value = data.mode_tirage_theorie || 'grille_complete';
     document.getElementById('config-reco-h-theme').value = (data.reco_h_theme_pratique != null ? data.reco_h_theme_pratique : 1.5);
     document.getElementById('config-reco-h-elim').value = (data.reco_h_forfait_elim != null ? data.reco_h_forfait_elim : 1);
     document.getElementById('config-reco-seuil-theorie').value = (data.reco_seuil_theorie != null ? data.reco_seuil_theorie : 50);
@@ -1299,6 +1308,7 @@ function sauvegarderConfigOrganisme() {
             pin_formateur: document.getElementById('config-pin-formateur').value || '1234',
             prochain_numero_caces: parseInt(document.getElementById('config-prochain-numero').value) || 1,
             mode_saisie_pratique: document.getElementById('config-mode-saisie').value || 'binaire',
+            mode_tirage_theorie: document.getElementById('config-mode-tirage').value,
             reco_h_theme_pratique: parseFloat(document.getElementById('config-reco-h-theme').value) || 1.5,
             reco_h_forfait_elim: parseFloat(document.getElementById('config-reco-h-elim').value) || 1,
             reco_seuil_theorie: parseFloat(document.getElementById('config-reco-seuil-theorie').value) || 50,
@@ -1319,7 +1329,8 @@ function sauvegarderConfigOrganisme() {
         } else if (respNom.status === 403) {
             alert('Code PIN administrateur incorrect — paramètres non enregistrés.');
         } else {
-            alert('Erreur lors de la sauvegarde');
+            const err = await respNom.json().catch(() => ({}));
+            alert(err.detail || 'Erreur lors de la sauvegarde');
         }
     });
 }

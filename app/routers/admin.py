@@ -237,6 +237,7 @@ class ConfigOrganismeUpdate(BaseModel):
     signataire_qualite: Optional[str] = None
     url_verification_caces: Optional[str] = None
     mode_saisie_pratique: Optional[str] = None
+    mode_tirage_theorie: Optional[str] = None
     reco_h_theme_pratique: Optional[float] = None
     reco_h_forfait_elim: Optional[float] = None
     reco_h_theorie_courte: Optional[float] = None
@@ -276,6 +277,7 @@ def get_config_organisme(db: Session = Depends(get_db)):
         "signature_data_uri": _img_data_uri(config.signature_base64, config.signature_nom),
         "url_verification_caces": config.url_verification_caces or "",
         "mode_saisie_pratique": config.mode_saisie_pratique or "binaire",
+        "mode_tirage_theorie": config.mode_tirage_theorie or "grille_complete",
         "reco_h_theme_pratique": config.reco_h_theme_pratique if config.reco_h_theme_pratique is not None else 1.5,
         "reco_h_forfait_elim": config.reco_h_forfait_elim if config.reco_h_forfait_elim is not None else 1.0,
         "reco_h_theorie_courte": config.reco_h_theorie_courte if config.reco_h_theorie_courte is not None else 2.0,
@@ -313,6 +315,41 @@ def update_config_organisme(pin: str, data: ConfigOrganismeUpdate, db: Session =
     config.url_verification_caces = data.url_verification_caces
     if data.mode_saisie_pratique in ("binaire", "partiel_entier", "partiel_demi"):
         config.mode_saisie_pratique = data.mode_saisie_pratique
+    # --- Bascule du mode de tirage theorique : garde "une periode = un seul mode" ---
+    if data.mode_tirage_theorie in ("grille_complete", "themes"):
+        ancien_mode = config.mode_tirage_theorie or "grille_complete"
+        if data.mode_tirage_theorie != ancien_mode:
+            from sqlalchemy import func as _func
+            from app.models.grille_theorie import GrilleTheorie
+            from app.models.utilisations_themes import UtilisationTheme
+            from app.models.reset_tirage import dernier_reset
+            # familles reellement operationnelles (grilles actives)
+            familles_actives = [
+                f[0] for f in db.query(GrilleTheorie.famille)
+                .filter(GrilleTheorie.actif == True)
+                .distinct().all()
+            ]
+            bloquantes = []
+            for fam in familles_actives:
+                borne = dernier_reset(fam, db)
+                q = db.query(_func.count(UtilisationTheme.id)).filter(
+                    UtilisationTheme.famille == fam
+                )
+                if borne is not None:
+                    q = q.filter(UtilisationTheme.date_tirage > borne)
+                if (q.scalar() or 0) > 0:
+                    bloquantes.append(fam)
+            if bloquantes:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "Changement de mode de tirage impossible : des tirages sont en cours "
+                        "pour les familles suivantes : " + ", ".join(sorted(bloquantes)) + ". "
+                        "Effectuez d'abord une remise a zero de chacune (menu Statistiques) "
+                        "avant de basculer, afin que chaque periode reste sur un seul mode."
+                    ),
+                )
+        config.mode_tirage_theorie = data.mode_tirage_theorie
     if data.reco_h_theme_pratique is not None:
         config.reco_h_theme_pratique = data.reco_h_theme_pratique
     if data.reco_h_forfait_elim is not None:
