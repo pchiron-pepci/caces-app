@@ -3098,3 +3098,29 @@ Décider manuellement, depuis le back-office, quelles personnes affectées voien
 
 **Durcissement des gardes d'accès `sessions.py` (commit ec6c911).** 7 gardes de route mutantes passaient `if role == "terrain": 403` — équivalent à `not in ("admin","utilisateur")` pour les 3 rôles officiels (`ROLES_VALIDES = {admin, utilisateur, terrain}`, cf. `auth.py`), mais laissaient passer un rôle **legacy `testeur`** (encore présent en base via l'ancien `default="testeur"` du modèle). Alignées sur `not in ("admin", "utilisateur")` : `save_affectations_test`, `add`/`update`/`delete_jour_formation`, `save_affectations_formation`, `save_planning_jour_formation`, `declencher_tirage`. **Exception préservée :** `assert_modifiable_terrain` (helper de gel de session sur `date_cloture_terrain`) garde `== "terrain"` — ce n'est pas une garde de rôle. Règle : une garde d'accès admin doit s'écrire `not in ("admin", "utilisateur")`, jamais `== "terrain"`.
 
+
+---
+
+## Chantier — Mode de tirage theorique (V2 grille complete / assemblage par theme)
+
+**Contexte reglementaire.** L'INRS (courrier Hadj-Ali) a differe la phase d'assemblage par theme. La V2 (projet juin 2026, application au 1er/01/2027) retient le tirage d'une GRILLE COMPLETE parmi 5, taux 20% +/-10% par grille sur le nombre de sessions/tests. Nota : sous 7 sessions/an pour une famille, le taux n'est pas exige. NORYX supporte les deux regimes, bascule par reglage admin. Positionnement commercial : conforme au referentiel en vigueur (grille complete) ET pret pour l'assemblage par theme, activable des aujourd'hui sous responsabilite OTC.
+
+**Reglage.** `ConfigOrganisme.mode_tirage_theorie` (global, defaut `grille_complete`), valeurs `grille_complete` | `themes`. Helper `get_mode_tirage(db)` dans `config_utils.py`.
+
+**Regime fige (audit).** Colonne `UtilisationTheme.mode_tirage` (`v2_grille` | `assemblage_themes`), gravee a chaque tirage, opposable en audit, jamais recalculee depuis la config. Mapping config->regime via `mode_vers_regime(mode)` dans `tirage_grille.py`. DEUX VOCABULAIRES DISTINCTS VOLONTAIREMENT : config (reglage present) vs regime (fait historique date). Ne pas unifier : la config peut evoluer sans corrompre l'historique fige (meme principe que les snapshots cartes CACES).
+
+**Bascule.** Une periode = un seul mode. Passer d'un mode a l'autre exige un reset (mecanisme `ResetTirage`, ouvre une nouvelle periode). Stats d'une periode donc homogenes.
+
+**APPROCHE A (unification UtilisationTheme) - DECISION ARCHITECTURALE CLE.** Une grille complete = ses themes solidaires de la meme grille. `enregistrer_tirage_grille` ecrit N lignes `UtilisationTheme` (une par theme via `get_themes_famille`), toutes vers la grille tiree, regime `v2_grille`. Consequence : tout le logiciel (page test, PDF sujet/corrige, saisie en ligne/degradee, dashboard, detail session) lit `UtilisationTheme` SANS modification, quel que soit le mode. Un seul chemin de code.
+
+**Equite tirer_grille (min_count).** Compte des SESSIONS DISTINCTES par grille : `count(distinct session_id)` sur `UtilisationTheme` filtre `mode_tirage == 'v2_grille'`, borne au dernier reset. (Compter les lignes brutes gonflerait d'un facteur N = nb themes.) Grille la moins tiree, ex-aequo au hasard.
+
+**Fix regression inclus.** `tirer_themes_phase2` bornait tout l'historique : desormais borne sur `dernier_reset(famille)` comme documente. Idempotence du tirage (garde deja-declenche) lit `UtilisationTheme` dans les deux modes.
+
+**DETTE DOCUMENTEE (a nettoyer a froid, hors scope) :**
+- `UtilisationGrille` : table + colonnes (famille/date_tirage/declenche_par_id du bloc 1) desormais MORTES, abandonnees au profit de l'approche A. Ne plus jamais ecrire dedans. Migration deja poussee : ne pas defaire a chaud.
+- `main.py:27` : import `UtilisationGrille` mort preexistant (anterieur a ce chantier).
+- `sessions.py:656` : purge `UtilisationGrille` a la suppression d'un jour = no-op desormais, inoffensif.
+- `sessions.py:189` : detection "session a des donnees" teste encore `UtilisationGrille` (capte les lignes legacy) : valide, a conserver tant que du legacy existe.
+
+**Reste a faire (bloc 4/4).** Stats : tableau 5 grilles quand la periode est en `v2_grille` (regroupement par grille), tableau T1..T5 quand `assemblage_themes`. Phrase de rappel INRS des 7 sessions affichee UNIQUEMENT pour les familles sous 7. Reglage admin (selecteur mode + garde reset a la bascule) dans le calendrier qualite.
