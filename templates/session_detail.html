@@ -604,6 +604,13 @@
             {% endif %}
         {% endif %}
         {% if user_role in ('admin', 'utilisateur') %}
+        <button class="btn btn-secondary" data-action="ouvrir-visibilite" data-session-id="{{ session.id }}"
+                title="Choisir qui voit cette session cote terrain"
+                style="font-size:13px; background:#e3f2fd; border:1px solid #1976d2; color:#0d47a1;">
+            👁️ Visibilite
+        </button>
+        {% endif %}
+        {% if user_role in ('admin', 'utilisateur') %}
         <button class="btn btn-secondary" data-action="export-zip" data-session-id="{{ session.id }}"
                 title="Télécharger le dossier complet (corrigé + récap + justificatifs)"
                 style="font-size:13px; background:#ede7f6; border:1px solid #7b1fa2; color:#4a148c;">
@@ -2437,4 +2444,30 @@
 <script src="/static/vendor/cropperjs/cropper.min.js"></script>
 <script src="/static/js/session_detail.js"></script>
 <script src="/static/js/photo_modal.js"></script>
+
+    <!-- Modal visibilite terrain -->
+    <div id="modal-visibilite" style="display:none; position:fixed; top:0; left:0;
+         width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;
+         align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:16px; padding:32px; width:480px; max-width:95vw; max-height:80vh; overflow-y:auto;">
+            <h2 style="font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:4px;">
+                Visibilite cote terrain</h2>
+            <p style="font-size:13px; color:#666; margin-bottom:16px;">
+                Cochez les personnes qui doivent voir cette session dans leur espace terrain.</p>
+            <input type="hidden" id="vis-session-id">
+            <div style="margin-bottom:12px;">
+                <button type="button" class="btn btn-secondary" data-action="vis-tout-cocher"
+                        style="font-size:12px; padding:4px 10px;">Tout cocher</button>
+                <button type="button" class="btn btn-secondary" data-action="vis-tout-decocher"
+                        style="font-size:12px; padding:4px 10px;">Tout decocher</button>
+            </div>
+            <div id="vis-liste" style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
+                <p style="color:#888; font-size:13px;">Chargement...</p>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" data-action="sauvegarder-visibilite">Enregistrer</button>
+                <button class="btn btn-secondary" data-action="fermer-visibilite">Annuler</button>
+            </div>
+        </div>
+    </div>
 {% endblock %}

@@ -3113,3 +3113,67 @@ function afficherInfoToast(msg) {
     if (action === 'doc-session-supprimer') { _docSupprimer(act.getAttribute('data-id')); return; }
   });
 })();
+
+// -- VISIBILITE TERRAIN (oeil de la fiche session) --
+(function () {
+    function _modal() { return document.getElementById('modal-visibilite'); }
+    function ouvrirVisibilite(sessionId) {
+        document.getElementById('vis-session-id').value = sessionId;
+        var liste = document.getElementById('vis-liste');
+        liste.innerHTML = '<p style="color:#888; font-size:13px;">Chargement...</p>';
+        _modal().style.display = 'flex';
+        fetch('/api/sessions/' + sessionId + '/visibilite')
+            .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+            .then(function (personnes) {
+                if (!personnes.length) {
+                    liste.innerHTML = '<p style="color:#888; font-size:13px;">Aucune personne affectee a cette session.</p>';
+                    return;
+                }
+                liste.innerHTML = '';
+                personnes.forEach(function (p) {
+                    var row = document.createElement('div');
+                    row.style.cssText = 'background:#f5f5f5; border-radius:8px; padding:8px 12px;';
+                    var label = document.createElement('label');
+                    label.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px;';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.className = 'vis-cb'; cb.value = p.user_id;
+                    if (p.visible) cb.checked = true;
+                    var span = document.createElement('span');
+                    span.style.flex = '1';
+                    span.textContent = (p.nom || '') + ' ' + (p.prenom || '');
+                    label.appendChild(cb); label.appendChild(span);
+                    row.appendChild(label); liste.appendChild(row);
+                });
+            })
+            .catch(function () {
+                liste.innerHTML = '<p style="color:#c62828; font-size:13px;">Erreur de chargement.</p>';
+            });
+    }
+    function fermerVisibilite() { _modal().style.display = 'none'; }
+    function toutCocher(val) {
+        document.querySelectorAll('#vis-liste .vis-cb').forEach(function (cb) { cb.checked = val; });
+    }
+    function sauvegarderVisibilite() {
+        var sessionId = document.getElementById('vis-session-id').value;
+        var ids = [];
+        document.querySelectorAll('#vis-liste .vis-cb:checked').forEach(function (cb) {
+            ids.push(parseInt(cb.value, 10));
+        });
+        fetch('/api/sessions/' + sessionId + '/visibilite', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_ids: ids })
+        })
+            .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+            .then(function () { fermerVisibilite(); })
+            .catch(function () { alert('Erreur lors de l enregistrement de la visibilite.'); });
+    }
+    document.addEventListener('click', function (e) {
+        var open = e.target.closest('[data-action="ouvrir-visibilite"]');
+        if (open) { ouvrirVisibilite(open.dataset.sessionId); return; }
+        if (e.target.closest('[data-action="fermer-visibilite"]')) { fermerVisibilite(); return; }
+        if (e.target.closest('[data-action="vis-tout-cocher"]')) { toutCocher(true); return; }
+        if (e.target.closest('[data-action="vis-tout-decocher"]')) { toutCocher(false); return; }
+        if (e.target.closest('[data-action="sauvegarder-visibilite"]')) { sauvegarderVisibilite(); return; }
+    });
+})();
