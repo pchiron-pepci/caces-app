@@ -1316,7 +1316,18 @@ def page_sessions(request: Request):
     _u = getattr(request.state, "user", None)
     db = SessionLocal()
     try:
-        liste = db.query(Session).filter((Session.type != "reprise") | (Session.type.is_(None))).order_by(Session.id.desc()).all()
+        _q_sessions = db.query(Session).filter((Session.type != "reprise") | (Session.type.is_(None)))
+        if _u and _u.role == "terrain":
+            from app.models.session_visibilite import SessionVisibilite as _SV
+            _sids_visibles = {
+                row.session_id
+                for row in db.query(_SV.session_id).filter(_SV.user_id == _u.id).all()
+            }
+            if _sids_visibles:
+                _q_sessions = _q_sessions.filter(Session.id.in_(_sids_visibles))
+            else:
+                _q_sessions = _q_sessions.filter(False)  # aucune session cochee -> liste vide
+        liste = _q_sessions.order_by(Session.id.desc()).all()
         lieux = db.query(Lieu).filter(Lieu.actif == True).all()
         familles = db.query(Famille).filter(Famille.actif == True).all()
         testeurs_list = db.query(Testeur).filter(Testeur.actif == True).all()
