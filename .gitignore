@@ -10,3 +10,4 @@ check_*.py
 *_test.html
 test_*.html
 .DS_Store
+caces.db

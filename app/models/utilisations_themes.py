@@ -14,6 +14,7 @@ class UtilisationTheme(Base):
 
     date_tirage = Column(DateTime, nullable=True)
     declenche_par_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=True)
+    mode_tirage = Column(String(30), nullable=True)  # regime fige : v2_grille | assemblage_themes
 
     __table_args__ = (
         UniqueConstraint(

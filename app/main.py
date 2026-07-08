@@ -105,6 +105,7 @@ def _run_startup_migrations():
         "ALTER TABLE utilisations_grilles ADD COLUMN IF NOT EXISTS famille VARCHAR(10)",
         "ALTER TABLE utilisations_grilles ADD COLUMN IF NOT EXISTS date_tirage TIMESTAMP",
         "ALTER TABLE utilisations_grilles ADD COLUMN IF NOT EXISTS declenche_par_id INTEGER",
+        "ALTER TABLE utilisations_themes ADD COLUMN IF NOT EXISTS mode_tirage VARCHAR(30)",
         "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS reco_h_theme_pratique DOUBLE PRECISION DEFAULT 1.5",
         "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS reco_h_forfait_elim DOUBLE PRECISION DEFAULT 1.0",
         "ALTER TABLE config_organisme ADD COLUMN IF NOT EXISTS reco_h_theorie_courte DOUBLE PRECISION DEFAULT 2.0",

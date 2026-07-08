@@ -20,7 +20,7 @@ from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.utilisations_themes import UtilisationTheme
 from app.models.non_conformite import NonConformite
 from app.services.tirage_grille import (
-    tirer_grille, calculer_resultat_theorie, enregistrer_tirage_grille,
+    tirer_grille, calculer_resultat_theorie, enregistrer_tirage_grille, mode_vers_regime,
     tirer_themes_phase2, enregistrer_tirage_themes,
     get_questions_phase2, calculer_resultat_theorie_phase2,
     tirage_to_json
@@ -1584,21 +1584,16 @@ def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
         raise HTTPException(status_code=400,
             detail="Aucun candidat n'est inscrit en théorie — inscrivez au moins un candidat avant de déclencher le tirage.")
 
-    from app.models.grille_theorie import UtilisationGrille
     mode = get_mode_tirage(db)
+    regime = mode_vers_regime(mode)
 
-    if mode == "themes":
-        existants = (
-            db.query(UtilisationTheme)
-            .filter(UtilisationTheme.session_id == id, UtilisationTheme.famille == s.famille)
-            .all()
-        )
-    else:
-        existants = (
-            db.query(UtilisationGrille)
-            .filter(UtilisationGrille.session_id == id, UtilisationGrille.famille == s.famille)
-            .all()
-        )
+    # Approche A : toute la donnee de tirage vit dans UtilisationTheme,
+    # quel que soit le mode. La garde d'idempotence lit donc UtilisationTheme.
+    existants = (
+        db.query(UtilisationTheme)
+        .filter(UtilisationTheme.session_id == id, UtilisationTheme.famille == s.famille)
+        .all()
+    )
     if existants:
         date_t = getattr(existants[0], "date_tirage", None)
         return {
@@ -1612,10 +1607,10 @@ def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
     try:
         if mode == "themes":
             tirage = tirer_themes_phase2(s.famille, id, annee, db)
-            enregistrer_tirage_themes(id, s.famille, annee, tirage, db, date_tirage=now, declenche_par_id=current_user.id)
+            enregistrer_tirage_themes(id, s.famille, annee, tirage, db, date_tirage=now, declenche_par_id=current_user.id, regime=regime)
         else:
             grille = tirer_grille(s.famille, id, annee, db)
-            enregistrer_tirage_grille(id, s.famille, annee, grille, db, date_tirage=now, declenche_par_id=current_user.id)
+            enregistrer_tirage_grille(id, s.famille, annee, grille, db, date_tirage=now, declenche_par_id=current_user.id, regime=regime)
     except ValueError as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))

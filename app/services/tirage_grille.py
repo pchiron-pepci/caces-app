@@ -10,7 +10,7 @@ from collections import defaultdict
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import func
 
-from app.models.grille_theorie import GrilleTheorie, ReponseGrille, UtilisationGrille
+from app.models.grille_theorie import GrilleTheorie, ReponseGrille
 from app.models.utilisations_themes import UtilisationTheme
 
 
@@ -83,7 +83,7 @@ def tirer_themes_phase2(famille: str, session_id: int, annee: int, db: DBSession
     return tirage
 
 
-def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage: dict, db: DBSession, date_tirage=None, declenche_par_id=None) -> None:
+def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage: dict, db: DBSession, date_tirage=None, declenche_par_id=None, regime: str = "assemblage_themes") -> None:
     for theme, grille in tirage.items():
         existing = (
             db.query(UtilisationTheme)
@@ -97,6 +97,7 @@ def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage:
         if existing:
             existing.grille_id = grille.id
             existing.annee = annee
+            existing.mode_tirage = regime
             if date_tirage:
                 existing.date_tirage = date_tirage
             if declenche_par_id:
@@ -110,36 +111,47 @@ def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage:
                 annee=annee,
                 date_tirage=date_tirage,
                 declenche_par_id=declenche_par_id,
+                mode_tirage=regime,
             ))
     db.commit()
 
 
-def enregistrer_tirage_grille(session_id: int, famille: str, annee: int, grille, db: DBSession, date_tirage=None, declenche_par_id=None) -> None:
-    """Enregistre une utilisation de grille complete (mode V2)."""
-    existing = (
-        db.query(UtilisationGrille)
-        .filter(
-            UtilisationGrille.session_id == session_id,
-            UtilisationGrille.famille == famille,
+def enregistrer_tirage_grille(session_id: int, famille: str, annee: int, grille, db: DBSession, date_tirage=None, declenche_par_id=None, regime: str = "v2_grille") -> None:
+    """Mode grille complete (INRS V2) - approche unifiee.
+    Une grille complete = ses themes solidaires de la meme grille.
+    On ecrit donc une ligne UtilisationTheme par theme de la famille,
+    toutes pointant vers la grille tiree, avec le regime fige.
+    Tout le reste du logiciel (test, PDF, saisie) lit UtilisationTheme sans modification."""
+    themes = get_themes_famille(famille, db)
+    for theme in themes:
+        existing = (
+            db.query(UtilisationTheme)
+            .filter(
+                UtilisationTheme.session_id == session_id,
+                UtilisationTheme.famille == famille,
+                UtilisationTheme.theme == theme,
+            )
+            .first()
         )
-        .first()
-    )
-    if existing:
-        existing.grille_id = grille.id
-        existing.annee = annee
-        if date_tirage:
-            existing.date_tirage = date_tirage
-        if declenche_par_id:
-            existing.declenche_par_id = declenche_par_id
-    else:
-        db.add(UtilisationGrille(
-            grille_id=grille.id,
-            session_id=session_id,
-            famille=famille,
-            annee=annee,
-            date_tirage=date_tirage,
-            declenche_par_id=declenche_par_id,
-        ))
+        if existing:
+            existing.grille_id = grille.id
+            existing.annee = annee
+            existing.mode_tirage = regime
+            if date_tirage:
+                existing.date_tirage = date_tirage
+            if declenche_par_id:
+                existing.declenche_par_id = declenche_par_id
+        else:
+            db.add(UtilisationTheme(
+                session_id=session_id,
+                famille=famille,
+                theme=theme,
+                grille_id=grille.id,
+                annee=annee,
+                date_tirage=date_tirage,
+                declenche_par_id=declenche_par_id,
+                mode_tirage=regime,
+            ))
     db.commit()
 
 
@@ -269,6 +281,12 @@ def tirage_to_json(tirage: dict) -> str:
 # PHASE 1 — Conservée intacte pour sessions existantes
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def mode_vers_regime(mode: str) -> str:
+    """Traduit le mode config (present) en regime fige (audit, historique).
+    grille_complete -> v2_grille ; themes -> assemblage_themes."""
+    return {"grille_complete": "v2_grille", "themes": "assemblage_themes"}.get(mode, "v2_grille")
+
+
 def tirer_grille(famille: str, session_id: int, annee: int, db: DBSession) -> GrilleTheorie:
     """Mode grille complete (referentiel INRS V2).
     Tire la grille la MOINS utilisee (min_count), ex-aequo departages au hasard.
@@ -286,14 +304,23 @@ def tirer_grille(famille: str, session_id: int, annee: int, db: DBSession) -> Gr
     if not grilles:
         raise ValueError(f"Aucune grille active pour la famille {famille}")
 
+    # Approche A : le tirage grille ecrit N lignes UtilisationTheme (une par theme)
+    # toutes vers la meme grille. On compte donc des SESSIONS DISTINCTES par grille
+    # (pas des lignes), filtrees sur le regime v2_grille et bornees au dernier reset.
     _borne = dernier_reset(famille, db)
-    _filtres = [UtilisationGrille.famille == famille]
+    _filtres = [
+        UtilisationTheme.famille == famille,
+        UtilisationTheme.mode_tirage == "v2_grille",
+    ]
     if _borne is not None:
-        _filtres.append(UtilisationGrille.date_tirage > _borne)
+        _filtres.append(UtilisationTheme.date_tirage > _borne)
     usages = (
-        db.query(UtilisationGrille.grille_id, func.count(UtilisationGrille.id))
+        db.query(
+            UtilisationTheme.grille_id,
+            func.count(func.distinct(UtilisationTheme.session_id)),
+        )
         .filter(*_filtres)
-        .group_by(UtilisationGrille.grille_id)
+        .group_by(UtilisationTheme.grille_id)
         .all()
     )
     usage_map = {g_id: cnt for g_id, cnt in usages}
