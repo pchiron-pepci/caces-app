@@ -66,6 +66,7 @@
             <div style="display:flex; align-items:center; gap:12px;">
                 <button class="btn-hamburger" data-action="toggle-sidebar" title="Réduire / déplier le menu">☰</button>
                 <h1 class="page-title">{% block title %}{% endblock %}</h1>
+                {% block title_extra %}{% endblock %}
             </div>
             <div class="topbar-right">
                 <span class="user-badge">👤 <a href="/profil" style="color:inherit; text-decoration:none;"><span id="user-nom">—</span></a></span>

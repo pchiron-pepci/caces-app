@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}{{ session.famille }}{% if session.reference %} — {{ session.reference }}{% endif %}{% endblock %}
+{% block title_extra %}{% if user_role in ('admin', 'utilisateur') %}<button data-action="ouvrir-visibilite" data-session-id="{{ session.id }}" title="Visibilite cote terrain : qui voit cette session" style="background:none; border:none; cursor:pointer; padding:0 4px; font-size:26px; line-height:1; vertical-align:middle;">👁️</button>{% endif %}{% endblock %}
 
 {% macro nddn(s) %}{{ s.nom }} {{ s.prenom }}{% if s.date_naissance %} ({{ s.date_naissance.strftime('%d/%m/%Y') }}){% endif %}{% endmacro %}
 {% macro nddn2(s) %}{{ s.nom }} {{ s.prenom }}{% if s.date_naissance %}<br><span style="font-size:11px; color:#aaa; font-weight:400; line-height:1.1;">{{ s.date_naissance.strftime('%d/%m/%Y') }}</span>{% endif %}{% endmacro %}
@@ -561,7 +562,7 @@
 
 <span class="badge" style="background:#f0f2f7; color:#555;">
     Responsable : {{ session.responsable or 'Non défini' }}
-</span>{% if session.statut != 'terminee' and session.statut != 'annulee' and user_role != 'terrain' %}<a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary" title="Modifier les infos de la session" style="padding:2px 7px; font-size:13px;">✏️</a>{% endif %}{% if user_role in ('admin', 'utilisateur') %}<button data-action="ouvrir-visibilite" data-session-id="{{ session.id }}" title="Visibilite cote terrain : qui voit cette session" style="background:none; border:none; cursor:pointer; padding:2px 6px; font-size:15px; vertical-align:middle;">👁️</button>{% endif %}
+</span>{% if session.statut != 'terminee' and session.statut != 'annulee' and user_role != 'terrain' %}<a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary" title="Modifier les infos de la session" style="padding:2px 7px; font-size:13px;">✏️</a>{% endif %}
         </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
