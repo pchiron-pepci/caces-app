@@ -2567,14 +2567,17 @@ def _personnes_affectees_session(db, session_id: int):
         ).distinct().all():
             if r.user_id:
                 user_ids.add(r.user_id)
-    _t_ids = {r.testeur_id for r in db.query(JourTest.testeur_id).filter(
-        JourTest.session_id == session_id, JourTest.actif == True,
-        JourTest.testeur_id.isnot(None)
-    ).all() if r.testeur_id}
-    if _t_ids:
-        for t in db.query(Testeur).filter(Testeur.id.in_(_t_ids)).all():
-            if t.utilisateur_id:
-                user_ids.add(t.utilisateur_id)
+    # Testeurs : la source reelle est AffectationTest.user_id (deja un user_id),
+    # PAS JourTest.testeur_id (souvent None). Symetrique aux formateurs.
+    _jt_ids = [r.id for r in db.query(JourTest.id).filter(
+        JourTest.session_id == session_id, JourTest.actif == True
+    ).all()]
+    if _jt_ids:
+        for r in db.query(AffectationTest.user_id).filter(
+            AffectationTest.jour_test_id.in_(_jt_ids)
+        ).distinct().all():
+            if r.user_id:
+                user_ids.add(r.user_id)
     if not user_ids:
         return []
     users = db.query(Utilisateur).filter(Utilisateur.id.in_(user_ids)).order_by(
