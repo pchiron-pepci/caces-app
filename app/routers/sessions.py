@@ -1541,7 +1541,7 @@ def toggle_identite(session_id: int, jour_id: int, stagiaire_id: int, db: DBSess
 @router.post("/{id}/declencher-tirage")
 def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
                       current_user: Utilisateur = Depends(get_utilisateur_courant)):
-    if current_user.role == "terrain":
+    if current_user.role not in ("admin", "utilisateur"):
         raise HTTPException(status_code=403, detail="Réservé aux administrateurs")
     if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect")
@@ -1746,7 +1746,7 @@ def add_jour_formation(
     db: DBSession = Depends(get_db),
     current_user: Utilisateur = Depends(get_utilisateur_courant),
 ):
-    if current_user.role == "terrain":
+    if current_user.role not in ("admin", "utilisateur"):
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
@@ -1798,7 +1798,7 @@ def update_jour_formation(
     db: DBSession = Depends(get_db),
     current_user: Utilisateur = Depends(get_utilisateur_courant),
 ):
-    if current_user.role == "terrain":
+    if current_user.role not in ("admin", "utilisateur"):
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
@@ -1879,7 +1879,7 @@ def delete_jour_formation(
     db: DBSession = Depends(get_db),
     current_user: Utilisateur = Depends(get_utilisateur_courant),
 ):
-    if current_user.role == "terrain":
+    if current_user.role not in ("admin", "utilisateur"):
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     session = db.query(Session).filter(Session.id == session_id).first()
     _check_modifiable(session)
@@ -2117,7 +2117,7 @@ def save_affectations_formation(
     db: DBSession = Depends(get_db),
     current_user: Utilisateur = Depends(get_utilisateur_courant),
 ):
-    if current_user.role == "terrain":
+    if current_user.role not in ("admin", "utilisateur"):
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     session = db.query(Session).filter(Session.id == session_id).first()
     _check_modifiable(session)
@@ -2180,7 +2180,7 @@ def save_planning_jour_formation(
     db: DBSession = Depends(get_db),
     current_user: Utilisateur = Depends(get_utilisateur_courant),
 ):
-    if current_user.role == "terrain":
+    if current_user.role not in ("admin", "utilisateur"):
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     session = db.query(Session).filter(Session.id == session_id).first()
     _check_modifiable(session)
@@ -2245,7 +2245,7 @@ def save_affectations_test(
     db: DBSession = Depends(get_db),
     current_user: Utilisateur = Depends(get_utilisateur_courant),
 ):
-    if current_user.role == "terrain":
+    if current_user.role not in ("admin", "utilisateur"):
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     session = db.query(Session).filter(Session.id == session_id).first()
     _check_modifiable(session)
