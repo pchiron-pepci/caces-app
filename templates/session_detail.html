@@ -561,7 +561,7 @@
 
 <span class="badge" style="background:#f0f2f7; color:#555;">
     Responsable : {{ session.responsable or 'Non défini' }}
-</span>{% if session.statut != 'terminee' and session.statut != 'annulee' and user_role != 'terrain' %}<a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary" title="Modifier les infos de la session" style="padding:2px 7px; font-size:13px;">✏️</a>{% endif %}
+</span>{% if session.statut != 'terminee' and session.statut != 'annulee' and user_role != 'terrain' %}<a href="/sessions/{{ session.id }}/modifier" class="btn btn-secondary" title="Modifier les infos de la session" style="padding:2px 7px; font-size:13px;">✏️</a>{% endif %}{% if user_role in ('admin', 'utilisateur') %}<button data-action="ouvrir-visibilite" data-session-id="{{ session.id }}" title="Visibilite cote terrain : qui voit cette session" style="background:none; border:none; cursor:pointer; padding:2px 6px; font-size:15px; vertical-align:middle;">👁️</button>{% endif %}
         </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -602,13 +602,6 @@
             </button>
             {% endif %}
             {% endif %}
-        {% endif %}
-        {% if user_role in ('admin', 'utilisateur') %}
-        <button class="btn btn-secondary" data-action="ouvrir-visibilite" data-session-id="{{ session.id }}"
-                title="Choisir qui voit cette session cote terrain"
-                style="font-size:13px; background:#e3f2fd; border:1px solid #1976d2; color:#0d47a1;">
-            👁️ Visibilite
-        </button>
         {% endif %}
         {% if user_role in ('admin', 'utilisateur') %}
         <button class="btn btn-secondary" data-action="export-zip" data-session-id="{{ session.id }}"
