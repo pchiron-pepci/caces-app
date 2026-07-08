@@ -20,7 +20,7 @@ from app.models.consentement_rgpd import ConsentementRGPD
 from app.models.utilisations_themes import UtilisationTheme
 from app.models.non_conformite import NonConformite
 from app.services.tirage_grille import (
-    tirer_grille, calculer_resultat_theorie,
+    tirer_grille, calculer_resultat_theorie, enregistrer_tirage_grille,
     tirer_themes_phase2, enregistrer_tirage_themes,
     get_questions_phase2, calculer_resultat_theorie_phase2,
     tirage_to_json
@@ -28,7 +28,7 @@ from app.services.tirage_grille import (
 from app.services.caces_obtenus import calculer_et_synchroniser
 from app.models.utilisateur import Utilisateur
 from app.routers.auth import get_utilisateur_courant
-from app.config_utils import get_pin_admin, get_pin_formateur
+from app.config_utils import get_pin_admin, get_pin_formateur, get_mode_tirage
 from pydantic import BaseModel, model_validator
 from datetime import date, datetime as dt
 from typing import Optional, List, Dict
@@ -1584,13 +1584,23 @@ def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
         raise HTTPException(status_code=400,
             detail="Aucun candidat n'est inscrit en théorie — inscrivez au moins un candidat avant de déclencher le tirage.")
 
-    existants = (
-        db.query(UtilisationTheme)
-        .filter(UtilisationTheme.session_id == id, UtilisationTheme.famille == s.famille)
-        .all()
-    )
+    from app.models.grille_theorie import UtilisationGrille
+    mode = get_mode_tirage(db)
+
+    if mode == "themes":
+        existants = (
+            db.query(UtilisationTheme)
+            .filter(UtilisationTheme.session_id == id, UtilisationTheme.famille == s.famille)
+            .all()
+        )
+    else:
+        existants = (
+            db.query(UtilisationGrille)
+            .filter(UtilisationGrille.session_id == id, UtilisationGrille.famille == s.famille)
+            .all()
+        )
     if existants:
-        date_t = existants[0].date_tirage
+        date_t = getattr(existants[0], "date_tirage", None)
         return {
             "deja_declenche": True,
             "date_tirage": date_t.isoformat() if date_t else None,
@@ -1600,12 +1610,16 @@ def declencher_tirage(id: int, pin: str = "", db: DBSession = Depends(get_db),
     annee = datetime.now().year
     now = datetime.now()
     try:
-        tirage = tirer_themes_phase2(s.famille, id, annee, db)
+        if mode == "themes":
+            tirage = tirer_themes_phase2(s.famille, id, annee, db)
+            enregistrer_tirage_themes(id, s.famille, annee, tirage, db, date_tirage=now, declenche_par_id=current_user.id)
+        else:
+            grille = tirer_grille(s.famille, id, annee, db)
+            enregistrer_tirage_grille(id, s.famille, annee, grille, db, date_tirage=now, declenche_par_id=current_user.id)
     except ValueError as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-    enregistrer_tirage_themes(id, s.famille, annee, tirage, db, date_tirage=now, declenche_par_id=current_user.id)
     return {"deja_declenche": False, "date_tirage": now.isoformat()}
 
 

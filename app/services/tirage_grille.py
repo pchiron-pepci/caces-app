@@ -51,13 +51,18 @@ def tirer_themes_phase2(famille: str, session_id: int, annee: int, db: DBSession
     if not themes:
         raise ValueError(f"Aucun thème trouvé pour la famille {famille}")
 
+    from app.models.reset_tirage import dernier_reset
+    _borne = dernier_reset(famille, db)
+    _filtres = [UtilisationTheme.famille == famille]
+    if _borne is not None:
+        _filtres.append(UtilisationTheme.date_tirage > _borne)
     rows = (
         db.query(
             UtilisationTheme.theme,
             UtilisationTheme.grille_id,
             func.count(UtilisationTheme.id).label("cnt")
         )
-        .filter(UtilisationTheme.famille == famille)
+        .filter(*_filtres)
         .group_by(UtilisationTheme.theme, UtilisationTheme.grille_id)
         .all()
     )
@@ -106,6 +111,35 @@ def enregistrer_tirage_themes(session_id: int, famille: str, annee: int, tirage:
                 date_tirage=date_tirage,
                 declenche_par_id=declenche_par_id,
             ))
+    db.commit()
+
+
+def enregistrer_tirage_grille(session_id: int, famille: str, annee: int, grille, db: DBSession, date_tirage=None, declenche_par_id=None) -> None:
+    """Enregistre une utilisation de grille complete (mode V2)."""
+    existing = (
+        db.query(UtilisationGrille)
+        .filter(
+            UtilisationGrille.session_id == session_id,
+            UtilisationGrille.famille == famille,
+        )
+        .first()
+    )
+    if existing:
+        existing.grille_id = grille.id
+        existing.annee = annee
+        if date_tirage:
+            existing.date_tirage = date_tirage
+        if declenche_par_id:
+            existing.declenche_par_id = declenche_par_id
+    else:
+        db.add(UtilisationGrille(
+            grille_id=grille.id,
+            session_id=session_id,
+            famille=famille,
+            annee=annee,
+            date_tirage=date_tirage,
+            declenche_par_id=declenche_par_id,
+        ))
     db.commit()
 
 
@@ -236,37 +270,39 @@ def tirage_to_json(tirage: dict) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def tirer_grille(famille: str, session_id: int, annee: int, db: DBSession) -> GrilleTheorie:
+    """Mode grille complete (referentiel INRS V2).
+    Tire la grille la MOINS utilisee (min_count), ex-aequo departages au hasard.
+    Comptage borne sur le dernier reset de la famille (comme les themes).
+    N'enregistre PAS l'utilisation : voir enregistrer_tirage_grille (enregistrement deporte).
+    """
+    from app.models.reset_tirage import dernier_reset
+
     grilles = (
         db.query(GrilleTheorie)
         .filter(GrilleTheorie.famille == famille, GrilleTheorie.actif == True)
+        .order_by(GrilleTheorie.numero)
         .all()
     )
     if not grilles:
-        raise ValueError(f"Aucune grille pour {famille}")
+        raise ValueError(f"Aucune grille active pour la famille {famille}")
 
+    _borne = dernier_reset(famille, db)
+    _filtres = [UtilisationGrille.famille == famille]
+    if _borne is not None:
+        _filtres.append(UtilisationGrille.date_tirage > _borne)
     usages = (
         db.query(UtilisationGrille.grille_id, func.count(UtilisationGrille.id))
-        .filter(UtilisationGrille.annee == annee)
+        .filter(*_filtres)
         .group_by(UtilisationGrille.grille_id)
         .all()
     )
     usage_map = {g_id: cnt for g_id, cnt in usages}
-    total = sum(usage_map.values()) or 1
 
-    scored = []
-    for g in grilles:
-        taux = usage_map.get(g.id, 0) / total
-        scored.append((abs(taux - 0.20), random.random(), g))
+    counts = {g.id: usage_map.get(g.id, 0) for g in grilles}
+    min_count = min(counts.values())
+    candidats = [g for g in grilles if counts[g.id] == min_count]
+    choisie = random.choice(candidats)
 
-    scored.sort(key=lambda x: (x[0], x[1]))
-    choisie = scored[0][2]
-
-    db.add(UtilisationGrille(
-        grille_id=choisie.id,
-        session_id=session_id,
-        annee=annee
-    ))
-    db.commit()
     return choisie
 
 
