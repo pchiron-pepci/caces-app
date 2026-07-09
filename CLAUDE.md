@@ -3138,3 +3138,21 @@ Décider manuellement, depuis le back-office, quelles personnes affectées voien
 **DETTE DOCUMENTEE.** `_build_stats_v2.lignes` (tableau 5 grilles count/pct/statut) est CALCULE mais NON AFFICHE : on a choisi de garder les matrices themes plutot qu'un tableau grille dedie. Conserve tel quel au cas ou un affichage grille dedie serait souhaite plus tard. `UtilisationGrille` (table + colonnes bloc 1) toujours morte, abandonnee au profit de l'approche A.
 
 **Chantier "mode de tirage theorique" COMPLET** (blocs 1 a 4). Reste hors chantier : notice utilisateur du reglage, et le nota des 7 pourrait etre etendu au regime themes si besoin (non demande).
+
+---
+
+## Principe migration — defaut de colonne = decision metier ecrite dans l'existant
+
+RETOUR D'EXPERIENCE (chantier mode de tirage) : le bloc 1 a ajoute
+`mode_tirage_theorie DEFAULT 'grille_complete'`. Ce defaut s'est applique a la
+config existante alors que des tirages en mode 'themes' etaient deja en base ->
+config et historique en desaccord (etat heterogene que la garde 409 posee plus
+tard sert justement a interdire). Sans consequence en dev (base resetee), mais
+en PROD sur base auditee cela aurait force un mode non voulu + impose un reset.
+
+REGLE : quand une migration ajoute une colonne porteuse de sens metier, ne pas
+laisser un DEFAULT trancher a la place des donnees. Soit DEFAULT NULL + backfill
+explicite selon l'etat reel (ex: aligner la config sur le regime des tirages
+existants de chaque famille), soit choisir comme defaut le mode qui correspond a
+l'historique deja present. Toujours verifier la coherence config <-> donnees
+existantes AVANT de deployer une colonne a defaut non neutre.
