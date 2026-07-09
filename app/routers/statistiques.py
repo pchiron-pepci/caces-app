@@ -136,6 +136,61 @@ def _build_stats(famille, debut, fin, db):
     return stats_par_theme, alertes, total_sessions
 
 
+def _regime_periode(famille, debut, fin, db):
+    """Regime fige de la periode : lit le mode_tirage d'un tirage de la periode.
+    Defaut v2_grille si aucun tirage (periode vide -> on presume le referentiel courant)."""
+    fp = _filtre_periode(debut, fin)
+    q = db.query(UtilisationTheme.mode_tirage).filter(UtilisationTheme.famille == famille)
+    if fp is not None:
+        q = q.filter(fp)
+    row = q.filter(UtilisationTheme.mode_tirage.isnot(None)).first()
+    return row[0] if row else "v2_grille"
+
+
+def _build_stats_v2(famille, debut, fin, db):
+    """Regime grille complete : compte des SESSIONS DISTINCTES par grille.
+    Retourne (liste_grilles, total_sessions, sous_seuil_7)."""
+    grilles = (
+        db.query(GrilleTheorie)
+        .filter(GrilleTheorie.famille == famille, GrilleTheorie.actif == True)
+        .order_by(GrilleTheorie.numero)
+        .all()
+    )
+    fp = _filtre_periode(debut, fin)
+    q = db.query(
+        UtilisationTheme.grille_id,
+        func.count(func.distinct(UtilisationTheme.session_id)),
+    ).filter(
+        UtilisationTheme.famille == famille,
+        UtilisationTheme.mode_tirage == "v2_grille",
+    )
+    if fp is not None:
+        q = q.filter(fp)
+    usage = {gid: cnt for gid, cnt in q.group_by(UtilisationTheme.grille_id).all()}
+    total = sum(usage.values())
+    lignes = []
+    for g in grilles:
+        count = usage.get(g.id, 0)
+        pct = round(count / total * 100) if total > 0 else 0
+        if count == 0:
+            statut = "VIDE"
+        elif pct < 10:
+            statut = "SOUS"
+        elif pct > 30:
+            statut = "SUR"
+        else:
+            statut = "OK"
+        lignes.append({
+            "grille_numero": g.numero,
+            "grille_id": g.id,
+            "count": count,
+            "pct": pct,
+            "statut": statut,
+        })
+    sous_seuil_7 = total < 7
+    return lignes, total, sous_seuil_7
+
+
 def _build_historique(famille, db):
     tirages = (
         db.query(UtilisationTheme)
@@ -242,13 +297,34 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
     periodes_json = {}
     periode_active = {}
     peut_reset = {}
+    periodes_heterogene = {}
+    regime_famille = {}
+    stats_v2_famille = {}
     all_alertes = []
     historique = []
 
     for famille in sorted(familles):
         periodes = _periodes_famille(famille, db)
+        # regime de chaque periode bornee (hors entree "tout")
+        regimes_periodes = set()
+        for _p in periodes:
+            if _p["id"] == "tout":
+                continue
+            _p["regime"] = _regime_periode(famille, _p["debut"], _p["fin"], db)
+            regimes_periodes.add(_p["regime"])
+        heterogene = len(regimes_periodes) > 1
+        # marquer l'entree "tout" indisponible si melange de regimes
+        for _p in periodes:
+            if _p["id"] == "tout":
+                _p["indisponible"] = heterogene
+                if heterogene:
+                    _p["label"] = "Tout l'historique — indisponible (modes de tirage differents selon les periodes)"
+        periodes_heterogene[famille] = heterogene
         periodes_famille[famille] = periodes
         sel_id = (request.query_params.get("periode_" + famille) or "0").strip()
+        # garde-fou : refuser "tout" force par URL quand les regimes different -> periode en cours
+        if sel_id == "tout" and heterogene:
+            sel_id = "0"
         sel = next((p for p in periodes if p["id"] == sel_id), periodes[0])
         periode_active[famille] = sel["id"]
 
@@ -260,6 +336,12 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
 
         # garde-fou reset : autorise uniquement le jour de l'audit externe
         peut_reset[famille] = (_config and _config.audit_externe_date == today)
+
+        # regime fige de la periode + stats par grille si v2
+        regime_famille[famille] = _regime_periode(famille, sel["debut"], sel["fin"], db)
+        if regime_famille[famille] == "v2_grille":
+            lignes_v2, total_v2, sous7 = _build_stats_v2(famille, sel["debut"], sel["fin"], db)
+            stats_v2_famille[famille] = {"lignes": lignes_v2, "total": total_v2, "sous_seuil_7": sous7}
 
         # version JSON-safe des periodes (pour le filtrage JS de l'historique commun)
         periodes_json[famille] = [
@@ -315,6 +397,9 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             "periodes_json": periodes_json,
             "periode_active": periode_active,
             "peut_reset": peut_reset,
+            "periodes_heterogene": periodes_heterogene,
+            "regime_famille": regime_famille,
+            "stats_v2_famille": stats_v2_famille,
         }
     )
 

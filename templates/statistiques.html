@@ -82,7 +82,7 @@
         <select data-action="filtrer-periode" data-famille="{{ famille }}"
                 style="padding:6px 10px; border:1px solid #cfd6e4; border-radius:6px; font-size:13px; background:#fff;">
             {% for p in periodes_famille[famille] %}
-            <option value="{{ p.id }}" {% if periode_active[famille] == p.id %}selected{% endif %}>{{ p.label }}</option>
+            <option value="{{ p.id }}"{% if p.get('indisponible') %} disabled{% endif %} {% if periode_active[famille] == p.id %}selected{% endif %}>{{ p.label }}</option>
             {% endfor %}
         </select>
     </div>
@@ -96,6 +96,11 @@
     <div class="card stat-col">
         <div class="card-header">
             <h2>{{ famille }} — % d'utilisation</h2>
+            {% if regime_famille[famille] == "v2_grille" %}
+            <span style="background:#e6f1fb; color:#0c447c; font-size:11px; padding:2px 8px; border-radius:12px; margin-left:8px;">Grille complète (V2)</span>
+            {% else %}
+            <span style="background:#f1efe8; color:#5f5e5a; font-size:11px; padding:2px 8px; border-radius:12px; margin-left:8px;">Assemblage par thème</span>
+            {% endif %}
             <span style="font-size:13px; color:#666;">{{ totaux_famille[famille] }} session(s)</span>
         </div>
         <div style="overflow-x:auto;">
@@ -166,6 +171,11 @@
         </div>
     </div>
 </div>
+{% if regime_famille[famille] == "v2_grille" and stats_v2_famille[famille] and stats_v2_famille[famille].sous_seuil_7 %}
+<p style="font-size:12px; color:#e65100; margin:4px 0 8px;">
+  Note : moins de 7 sessions sur la période — le taux d'utilisation de 20 % ±10 % par grille n'est pas exigé par l'INRS pour cette famille. La sélection aléatoire parmi les 5 grilles reste toutefois requise dès le premier tirage.
+</p>
+{% endif %}
 {% endfor %}
 
 <!-- HISTORIQUE -->
