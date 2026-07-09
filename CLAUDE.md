@@ -3124,3 +3124,17 @@ Décider manuellement, depuis le back-office, quelles personnes affectées voien
 - `sessions.py:189` : detection "session a des donnees" teste encore `UtilisationGrille` (capte les lignes legacy) : valide, a conserver tant que du legacy existe.
 
 **Reste a faire (bloc 4/4).** Stats : tableau 5 grilles quand la periode est en `v2_grille` (regroupement par grille), tableau T1..T5 quand `assemblage_themes`. Phrase de rappel INRS des 7 sessions affichee UNIQUEMENT pour les familles sous 7. Reglage admin (selecteur mode + garde reset a la bascule) dans le calendrier qualite.
+
+---
+
+## Bloc 4 termine — Reglage admin + stats du mode de tirage theorique
+
+**4a/4b - Reglage admin (commit 2d3d5b2).** Selecteur `mode_tirage_theorie` dans Administration > Parametres systeme (templates/admin.html), backend admin.py (schema + GET + PUT). Garde de bascule "une periode = un seul mode" : le PUT renvoie 409 si des familles (grilles actives) ont des tirages depuis leur dernier reset, avec liste pedagogique des familles a reset d'abord. Front surface le detail du 409 (lecture err.detail). Reset par famille (audits decales dans le temps) - pas de reset global.
+
+**4c - Stats selon le regime.** DECISION : les deux matrices T1..T5 (% + occurrences) restent INCHANGEES dans les deux regimes. En v2 elles affichent 5 colonnes identiques = controle visuel d'homogeneite (chaque theme d'une session = meme grille). On n'ajoute que : (1) badge de version dans le titre famille (regime_famille), (2) note INRS des 7 sessions en v2 sous seuil (stats_v2_famille.sous_seuil_7) - precise que la dispense porte sur le TAUX 20% +/-10%, PAS sur l'obligation de varier les grilles des le 1er tirage, (3) option "Tout l'historique" grisee + garde-fou backend si la famille melange les regimes (periodes_heterogene). Historique global : INTACT (1 ligne = 1 session, autonome, coherent tous regimes).
+
+**Helpers backend stats.** `_regime_periode(famille, debut, fin, db)` lit le mode_tirage fige d'un tirage de la periode (defaut v2_grille). `_build_stats_v2` compte les SESSIONS DISTINCTES par grille (count distinct session_id), seuil 7 = total < 7 sessions.
+
+**DETTE DOCUMENTEE.** `_build_stats_v2.lignes` (tableau 5 grilles count/pct/statut) est CALCULE mais NON AFFICHE : on a choisi de garder les matrices themes plutot qu'un tableau grille dedie. Conserve tel quel au cas ou un affichage grille dedie serait souhaite plus tard. `UtilisationGrille` (table + colonnes bloc 1) toujours morte, abandonnee au profit de l'approche A.
+
+**Chantier "mode de tirage theorique" COMPLET** (blocs 1 a 4). Reste hors chantier : notice utilisateur du reglage, et le nota des 7 pourrait etre etendu au regime themes si besoin (non demande).
