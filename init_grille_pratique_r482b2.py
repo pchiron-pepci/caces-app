@@ -34,9 +34,8 @@ with engine.begin() as cx:
 # ---- Variante CA : conducteur accompagnant (telecommande integree) ----
 THEMES_CA = [
     ("Prise de poste et mise en service", 16, [
-        ("1", None, [
-            ("Verifier la presence et la validite des documents reglementaires suivants, et savoir les exploiter :", 1),
-            ("Notice d'instructions (justifier une interdiction d'emploi ou une regle d'utilisation)", None),
+        ("1", "Verifier la presence et la validite des documents reglementaires suivants, et savoir les exploiter :", [
+            ("Notice d'instructions (justifier une interdiction d'emploi ou une regle d'utilisation)", 1),
             ("Rapport de verification generale periodique, de mise ou de remise en service (verifier l'absence d'observation ou de restriction d'usage)", 1),
             ("Proceder a une verification visuelle de l'engin de chantier", 1),
             ("Identifier les niveaux et les appoints journaliers", 1),
@@ -90,9 +89,8 @@ THEMES_CA = [
 # ---- Variante CP : conducteur porte (poste de conduite classique) ----
 THEMES_CP = [
     ("Prise de poste et mise en service", 16, [
-        ("1", None, [
-            ("Verifier la presence et la validite des documents reglementaires suivants, et savoir les exploiter :", 1),
-            ("Notice d'instructions (justifier une interdiction d'emploi ou une regle d'utilisation)", None),
+        ("1", "Verifier la presence et la validite des documents reglementaires suivants, et savoir les exploiter :", [
+            ("Notice d'instructions (justifier une interdiction d'emploi ou une regle d'utilisation)", 1),
             ("Rapport de verification generale periodique, de mise ou de remise en service (verifier l'absence d'observation ou de restriction d'usage)", 1),
             ("Proceder a une verification visuelle de l'engin de chantier", 1),
             ("Identifier les niveaux et les appoints journaliers", 1),
