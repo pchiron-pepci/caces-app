@@ -3161,3 +3161,10 @@ existantes AVANT de deployer une colonne a defaut non neutre.
 
 - `templates/stagiaires.html` (ligne 9, `label#lbl-inactifs`) : `title` de la case œil passé de « Masquer les stagiaires archivés » à « Afficher uniquement les candidats des sessions en cours (non clôturées) » — le libellé décrit désormais le comportement réel du filtre (montrer uniquement les candidats des sessions non clôturées) plutôt qu'un masquage d'archives.
 - Aucune logique modifiée : uniquement le texte d'infobulle.
+
+### ✅ Chantier terminé : R482 pratique - "documents reglementaires" titre en chapeau (commit ec3b8c7)
+
+- **Bug** : dans les 11 seeds `init_grille_pratique_r482*.py`, le PE n°1 « Prise de poste » avait pour structure `("1", None, [ ("Verifier ... documents reglementaires ...", 1), ("Notice d'instructions ...", None), ("Rapport ...", 1), ... ])`. Le **titre-chapeau** était traité comme un item noté 1pt, et la **Notice** n'était pas notée. 12 emplacements (b2 en a 2, les 10 autres 1 chacun).
+- **Correction** (structure PE = `(num, chapeau|None, [items])`) : titre remonté en 2ᵉ position (chapeau du PE), Notice passée de `None` → `1`. Le Rapport était déjà à 1. Barème **neutre** : total de chaque grille inchangé (toujours 100), car -1 sur le titre / +1 sur la Notice.
+- Re-seed des 11 scripts sur base locale sqlite (`caces.db`) : 22 grilles recréées (id 6→22), tous totaux = 100 vérifiés. Scripts idempotents (suppriment/recréent leur grille).
+- Fichiers `*_options.py` non concernés (non touchés).
