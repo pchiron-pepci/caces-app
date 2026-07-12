@@ -3168,3 +3168,11 @@ existantes AVANT de deployer une colonne a defaut non neutre.
 - **Correction** (structure PE = `(num, chapeau|None, [items])`) : titre remonté en 2ᵉ position (chapeau du PE), Notice passée de `None` → `1`. Le Rapport était déjà à 1. Barème **neutre** : total de chaque grille inchangé (toujours 100), car -1 sur le titre / +1 sur la Notice.
 - Re-seed des 11 scripts sur base locale sqlite (`caces.db`) : 22 grilles recréées (id 6→22), tous totaux = 100 vérifiés. Scripts idempotents (suppriment/recréent leur grille).
 - Fichiers `*_options.py` non concernés (non touchés).
+
+### ✅ Chantier terminé : R482 pratique - PE2 conduite + PE11 porte-engins A (commit f3ba65b)
+
+- **Bug PE2 (Conduite, 12 emplacements / 11 fichiers, b2 en a 2)** : dans le PE n°2 `("2", "Circuler ...", [...])`, le 1ᵉʳ item **dupliquait** le libellé du chapeau (`("Circuler a vide et en charge...", bareme)`) et l'item réel `("Effectuer les manoeuvres avec souplesse et precision", None)` n'était pas noté.
+- **Correction PE2** : item-doublon supprimé, son barème transféré à « Effectuer les manoeuvres ». Résultat = **8 critères tous notés** (`baremes[0..7]` pour A, valeurs littérales pour les autres). Barème **neutre** (le doublon portait `baremes[0]`, désormais sur « Effectuer »).
+- **Bug PE11 (porte-engins, cat A seulement, `def porte_engins()`)** : les 4 **intertitres** (« Chargement de l'engin », « Preparation au transport », « Preparation de l'arrimage », « Dechargement de l'engin ») étaient notés 1pt chacun, tandis que 4 vrais critères sous eux étaient `None`.
+- **Correction PE11** : chapeau renommé « Chargement / dechargement sur un porte-engins », 4 intertitres passés en descriptif (`None`), leurs 4 critères réels passés de `None` → `1`. Total du bloc **inchangé = 16**.
+- ⚠️ **Pas de re-seed cette fois** (script utilisateur sans étape re-seed) : la base locale `caces.db` reflète encore l'état précédent pour ces PE. Relancer `python init_grille_pratique_r482*.py` pour appliquer en base (local/prod).
