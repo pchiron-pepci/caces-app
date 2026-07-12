@@ -3176,3 +3176,19 @@ existantes AVANT de deployer une colonne a defaut non neutre.
 - **Bug PE11 (porte-engins, cat A seulement, `def porte_engins()`)** : les 4 **intertitres** (« Chargement de l'engin », « Preparation au transport », « Preparation de l'arrimage », « Dechargement de l'engin ») étaient notés 1pt chacun, tandis que 4 vrais critères sous eux étaient `None`.
 - **Correction PE11** : chapeau renommé « Chargement / dechargement sur un porte-engins », 4 intertitres passés en descriptif (`None`), leurs 4 critères réels passés de `None` → `1`. Total du bloc **inchangé = 16**.
 - ⚠️ **Pas de re-seed cette fois** (script utilisateur sans étape re-seed) : la base locale `caces.db` reflète encore l'état précédent pour ces PE. Relancer `python init_grille_pratique_r482*.py` pour appliquer en base (local/prod).
+
+### ✅ Chantier terminé : Statistiques - onglets "Tests & CDT" et "Testeurs" (commit 05900d3)
+
+Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l'onglet Grilles existant est inchangé).
+
+**`app/routers/statistiques.py`** — 6 fonctions helper (filtre = `annee` de la session) insérées avant la route `page_statistiques` :
+- `_annees_tests(db)` : années distinctes ayant des SessionEpreuve/ResultatTheorie non bloqués.
+- `_stats_pratique_famille_cat`, `_stats_theorie_famille`, `_stats_caces_delivres` : agrégats passés/réussis/échoués/% (CACES = `statut='valide'`, hors externes et sous-traitance).
+- `_assembler_tableau_principal` : fusionne pratique + théorie (ligne par famille) + CACES délivrés → tableau onglet "Tests & CDT".
+- `_stats_par_testeur` : par testeur, théorie par famille + pratique par famille×catégorie avec ventilation CDT / hors-CDT (via `Lieu.type`).
+- `_stats_formation` : jours de formation par formateur×famille (un jour compté une fois par formateur affecté). **Rendu dans l'onglet Testeurs** (pas d'onglet Formation dédié).
+- Route : query param `annee_tests` (défaut = année courante, `"all"` → toutes années), 5 clés contexte `tests_*`.
+
+**`templates/statistiques.html`** — 2 fragments remplaçant les placeholders + JS dans le `DOMContentLoaded` : filtre période (recharge `?annee_tests=` en conservant l'onglet actif via hash) + restauration onglet au chargement. Sélecteur période dupliqué dans les 2 onglets (`tests-annee` / `tests-annee-2`, même `data-action="tests-periode"`).
+
+⚠️ **Décalage schéma sqlite local corrigé au passage** (voir aussi ci-dessous) : la base locale `caces.db` était en retard sur les modèles car **toutes** les migrations startup de `main.py` utilisent la syntaxe Postgres `ADD COLUMN IF NOT EXISTS` (no-op silencieux sur sqlite). Colonnes `bloque` (session_epreuves, resultats_theorie), `organisme_externe`/`sous_traitance` (caces_obtenus) + ~85 autres ajoutées en local via script de synchro générique modèle→sqlite. **Prod (Postgres) non concernée** (colonnes déjà présentes). Piste d'amélioration non faite : adapter `_run_startup_migrations` pour rejouer les `ADD COLUMN` sans `IF NOT EXISTS` quand le dialecte est sqlite.
