@@ -42,8 +42,7 @@ THEMES = [
     ]),
     ("Conduite et circulation", 24, [
         ("2", "Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage (a evaluer en continu durant la totalite des epreuves)", [
-            ("Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage", 6),
-            ("Effectuer les manoeuvres avec souplesse et precision", None),
+            ("Effectuer les manoeuvres avec souplesse et precision", 6),
             ("Verifier au prealable l'environnement de travail", 3),
             ("Garantir la securite des pietons (vision en marche arriere, utilisation correcte de l'avertisseur sonore...)", 3),
             ("Respecter les conditions de stabilite de l'engin", 3),

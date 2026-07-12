@@ -53,22 +53,23 @@ def prise_de_poste():
 
 def porte_engins():
     return ("Chargement dechargement sur un porte-engins", 16, [
-        ("11", "Chargement de l'engin", [
+        ("11", "Chargement / dechargement sur un porte-engins", [
+            ("Chargement de l'engin", None),
             ("S'assurer de l'adequation de l'engin et du porte-engins a la manoeuvre prevue", 1),
             ("S'assurer que la position du vehicule est appropriee", 1),
             ("Verifier que les conditions permettant le chargement / dechargement sont remplies (espacement des rampes...)", 1),
             ("Monter l'engin sur le porte-engins dans le sens approprie", 2),
-            ("Preparation au transport", 1),
-            ("Positionner l'engin sur le porte-engins pour assurer l'equilibre et la stabilite", None),
+            ("Preparation au transport", None),
+            ("Positionner l'engin sur le porte-engins pour assurer l'equilibre et la stabilite", 1),
             ("Mettre les equipements en position de transport", 1),
             ("Stabiliser l'engin (frein, stabilisateurs, cales...)", 1),
-            ("Preparation de l'arrimage", 1),
-            ("Identifier et designer les points d'arrimage sur le porte-engins", None),
+            ("Preparation de l'arrimage", None),
+            ("Identifier et designer les points d'arrimage sur le porte-engins", 1),
             ("Identifier et designer les points d'arrimage sur l'engin", 1),
             ("Trouver le mode d'arrimage approprie (notice d'instructions...)", 1),
             ("S'assurer de l'adequation des moyens d'arrimage proposes", 1),
-            ("Dechargement de l'engin", 1),
-            ("S'assurer que l'environnement du porte-engins permet le dechargement", None),
+            ("Dechargement de l'engin", None),
+            ("S'assurer que l'environnement du porte-engins permet le dechargement", 1),
             ("Positionner l'engin pour la descente", 1),
             ("Descendre l'engin en securite", 2),
         ]),
@@ -92,8 +93,7 @@ def conduite(bareme_theme, baremes):
     # baremes = [circuler, verif_env, securite_pietons, stabilite, vitesses, freinage, aides, regles]
     return ("Conduite et circulation", bareme_theme, [
         ("2", "Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage (a evaluer en continu durant la totalite des epreuves)", [
-            ("Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage", baremes[0]),
-            ("Effectuer les manoeuvres avec souplesse et precision", None),
+            ("Effectuer les manoeuvres avec souplesse et precision", baremes[0]),
             ("Verifier au prealable l'environnement de travail", baremes[1]),
             ("Garantir la securite des pietons (vision en marche arriere, utilisation correcte de l'avertisseur sonore...)", baremes[2]),
             ("Respecter les conditions de stabilite de l'engin", baremes[3]),

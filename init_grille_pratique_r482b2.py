@@ -49,8 +49,7 @@ THEMES_CA = [
     ]),
     ("Conduite et circulation", 32, [
         ("2", "Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage, selon le parcours de test defini (a evaluer en continu durant la totalite des epreuves)", [
-            ("Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage, selon le parcours de test defini", 8),
-            ("Effectuer les manoeuvres avec souplesse et precision", None),
+            ("Effectuer les manoeuvres avec souplesse et precision", 8),
             ("Verifier au prealable l'environnement de travail", 4),
             ("Garantir la securite des pietons (vision en marche arriere, utilisation correcte de l'avertisseur sonore...)", 4),
             ("Respecter les conditions de stabilite de l'engin", 4),
@@ -105,8 +104,7 @@ THEMES_CP = [
     ]),
     ("Conduite et circulation", 32, [
         ("2", "Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage, selon le parcours de test defini (a evaluer en continu durant la totalite des epreuves)", [
-            ("Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage, selon le parcours de test defini", 8),
-            ("Effectuer les manoeuvres avec souplesse et precision", None),
+            ("Effectuer les manoeuvres avec souplesse et precision", 8),
             ("Verifier au prealable l'environnement de travail", 4),
             ("Garantir la securite des pietons (vision en marche arriere, utilisation correcte de l'avertisseur sonore...)", 4),
             ("Respecter les conditions de stabilite de l'engin", 4),

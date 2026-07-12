@@ -51,8 +51,7 @@ def prise_de_poste():
 def conduite(bareme_theme, bareme_circuler, bareme_vitesses, bareme_freinage):
     return ("Conduite et circulation", bareme_theme, [
         ("2", "Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage (a evaluer en continu durant la totalite des epreuves)", [
-            ("Circuler a vide et en charge, en marche avant / en marche arriere, en ligne droite / en virage", bareme_circuler),
-            ("Effectuer les manoeuvres avec souplesse et precision", None),
+            ("Effectuer les manoeuvres avec souplesse et precision", bareme_circuler),
             ("Verifier au prealable l'environnement de travail", 3),
             ("Garantir la securite des pietons (vision en marche arriere, utilisation correcte de l'avertisseur sonore...)", 3),
             ("Respecter les conditions de stabilite de l'engin", 3),
