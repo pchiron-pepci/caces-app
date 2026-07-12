@@ -259,11 +259,215 @@
 </div><!-- /tab-grilles -->
 
 <div id="tab-tests-cdt" style="display:none;">
-    <p style="color:#888; font-style:italic;">Statistiques Tests & CDT — à venir</p>
+
+    <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-bottom:16px;">
+        <label for="tests-annee" style="font-size:13px; color:#555;">Période&nbsp;:</label>
+        <select id="tests-annee" data-action="tests-periode"
+                style="padding:7px 10px; border:1px solid #cfd6e4; border-radius:6px; font-size:14px; background:#fff; cursor:pointer;">
+            {% for a in tests_annees %}
+            <option value="{{ a }}" {% if tests_annee_sel == a %}selected{% endif %}>Année {{ a }}</option>
+            {% endfor %}
+            <option value="all" {% if tests_annee_sel == 'all' %}selected{% endif %}>Tout l'historique</option>
+        </select>
+    </div>
+
+    <div style="font-size:13px; font-weight:700; color:#cc0000; margin:0 0 6px;">Tests par famille et catégorie · CACES délivrés</div>
+    <div style="font-size:11.5px; color:#999; margin:0 0 10px;">Ligne « Théorie » = test théorique de la famille · CACES = validés PEPCI (hors externes et sous-traitance)</div>
+
+    {% if tests_tableau.familles %}
+    <table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:12px;">
+        <thead>
+            <tr style="border-bottom:2px solid #2d2d2d;">
+                <th style="text-align:left; padding:8px 8px; color:#666; font-weight:600;">Famille / catégorie</th>
+                <th style="text-align:right; padding:8px 8px; color:#666; font-weight:600;">Passés</th>
+                <th style="text-align:right; padding:8px 8px; color:#666; font-weight:600;">Réussis</th>
+                <th style="text-align:right; padding:8px 8px; color:#666; font-weight:600;">Échoués</th>
+                <th style="text-align:right; padding:8px 8px; color:#666; font-weight:600;">% réu.</th>
+                <th style="text-align:right; padding:8px 8px; color:#cc0000; font-weight:600; border-left:1px solid #e5e8ee;">CACES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in tests_tableau.familles %}
+            <tr style="background:#2d2d2d;"><td colspan="6" style="padding:6px 8px; color:#fff; font-weight:600;">{{ f.famille }}</td></tr>
+            {% if f.theorie %}
+            <tr style="border-bottom:1px solid #eef0f4; background:#eef4fb;">
+                <td style="padding:7px 8px 7px 22px; font-style:italic; color:#2d5a8c;">Théorie</td>
+                <td style="text-align:right; padding:7px 8px;">{{ f.theorie.passes }}</td>
+                <td style="text-align:right; padding:7px 8px; color:#0f6e56;">{{ f.theorie.reussis }}</td>
+                <td style="text-align:right; padding:7px 8px; color:#a32d2d;">{{ f.theorie.echoues }}</td>
+                <td style="text-align:right; padding:7px 8px;">{{ f.theorie.pct }} %</td>
+                <td style="text-align:right; padding:7px 8px; color:#bbb; border-left:1px solid #e5e8ee;">—</td>
+            </tr>
+            {% endif %}
+            {% for c in f.cats %}
+            <tr style="border-bottom:1px solid #eef0f4;">
+                <td style="padding:7px 8px 7px 22px;">{{ c.cat }}</td>
+                <td style="text-align:right; padding:7px 8px;">{{ c.passes }}</td>
+                <td style="text-align:right; padding:7px 8px; color:#0f6e56;">{{ c.reussis }}</td>
+                <td style="text-align:right; padding:7px 8px; color:#a32d2d;">{{ c.echoues }}</td>
+                <td style="text-align:right; padding:7px 8px;">{{ c.pct }} %</td>
+                <td style="text-align:right; padding:7px 8px; font-weight:600; border-left:1px solid #e5e8ee;">{{ c.caces }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="border-bottom:1px solid #eef0f4; background:#f6f7f9;">
+                <td style="padding:7px 8px; font-weight:600;">Sous-total pratique {{ f.famille }}</td>
+                <td style="text-align:right; padding:7px 8px; font-weight:600;">{{ f.sous_total.passes }}</td>
+                <td style="text-align:right; padding:7px 8px; font-weight:600; color:#0f6e56;">{{ f.sous_total.reussis }}</td>
+                <td style="text-align:right; padding:7px 8px; font-weight:600; color:#a32d2d;">{{ f.sous_total.echoues }}</td>
+                <td style="text-align:right; padding:7px 8px; font-weight:600;">{{ f.sous_total.pct }} %</td>
+                <td style="text-align:right; padding:7px 8px; font-weight:600; border-left:1px solid #e5e8ee;">{{ f.sous_total.caces }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="border-top:2px solid #2d2d2d;">
+                <td style="padding:8px 8px; font-weight:700;">Total pratique</td>
+                <td style="text-align:right; padding:8px 8px; font-weight:700;">{{ tests_tableau.total.passes }}</td>
+                <td style="text-align:right; padding:8px 8px; font-weight:700; color:#0f6e56;">{{ tests_tableau.total.reussis }}</td>
+                <td style="text-align:right; padding:8px 8px; font-weight:700; color:#a32d2d;">{{ tests_tableau.total.echoues }}</td>
+                <td style="text-align:right; padding:8px 8px; font-weight:700;">{{ tests_tableau.total.pct }} %</td>
+                <td style="text-align:right; padding:8px 8px; font-weight:700; border-left:1px solid #e5e8ee;">{{ tests_tableau.total.caces }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#888; font-style:italic; padding:20px 0;">Aucun test enregistré pour cette période.</p>
+    {% endif %}
+
 </div><!-- /tab-tests-cdt -->
 
 <div id="tab-testeurs" style="display:none;">
-    <p style="color:#888; font-style:italic;">Statistiques testeurs — à venir</p>
+
+    <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-bottom:16px;">
+        <label for="tests-annee-2" style="font-size:13px; color:#555;">Période&nbsp;:</label>
+        <select id="tests-annee-2" data-action="tests-periode"
+                style="padding:7px 10px; border:1px solid #cfd6e4; border-radius:6px; font-size:14px; background:#fff; cursor:pointer;">
+            {% for a in tests_annees %}
+            <option value="{{ a }}" {% if tests_annee_sel == a %}selected{% endif %}>Année {{ a }}</option>
+            {% endfor %}
+            <option value="all" {% if tests_annee_sel == 'all' %}selected{% endif %}>Tout l'historique</option>
+        </select>
+    </div>
+
+    {% if tests_testeurs %}
+    {% for t in tests_testeurs %}
+    <div style="border:1px solid #e5e8ee; border-radius:12px; overflow:hidden; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:10px; padding:11px 14px; background:#2d2d2d;">
+            <span style="display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:#cc0000; color:#fff; font-size:12px; font-weight:600;">{{ (t.nom.split()[0][0] ~ t.nom.split()[-1][0]) if t.nom.split()|length > 1 else t.nom[0] }}</span>
+            <span style="font-size:14px; font-weight:600; color:#fff;">{{ t.nom }}</span>
+            <span style="margin-left:auto; font-size:12px; color:#c8c8c8;">{{ t.nb_total }} tests · {{ t.pct_hors }} % hors-CDT</span>
+        </div>
+        <div style="padding:12px 14px 4px;">
+
+            {% if t.theorie %}
+            <div style="font-size:12px; font-weight:600; color:#cc0000; margin-bottom:6px;">Théorie — par famille</div>
+            <table style="width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:14px;">
+                <thead><tr style="border-bottom:1px solid #cfd6e4;">
+                    <th style="text-align:left; padding:5px 10px; color:#666; font-weight:600;">Famille</th>
+                    <th style="text-align:right; padding:5px 8px; color:#666; font-weight:600;">Passés</th>
+                    <th style="text-align:right; padding:5px 8px; color:#666; font-weight:600;">Réussis</th>
+                    <th style="text-align:right; padding:5px 8px; color:#666; font-weight:600;">Échoués</th>
+                    <th style="text-align:right; padding:5px 8px; color:#666; font-weight:600;">% réu.</th>
+                </tr></thead>
+                <tbody>
+                    {% for th in t.theorie %}
+                    <tr style="border-bottom:1px solid #eef0f4;">
+                        <td style="padding:6px 10px;">{{ th.famille }}</td>
+                        <td style="text-align:right; padding:6px 8px;">{{ th.passes }}</td>
+                        <td style="text-align:right; padding:6px 8px; color:#0f6e56;">{{ th.reussis }}</td>
+                        <td style="text-align:right; padding:6px 8px; color:#a32d2d;">{{ th.echoues }}</td>
+                        <td style="text-align:right; padding:6px 8px;">{{ th.pct }} %</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="background:#f6f7f9;">
+                        <td style="padding:6px 10px; font-weight:600;">Total</td>
+                        <td style="text-align:right; padding:6px 8px; font-weight:600;">{{ t.theo_total.passes }}</td>
+                        <td style="text-align:right; padding:6px 8px; font-weight:600; color:#0f6e56;">{{ t.theo_total.reussis }}</td>
+                        <td style="text-align:right; padding:6px 8px; font-weight:600; color:#a32d2d;">{{ t.theo_total.echoues }}</td>
+                        <td style="text-align:right; padding:6px 8px; font-weight:600;">{{ t.theo_total.pct }} %</td>
+                    </tr>
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if t.pratique %}
+            <div style="font-size:12px; font-weight:600; color:#cc0000; margin-bottom:6px;">Pratique — par famille × catégorie</div>
+            <table style="width:100%; border-collapse:collapse; font-size:12px; margin-bottom:12px;">
+                <thead><tr style="border-bottom:1px solid #cfd6e4;">
+                    <th style="text-align:left; padding:5px 8px; color:#666; font-weight:600;">Fam. / cat.</th>
+                    <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">Pas.</th>
+                    <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">Réu.</th>
+                    <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">% réu.</th>
+                    <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">CDT</th>
+                    <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">Hors</th>
+                    <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">% hors</th>
+                </tr></thead>
+                <tbody>
+                    {% for p in t.pratique %}
+                    <tr style="border-bottom:1px solid #eef0f4;">
+                        <td style="padding:6px 8px;">{{ p.famille }} · {{ p.categorie }}</td>
+                        <td style="text-align:right; padding:6px 6px;">{{ p.passes }}</td>
+                        <td style="text-align:right; padding:6px 6px; color:#0f6e56;">{{ p.reussis }}</td>
+                        <td style="text-align:right; padding:6px 6px;">{{ p.pct }} %</td>
+                        <td style="text-align:right; padding:6px 6px;">{{ p.cdt }}</td>
+                        <td style="text-align:right; padding:6px 6px;">{{ p.hors }}</td>
+                        <td style="text-align:right; padding:6px 6px; color:#cc0000;">{{ p.pct_hors }} %</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="background:#f6f7f9;">
+                        <td style="padding:6px 8px; font-weight:600;">Total</td>
+                        <td style="text-align:right; padding:6px 6px; font-weight:600;">{{ t.prat_total.passes }}</td>
+                        <td style="text-align:right; padding:6px 6px; font-weight:600; color:#0f6e56;">{{ t.prat_total.reussis }}</td>
+                        <td style="text-align:right; padding:6px 6px; font-weight:600;">{{ t.prat_total.pct }} %</td>
+                        <td style="text-align:right; padding:6px 6px; font-weight:600;">{{ t.prat_total.cdt }}</td>
+                        <td style="text-align:right; padding:6px 6px; font-weight:600;">{{ t.prat_total.hors }}</td>
+                        <td style="text-align:right; padding:6px 6px; font-weight:600; color:#cc0000;">{{ t.prat_total.pct_hors }} %</td>
+                    </tr>
+                </tbody>
+            </table>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:#888; font-style:italic; padding:20px 0;">Aucune activité testeur pour cette période.</p>
+    {% endif %}
+
+    <div style="font-size:13px; font-weight:700; color:#cc0000; margin:22px 0 8px;">Jours de formation par formateur et famille</div>
+    {% if tests_formation.formateurs %}
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead>
+            <tr style="border-bottom:2px solid #2d2d2d;">
+                <th style="text-align:left; padding:8px 10px; color:#666; font-weight:600;">Formateur</th>
+                {% for fam in tests_formation.familles %}
+                <th style="text-align:right; padding:8px 10px; color:#666; font-weight:600;">{{ fam }}</th>
+                {% endfor %}
+                <th style="text-align:right; padding:8px 10px; color:#cc0000; font-weight:600; border-left:1px solid #e5e8ee;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form in tests_formation.formateurs %}
+            <tr style="border-bottom:1px solid #eef0f4;">
+                <td style="padding:7px 10px; font-weight:600;">{{ form.nom }}</td>
+                {% for fam in tests_formation.familles %}
+                <td style="text-align:right; padding:7px 10px;">{{ form.par_fam[fam] }}</td>
+                {% endfor %}
+                <td style="text-align:right; padding:7px 10px; font-weight:600; border-left:1px solid #e5e8ee;">{{ form.total }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="border-top:2px solid #2d2d2d; background:#f6f7f9;">
+                <td style="padding:8px 10px; font-weight:700;">Total</td>
+                {% for fam in tests_formation.familles %}
+                <td style="text-align:right; padding:8px 10px; font-weight:700;">{{ tests_formation.totaux[fam] }}</td>
+                {% endfor %}
+                <td style="text-align:right; padding:8px 10px; font-weight:700; border-left:1px solid #e5e8ee;">{{ tests_formation.total }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <div style="font-size:11.5px; color:#999; margin-top:8px;">Colonnes = familles présentes sur la période · un jour compté une fois par formateur affecté</div>
+    {% else %}
+    <p style="color:#888; font-style:italic; padding:12px 0;">Aucun jour de formation pour cette période.</p>
+    {% endif %}
+
 </div><!-- /tab-testeurs -->
 
 <!-- MODAL CONFIRM -->
@@ -306,6 +510,31 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tabEl) tabEl.style.display = 'block';
         btn.classList.add('active-tab');
     });
+
+    // ─── Filtre periode Tests & CDT / Testeurs (partage) ───
+    document.addEventListener('change', function(e) {
+        var sel = e.target.closest('[data-action="tests-periode"]');
+        if (!sel) return;
+        var url = new URL(window.location.href);
+        url.searchParams.set('annee_tests', sel.value);
+        var actif = document.querySelector('.tab-btn.active-tab');
+        url.hash = actif && actif.dataset.tab ? ('tab-' + actif.dataset.tab) : 'tab-tests-cdt';
+        window.location.href = url.toString();
+    });
+
+    // ─── Restaurer l'onglet actif depuis le hash au chargement ───
+    (function() {
+        var h = (window.location.hash || '').replace('#', '');
+        if (!h) return;
+        var btn = document.querySelector('[data-action="show-tab"][data-tab="' + h.replace('tab-', '') + '"]');
+        var panel = document.getElementById(h);
+        if (btn && panel) {
+            document.querySelectorAll('[id^="tab-"]').forEach(function(el) { el.style.display = 'none'; });
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active-tab'); });
+            panel.style.display = 'block';
+            btn.classList.add('active-tab');
+        }
+    })();
 
     // ─── Reset des compteurs par famille (3 verrous) ───
     function ouvrirModaleReset(famille, peutReset) {

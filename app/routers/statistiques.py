@@ -276,8 +276,245 @@ def _periodes_famille(famille, db):
     return periodes
 
 
+# ===================================================================
+# Onglets "Tests & CDT" et "Testeurs" - calculs (filtre = annee de session)
+# ===================================================================
+def _annees_tests(db):
+    from app.models.session_epreuve import SessionEpreuve
+    from app.models.jour_test import ResultatTheorie
+    annees = set()
+    for (a,) in (db.query(SessionModel.annee)
+                 .join(SessionEpreuve, SessionEpreuve.session_id == SessionModel.id)
+                 .filter(SessionEpreuve.bloque == False).distinct().all()):
+        if a: annees.add(a)
+    for (a,) in (db.query(SessionModel.annee)
+                 .join(ResultatTheorie, ResultatTheorie.session_id == SessionModel.id)
+                 .filter(ResultatTheorie.bloque == False, ResultatTheorie.dispense == False)
+                 .distinct().all()):
+        if a: annees.add(a)
+    return sorted(annees, reverse=True)
+
+
+def _stats_pratique_famille_cat(annee, db):
+    from app.models.session_epreuve import SessionEpreuve
+    q = (db.query(SessionEpreuve.famille, SessionEpreuve.categorie, SessionEpreuve.obtenue)
+         .join(SessionModel, SessionModel.id == SessionEpreuve.session_id)
+         .filter(SessionEpreuve.bloque == False))
+    if annee is not None:
+        q = q.filter(SessionModel.annee == annee)
+    agg = {}
+    for fam, cat, obtenue in q.all():
+        k = (fam, cat)
+        if k not in agg: agg[k] = [0, 0]
+        agg[k][0] += 1
+        if obtenue: agg[k][1] += 1
+    familles = {}
+    tg_pass = tg_reu = 0
+    for (fam, cat), (p, r) in sorted(agg.items()):
+        familles.setdefault(fam, {"cats": [], "sous_total": [0, 0]})
+        familles[fam]["cats"].append({"cat": cat, "passes": p, "reussis": r,
+            "echoues": p - r, "pct": round(100 * r / p) if p else 0})
+        familles[fam]["sous_total"][0] += p
+        familles[fam]["sous_total"][1] += r
+        tg_pass += p; tg_reu += r
+    for fam, d in familles.items():
+        sp, sr = d["sous_total"]
+        d["sous_total"] = {"passes": sp, "reussis": sr, "echoues": sp - sr,
+                           "pct": round(100 * sr / sp) if sp else 0}
+    total_general = {"passes": tg_pass, "reussis": tg_reu, "echoues": tg_pass - tg_reu,
+                     "pct": round(100 * tg_reu / tg_pass) if tg_pass else 0}
+    return familles, total_general
+
+
+def _stats_theorie_famille(annee, db):
+    from app.models.jour_test import ResultatTheorie
+    q = (db.query(SessionModel.famille, ResultatTheorie.obtenue)
+         .join(ResultatTheorie, ResultatTheorie.session_id == SessionModel.id)
+         .filter(ResultatTheorie.bloque == False, ResultatTheorie.dispense == False))
+    if annee is not None:
+        q = q.filter(SessionModel.annee == annee)
+    agg = {}
+    for fam, obtenue in q.all():
+        if fam not in agg: agg[fam] = [0, 0]
+        agg[fam][0] += 1
+        if obtenue: agg[fam][1] += 1
+    lignes = []
+    tp = tr = 0
+    for fam, (p, r) in sorted(agg.items()):
+        lignes.append({"famille": fam, "passes": p, "reussis": r, "echoues": p - r,
+                       "pct": round(100 * r / p) if p else 0})
+        tp += p; tr += r
+    total = {"passes": tp, "reussis": tr, "echoues": tp - tr,
+             "pct": round(100 * tr / tp) if tp else 0}
+    return lignes, total
+
+
+def _stats_caces_delivres(annee, db):
+    from app.models.caces_obtenu import CacesObtenu
+    q = (db.query(CacesObtenu.famille, CacesObtenu.categorie)
+         .join(SessionModel, SessionModel.id == CacesObtenu.session_id)
+         .filter(CacesObtenu.statut == "valide",
+                 CacesObtenu.organisme_externe.is_(None),
+                 CacesObtenu.sous_traitance == False))
+    if annee is not None:
+        q = q.filter(SessionModel.annee == annee)
+    agg = {}
+    for fam, cat in q.all():
+        agg[(fam, cat)] = agg.get((fam, cat), 0) + 1
+    familles = {}
+    total = 0
+    for (fam, cat), n in sorted(agg.items()):
+        familles.setdefault(fam, {"cats": [], "sous_total": 0})
+        familles[fam]["cats"].append({"cat": cat, "nb": n})
+        familles[fam]["sous_total"] += n
+        total += n
+    return familles, total
+
+
+def _assembler_tableau_principal(annee, db):
+    prat_fam, prat_tot = _stats_pratique_famille_cat(annee, db)
+    theo_lignes, _ = _stats_theorie_famille(annee, db)
+    caces_fam, caces_tot = _stats_caces_delivres(annee, db)
+    theo_par_fam = {t["famille"]: t for t in theo_lignes}
+    caces_cat = {}
+    caces_st = {}
+    for fam, d in caces_fam.items():
+        caces_st[fam] = d["sous_total"]
+        for c in d["cats"]:
+            caces_cat[(fam, c["cat"])] = c["nb"]
+    familles_set = set(prat_fam) | set(theo_par_fam) | set(caces_fam)
+    familles = []
+    for fam in sorted(familles_set):
+        pd = prat_fam.get(fam, {"cats": [], "sous_total": {"passes":0,"reussis":0,"echoues":0,"pct":0}})
+        cats = []
+        for c in pd["cats"]:
+            cats.append({**c, "caces": caces_cat.get((fam, c["cat"]), 0)})
+        st = dict(pd["sous_total"])
+        st["caces"] = caces_st.get(fam, 0)
+        familles.append({"famille": fam, "theorie": theo_par_fam.get(fam),
+                         "cats": cats, "sous_total": st})
+    total = dict(prat_tot)
+    total["caces"] = caces_tot
+    return {"familles": familles, "total": total}
+
+
+def _stats_par_testeur(annee, db):
+    from app.models.session_epreuve import SessionEpreuve
+    from app.models.jour_test import ResultatTheorie
+    from app.models.testeur import Testeur
+    from app.models.lieu import Lieu
+    lieu_type = {l.id: (l.type or "cdt") for l in db.query(Lieu).all()}
+    qth = (db.query(ResultatTheorie.testeur_id, SessionModel.famille, ResultatTheorie.obtenue)
+           .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
+           .filter(ResultatTheorie.bloque == False, ResultatTheorie.dispense == False,
+                   ResultatTheorie.testeur_id.isnot(None)))
+    if annee is not None:
+        qth = qth.filter(SessionModel.annee == annee)
+    theo = {}
+    for tid, fam, obt in qth.all():
+        k = (tid, fam)
+        if k not in theo: theo[k] = [0, 0]
+        theo[k][0] += 1
+        if obt: theo[k][1] += 1
+    qpr = (db.query(SessionEpreuve.testeur_id, SessionEpreuve.famille, SessionEpreuve.categorie,
+                    SessionEpreuve.obtenue, SessionModel.lieu_id)
+           .join(SessionModel, SessionModel.id == SessionEpreuve.session_id)
+           .filter(SessionEpreuve.bloque == False, SessionEpreuve.testeur_id.isnot(None)))
+    if annee is not None:
+        qpr = qpr.filter(SessionModel.annee == annee)
+    prat = {}
+    for tid, fam, cat, obt, lieu_id in qpr.all():
+        k = (tid, fam, cat)
+        if k not in prat: prat[k] = {"passes": 0, "reussis": 0, "cdt": 0, "hors": 0}
+        prat[k]["passes"] += 1
+        if obt: prat[k]["reussis"] += 1
+        if lieu_type.get(lieu_id) == "hors_cdt": prat[k]["hors"] += 1
+        else: prat[k]["cdt"] += 1
+    tids = {k[0] for k in theo} | {k[0] for k in prat}
+    if not tids:
+        return []
+    testeurs = {t.id: t for t in db.query(Testeur).filter(Testeur.id.in_(tids)).all()}
+    resultat = []
+    for tid in tids:
+        t = testeurs.get(tid)
+        nom = f"{t.prenom} {t.nom}" if t else f"Testeur #{tid}"
+        th_lignes = []
+        tp = tr = 0
+        for (xtid, fam), (p, r) in sorted(theo.items()):
+            if xtid != tid: continue
+            th_lignes.append({"famille": fam, "passes": p, "reussis": r, "echoues": p - r,
+                              "pct": round(100 * r / p) if p else 0})
+            tp += p; tr += r
+        th_total = {"passes": tp, "reussis": tr, "echoues": tp - tr,
+                    "pct": round(100 * tr / tp) if tp else 0}
+        pr_lignes = []
+        pp = pr_ = pcdt = phors = 0
+        for (xtid, fam, cat), d in sorted(prat.items()):
+            if xtid != tid: continue
+            tot = d["cdt"] + d["hors"]
+            pr_lignes.append({"famille": fam, "categorie": cat, "passes": d["passes"],
+                              "reussis": d["reussis"], "echoues": d["passes"] - d["reussis"],
+                              "pct": round(100 * d["reussis"] / d["passes"]) if d["passes"] else 0,
+                              "cdt": d["cdt"], "hors": d["hors"],
+                              "pct_hors": round(100 * d["hors"] / tot) if tot else 0})
+            pp += d["passes"]; pr_ += d["reussis"]; pcdt += d["cdt"]; phors += d["hors"]
+        ptot = pcdt + phors
+        pr_total = {"passes": pp, "reussis": pr_, "echoues": pp - pr_,
+                    "pct": round(100 * pr_ / pp) if pp else 0,
+                    "cdt": pcdt, "hors": phors,
+                    "pct_hors": round(100 * phors / ptot) if ptot else 0}
+        resultat.append({"id": tid, "nom": nom, "theorie": th_lignes, "theo_total": th_total,
+                         "pratique": pr_lignes, "prat_total": pr_total,
+                         "nb_total": tp + pp, "pct_hors": pr_total["pct_hors"]})
+    resultat.sort(key=lambda x: x["nom"].lower())
+    return resultat
+
+
+def _stats_formation(annee, db):
+    from app.models.jour_formation import JourFormation, AffectationFormation
+    from app.models.utilisateur import Utilisateur
+    q = (db.query(AffectationFormation.user_id, SessionModel.famille, JourFormation.id)
+         .join(JourFormation, JourFormation.id == AffectationFormation.jour_formation_id)
+         .join(SessionModel, SessionModel.id == JourFormation.session_id)
+         .filter(JourFormation.actif == True))
+    if annee is not None:
+        q = q.filter(SessionModel.annee == annee)
+    seen = set()
+    agg = {}
+    familles_set = set()
+    for uid, fam, jid in q.all():
+        key = (uid, jid)
+        if key in seen:
+            continue
+        seen.add(key)
+        agg[(uid, fam)] = agg.get((uid, fam), 0) + 1
+        familles_set.add(fam)
+    familles = sorted(familles_set)
+    uids = {u for (u, _) in agg}
+    if not uids:
+        return {"familles": [], "formateurs": [], "totaux": {}, "total": 0}
+    users = {u.id: u for u in db.query(Utilisateur).filter(Utilisateur.id.in_(uids)).all()}
+    formateurs = []
+    totaux = {f: 0 for f in familles}
+    total = 0
+    for uid in uids:
+        u = users.get(uid)
+        nom = f"{u.prenom} {u.nom}" if u else f"Utilisateur #{uid}"
+        par_fam = {}
+        t = 0
+        for f in familles:
+            n = agg.get((uid, f), 0)
+            par_fam[f] = n
+            totaux[f] += n
+            t += n
+        formateurs.append({"nom": nom, "par_fam": par_fam, "total": t})
+        total += t
+    formateurs.sort(key=lambda x: x["nom"].lower())
+    return {"familles": familles, "formateurs": formateurs, "totaux": totaux, "total": total}
+
+
 @router.get("/statistiques", response_class=HTMLResponse)
-async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
+async def page_statistiques(request: Request, db: DBSession = Depends(get_db), annee_tests: str = None):
     _config = db.query(ConfigOrganisme).first()
 
     familles = [
@@ -382,6 +619,22 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
         reverse=True
     )
 
+    # -- Onglets "Tests & CDT" / "Testeurs" / "Formation" --
+    annees_tests = _annees_tests(db)
+    _today_year = date.today().year
+    if annee_tests in (None, ""):
+        annee_sel = _today_year
+    elif annee_tests == "all":
+        annee_sel = None
+    else:
+        try:
+            annee_sel = int(annee_tests)
+        except (TypeError, ValueError):
+            annee_sel = _today_year
+    tableau_principal = _assembler_tableau_principal(annee_sel, db)
+    stats_testeurs = _stats_par_testeur(annee_sel, db)
+    stats_formation = _stats_formation(annee_sel, db)
+
     return templates.TemplateResponse(
         request=request,
         name="statistiques.html",
@@ -400,6 +653,11 @@ async def page_statistiques(request: Request, db: DBSession = Depends(get_db)):
             "periodes_heterogene": periodes_heterogene,
             "regime_famille": regime_famille,
             "stats_v2_famille": stats_v2_famille,
+            "tests_annees": annees_tests,
+            "tests_annee_sel": ("all" if annee_sel is None else annee_sel),
+            "tests_tableau": tableau_principal,
+            "tests_testeurs": stats_testeurs,
+            "tests_formation": stats_formation,
         }
     )
 
