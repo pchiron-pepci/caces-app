@@ -3156,3 +3156,8 @@ explicite selon l'etat reel (ex: aligner la config sur le regime des tirages
 existants de chaque famille), soit choisir comme defaut le mode qui correspond a
 l'historique deja present. Toujours verifier la coherence config <-> donnees
 existantes AVANT de deployer une colonne a defaut non neutre.
+
+### ✅ Chantier terminé : tooltip oeil page stagiaires (commit 2a5e712)
+
+- `templates/stagiaires.html` (ligne 9, `label#lbl-inactifs`) : `title` de la case œil passé de « Masquer les stagiaires archivés » à « Afficher uniquement les candidats des sessions en cours (non clôturées) » — le libellé décrit désormais le comportement réel du filtre (montrer uniquement les candidats des sessions non clôturées) plutôt qu'un masquage d'archives.
+- Aucune logique modifiée : uniquement le texte d'infobulle.
