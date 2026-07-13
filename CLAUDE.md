@@ -3246,3 +3246,11 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
   3. `templates/session_detail.html` : condition couleur passée à `vert si (opt in obtained_list OR (cat ~ '|' ~ opt) in opt_incluse_str)`, **uniquement dans les 2 branches `epreuve.obtenue == True`** (L658, L1102). Branches `obtenue == False` (L661, L1105) **inchangées** → option incluse sur base échouée reste rouge.
 - ⚠️ **Piège template** : la condition couleur apparaît **4×** à l'identique (2 paires réussi/échec). Ne corriger que les branches vert (badge « ✓ »). Vérif faite + `assert modif == 2` pour éviter no-op silencieux ou sur-correction.
 - Vérifié : main syntaxe OK, Jinja compile OK, module chargé OK.
+
+### ✅ Chantier terminé : options incluses écrites dans options_obtenues (commit ae790c1)
+
+- **Fix (couche donnée persistée)** : dans `app/routers/saisie_pratique.py` / `valider()`, après le calcul de `incluse_codes` (~L665), si `data.decision_base` (base réussie) → les codes inclus sont ajoutés à `codes_acquis`. Comme `options_obtenues = ",".join(codes_acquis)` (L679/693), l'option incluse (ex. PE R.482 A) est désormais **réellement inscrite** → **visible sur le CACES et la carte**.
+- `codes_acquis` est une **liste** (`= []` L656) → `.append()` OK. `data.decision_base` (champ pydantic L567), `saisie`, `_fam` en scope.
+- **`nb_fac` (calcul UT) inchangé** : son filtre `c not in incluse_codes` exclut toujours les options incluses → l'UT n'est pas gonflée. L'ajout est placé AVANT `nb_fac` mais sans effet sur lui (par construction du filtre).
+- **Cohérent avec [[option incluse affichée en vert]]** (99387d6) : `options_obtenues` contient maintenant PE → `opt in obtained_list` vrai → vert. Le check `opt_incluse_str` reste utile pour les saisies historiques (validées avant ce fix).
+- Vérifié : syntaxe OK, module chargé OK. (Non démontrable en local : `OptionCategorie` vide dans `caces.db`.)
