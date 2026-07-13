@@ -3199,3 +3199,11 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - Sortie : dossier `audio_r482/`, nommage `R482_G{grille}_T{theme}_Q{numero}_{H|F}.mp3` + `R482_ECHANTILLON_{H|F}.mp3`.
 - Usage : `python generer_audio_r482.py [H|F] [G# T# Q#] [--force]`.
 - Vérifié : extraction `GRILLES_R482` OK (5 grilles, 500 questions), 0 résidu `r486`, syntaxe OK. La génération MP3 réelle nécessite les identifiants AWS Polly (non exécutée).
+
+### ✅ Chantier terminé : compteur association audio par famille (commit 723bbed)
+
+- **Bug** : la route `GET /derniere-association-audio` (`app/routers/upload.py`) comptait les MP3 via `cloudinary.api.resources(max_results=500)` — **plafonné à 500**, donc faux dès que le total dépasse ce seuil.
+- **Correction** : comptage **fiable en base**, groupé par `GrilleTheorie.famille`, via `func.sum(case(...))` sur `ReponseGrille.audio_url` (voix H) et `audio_url_f` (voix F) non nuls/non vides. La route renvoie désormais `{"date", "familles": [{"famille","h","f"}]}` (au lieu de `nb_audios`/`total_cloudinary`). Suppression de l'appel `configurer_cloudinary()` devenu inutile.
+- **`templates/admin_images.html`** : affichage adapté → « Dernière association : {date} — {fam} : {h} voix H / {f} voix F · … ».
+- Vérifié en runtime : route renvoie p.ex. `[{R482:h0/f0},{R486:h1/f1}]`, structure conforme.
+- ⚠️ La route **images** `total_cloudinary` (lignes ~144-152, `nb_images`) est **distincte** et **non modifiée** — elle garde le comptage Cloudinary (même limite potentielle des 500, hors scope de ce fix).
