@@ -1827,14 +1827,7 @@ def page_session_detail(request: Request, session_id: int):
             for jtc in jtcs:
                 if jtc.options_planifiees:
                     try:
-                        _opts_raw = json.loads(jtc.options_planifiees)
-                        # Retirer les options INCLUSES (evaluees dans la base, ex. PE
-                        # pour R.482 A) : elles ne doivent pas s'afficher comme option
-                        # planifiee (sinon rouge "non acquise"). (candidats_options incluses filtrees)
-                        j.candidats_options[jtc.stagiaire_id] = {
-                            _cat: [_c for _c in _codes if (_cat, _c) not in opt_incluse_set]
-                            for _cat, _codes in _opts_raw.items()
-                        }
+                        j.candidats_options[jtc.stagiaire_id] = json.loads(jtc.options_planifiees)
                     except Exception:
                         j.candidats_options[jtc.stagiaire_id] = {}
                 else:
@@ -2092,6 +2085,7 @@ def page_session_detail(request: Request, session_id: int):
                 "testeurs": testeurs_list,
                 "options_par_cat": options_par_cat,
                 "opt_incluse_set": opt_incluse_set,
+                "opt_incluse_str": {("%s|%s" % (c, o)) for (c, o) in opt_incluse_set},
                 "ut_planifie_par_stag_cat": ut_planifie_par_stag_cat,
                 "testeur_initiales_par_stag_cat": testeur_initiales_par_stag_cat,
                 "jours_par_date": jours_par_date,
