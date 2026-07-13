@@ -3227,3 +3227,10 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Feature** : dans `app/routers/saisie_pratique.py`, fonction `valider()`, appel de `calculer_et_synchroniser(db)` (service `app/services/caces_obtenus.py:302`, signature `(db: Session) -> list`) juste après le `db.commit()` final (avant le `return {"message": "Validee"...}`). → un apprenant ayant théorie + pratique réussies obtient son CACES « à valider » **sans attendre la clôture de session** (la clôture rappelle aussi le calcul, idempotent).
 - Appel en **import local** dans un `try/except: pass` (non bloquant : la validation de l'épreuve reste acquise même si le calcul CACES échoue ; il sera rejoué à la clôture).
 - Vérifié : import réel de `calculer_et_synchroniser` OK (signature `(db)` conforme à l'appel → pas de no-op silencieux via le except), syntaxe OK, module chargé OK.
+
+### ✅ Chantier terminé : options incluses retirées de candidats_options / affichage (commit 932162d)
+
+- **Fix (couche affichage)** : dans `app/main.py` (route session_detail, ~L1826), lors de la construction de `j.candidats_options`, filtrage des options **incluses** — les codes dont `(categorie, code)` est dans `opt_incluse_set` sont retirés. → l'option incluse (ex. PE R.482 A) n'apparaît plus comme option planifiée dans le récap des épreuves pratiques, **donc plus de « PE » en rouge « non acquise »**.
+- Réutilise `opt_incluse_set` (défini L1566, rempli L1576 avec `(opt.categorie, opt.code_option)`, même sémantique que `ut_ligne` L488) — défini avant le bloc, même scope, lu depuis le scope englobant dans la compréhension.
+- Vérifié : ordre correct, syntaxe OK, `app.main` chargé OK.
+- **Complémentaire de [[chantier options incluses codes_planif]]** (commit 17fb644, `saisie_pratique.py`) : celui-là côté saisie/validation, celui-ci côté affichage récap. Les 2 couches alignées.
