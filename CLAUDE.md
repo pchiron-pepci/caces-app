@@ -3214,3 +3214,10 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Fix** : nouveau module **`app/utils_famille.py`** avec `fam_variantes(f)` → renvoie les variantes avec/sans point (`{'R.482','R482'}`). Les 6 comparaisons passées de `== X` à `.in_(fam_variantes(X))` dans : `app/main.py` (1), `app/routers/admin.py` (1), `app/routers/saisie_pratique.py` (2), `app/routers/sessions.py` (1), `app/services/calcul_fiche_reco.py` (1). Import `from app.utils_famille import fam_variantes` ajouté à chacun.
 - Vérifié : syntaxe OK, helper OK (matche dans les 2 sens), import réel des 5 modules + `app.main` OK.
 - ⚠️ **Fix côté lecture uniquement** : la donnée reste hétérogène en base (`OptionCategorie.famille` mixe les 2 formats). Correctif de fond éventuel = migration one-shot de normalisation du format stocké (non fait).
+
+### ✅ Chantier terminé : options incluses retirées de codes_planif (commit 17fb644)
+
+- **Contexte** : une option **incluse** (`OptionCategorie.incluse == True`, ex. PE pour R.482 catégorie A) est évaluée **dans la grille de base**, pas comme option séparée. Elle ne doit donc pas être planifiée/validée comme un bloc option distinct.
+- **Fix** : dans `app/routers/saisie_pratique.py`, juste après la construction de `codes_planif` (~ligne 172), ajout d'un filtre qui retire de `codes_planif` les `code_option` marqués `incluse=True` pour le couple (famille=`fam_variantes(reco)`, `categorie`). Variables en scope (`reco` L141 format "R.482", `db`, `categorie`, `jtc`) ; utilise le helper `fam_variantes` (voir [[chantier précédent]]) pour tolérer R482/R.482.
+- Effet : plus de bloc option créé ni de faux « non acquise » pour une option incluse → **débloque validation + génération CACES**.
+- ⚠️ **Non démontrable en local** : table `OptionCategorie` vide dans le `caces.db` local (0 ligne) → filtre no-op en dev. Validé côté code (syntaxe + chargement module + scope + colonnes) ; agira en prod où `OptionCategorie` est peuplée.
