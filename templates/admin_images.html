@@ -274,7 +274,10 @@ function chargerDerniereAssociationAudio() {
             var el = document.getElementById('derniere-assoc-audio');
             if (!el) return;
             if (d.date) {
-                el.textContent = 'Dernière association : ' + d.date + ' (' + d.nb_audios + ' / ' + d.total_cloudinary + ')';
+                var detail = (d.familles || []).map(function(x) {
+                    return x.famille + ' : ' + x.h + ' voix H / ' + x.f + ' voix F';
+                }).join(' · ');
+                el.textContent = 'Dernière association : ' + d.date + (detail ? ' — ' + detail : '');
             } else {
                 el.textContent = 'Aucune association effectuée';
             }

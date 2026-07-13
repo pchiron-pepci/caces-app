@@ -850,25 +850,27 @@ async def associer_audios(pin: str):
 
 @router.get("/derniere-association-audio")
 def derniere_association_audio():
-    configurer_cloudinary()
     from app.models.association_audio_log import AssociationAudioLog
+    from app.models.grille_theorie import GrilleTheorie, ReponseGrille
+    from sqlalchemy import func, case
     db = SessionLocal()
     try:
         log = db.query(AssociationAudioLog).order_by(AssociationAudioLog.date_association.desc()).first()
         date_str = _to_paris(log.date_association).strftime("%d/%m/%Y %H:%M") if log else None
-        nb_audios = log.nb_audios if log else 0
+        # Comptage fiable en base : voix H / voix F associees, par famille
+        rows = (db.query(
+                    GrilleTheorie.famille,
+                    func.sum(case((ReponseGrille.audio_url.isnot(None) & (ReponseGrille.audio_url != ""), 1), else_=0)),
+                    func.sum(case((ReponseGrille.audio_url_f.isnot(None) & (ReponseGrille.audio_url_f != ""), 1), else_=0)),
+                )
+                .join(ReponseGrille, ReponseGrille.grille_id == GrilleTheorie.id)
+                .group_by(GrilleTheorie.famille)
+                .order_by(GrilleTheorie.famille)
+                .all())
+        familles = [{"famille": fam, "h": int(h or 0), "f": int(f or 0)} for fam, h, f in rows]
     finally:
         db.close()
-    total_cloudinary = 0
-    try:
-        result = cloudinary.api.resources(
-            type="upload", prefix="caces_questions/audio/",
-            max_results=500, resource_type="video"
-        )
-        total_cloudinary = len(result.get("resources", []))
-    except Exception:
-        pass
-    return {"date": date_str, "nb_audios": nb_audios, "total_cloudinary": total_cloudinary}
+    return {"date": date_str, "familles": familles}
 
 @router.delete("/supprimer-audio")
 async def supprimer_audio(filename: str, pin: str):
