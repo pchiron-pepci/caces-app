@@ -3207,3 +3207,10 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **`templates/admin_images.html`** : affichage adapté → « Dernière association : {date} — {fam} : {h} voix H / {f} voix F · … ».
 - Vérifié en runtime : route renvoie p.ex. `[{R482:h0/f0},{R486:h1/f1}]`, structure conforme.
 - ⚠️ La route **images** `total_cloudinary` (lignes ~144-152, `nb_images`) est **distincte** et **non modifiée** — elle garde le comptage Cloudinary (même limite potentielle des 500, hors scope de ce fix).
+
+### ✅ Chantier terminé : tolérance format famille R482/R.482 sur OptionCategorie (commit f8c31d8)
+
+- **Bug** : `OptionCategorie.famille` stocke les familles dans **deux formats incohérents** (`R482` sans point vs `R.482` avec point). Les 6 comparaisons `OptionCategorie.famille == <famille>` du code rataient selon le format → option incluse (PE/TC) non reconnue, notamment en saisie pratique.
+- **Fix** : nouveau module **`app/utils_famille.py`** avec `fam_variantes(f)` → renvoie les variantes avec/sans point (`{'R.482','R482'}`). Les 6 comparaisons passées de `== X` à `.in_(fam_variantes(X))` dans : `app/main.py` (1), `app/routers/admin.py` (1), `app/routers/saisie_pratique.py` (2), `app/routers/sessions.py` (1), `app/services/calcul_fiche_reco.py` (1). Import `from app.utils_famille import fam_variantes` ajouté à chacun.
+- Vérifié : syntaxe OK, helper OK (matche dans les 2 sens), import réel des 5 modules + `app.main` OK.
+- ⚠️ **Fix côté lecture uniquement** : la donnée reste hétérogène en base (`OptionCategorie.famille` mixe les 2 formats). Correctif de fond éventuel = migration one-shot de normalisation du format stocké (non fait).
