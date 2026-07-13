@@ -179,6 +179,19 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
         except Exception:
             pass
 
+    # Options INCLUSES (ex. PE pour R.482 A) : evaluees dans la base, pas comme
+    # option separee. On les retire de codes_planif pour ne pas creer de bloc
+    # option ni les faire ressortir comme "non acquises". (codes_planif incluses retirees)
+    _codes_inclus = {
+        o.code_option for o in db.query(OptionCategorie).filter(
+            OptionCategorie.famille.in_(fam_variantes(reco)),
+            OptionCategorie.categorie == categorie,
+            OptionCategorie.incluse == True,
+        ).all()
+    }
+    if _codes_inclus:
+        codes_planif = {c for c in codes_planif if c not in _codes_inclus}
+
     def _grille_option(code):
         return db.query(GrillePratique).filter(
             GrillePratique.recommandation == reco,
