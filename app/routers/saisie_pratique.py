@@ -695,6 +695,19 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
         db.add(epreuve)
 
     db.commit()
+
+    # Genere le CACES "a valider" des que theorie + pratique sont reussies,
+    # sans attendre la cloture de session (la cloture le rappelle aussi).
+    # Import local : evite tout risque de cycle et suit la regle projet
+    # (imports sensibles dans les fonctions).
+    try:
+        from app.services.caces_obtenus import calculer_et_synchroniser
+        calculer_et_synchroniser(db)
+    except Exception:
+        # Non bloquant : la validation de l'epreuve reste acquise meme si
+        # le calcul CACES echoue (il sera rejoue a la cloture).
+        pass
+
     return {"message": "Validee", "resultat": res}
 
 
