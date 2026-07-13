@@ -3192,3 +3192,10 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 **`templates/statistiques.html`** — 2 fragments remplaçant les placeholders + JS dans le `DOMContentLoaded` : filtre période (recharge `?annee_tests=` en conservant l'onglet actif via hash) + restauration onglet au chargement. Sélecteur période dupliqué dans les 2 onglets (`tests-annee` / `tests-annee-2`, même `data-action="tests-periode"`).
 
 ⚠️ **Décalage schéma sqlite local corrigé au passage** (voir aussi ci-dessous) : la base locale `caces.db` était en retard sur les modèles car **toutes** les migrations startup de `main.py` utilisent la syntaxe Postgres `ADD COLUMN IF NOT EXISTS` (no-op silencieux sur sqlite). Colonnes `bloque` (session_epreuves, resultats_theorie), `organisme_externe`/`sous_traitance` (caces_obtenus) + ~85 autres ajoutées en local via script de synchro générique modèle→sqlite. **Prod (Postgres) non concernée** (colonnes déjà présentes). Piste d'amélioration non faite : adapter `_run_startup_migrations` pour rejouer les `ADD COLUMN` sans `IF NOT EXISTS` quand le dialecte est sqlite.
+
+### ✅ Chantier terminé : script audio R.482 (commit 35d4176)
+
+- `generer_audio_r482.py` créé par **calque de `generer_audio_r486.py`** (`sed 's/R486/R482/g; s/r486/r482/g'`). Génère les MP3 double voix H/F via AWS Polly neural (`VOIX = {"H": "Remi", "F": "Lea"}`), textes lus depuis `init_questions_r482.py` (dict `GRILLES_R482`, extrait par `ast.literal_eval`), SSML par regex.
+- Sortie : dossier `audio_r482/`, nommage `R482_G{grille}_T{theme}_Q{numero}_{H|F}.mp3` + `R482_ECHANTILLON_{H|F}.mp3`.
+- Usage : `python generer_audio_r482.py [H|F] [G# T# Q#] [--force]`.
+- Vérifié : extraction `GRILLES_R482` OK (5 grilles, 500 questions), 0 résidu `r486`, syntaxe OK. La génération MP3 réelle nécessite les identifiants AWS Polly (non exécutée).
