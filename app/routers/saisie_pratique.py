@@ -668,6 +668,13 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
             OptionCategorie.categorie == saisie.categorie,
             OptionCategorie.incluse == True).all()
     }
+    # Les options INCLUSES sont acquises d'office quand la base est reussie
+    # (evaluees dans la base). On les ajoute a options_obtenues pour qu'elles
+    # apparaissent sur le CACES et la carte. (options incluses ajoutees a codes_acquis)
+    if data.decision_base:
+        for _code_inc in incluse_codes:
+            if _code_inc not in codes_acquis:
+                codes_acquis.append(_code_inc)
     nb_fac = len([c for c in codes_acquis if c not in incluse_codes])
     ut_val = (cat.ut_pratique if cat and cat.ut_pratique else 1.0) + nb_fac * 0.5
     note_t = "Saisie en ligne - base %s/%s" % (
