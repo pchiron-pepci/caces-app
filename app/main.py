@@ -10,6 +10,7 @@ from starlette.responses import RedirectResponse as _RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from jose import JWTError as _JWTError, jwt as _jwt
+from app.utils_famille import fam_variantes
 from app.database import engine, Base, SessionLocal, get_db
 from sqlalchemy.orm import Session as DBSession
 
@@ -1563,7 +1564,7 @@ def page_session_detail(request: Request, session_id: int):
 
         options_par_cat = {}
         opt_incluse_set = set()
-        for opt in db.query(OptionCategorie).filter(OptionCategorie.famille == session.famille).all():
+        for opt in db.query(OptionCategorie).filter(OptionCategorie.famille.in_(fam_variantes(session.famille))).all():
             if opt.categorie not in options_par_cat:
                 options_par_cat[opt.categorie] = []
             options_par_cat[opt.categorie].append({

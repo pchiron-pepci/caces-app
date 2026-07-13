@@ -19,6 +19,7 @@ from app.models.jour_test import JourTest, ResultatTheorie
 from app.models.grille_pratique import SaisiePratique
 from app.models.stagiaire import Stagiaire
 from app.models.option_categorie import OptionCategorie
+from app.utils_famille import fam_variantes
 from app.services.calcul_pratique import calculer_saisie
 
 # ── Paramètres par défaut (À TERME configurables en admin) ───────────────────
@@ -258,7 +259,7 @@ def _pratique_echec(saisie: SaisiePratique, db: DBSession, famille: str, params=
             continue
         code = opt.get("code_option")
         oc = db.query(OptionCategorie).filter(
-            OptionCategorie.famille == famille,
+            OptionCategorie.famille.in_(fam_variantes(famille)),
             OptionCategorie.categorie == saisie.categorie,
             OptionCategorie.code_option == code,
         ).first()

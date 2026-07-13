@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session as DBSession
 from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.session_epreuve import SessionEpreuve
+from app.utils_famille import fam_variantes
 from app.models.jour_test import JourTest, JourTestCandidat
 import json
 from app.models.option_categorie import OptionCategorie
@@ -271,7 +272,7 @@ def ouvrir_saisie(session_id: int, jour_test_id: int, stagiaire_id: int, categor
         gd["incluse"] = False
         if grille.type == "option" and grille.code_option:
             _inc = db.query(OptionCategorie).filter(
-                OptionCategorie.famille == reco,
+                OptionCategorie.famille.in_(fam_variantes(reco)),
                 OptionCategorie.categorie == categorie,
                 OptionCategorie.code_option == grille.code_option,
                 OptionCategorie.incluse == True,
@@ -650,7 +651,7 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
         Categorie.code == saisie.categorie).first()
     incluse_codes = {
         o.code_option for o in db.query(OptionCategorie).filter(
-            OptionCategorie.famille == _fam,
+            OptionCategorie.famille.in_(fam_variantes(_fam)),
             OptionCategorie.categorie == saisie.categorie,
             OptionCategorie.incluse == True).all()
     }

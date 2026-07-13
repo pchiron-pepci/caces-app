@@ -7,6 +7,7 @@ from app.database import get_db
 from app.config_utils import get_pin_admin
 from app.routers.auth import get_utilisateur_courant
 from app.models.categorie import Categorie, Famille
+from app.utils_famille import fam_variantes
 from app.models.habilitation_testeur import HabilitationTesteur
 from app.models.lieu import Lieu
 from app.models.lieu_habilitation import LieuHabilitation
@@ -498,7 +499,7 @@ class OptionsUpdate(BaseModel):
 def get_options_disponibles(famille: str, categorie: str, db: Session = Depends(get_db)):
     from app.models.option_categorie import OptionCategorie
     opts = db.query(OptionCategorie).filter(
-        OptionCategorie.famille == famille,
+        OptionCategorie.famille.in_(fam_variantes(famille)),
         OptionCategorie.categorie == categorie
     ).all()
     return [{"code": o.code_option, "libelle": o.libelle_option} for o in opts]

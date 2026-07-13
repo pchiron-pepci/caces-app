@@ -5,6 +5,7 @@ from app.services import storage
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
 from app.models.session import Session
+from app.utils_famille import fam_variantes
 from app.models.session_candidat import SessionCandidat
 from app.models.session_epreuve import SessionEpreuve
 from app.models.equipement import Equipement
@@ -1388,7 +1389,7 @@ def add_epreuve(session_id: int, data: EpreuveCreate, db: DBSession = Depends(ge
     incluse_codes = {
         opt.code_option
         for opt in db.query(OptionCategorie).filter(
-            OptionCategorie.famille == data.famille,
+            OptionCategorie.famille.in_(fam_variantes(data.famille)),
             OptionCategorie.categorie == data.categorie,
             OptionCategorie.incluse == True,
         ).all()
