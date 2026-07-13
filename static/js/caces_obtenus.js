@@ -603,6 +603,7 @@ function renderCarteAValider(co) {
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;padding-left:72px;flex-wrap:wrap;">
+                    <span class="cat-pratique-badge" style="background:#1a237e;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700;">${co.categorie}</span>
                     ${optionsPratique ? `<span style="display:flex;gap:3px;">${optionsPratique}</span>` : ''}
                     ${co.testeur_nom ? `<span style="font-size:11px;color:#aaa;white-space:nowrap;">${_abrevTesteur(co.testeur_nom)}</span>` : ''}
                 </div>
