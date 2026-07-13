@@ -3260,3 +3260,10 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Fix (front)** : dans `static/js/caces_obtenus.js` (~L605, 2ᵉ sous-ligne « Pratique » d'une carte CACES à valider), ajout d'un badge catégorie `<span class="cat-pratique-badge" ...>${co.categorie}</span>` **avant** les options — avant, seule l'option (ex. PE) apparaissait sans la catégorie A.
 - Même style de badge que l'existant (`background:#1a237e`, cf. L560). `co.categorie` déjà utilisé partout dans le fichier.
 - Vérifié : `node -c` JS syntaxe OK, badge présent L606.
+
+### ✅ Chantier terminé : passe 2 conserve caces_source_id (extension sur CACES externe) (commit 0c94848)
+
+- **Bug** : `app/services/caces_obtenus.py`, moteur `calculer_et_synchroniser`, **passe 2** (extensions). Quand la résolution du CACES de base par `theorie_source_id` échoue (`initial` introuvable), le fallback mettait `caces_init_id = None` → **lien `caces_initial_id` perdu**. Cas typique : extension sur un CACES **EXTERNE** (VERIFRANCE) qui n'a pas de `resultat_theorie_id`.
+- **Fix** : dans le fallback, récupérer `calc.get("caces_source_id")` (CACES de base déjà identifié par le moteur, posé L244 pour les extensions). Si ce CACES existe et a une `date_echeance` → hériter de son échéance + `caces_init_id = _src.id`. Sinon seulement → vrai fallback (calcul normal `date_echeance`).
+- **Non no-op (vérifié)** : le `.pop("caces_source_id")` L331 est en **passe 1** et sauté pour les extensions (`continue` L330 avant), donc en passe 2 `calc` contient toujours `caces_source_id`. `CacesObtenu` importé (L6), `date_echeance` existe, pas de régression sur `_appliquer_caces` (recevait déjà la clé en passe 2).
+- Vérifié : syntaxe OK, module chargé OK.
