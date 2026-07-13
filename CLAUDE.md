@@ -3228,9 +3228,21 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - Appel en **import local** dans un `try/except: pass` (non bloquant : la validation de l'épreuve reste acquise même si le calcul CACES échoue ; il sera rejoué à la clôture).
 - Vérifié : import réel de `calculer_et_synchroniser` OK (signature `(db)` conforme à l'appel → pas de no-op silencieux via le except), syntaxe OK, module chargé OK.
 
-### ✅ Chantier terminé : options incluses retirées de candidats_options / affichage (commit 932162d)
+### ⛔ SUPERSEDÉ par 99387d6 — options incluses retirées de candidats_options / affichage (commit 932162d)
+
+> ⚠️ **Approche abandonnée** : masquer le PE dans le récap. Remplacée par « PE affiché en vert » (commit 99387d6, ci-dessous). L'étape 1 de 99387d6 a annulé le filtre décrit ici.
 
 - **Fix (couche affichage)** : dans `app/main.py` (route session_detail, ~L1826), lors de la construction de `j.candidats_options`, filtrage des options **incluses** — les codes dont `(categorie, code)` est dans `opt_incluse_set` sont retirés. → l'option incluse (ex. PE R.482 A) n'apparaît plus comme option planifiée dans le récap des épreuves pratiques, **donc plus de « PE » en rouge « non acquise »**.
 - Réutilise `opt_incluse_set` (défini L1566, rempli L1576 avec `(opt.categorie, opt.code_option)`, même sémantique que `ut_ligne` L488) — défini avant le bloc, même scope, lu depuis le scope englobant dans la compréhension.
 - Vérifié : ordre correct, syntaxe OK, `app.main` chargé OK.
 - **Complémentaire de [[chantier options incluses codes_planif]]** (commit 17fb644, `saisie_pratique.py`) : celui-là côté saisie/validation, celui-ci côté affichage récap. Les 2 couches alignées.
+
+### ✅ Chantier terminé : option incluse affichée en VERT si base réussie (commit 99387d6, supersède 932162d)
+
+- **Décision UX** : une option **incluse** (ex. PE R.482 A) ne doit pas disparaître ni sortir en rouge dans le récap des épreuves pratiques (`session_detail.html`) — elle est **acquise avec la base**, donc affichée **verte** quand la base est réussie. Remplace l'approche « masquer » de 932162d.
+- **3 temps** :
+  1. `app/main.py` : **annulation** du filtre `candidats_options` de 932162d → le PE reste affiché.
+  2. `app/main.py` : ajout au contexte de `opt_incluse_str` = set des `"cat|code"` inclus (dérivé de `opt_incluse_set`).
+  3. `templates/session_detail.html` : condition couleur passée à `vert si (opt in obtained_list OR (cat ~ '|' ~ opt) in opt_incluse_str)`, **uniquement dans les 2 branches `epreuve.obtenue == True`** (L658, L1102). Branches `obtenue == False` (L661, L1105) **inchangées** → option incluse sur base échouée reste rouge.
+- ⚠️ **Piège template** : la condition couleur apparaît **4×** à l'identique (2 paires réussi/échec). Ne corriger que les branches vert (badge « ✓ »). Vérif faite + `assert modif == 2` pour éviter no-op silencieux ou sur-correction.
+- Vérifié : main syntaxe OK, Jinja compile OK, module chargé OK.
