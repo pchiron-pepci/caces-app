@@ -348,9 +348,19 @@ def calculer_et_synchroniser(db: Session) -> list:
             calc["date_echeance"] = initial.date_echeance
             caces_init_id = initial.id
         else:
-            # fallback : initial introuvable (incohérence/annulé) → calcul normal
-            calc["date_echeance"] = _date_echeance(ep.famille, calc["date_obtention"])
-            caces_init_id = None
+            # Resolution par theorie_source_id echouee. Cas typique : extension
+            # sur un CACES EXTERNE (pas de resultat_theorie_id). Le moteur a
+            # deja identifie le CACES de base -> on conserve caces_source_id
+            # plutot que de perdre le lien. (fallback caces_source_id conserve)
+            _src_id = calc.get("caces_source_id")
+            _src = db.query(CacesObtenu).filter(CacesObtenu.id == _src_id).first() if _src_id else None
+            if _src and _src.date_echeance:
+                calc["date_echeance"] = _src.date_echeance
+                caces_init_id = _src.id
+            else:
+                # vrai fallback : aucune base identifiable -> calcul normal
+                calc["date_echeance"] = _date_echeance(ep.famille, calc["date_obtention"])
+                caces_init_id = None
         _appliquer_caces(db, ep, calc, caces_initial_id=caces_init_id)
 
     db.commit()
