@@ -3221,3 +3221,9 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Fix** : dans `app/routers/saisie_pratique.py`, juste après la construction de `codes_planif` (~ligne 172), ajout d'un filtre qui retire de `codes_planif` les `code_option` marqués `incluse=True` pour le couple (famille=`fam_variantes(reco)`, `categorie`). Variables en scope (`reco` L141 format "R.482", `db`, `categorie`, `jtc`) ; utilise le helper `fam_variantes` (voir [[chantier précédent]]) pour tolérer R482/R.482.
 - Effet : plus de bloc option créé ni de faux « non acquise » pour une option incluse → **débloque validation + génération CACES**.
 - ⚠️ **Non démontrable en local** : table `OptionCategorie` vide dans le `caces.db` local (0 ligne) → filtre no-op en dev. Validé côté code (syntaxe + chargement module + scope + colonnes) ; agira en prod où `OptionCategorie` est peuplée.
+
+### ✅ Chantier terminé : CACES généré dès validation épreuve pratique (commit 6e5c1e6)
+
+- **Feature** : dans `app/routers/saisie_pratique.py`, fonction `valider()`, appel de `calculer_et_synchroniser(db)` (service `app/services/caces_obtenus.py:302`, signature `(db: Session) -> list`) juste après le `db.commit()` final (avant le `return {"message": "Validee"...}`). → un apprenant ayant théorie + pratique réussies obtient son CACES « à valider » **sans attendre la clôture de session** (la clôture rappelle aussi le calcul, idempotent).
+- Appel en **import local** dans un `try/except: pass` (non bloquant : la validation de l'épreuve reste acquise même si le calcul CACES échoue ; il sera rejoué à la clôture).
+- Vérifié : import réel de `calculer_et_synchroniser` OK (signature `(db)` conforme à l'appel → pas de no-op silencieux via le except), syntaxe OK, module chargé OK.
