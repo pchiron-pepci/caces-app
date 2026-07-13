@@ -3254,3 +3254,9 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **`nb_fac` (calcul UT) inchangé** : son filtre `c not in incluse_codes` exclut toujours les options incluses → l'UT n'est pas gonflée. L'ajout est placé AVANT `nb_fac` mais sans effet sur lui (par construction du filtre).
 - **Cohérent avec [[option incluse affichée en vert]]** (99387d6) : `options_obtenues` contient maintenant PE → `opt in obtained_list` vrai → vert. Le check `opt_incluse_str` reste utile pour les saisies historiques (validées avant ce fix).
 - Vérifié : syntaxe OK, module chargé OK. (Non démontrable en local : `OptionCategorie` vide dans `caces.db`.)
+
+### ✅ Chantier terminé : catégorie affichée sur la ligne Pratique de la carte CACES à valider (commit f102cc7)
+
+- **Fix (front)** : dans `static/js/caces_obtenus.js` (~L605, 2ᵉ sous-ligne « Pratique » d'une carte CACES à valider), ajout d'un badge catégorie `<span class="cat-pratique-badge" ...>${co.categorie}</span>` **avant** les options — avant, seule l'option (ex. PE) apparaissait sans la catégorie A.
+- Même style de badge que l'existant (`background:#1a237e`, cf. L560). `co.categorie` déjà utilisé partout dans le fichier.
+- Vérifié : `node -c` JS syntaxe OK, badge présent L606.
