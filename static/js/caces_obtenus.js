@@ -634,8 +634,11 @@ function _renderCarteValide(co) {
         ? `<span style="font-family:monospace;font-size:12px;font-weight:700;text-decoration:line-through;color:#bbb;">${noFormate}</span>`
         : `<span style="background:#1a237e;color:#fff;border-radius:5px;padding:2px 9px;font-size:12px;font-weight:700;font-family:monospace;">${noFormate}</span>`;
 
+    const estRepris = !!co.ancien_numero;  // marqueur repris = ancien_numero rempli (CACES herite pre-NORYX)
     const statutBadge = annule
         ? `<span style="background:#fff3e0;color:#e65100;border-radius:5px;padding:2px 9px;font-size:11px;font-weight:700;">Annulé</span>`
+        : estRepris
+        ? `<span style="background:#ede7f6;color:#5e35b1;border-radius:5px;padding:2px 9px;font-size:11px;font-weight:700;">Repris</span>`
         : `<span style="background:#e8f5e9;color:#2e7d32;border-radius:5px;padding:2px 9px;font-size:11px;font-weight:700;">Validé</span>`;
 
     const catBg = annule ? '#888' : '#1a237e';
