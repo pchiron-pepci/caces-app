@@ -3293,3 +3293,9 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 
 - **Fix** : dans `templates/session_detail.html` (~L747, récap séquençage), les options affichées sous l'UT étaient conditionnellement **orange** (`#e65100`) si non-incluses, gris si incluses. Le récap étant un tableau **informatif** (pas une alerte), toutes les options passent en **gris neutre** (`#aaa`) — condition `{% if (cat,opt) in opt_incluse_set %}...{% endif %}` remplacée par un simple `<span style="color:#aaa;">`.
 - Vérifié : Jinja compile OK, plus d'orange sur ces options, diff = 1 ligne (aucun changement parasite).
+
+### ✅ Chantier terminé : badge « Repris » aussi en desktop (commit 11c8670)
+
+- **Complément de [[badge Repris CACES herites]]** (24331f5) qui ne touchait que le rendu **carte (mobile)**. En **desktop (tableau)**, `badgeStatut(statut)` ne recevait que le statut → toujours « Validé ».
+- **Fix** (`static/js/caces_obtenus.js`) : signature `badgeStatut(statut, co)` + cas `statut === 'valide' && co.ancien_numero` → badge « Repris » (`#ede7f6`/`#5e35b1`). L'unique appel (L734) passe désormais `co`.
+- Vérifié : 1 déf + 1 seul appel (assert count==1 OK), `node -c` JS syntaxe OK.
