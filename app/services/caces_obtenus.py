@@ -117,6 +117,13 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
         _limite = date(ep.date.year - 1, ep.date.month, ep.date.day) + timedelta(days=1)
     except ValueError:
         _limite = date(ep.date.year - 1, 3, 1)
+    # Borne haute du portier (12 mois apres la pratique) : symetrique, pour autoriser
+    # une theorie MEME session apres pratique (cas 3) SANS violer l'invariant N0
+    # (< 12 mois quel que soit l'ordre, meme en session longue). CLAUDE.md l.1947.
+    try:
+        _limite_haute = date(ep.date.year + 1, ep.date.month, ep.date.day) - timedelta(days=1)
+    except ValueError:
+        _limite_haute = date(ep.date.year + 1, 3, 1) - timedelta(days=1)
 
     def _date_rt(_rt):
         if not _rt:
@@ -134,7 +141,9 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
             ResultatTheorie.obtenue == True,
             ResultatTheorie.bloque != True,
             JourTest.date >= _limite,
-            JourTest.date <= ep.date,
+            # cas3: theorie meme session APRES pratique autorisee (CLAUDE.md l.1956),
+            # mais bornee a +12 mois (portier symetrique, invariant N0 l.1947)
+            JourTest.date <= _limite_haute,
         )
         .order_by(JourTest.date.desc(), ResultatTheorie.id.desc())
         .first()
