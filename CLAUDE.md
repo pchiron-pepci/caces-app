@@ -3276,3 +3276,9 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
   2. Branche `else` (théorie ≤ pratique, non-extension) : la condition d'extension sur un CACES de base passe de `_orig <= date_theo` à **`_orig >= date_theo`** → l'extension n'a lieu que si l'**origine du CACES de base est ≥ à la théorie** (base plus récente gagne). Si la théorie orpheline est plus récente, elle **prime** → pas d'extension, base directe (échéance recalculée).
 - ⚠️ **Historique** : une 1ʳᵉ tentative (non committée) utilisait un wrapper `if rt is None:` = **code mort** (`rt` toujours non-None dans cette branche). Remplacée par l'inversion d'opérateur ci-dessus (la boucle s'exécute réellement, `date_theo` défini car `rt` existe). Fichier restauré à HEAD avant d'appliquer la bonne version.
 - Vérifié : direction opérateur validée par 2 scénarios, syntaxe + module OK. Non testé comportementalement en local (données CACES absentes du `caces.db`).
+
+### ✅ Chantier terminé : format testeur théorie uniformisé avec la pratique (commit 19d7e30)
+
+- **Bug** : sur la carte CACES à valider, `testeur_nom_theorie` était **pré-formaté** côté serveur en `"S. JOSSELIN"` (`f"{_t.prenom[0]}. {_t.nom}"`), puis re-traité par `_abrevTesteur` (client) qui re-splitte → sortait « J. S. » (faux). La pratique, elle, envoie du brut `"NOM Prenom"` (`caces_obtenus.py` L84) → `_abrevTesteur` → « S. JOS » (correct).
+- **Fix** : `app/routers/caces_obtenus.py` (~L105) — `testeur_nom_theorie` passe au format brut `f"{_t.nom} {_t.prenom}"` (comme la pratique). `_abrevTesteur` (`static/js/caces_obtenus.js` L373 : `prenom[0]. + nom[:3]`) donne alors « S. JOS », identique à la pratique.
+- Vérifié : syntaxe OK. (Garde `_t.prenom` retiré, aligné sur la pratique qui ne l'a pas non plus.)
