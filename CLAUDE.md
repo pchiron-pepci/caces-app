@@ -3288,3 +3288,8 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Feature** : dans `static/js/caces_obtenus.js` (liste « CACES validés »), un CACES **repris** (hérité pré-NORYX, marqueur = `ancien_numero` rempli, cf. modèle `caces_obtenu.py` L22) affiche un badge violet « Repris » (`#ede7f6`/`#5e35b1`) au lieu de « Validé ». Ordre : Annulé > Repris > Validé.
 - **Non no-op (vérifié)** : `co.ancien_numero` déjà utilisé côté client (L625) et **envoyé par le backend** (`app/routers/caces_obtenus.py:53`). `estRepris = !!co.ancien_numero`.
 - Vérifié : `node -c` JS syntaxe OK.
+
+### ✅ Chantier terminé : options du récap séquençage en gris neutre (commit b227c55)
+
+- **Fix** : dans `templates/session_detail.html` (~L747, récap séquençage), les options affichées sous l'UT étaient conditionnellement **orange** (`#e65100`) si non-incluses, gris si incluses. Le récap étant un tableau **informatif** (pas une alerte), toutes les options passent en **gris neutre** (`#aaa`) — condition `{% if (cat,opt) in opt_incluse_set %}...{% endif %}` remplacée par un simple `<span style="color:#aaa;">`.
+- Vérifié : Jinja compile OK, plus d'orange sur ces options, diff = 1 ligne (aucun changement parasite).
