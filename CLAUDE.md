@@ -3267,3 +3267,12 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Fix** : dans le fallback, récupérer `calc.get("caces_source_id")` (CACES de base déjà identifié par le moteur, posé L244 pour les extensions). Si ce CACES existe et a une `date_echeance` → hériter de son échéance + `caces_init_id = _src.id`. Sinon seulement → vrai fallback (calcul normal `date_echeance`).
 - **Non no-op (vérifié)** : le `.pop("caces_source_id")` L331 est en **passe 1** et sauté pour les extensions (`continue` L330 avant), donc en passe 2 `calc` contient toujours `caces_source_id`. `CacesObtenu` importé (L6), `date_echeance` existe, pas de régression sur `_appliquer_caces` (recevait déjà la clé en passe 2).
 - Vérifié : syntaxe OK, module chargé OK.
+
+### ✅ Chantier terminé : Cas 8 — théorie orpheline vivante prime sur l'extension (commit 5121316)
+
+- **Spec** : CLAUDE.md « ARBITRAGE BASE THÉORIQUE » (l.1949 « origine la plus récente gagne — gagnante théorie → échéance **calculée** ; gagnante CACES → échéance **héritée** »), Cas 8 (l.1961), priorité l.1966/1968 (« la théorie récente déplace la base — impose le garde-fou 2 »).
+- **Fix** (`app/services/caces_obtenus.py` / `_calculer_pour_epreuve`), 2 modifs :
+  1. L150 : P3 (théorie d'une autre session **clôturée**) passe `post_cloture=True → False` → traitée comme **base directe**, plus comme extension (Cas 4).
+  2. Branche `else` (théorie ≤ pratique, non-extension) : la condition d'extension sur un CACES de base passe de `_orig <= date_theo` à **`_orig >= date_theo`** → l'extension n'a lieu que si l'**origine du CACES de base est ≥ à la théorie** (base plus récente gagne). Si la théorie orpheline est plus récente, elle **prime** → pas d'extension, base directe (échéance recalculée).
+- ⚠️ **Historique** : une 1ʳᵉ tentative (non committée) utilisait un wrapper `if rt is None:` = **code mort** (`rt` toujours non-None dans cette branche). Remplacée par l'inversion d'opérateur ci-dessus (la boucle s'exécute réellement, `date_theo` défini car `rt` existe). Fichier restauré à HEAD avant d'appliquer la bonne version.
+- Vérifié : direction opérateur validée par 2 scénarios, syntaxe + module OK. Non testé comportementalement en local (données CACES absentes du `caces.db`).
