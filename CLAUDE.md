@@ -3299,3 +3299,10 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Complément de [[badge Repris CACES herites]]** (24331f5) qui ne touchait que le rendu **carte (mobile)**. En **desktop (tableau)**, `badgeStatut(statut)` ne recevait que le statut → toujours « Validé ».
 - **Fix** (`static/js/caces_obtenus.js`) : signature `badgeStatut(statut, co)` + cas `statut === 'valide' && co.ancien_numero` → badge « Repris » (`#ede7f6`/`#5e35b1`). L'unique appel (L734) passe désormais `co`.
 - Vérifié : 1 déf + 1 seul appel (assert count==1 OK), `node -c` JS syntaxe OK.
+
+### ✅ Chantier terminé : Cas 3 même session (théorie après pratique) via borne portier symétrique (commit 0063a67)
+
+- **Bug** : dans `_calculer_pour_epreuve` (P1, théorie **même session**), la borne haute `JourTest.date <= ep.date` rendait le **Cas 3** (théorie APRÈS pratique, CLAUDE.md l.1956) **inatteignable** → aucune théorie post-pratique n'était sélectionnée.
+- **Piège évité** : le script initial **supprimait** la borne haute. Refusé car cela troue l'**INVARIANT N°0** (l.1947 : portier < 12 mois « quel que soit l'ordre, même en session de 2 ans ») — une théorie même-session > 12 mois après la pratique aurait été admise. Décision utilisateur : **borne symétrique**.
+- **Fix retenu** : ajout de `_limite_haute = ep.date + 12 mois - 1j` (miroir de `_limite`, edge 29 févr. géré), et P1 borné `_limite <= JourTest.date <= _limite_haute`. → Cas 3 atteignable ET portier préservé des deux côtés. P2/P3 (`date_pratique`, autre session) **non touchés**.
+- Vérifié : bornes testées (+11 mois admis, +13 mois rejeté), syntaxe + module OK.
