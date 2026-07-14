@@ -147,7 +147,7 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
     candidats = []
     if rt_p1: candidats.append((_date_rt(rt_p1), 0, rt_p1, False))  # source 0 = meme session
     if rt_p2: candidats.append((_date_rt(rt_p2), 1, rt_p2, False))  # source 1 = autre ouverte
-    if rt_p3: candidats.append((_date_rt(rt_p3), 2, rt_p3, True))   # source 2 = autre clôturee (post_cloture)
+    if rt_p3: candidats.append((_date_rt(rt_p3), 2, rt_p3, False))  # source 2 = autre clôturee -> base directe cas8 (pas une extension)
     candidats = [c for c in candidats if c[0] is not None]
 
     rt = None
@@ -228,7 +228,10 @@ def _calculer_pour_epreuve(ep: SessionEpreuve, db) -> dict | None:
         ):
             _orig = _date_initiale_depuis_echeance(_c.famille, _c.date_echeance)
             # origine du CACES de base dans la fenetre 12 mois ET non posterieure a la theorie native
-            if _limite <= _orig <= ep.date and _orig <= date_theo:
+            # Cas 8 (spec l.1973) : le CACES base ne "deplace" la theorie que s'il est
+            # PLUS RECENT (origine >= theorie). Si la theorie orpheline est plus recente,
+            # elle prime -> pas d'extension, base directe.
+            if _limite <= _orig <= ep.date and _orig >= date_theo:
                 _caces_base = _c
                 break
         if _caces_base is not None:
