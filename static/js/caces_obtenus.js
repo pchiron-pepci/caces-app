@@ -434,7 +434,9 @@ function badgeDispense(co) {
     return `<span${dataAttrs} title="${titre}" style="background:${bg};color:${fg};border-radius:3px;padding:0 5px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:6px;${curseur}">${txt}${warn}</span>`;
 }
 
-function badgeStatut(statut) {
+function badgeStatut(statut, co) {
+    // badgeStatut desktop repris : ancien_numero rempli = CACES herite pre-NORYX
+    if (statut === 'valide' && co && co.ancien_numero) return '<span class="badge" style="background:#ede7f6;color:#5e35b1;">Repris</span>';
     if (statut === 'valide') return '<span class="badge" style="background:#e8f5e9;color:#2e7d32;">Validé</span>';
     if (statut === 'annule') return '<span class="badge" style="background:#fde8e8;color:#c62828;">Annulé</span>';
     return '';
@@ -731,7 +733,7 @@ function _renderLigne(co, idx, wNo) {
     return `<div data-caces-id="${co.id}" data-search="${_search}" data-annee-obt="${(co.date_obtention || '').slice(0,4)}" data-annee-ech="${(co.date_echeance || '').slice(0,4)}"
          style="display:flex;align-items:center;padding:9px 16px;background:${bg};${annule ? 'opacity:0.65;' : ''}border-bottom:1px solid #eef0f6;gap:0;">
         <div style="width:${wNo};min-width:${wNo};">${noBadge}</div>
-        <div style="width:82px;min-width:82px;">${badgeStatut(co.statut)}</div>
+        <div style="width:82px;min-width:82px;">${badgeStatut(co.statut, co)}</div>
         <div style="flex:1;min-width:130px;max-width:300px;overflow:hidden;padding-right:10px;display:flex;flex-direction:column;justify-content:center;${annule ? 'text-decoration:line-through;' : ''}">
             <div style="display:flex;align-items:center;font-size:13px;font-weight:700;color:#1a237e;overflow:hidden;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${co.stagiaire_nom} ${co.stagiaire_prenom}</span>${badgeDispense(co)}</div>
             ${co.stagiaire_ddn ? `<span style="font-size:10px;color:#999;font-weight:400;line-height:1.1;margin-top:1px;">${co.stagiaire_ddn.split('-').reverse().join('/')}</span>` : ''}
