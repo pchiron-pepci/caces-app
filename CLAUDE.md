@@ -3282,3 +3282,9 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Bug** : sur la carte CACES à valider, `testeur_nom_theorie` était **pré-formaté** côté serveur en `"S. JOSSELIN"` (`f"{_t.prenom[0]}. {_t.nom}"`), puis re-traité par `_abrevTesteur` (client) qui re-splitte → sortait « J. S. » (faux). La pratique, elle, envoie du brut `"NOM Prenom"` (`caces_obtenus.py` L84) → `_abrevTesteur` → « S. JOS » (correct).
 - **Fix** : `app/routers/caces_obtenus.py` (~L105) — `testeur_nom_theorie` passe au format brut `f"{_t.nom} {_t.prenom}"` (comme la pratique). `_abrevTesteur` (`static/js/caces_obtenus.js` L373 : `prenom[0]. + nom[:3]`) donne alors « S. JOS », identique à la pratique.
 - Vérifié : syntaxe OK. (Garde `_t.prenom` retiré, aligné sur la pratique qui ne l'a pas non plus.)
+
+### ✅ Chantier terminé : badge « Repris » pour les CACES hérités (commit 24331f5)
+
+- **Feature** : dans `static/js/caces_obtenus.js` (liste « CACES validés »), un CACES **repris** (hérité pré-NORYX, marqueur = `ancien_numero` rempli, cf. modèle `caces_obtenu.py` L22) affiche un badge violet « Repris » (`#ede7f6`/`#5e35b1`) au lieu de « Validé ». Ordre : Annulé > Repris > Validé.
+- **Non no-op (vérifié)** : `co.ancien_numero` déjà utilisé côté client (L625) et **envoyé par le backend** (`app/routers/caces_obtenus.py:53`). `estRepris = !!co.ancien_numero`.
+- Vérifié : `node -c` JS syntaxe OK.
