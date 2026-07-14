@@ -102,7 +102,7 @@ def _get_theorie_pratique(co: CacesObtenu, sessions: dict, db: DBSession) -> dic
             _tid = getattr(rt, "testeur_id", None)
             if _tid:
                 _t = db.query(Testeur).filter(Testeur.id == _tid).first()
-                testeur_nom_theorie = (f"{_t.prenom[0]}. {_t.nom}" if _t and _t.prenom else (_t.nom if _t else None))
+                testeur_nom_theorie = (f"{_t.nom} {_t.prenom}" if _t else None)  # format brut, abrege cote client comme la pratique
     # post_cloture reel = celui stocke sur le CACES (decision du moteur), pas un recalcul
     _post_cloture_aff = bool(getattr(co, "post_cloture", False))
 
