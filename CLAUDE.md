@@ -3326,3 +3326,10 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Effet** : une théorie d'une autre session passée **après** la pratique (dans les 12 mois) est désormais trouvée = **Cas 4bis** (l.1958 : sessions diff., pratique antérieure, théorie postérieure → date théorie). Portier invariant N°0 préservé (rejet > 12 mois des deux côtés).
 - Désormais **P1/P2/P3 tous symétriques** ±12 mois. Vérifié : syntaxe + module OK.
 - ⚠️ Note : ce fix était resté **non committé pendant 2 tours** (script d'origine sans étape commit) — committé après confirmation utilisateur.
+
+### ⏳ À VALIDER EN PROD (non marqué terminé) : repli ancien_numero page /verifier (commit 513f28f)
+
+- **Fix** : `templates/verifier.html` L170 (colonne N° CACES®). Avant : `{% if c.numero_ordre %}...{% else %}—{% endif %}` → CACES repris (`numero_ordre` NULL, `ancien_numero` rempli) affichait « — ». Après : `{% if c.ancien_numero %}{{ c.ancien_numero }}{% elif c.numero_ordre %}{{ "%04d" % c.numero_ordre }}{% else %}—{% endif %}` (ancien_numero **d'abord**, sans zfill = chaîne libre historique).
+- **Mécanisme réel** (diagnostic) : la route `page_verifier_carte` (`main.py:2638`) lit le **snapshot** `_parse_snapshot(carte.caces_json)` et étale `{**c}` sans retirer de clé → le bug était **dans le template**, pas dans le dict Python (divergence relevée vs analyse initiale).
+- ⚠️ **Snapshot = seule source** (opposabilité, pas de fallback live) : les cartes émises **avant `7dc160f`** (snapshot sans `ancien_numero`) resteront à « — » et devront être **réémises** — intentionnel.
+- Vérifié : Jinja compile OK, 1 seule occurrence. **Validation visuelle prod par l'utilisateur — non terminé.**
