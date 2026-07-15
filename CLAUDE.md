@@ -3351,3 +3351,9 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Règle impérative** : toute exclusion s'applique **AVANT l'agrégation** (au niveau requête ou skip en tête de boucle), jamais après → préserve la garantie **CDT + Hors == Passés**.
 - **Template** : sous-titre gris ambigu (« CACES = validés PEPCI... », qui ne qualifiait que la colonne CACES) remplacé par un encart lisible « Périmètre : tests réalisés dans NORYX... hors sous-traitance · hors historique repris · hors CACES externes » ; encart équivalent en tête de l'onglet Testeurs avec la nuance sous-traitance.
 - Vérifié : syntaxe + Jinja OK, CDT+Hors==Passés + requêtes exécutées sans erreur. ⚠️ **Non démontrable en local** : base dev sans sous-traité ni repris (0/0) → assertions « F R482 2→1 » et « C1 pepci-402 disparaît » vérifiables uniquement en prod. **Validation visuelle prod — non terminé.**
+
+### ⏳ À VALIDER EN PROD (non marqué terminé) : colonne Échoués tableau pratique Testeurs (commit 1351014)
+
+- **Fix** : `templates/statistiques.html` — ajout d'une colonne **« Éch. »** (rouge `#a32d2d`, calquée sur les Échoués du tableau théorie du même onglet) au tableau pratique de l'onglet Testeurs, **après Réu., avant % réu.** → ordre `Fam./cat. | Pas. | Réu. | Éch. | % réu. | CDT | Hors | % hors` (8 colonnes, header/lignes/total alignés). **Aucun changement backend** : la clé `echoues` existait déjà dans les dicts de `_stats_par_testeur` (ligne cat + total).
+- **Diagnostic annexe** : l'observation prod « % hors en 2ᵉ position » n'a **pas** été reproduite dans le code — header et lignes étaient déjà alignés (% hors en dernier). Probable décalage de version côté prod (chantiers `cf614ba`/`791c8e5` non encore validés/déployés).
+- Vérifié : Jinja OK, `Passés == Réussis + Échoués` en runtime (True). **Validation visuelle prod — non terminé.**
