@@ -35,8 +35,9 @@ def _date_initiale_depuis_echeance(famille: str, date_ech: date) -> date:
 def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famille, date_pratique, statut_filtre):
     """
     Cherche un ResultatTheorie.obtenue=True hors de la session de pratique,
-    même famille, théorie dans les 12 mois précédant la pratique
-    (date_theo <= date_prat et >= date_prat - 1 an + 1 jour).
+    même famille, théorie dans une fenêtre de 12 mois AUTOUR de la pratique
+    (avant OU après : |date_theo - date_prat| < 12 mois — invariant N°0,
+    doc PEPCI §8.3 / Cas 4bis).
     statut_filtre : "ouvert" (statut != terminee) ou "terminee".
     """
     try:
@@ -44,6 +45,12 @@ def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famil
     except ValueError:
         # 29 février inexistant en année-1 → 1er mars année-1
         limite_avant = date(date_pratique.year - 1, 3, 1)
+    # borne haute miroir : theorie jusqu'a 12 mois APRES la pratique (fenetre symetrique)
+    try:
+        limite_apres = date(date_pratique.year + 1, date_pratique.month, date_pratique.day) - timedelta(days=1)
+    except ValueError:
+        # 29 février inexistant en année+1 → 28 février année+1
+        limite_apres = date(date_pratique.year + 1, 2, 28)
 
     q = (
         db.query(ResultatTheorie)
@@ -56,7 +63,7 @@ def _chercher_theorie_autre_session(db, stagiaire_id, session_id_pratique, famil
             ResultatTheorie.session_id != session_id_pratique,
             SessionModel.famille == famille,
             JourTest.date >= limite_avant,
-            JourTest.date <= date_pratique,
+            JourTest.date <= limite_apres,
         )
     )
     if statut_filtre == "ouvert":
