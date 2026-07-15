@@ -115,8 +115,9 @@ def _build_verify_url(cfg, token: str) -> str:
     return base.rstrip('/') + '/' + token
 
 
-def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_certificat=""):
+def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_certificat="", libelles=None):
     cfg = config or ConfigOrganisme()
+    libelles = libelles or {}
     return {
         "id": carte.id,
         "numero_carte": carte.numero_carte,
@@ -131,6 +132,7 @@ def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_c
         "caces": [
             {
                 "categorie": co.categorie,
+                "categorie_libelle": libelles.get(co.categorie, ""),
                 "numero_ordre": co.numero_ordre,
                 "ancien_numero": co.ancien_numero,
                 "options_obtenues": co.options_obtenues or "",
@@ -359,7 +361,10 @@ def reimprimer_carte(carte_id: int, db: DBSession = Depends(get_db)):
     t_map = _testeurs_map(cos, db)
     fam_obj = db.query(Famille).filter(Famille.code == carte.famille).first()
     famille_libelle = fam_obj.libelle if fam_obj else ""
-    data = _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
+    libelles = {}
+    if fam_obj:
+        libelles = {c.code: c.libelle or "" for c in db.query(Categorie).filter(Categorie.famille_id == fam_obj.id).all()}
+    data = _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat, libelles=libelles)
     data["watermark"] = _watermark_data(carte, db)
     return data
 
@@ -429,7 +434,7 @@ def emettre_carte(stagiaire_id: int, famille: str, pin: str = "", db: DBSession 
     doc_cert = db.query(DocumentOfficiel).filter(DocumentOfficiel.type == "certificat_organisme").first()
     numero_certificat = doc_cert.numero_certificat or "" if doc_cert else ""
     famille_libelle = fam_obj.libelle if fam_obj else ""
-    return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat)
+    return _build_print_data(carte, s, cos, t_map, config, famille_libelle, numero_certificat, libelles=libelles)
 
 
 def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='', numero_certificat='', photo_b64=None, watermark=None):
@@ -563,20 +568,20 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
                 opts_html += f'<span class="vopt-badge">{_esc(o.strip())}</span> '
         else:
             opts_html = '<span style="color:#bbb;">—</span>'
-        has_test = bool(co.get('testeur_nom'))
+        has_lib = bool(co.get('categorie_libelle'))
         verso_rows += (
-            f'<tr{" class=\"vhastest\"" if has_test else ""}>'
+            f'<tr{" class=\"vhaslib\"" if has_lib else ""}>'
             f'<td class="vfam">{_esc(carte.famille)}</td>'
             f'<td class="vcat">{_esc(co.get("categorie", ""))}</td>'
             f'<td class="vopt">{opts_html}</td>'
             f'<td class="vno">{no}</td>'
             f'<td class="vdt">{_fc(co.get("date_obtention"))}</td>'
             f'<td class="vval">{_fc(co.get("date_echeance"))}</td>'
-            f'<td class="vlib">{_esc(co.get("categorie_libelle", ""))}</td>'
+            f'<td class="vtest">{_esc(co.get("testeur_nom", "")) or "\u2014"}</td>'
             f'</tr>'
         )
-        if has_test:
-            verso_rows += f'<tr><td colspan="7" class="vtestcell">Testeur : {_esc(co.get("testeur_nom", ""))}</td></tr>'
+        if has_lib:
+            verso_rows += f'<tr><td colspan="7" class="vlibcell">{_esc(co.get("categorie_libelle", ""))}</td></tr>'
 
     fam_badge = f'CACES® {_esc(carte.famille)}'
     if famille_libelle:
@@ -639,9 +644,9 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         f'.vdt {{ font-size:4.8pt; white-space:nowrap; color:{ANT}; font-weight:700; }}\n'
         f'.vval {{ font-weight:700; font-size:4.8pt; color:{ANT}; white-space:nowrap; }}\n'
         f'.vopt {{ max-width:9mm; overflow:hidden; }}\n'
-        f'.vlib {{ color:{ANT}; font-size:4.2pt; font-style:italic; font-weight:600; }}\n'
-        f'.vhastest td {{ border-bottom:none !important; }}\n'
-        f'.vtestcell {{ padding:0.3mm 0.4mm 0.5mm !important; font-size:3.8pt; color:{ANT}; font-style:italic; font-weight:600; vertical-align:middle; border-bottom:0.15mm solid #d8d8d8 !important; }}\n'
+        f'.vtest {{ color:{ANT}; font-size:4.2pt; font-style:italic; font-weight:600; white-space:nowrap; }}\n'
+        f'.vhaslib td {{ border-bottom:none !important; }}\n'
+        f'.vlibcell {{ padding:0.3mm 0.4mm 0.5mm !important; font-size:3.8pt; color:#666; font-style:italic; font-weight:600; vertical-align:middle; border-bottom:0.15mm solid #d8d8d8 !important; }}\n'
         f'.v-ftr {{ flex-shrink:0; background:#f0f0f0; border-top:0.3mm solid #d0d0d0; padding:0.6mm 2.5mm; font-size:5.2pt; color:#111; font-style:italic; text-align:center; line-height:1.3; }}'
     )
 
@@ -706,7 +711,7 @@ def _render_cr80_html(carte, s, cfg, caces_list, verify_url, famille_libelle='',
         '    <table>\n'
         '      <thead><tr>'
         '<th>Famille</th><th>Cat.</th><th>Opt.</th><th>N° CACES®</th>'
-        '<th>Obtention</th><th>Validité</th><th>Libellé</th>'
+        '<th>Obtention</th><th>Validité</th><th>Testeur</th>'
         '</tr></thead>\n'
         f'      <tbody>{verso_rows}</tbody>\n'
         '    </table>\n'
