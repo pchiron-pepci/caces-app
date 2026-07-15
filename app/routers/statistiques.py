@@ -295,21 +295,37 @@ def _annees_tests(db):
     return sorted(annees, reverse=True)
 
 
+def _cles_sous_traitance(db):
+    """Cles (stagiaire_id, session_id, categorie) des epreuves dont le CACES
+    resultant est sous-traite. Ces epreuves sont hors perimetre NORYX.
+    Cle fiable = UniqueConstraint uq_caces_obtenu sur CacesObtenu."""
+    from app.models.caces_obtenu import CacesObtenu
+    rows = db.query(
+        CacesObtenu.stagiaire_id, CacesObtenu.session_id, CacesObtenu.categorie
+    ).filter(CacesObtenu.sous_traitance == True).all()
+    return {(r[0], r[1], r[2]) for r in rows}
+
+
 def _stats_pratique_famille_cat(annee, db):
     from app.models.session_epreuve import SessionEpreuve
     from app.models.lieu import Lieu
     # bucket par defaut = CDT (lieu inconnu ou lieu_id absent -> cdt), identique a _stats_par_testeur
     lieu_type = {l.id: (l.type or "cdt") for l in db.query(Lieu).all()}
-    # Population = TOUTES les epreuves non bloquees (PAS de filtre testeur_id) :
-    # garantit CDT + Hors == Passes. Ecart assume avec l'onglet Testeurs (voir CLAUDE.md).
-    q = (db.query(SessionEpreuve.famille, SessionEpreuve.categorie, SessionEpreuve.obtenue,
+    cles_st = _cles_sous_traitance(db)
+    # Perimetre NORYX : epreuves non bloquees, HORS reprise (type session), HORS
+    # sous-traitance. Le skip intervient AVANT tout increment -> garantit CDT + Hors == Passes.
+    q = (db.query(SessionEpreuve.stagiaire_id, SessionEpreuve.session_id,
+                  SessionEpreuve.famille, SessionEpreuve.categorie, SessionEpreuve.obtenue,
                   SessionModel.lieu_id)
          .join(SessionModel, SessionModel.id == SessionEpreuve.session_id)
-         .filter(SessionEpreuve.bloque == False))
+         .filter(SessionEpreuve.bloque == False,
+                 (SessionModel.type != "reprise") | (SessionModel.type.is_(None))))
     if annee is not None:
         q = q.filter(SessionModel.annee == annee)
     agg = {}
-    for fam, cat, obtenue, lieu_id in q.all():
+    for stag_id, sess_id, fam, cat, obtenue, lieu_id in q.all():
+        if (stag_id, sess_id, cat) in cles_st:
+            continue
         k = (fam, cat)
         if k not in agg: agg[k] = [0, 0, 0, 0]  # passes, reussis, cdt, hors
         agg[k][0] += 1
@@ -346,7 +362,8 @@ def _stats_theorie_famille(annee, db):
     from app.models.jour_test import ResultatTheorie
     q = (db.query(SessionModel.famille, ResultatTheorie.obtenue)
          .join(ResultatTheorie, ResultatTheorie.session_id == SessionModel.id)
-         .filter(ResultatTheorie.bloque == False, ResultatTheorie.dispense == False))
+         .filter(ResultatTheorie.bloque == False, ResultatTheorie.dispense == False,
+                 (SessionModel.type != "reprise") | (SessionModel.type.is_(None))))
     if annee is not None:
         q = q.filter(SessionModel.annee == annee)
     agg = {}
@@ -371,7 +388,8 @@ def _stats_caces_delivres(annee, db):
          .join(SessionModel, SessionModel.id == CacesObtenu.session_id)
          .filter(CacesObtenu.statut == "valide",
                  CacesObtenu.organisme_externe.is_(None),
-                 CacesObtenu.sous_traitance == False))
+                 CacesObtenu.sous_traitance == False,
+                 (CacesObtenu.ancien_numero.is_(None)) | (CacesObtenu.ancien_numero == "")))
     if annee is not None:
         q = q.filter(SessionModel.annee == annee)
     agg = {}
@@ -423,7 +441,8 @@ def _stats_par_testeur(annee, db):
     qth = (db.query(ResultatTheorie.testeur_id, SessionModel.famille, ResultatTheorie.obtenue)
            .join(SessionModel, SessionModel.id == ResultatTheorie.session_id)
            .filter(ResultatTheorie.bloque == False, ResultatTheorie.dispense == False,
-                   ResultatTheorie.testeur_id.isnot(None)))
+                   ResultatTheorie.testeur_id.isnot(None),
+                   (SessionModel.type != "reprise") | (SessionModel.type.is_(None))))
     if annee is not None:
         qth = qth.filter(SessionModel.annee == annee)
     theo = {}
@@ -435,7 +454,8 @@ def _stats_par_testeur(annee, db):
     qpr = (db.query(SessionEpreuve.testeur_id, SessionEpreuve.famille, SessionEpreuve.categorie,
                     SessionEpreuve.obtenue, SessionModel.lieu_id)
            .join(SessionModel, SessionModel.id == SessionEpreuve.session_id)
-           .filter(SessionEpreuve.bloque == False, SessionEpreuve.testeur_id.isnot(None)))
+           .filter(SessionEpreuve.bloque == False, SessionEpreuve.testeur_id.isnot(None),
+                   (SessionModel.type != "reprise") | (SessionModel.type.is_(None))))
     if annee is not None:
         qpr = qpr.filter(SessionModel.annee == annee)
     prat = {}
