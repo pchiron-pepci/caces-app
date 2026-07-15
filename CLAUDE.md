@@ -3318,3 +3318,11 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Backend** `app/routers/cartes_caces.py` : (1) `_build_print_data` reçoit un param `libelles=None` (+ `libelles = libelles or {}`) et ajoute `categorie_libelle` dans la comprehension `caces` ; les 2 appelants passent `libelles=libelles` (appelant legacy L~360 construit le dict depuis `fam_obj`, `emettre_carte` l'a déjà). (2) `_render_cr80_html` verso : la dernière colonne du `<tr>` principal devient le **testeur** (`vtest`), et le **libellé** passe en ligne pleine largeur `colspan=7` dessous (`vlibcell`, systématique si présent). Classes renommées `vlib→vtest`, `vtestcell→vlibcell` (gris #666), `vhastest→vhaslib` (conditionnée sur le libellé). En-tête colonne « Libellé »→« Testeur ».
 - **JS** `static/js/cartes_caces.js` : même permutation dans `versoRows` (mainRow/testeurRow→libelleRow), mêmes renommages CSS + en-tête. Les autres tables JS (aperçu écran L384/563/860, L908) non touchées.
 - Vérifié : PY + JS syntaxe OK, module chargé, `categorie_libelle` dans les 5 zones, **0 résidu** `vhastest`/`vtestcell`. **Validation visuelle prod par l'utilisateur — non terminé.**
+
+### ✅ Chantier terminé : P2/P3 fenêtre théorie symétrique ±12 mois (commit 3da8b26)
+
+- **Complément de [[Cas 3 même session via borne portier symétrique]]** (0063a67, qui traitait P1). Ici P2/P3 = `_chercher_theorie_autre_session` (théorie d'une **autre** session).
+- **Fix** : la borne haute `JourTest.date <= date_pratique` (excluait toute théorie après la pratique) remplacée par une **fenêtre symétrique** `limite_avant <= date <= limite_apres` (±12 mois autour de la pratique). Ajout de `limite_apres = date_pratique + 12 mois − 1j` (edge 29 févr. → 28 févr. année+1), docstring « 12 mois AUTOUR ».
+- **Effet** : une théorie d'une autre session passée **après** la pratique (dans les 12 mois) est désormais trouvée = **Cas 4bis** (l.1958 : sessions diff., pratique antérieure, théorie postérieure → date théorie). Portier invariant N°0 préservé (rejet > 12 mois des deux côtés).
+- Désormais **P1/P2/P3 tous symétriques** ±12 mois. Vérifié : syntaxe + module OK.
+- ⚠️ Note : ce fix était resté **non committé pendant 2 tours** (script d'origine sans étape commit) — committé après confirmation utilisateur.
