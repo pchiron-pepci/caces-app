@@ -132,6 +132,7 @@ def _build_print_data(carte, s, cos, t_map, config, famille_libelle="", numero_c
             {
                 "categorie": co.categorie,
                 "numero_ordre": co.numero_ordre,
+                "ancien_numero": co.ancien_numero,
                 "options_obtenues": co.options_obtenues or "",
                 "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
                 "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
@@ -257,6 +258,7 @@ def get_caces_carte(carte_id: int, db: DBSession = Depends(get_db)):
             "categorie": co.categorie,
             "categorie_libelle": libelles.get(co.categorie, ""),
             "numero_ordre": co.numero_ordre,
+            "ancien_numero": co.ancien_numero,
             "options_obtenues": co.options_obtenues or "",
             "date_obtention": co.date_obtention.isoformat() if co.date_obtention else None,
             "date_echeance": co.date_echeance.isoformat() if co.date_echeance else None,
