@@ -167,7 +167,7 @@
                             <span class="cat-code">{{ c.categorie }}</span>
                             {% if c.categorie_libelle %}<span class="cat-lib">{{ c.categorie_libelle }}</span>{% endif %}
                         </td>
-                        <td class="col-no"><span class="no-caces">{% if c.numero_ordre %}{{ "%04d" % c.numero_ordre }}{% else %}—{% endif %}</span></td>
+                        <td class="col-no"><span class="no-caces">{% if c.ancien_numero %}{{ c.ancien_numero }}{% elif c.numero_ordre %}{{ "%04d" % c.numero_ordre }}{% else %}—{% endif %}</span></td>
                         <td class="col-opt">
                             {% if c.options_obtenues %}
                                 {% for opt in c.options_obtenues.split(',') %}<span class="opt-badge">{{ opt.strip() }}</span>{% endfor %}
