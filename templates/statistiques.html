@@ -419,6 +419,7 @@
                     <th style="text-align:left; padding:5px 8px; color:#666; font-weight:600;">Fam. / cat.</th>
                     <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">Pas.</th>
                     <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">Réu.</th>
+                    <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">Éch.</th>
                     <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">% réu.</th>
                     <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">CDT</th>
                     <th style="text-align:right; padding:5px 6px; color:#666; font-weight:600;">Hors</th>
@@ -430,6 +431,7 @@
                         <td style="padding:6px 8px;">{{ p.famille }} · {{ p.categorie }}</td>
                         <td style="text-align:right; padding:6px 6px;">{{ p.passes }}</td>
                         <td style="text-align:right; padding:6px 6px; color:#0f6e56;">{{ p.reussis }}</td>
+                        <td style="text-align:right; padding:6px 6px; color:#a32d2d;">{{ p.echoues }}</td>
                         <td style="text-align:right; padding:6px 6px;">{{ p.pct }} %</td>
                         <td style="text-align:right; padding:6px 6px;">{{ p.cdt }}</td>
                         <td style="text-align:right; padding:6px 6px;">{{ p.hors }}</td>
@@ -440,6 +442,7 @@
                         <td style="padding:6px 8px; font-weight:600;">Total</td>
                         <td style="text-align:right; padding:6px 6px; font-weight:600;">{{ t.prat_total.passes }}</td>
                         <td style="text-align:right; padding:6px 6px; font-weight:600; color:#0f6e56;">{{ t.prat_total.reussis }}</td>
+                        <td style="text-align:right; padding:6px 6px; font-weight:600; color:#a32d2d;">{{ t.prat_total.echoues }}</td>
                         <td style="text-align:right; padding:6px 6px; font-weight:600;">{{ t.prat_total.pct }} %</td>
                         <td style="text-align:right; padding:6px 6px; font-weight:600;">{{ t.prat_total.cdt }}</td>
                         <td style="text-align:right; padding:6px 6px; font-weight:600;">{{ t.prat_total.hors }}</td>
