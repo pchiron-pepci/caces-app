@@ -3312,3 +3312,9 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Fix** : `app/routers/cartes_caces.py` — ajout de `"ancien_numero": co.ancien_numero` dans 2 dicts qui l'omettaient : `_build_print_data` (comprehension `caces`) et le **fallback legacy** de `get_caces_carte` (cartes sans `caces_json`). → le numéro repris est propagé à l'impression et à l'affichage carte legacy.
 - Après ce fix, `ancien_numero` couvre les 6 zones : `get_caces_valides` (L218), snapshot `emettre_carte` (L399), `_build_print_data` (L135), `get_caces_carte` fallback (L261), `_render_cr80_html` nums_caces (L518) + verso_rows (L559).
 - Vérifié : syntaxe OK. **Validation visuelle en prod par l'utilisateur — ne pas marquer terminé.**
+
+### ⏳ À VALIDER EN PROD (non marqué terminé) : categorie_libelle + permutation verso testeur/libellé (commit 07052dd)
+
+- **Backend** `app/routers/cartes_caces.py` : (1) `_build_print_data` reçoit un param `libelles=None` (+ `libelles = libelles or {}`) et ajoute `categorie_libelle` dans la comprehension `caces` ; les 2 appelants passent `libelles=libelles` (appelant legacy L~360 construit le dict depuis `fam_obj`, `emettre_carte` l'a déjà). (2) `_render_cr80_html` verso : la dernière colonne du `<tr>` principal devient le **testeur** (`vtest`), et le **libellé** passe en ligne pleine largeur `colspan=7` dessous (`vlibcell`, systématique si présent). Classes renommées `vlib→vtest`, `vtestcell→vlibcell` (gris #666), `vhastest→vhaslib` (conditionnée sur le libellé). En-tête colonne « Libellé »→« Testeur ».
+- **JS** `static/js/cartes_caces.js` : même permutation dans `versoRows` (mainRow/testeurRow→libelleRow), mêmes renommages CSS + en-tête. Les autres tables JS (aperçu écran L384/563/860, L908) non touchées.
+- Vérifié : PY + JS syntaxe OK, module chargé, `categorie_libelle` dans les 5 zones, **0 résidu** `vhastest`/`vtestcell`. **Validation visuelle prod par l'utilisateur — non terminé.**
