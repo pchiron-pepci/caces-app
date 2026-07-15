@@ -297,32 +297,48 @@ def _annees_tests(db):
 
 def _stats_pratique_famille_cat(annee, db):
     from app.models.session_epreuve import SessionEpreuve
-    q = (db.query(SessionEpreuve.famille, SessionEpreuve.categorie, SessionEpreuve.obtenue)
+    from app.models.lieu import Lieu
+    # bucket par defaut = CDT (lieu inconnu ou lieu_id absent -> cdt), identique a _stats_par_testeur
+    lieu_type = {l.id: (l.type or "cdt") for l in db.query(Lieu).all()}
+    # Population = TOUTES les epreuves non bloquees (PAS de filtre testeur_id) :
+    # garantit CDT + Hors == Passes. Ecart assume avec l'onglet Testeurs (voir CLAUDE.md).
+    q = (db.query(SessionEpreuve.famille, SessionEpreuve.categorie, SessionEpreuve.obtenue,
+                  SessionModel.lieu_id)
          .join(SessionModel, SessionModel.id == SessionEpreuve.session_id)
          .filter(SessionEpreuve.bloque == False))
     if annee is not None:
         q = q.filter(SessionModel.annee == annee)
     agg = {}
-    for fam, cat, obtenue in q.all():
+    for fam, cat, obtenue, lieu_id in q.all():
         k = (fam, cat)
-        if k not in agg: agg[k] = [0, 0]
+        if k not in agg: agg[k] = [0, 0, 0, 0]  # passes, reussis, cdt, hors
         agg[k][0] += 1
         if obtenue: agg[k][1] += 1
+        if lieu_type.get(lieu_id) == "hors_cdt": agg[k][3] += 1
+        else: agg[k][2] += 1
     familles = {}
-    tg_pass = tg_reu = 0
-    for (fam, cat), (p, r) in sorted(agg.items()):
-        familles.setdefault(fam, {"cats": [], "sous_total": [0, 0]})
+    tg_pass = tg_reu = tg_cdt = tg_hors = 0
+    for (fam, cat), (p, r, cdt, hors) in sorted(agg.items()):
+        familles.setdefault(fam, {"cats": [], "sous_total": [0, 0, 0, 0]})
         familles[fam]["cats"].append({"cat": cat, "passes": p, "reussis": r,
-            "echoues": p - r, "pct": round(100 * r / p) if p else 0})
+            "echoues": p - r, "pct": round(100 * r / p) if p else 0,
+            "cdt": cdt, "hors": hors,
+            "pct_hors": round(100 * hors / (cdt + hors)) if (cdt + hors) else 0})
         familles[fam]["sous_total"][0] += p
         familles[fam]["sous_total"][1] += r
-        tg_pass += p; tg_reu += r
+        familles[fam]["sous_total"][2] += cdt
+        familles[fam]["sous_total"][3] += hors
+        tg_pass += p; tg_reu += r; tg_cdt += cdt; tg_hors += hors
     for fam, d in familles.items():
-        sp, sr = d["sous_total"]
+        sp, sr, scdt, shors = d["sous_total"]
         d["sous_total"] = {"passes": sp, "reussis": sr, "echoues": sp - sr,
-                           "pct": round(100 * sr / sp) if sp else 0}
+                           "pct": round(100 * sr / sp) if sp else 0,
+                           "cdt": scdt, "hors": shors,
+                           "pct_hors": round(100 * shors / (scdt + shors)) if (scdt + shors) else 0}
     total_general = {"passes": tg_pass, "reussis": tg_reu, "echoues": tg_pass - tg_reu,
-                     "pct": round(100 * tg_reu / tg_pass) if tg_pass else 0}
+                     "pct": round(100 * tg_reu / tg_pass) if tg_pass else 0,
+                     "cdt": tg_cdt, "hors": tg_hors,
+                     "pct_hors": round(100 * tg_hors / (tg_cdt + tg_hors)) if (tg_cdt + tg_hors) else 0}
     return familles, total_general
 
 
@@ -385,7 +401,7 @@ def _assembler_tableau_principal(annee, db):
     familles_set = set(prat_fam) | set(theo_par_fam) | set(caces_fam)
     familles = []
     for fam in sorted(familles_set):
-        pd = prat_fam.get(fam, {"cats": [], "sous_total": {"passes":0,"reussis":0,"echoues":0,"pct":0}})
+        pd = prat_fam.get(fam, {"cats": [], "sous_total": {"passes":0,"reussis":0,"echoues":0,"pct":0,"cdt":0,"hors":0,"pct_hors":0}})
         cats = []
         for c in pd["cats"]:
             cats.append({**c, "caces": caces_cat.get((fam, c["cat"]), 0)})

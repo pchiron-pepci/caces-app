@@ -3333,3 +3333,11 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Mécanisme réel** (diagnostic) : la route `page_verifier_carte` (`main.py:2638`) lit le **snapshot** `_parse_snapshot(carte.caces_json)` et étale `{**c}` sans retirer de clé → le bug était **dans le template**, pas dans le dict Python (divergence relevée vs analyse initiale).
 - ⚠️ **Snapshot = seule source** (opposabilité, pas de fallback live) : les cartes émises **avant `7dc160f`** (snapshot sans `ancien_numero`) resteront à « — » et devront être **réémises** — intentionnel.
 - Vérifié : Jinja compile OK, 1 seule occurrence. **Validation visuelle prod par l'utilisateur — non terminé.**
+
+### ⏳ À VALIDER EN PROD (non marqué terminé) : colonnes CDT/Hors/% hors onglet Tests & CDT (commit à venir)
+
+- **Feature** : onglet « Tests & CDT » du module stats — tableau « Tests par famille et catégorie · CACES délivrés » gagne 3 colonnes **CDT / Hors / % hors** (après « % réu. », avant « CACES »). `statistiques.py` (`_stats_pratique_famille_cat` : requête + `SessionModel.lieu_id`, map `lieu_type`, agrégation cdt/hors par cat + sous-total + total ; `_assembler_tableau_principal` : propagation via `**c`/`dict()` + default enrichi) et `statistiques.html` (header, ligne cat, ligne Théorie « — », sous-total, total ; `colspan` famille 6→9).
+- **Règle de population (option a, actée)** : CDT/Hors calculés sur **TOUTES les épreuves non bloquées** (`SessionEpreuve.bloque == False`), **SANS** filtre `testeur_id`. → **garantie `CDT + Hors == Passés`** (cohérence interne du tableau, vérifiée en runtime).
+- ⚠️ **Écart assumé avec l'onglet Testeurs** : celui-ci filtre `SessionEpreuve.testeur_id.isnot(None)` → populations différentes, les CDT/Hors ne colleront pas entre les 2 onglets. C'est intentionnel : question posée différente — Tests & CDT = « qu'a **produit l'organisme** », Testeurs = « qu'a fait **ce testeur** ».
+- **Bucket par défaut** : session sans `lieu_id` ou lieu absent de la map → compté en **CDT** (branche `else`, identique à `_stats_par_testeur`).
+- Vérifié : PY syntaxe + Jinja OK, garantie CDT+Hors==Passés confirmée en runtime. **Validation visuelle prod — non terminé.**
