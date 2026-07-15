@@ -3306,3 +3306,9 @@ Page `/statistiques` : 2 onglets placeholders remplacés par du contenu réel (l
 - **Piège évité** : le script initial **supprimait** la borne haute. Refusé car cela troue l'**INVARIANT N°0** (l.1947 : portier < 12 mois « quel que soit l'ordre, même en session de 2 ans ») — une théorie même-session > 12 mois après la pratique aurait été admise. Décision utilisateur : **borne symétrique**.
 - **Fix retenu** : ajout de `_limite_haute = ep.date + 12 mois - 1j` (miroir de `_limite`, edge 29 févr. géré), et P1 borné `_limite <= JourTest.date <= _limite_haute`. → Cas 3 atteignable ET portier préservé des deux côtés. P2/P3 (`date_pratique`, autre session) **non touchés**.
 - Vérifié : bornes testées (+11 mois admis, +13 mois rejeté), syntaxe + module OK.
+
+### ⏳ À VALIDER EN PROD (non marqué terminé) : ancien_numero dans les cartes (commit 7dc160f)
+
+- **Fix** : `app/routers/cartes_caces.py` — ajout de `"ancien_numero": co.ancien_numero` dans 2 dicts qui l'omettaient : `_build_print_data` (comprehension `caces`) et le **fallback legacy** de `get_caces_carte` (cartes sans `caces_json`). → le numéro repris est propagé à l'impression et à l'affichage carte legacy.
+- Après ce fix, `ancien_numero` couvre les 6 zones : `get_caces_valides` (L218), snapshot `emettre_carte` (L399), `_build_print_data` (L135), `get_caces_carte` fallback (L261), `_render_cr80_html` nums_caces (L518) + verso_rows (L559).
+- Vérifié : syntaxe OK. **Validation visuelle en prod par l'utilisateur — ne pas marquer terminé.**
