@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from jose import JWTError as _JWTError, jwt as _jwt
 from app.utils_famille import fam_variantes
 from app.database import engine, Base, SessionLocal, get_db
+from app.config_utils import get_pin_admin
 from sqlalchemy.orm import Session as DBSession
 
 from app.models.stagiaire import Stagiaire
@@ -908,7 +909,7 @@ def export_zip_session(session_id: int, request: Request, pin: str = "", db: DBS
         raise HTTPException(status_code=401, detail="Non authentifié")
     if getattr(user, "role", None) == "terrain":
         raise HTTPException(status_code=403, detail="Réservé au back-office.")
-    if pin != "1505":
+    if pin != get_pin_admin(db):
         raise HTTPException(status_code=403, detail="Code PIN incorrect.")
     session = db.query(Session).filter(Session.id == session_id).first()
     if not session:
