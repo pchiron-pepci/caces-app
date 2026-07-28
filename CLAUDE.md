@@ -207,9 +207,9 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 6. **Identité candidat** : case à cocher (non bloquante) dans la modal saisie résultat pratique
 7. **Suppression d'un jour** : supprime aussi les `ResultatTheorie` et `SessionEpreuve` liés
 8. **Retrait candidat d'un jour pratique** : bloqué (400) si des `SessionEpreuve` existent pour ce candidat/jour (l'utilisateur doit d'abord supprimer les résultats via "Annuler le résultat") ; sinon hard delete `JourTestCandidat`
-8b. **Retrait candidat d'un jour théorique** : si un `ResultatTheorie` existe → avertissement modal → confirmation → PIN 1505 vérifié côté serveur → hard delete `ResultatTheorie` + `JourTestCandidat` ; si pas de `ResultatTheorie` → PIN → hard delete `JourTestCandidat` direct ; GET `/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/check-theorie` retourne `{"has_resultat": bool}`
+8b. **Retrait candidat d'un jour théorique** : si un `ResultatTheorie` existe → avertissement modal → confirmation → PIN admin vérifié côté serveur (`get_pin_admin(db)`) → hard delete `ResultatTheorie` + `JourTestCandidat` ; si pas de `ResultatTheorie` → PIN → hard delete `JourTestCandidat` direct ; GET `/{session_id}/jours/{jour_id}/candidats/{stagiaire_id}/check-theorie` retourne `{"has_resultat": bool}`
 12. **Décochage catégorie dans modal jour pratique** : bloqué si une `SessionEpreuve` existe déjà pour ce candidat/catégorie/jour — message "Supprimez d'abord le résultat de la catégorie X avant de la retirer" ; vérifié côté client (JS, sur l'événement `change`) ET côté serveur (`add_candidats_jour` renvoie 400) ; `j.candidats_epreuves = {stagiaire_id: [cat_list]}` calculé dans `main.py` et passé à `ouvrirModifierJourPratique` comme 6e paramètre
-11. **Suppression candidat de la session** : vérifie d'abord qu'aucun `JourTestCandidat` n'existe pour cette session (sinon 400) ; **hard delete** `db.delete(sc)` + purge fichier R2 (`dispense_fichier_cle`) + purge `ConsentementRGPD` (couple `session_id`+`stagiaire_id`) ; PIN 1505 requis côté serveur via `DELETE /api/sessions/{id}/candidats/{sc_id}?pin=`
+11. **Suppression candidat de la session** : vérifie d'abord qu'aucun `JourTestCandidat` n'existe pour cette session (sinon 400) ; **hard delete** `db.delete(sc)` + purge fichier R2 (`dispense_fichier_cle`) + purge `ConsentementRGPD` (couple `session_id`+`stagiaire_id`) ; PIN admin requis côté serveur (`get_pin_admin(db)`) via `DELETE /api/sessions/{id}/candidats/{sc_id}?pin=`
 9. **Dates session** : vérification que les jours planifiés restent dans l'intervalle lors d'une modification
 10. **Statuts session** : `planifiee` → `en_cours` → `terminee` (ou `annulee`)
 
@@ -225,7 +225,7 @@ Le middleware bloque le rôle terrain sur toutes les routes d'écriture `/api/se
 | `JourTest` | `jours_test` | `type` = theorie/pratique, `grille_id` |
 | `JourTestCandidat` | `jours_test_candidats` | `categories` en CSV ; `options_planifiees` JSON Text `{"CAT": ["PE","TEL"], ...}` — options sélectionnées à la planification |
 | `SessionCandidat` | `session_candidats` | Inscription d'un stagiaire à une session ; `stagiaire_id`, `theorie_dispensee` Boolean, `dispense_note` Text, `dispense_fichier_cle` VARCHAR(500) (clé R2, JAMAIS le binaire), `dispense_fichier_nom` VARCHAR(255), `dispense_fichier_type` VARCHAR(100), `dispense_date` DATE (date obtention CACES externe justifiant la dispense — futur calcul validité 12 mois), `actif` Boolean (legacy — hard delete depuis 2026-06-22) |
-| `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=1505` ; `justificatif_cle` VARCHAR(500) nullable (clé R2) + `justificatif_nom` VARCHAR(255) nullable — grille d'évaluation pratique par candidat/catégorie, 1 fichier (remplacement à chaque upload), multi-format (PDF/Excel/Word/images, 10 Mo max), stocké R2 (préfixe `justificatifs/pratique`), content_type déduit de l'extension, lecture inline pour PDF/images sinon attachment ; ajoutés par migration startup `ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS` |
+| `SessionEpreuve` | `session_epreuves` | résultat pratique par catégorie ; `options_obtenues` VARCHAR(200) CSV ; `bloque` Boolean défaut False — positionné lors d'une annulation CACES® avec motif "Non conforme"/"CACES® annulé" + case cochée, empêche la re-création auto du CacesObtenu ; suppression hard delete via `DELETE /api/sessions/{session_id}/epreuves/{epreuve_id}?pin=` (PIN admin vérifié côté serveur via `get_pin_admin(db)`) ; `justificatif_cle` VARCHAR(500) nullable (clé R2) + `justificatif_nom` VARCHAR(255) nullable — grille d'évaluation pratique par candidat/catégorie, 1 fichier (remplacement à chaque upload), multi-format (PDF/Excel/Word/images, 10 Mo max), stocké R2 (préfixe `justificatifs/pratique`), content_type déduit de l'extension, lecture inline pour PDF/images sinon attachment ; ajoutés par migration startup `ALTER TABLE session_epreuves ADD COLUMN IF NOT EXISTS` |
 | `ResultatTheorie` | `resultats_theorie` | UNIQUE `(jour_test_id, stagiaire_id)` ; `mode` VARCHAR(12) NOT NULL DEFAULT 'numerique' ('numerique'/'degrade') ; `bloque` Boolean défaut False — positionné comme SE, empêche la recherche de théorie dans `calculer_et_synchroniser` ; reprise par écrasement si mode='numerique', 409 si mode='degrade' ; `justificatif_pdf` Text nullable (base64) ; `justificatif_nom` VARCHAR(255) nullable — ajoutés par migration startup + `migrate_justificatif_theorie.py` ; update notes ne touche JAMAIS justificatif (opérations indépendantes) |
 | `HabilitationTesteur` | `habilitations_testeurs` | hard delete ; `option_pe`/`option_tel` legacy — remplacés par `HabilitationOption` |
 | `OptionCategorie` | `option_categorie` | table de référence des options disponibles par famille/catégorie ; codes : PE=Porte-engins, TEL=Télécommande, CC=Conduite cabine, TR=Translation sur rails, CEC=Circulation en charge ; `incluse` Boolean (défaut False) : option obligatoire incluse dans l'UT de la catégorie (pas de +0.5 UT) vs option facultative ; peuplé par `init_options.py` |
@@ -684,7 +684,7 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 **Règles d'accès :**
 - Disponible quel que soit le statut de la session
 - Bouton visible back-office uniquement (admin/utilisateur) — masqué terrain
-- PIN admin 1505 requis, vérifié côté serveur
+- PIN admin requis, vérifié côté serveur — depuis 2026-07-28 la route lit le **PIN configuré** (`get_pin_admin(db)`), plus de valeur en dur
 
 **`app/services/export_zip_session.py` :**
 - `generer_zip_session(session_id, db) -> bytes` — BytesIO + zipfile.ZIP_DEFLATED, aucun fichier disque
@@ -693,7 +693,7 @@ Le catch-all terrain `method != GET and /api/sessions/*` ne bloque PAS les route
 - Chaque pièce dans un `try/except` indépendant : un échec partiel n'annule pas le reste
 
 **Route `GET /sessions/{session_id}/export-zip?pin=` (main.py) :**
-- Auth cookie, terrain → 403, PIN `!= "1505"` → 403, session introuvable → 404
+- Auth cookie, terrain → 403, PIN `!= get_pin_admin(db)` → 403, session introuvable → 404 (import `from app.config_utils import get_pin_admin` en tête de `main.py`)
 - `StreamingResponse` `application/zip` ; `Content-Disposition: attachment; filename=session-{ref}.zip`
 
 **UX :**
@@ -2472,6 +2472,40 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 - `_spDecisions` figé sur verdict calculé (plus modifiable par l'utilisateur).
 - `_etatTempsHtml(groupKey)` : affiche "Temps dépassé (>130%)" en rouge ou "Temps conforme" en vert via `_SP.depassement130`.
 - `blocRecap` : radios Réussi/Échec supprimées → div verdict non modifiable ("✓ RÉUSSI" / "✗ ÉCHEC — verdict calculé, non modifiable").
+
+### ✅ Chantier terminé : cat A = 2 chronos (1 par engin) + seuil de temps corrigé 130 % → tolérance 10 min/UT (2026-07-28)
+
+**Partie 1 — 2 chronos en cat A (R.482), catégorie A UNIQUEMENT.**
+Avant : un seul compteur de 1h30 (la grille base A portait `ut=1.5`, PE inclus, et `calculerCompteurs` prenait le MAX des blocs base). Or la cat A se déroule sur 2 engins successifs (PH + N°2) = 2 prises de poste → 2 chronos.
+- `static/js/saisie_pratique.js` : helpers `_multiEngin()` (cat A + ≥2 grilles base à variante) et `_baseKey(g)` (→ `CAT:<variante>` en multi-engins, `CAT` sinon) ; `calculerCompteurs` renvoie `{bases:[...], options}` en multi-engins, `{categorie, options}` sinon (comportement **inchangé** pour toutes les autres catégories, **cat G comprise** : MAX des bases + `utInclus`) ; `_groupes()` empile un compteur par engin ; `renderBloc` et `_groupesAvecNotes` utilisent `_baseKey(g)` → chaque section de notation est reliée à SON chrono.
+- `init_grille_pratique_r482a.py` : `ut=1.5` → `ut=(1.0 if variante == "PH" else 0.5)`. **PH = engin N°1 = 1 UT (1h) ; MB/CH/CP = engin N°2 = 0,5 UT (30 min).** `note_min`/`note_max` inchangés (chaque engin reste noté /100, 70 exigé). **Reseed obligatoire** (`python init_grille_pratique_r482a.py`) sinon les grilles restent à 1.5 et un seul chrono s'affiche.
+- Le tri force PH en engin N°1 quel que soit l'ordre des blocs en base. Cat A avec 1 seul bloc base (dégradé) retombe sur la clé `CAT`.
+
+**⚠️ VERROU FAMILLE dans `_multiEngin()` — NE JAMAIS RETIRER.** `R.486 a AUSSI une catégorie A`. La 1re version du garde ne testait que `CATEGORIE !== "A"` : elle n'était protégée que par la condition « ≥2 grilles base à variante » (R.486 A est mono-grille aujourd'hui). Le jour où R.486 A recevrait des variantes, elle basculait en multi-chronos toute seule. Le test famille est désormais explicite.
+**Piège de format (déjà connu, cf. `fam_variantes`) :** `data-famille` vaut **`"R482"` SANS point** (`= session.famille = Famille.code`, vérifié en base) alors que les grilles portent **`"R.482"` AVEC point**. Un `FAMILLE === "R.482"` écrit trop vite **désactiverait silencieusement les 2 chronos**. Le garde normalise donc exactement comme le serveur (`_recommandation_from_famille`) : `String(FAMILLE||"").toUpperCase().replace(/[. ]/g,"")` comparé à `"R482"`. Famille vide → repli sur l'ancien comportement (1 chrono `CAT`), jamais de bascule à tort.
+**Le serveur, lui, faisait déjà ce verrou** (`EST_CAT_A = (reco == "R.482" and (categorie or "").upper() == "A")` dans `ouvrir_saisie`, idem route `variantes`) — c'était uniquement le front qui était trop permissif. Front et back sont désormais alignés.
+Testé : `R482`/`R.482`/`r482` + cat `A`/`a` → 2 chronos ; **R.486 cat A avec variantes → 1 chrono** ; R.489 A, cat G, cat C1, cat F, famille vide → 1 chrono.
+
+**Partie 2 — RÈGLE DE TEMPS CORRIGÉE (le 130 % était FAUX).**
+Règle métier réelle : **1 UT = 1 heure ± 10 minutes, au prorata de l'UT** → seuil d'échec = `ref × 70/60` (**116,67 %**) : **70 min pour 1 UT, 35 min pour 0,5 UT**, 84 min pour 1,2 UT (cat G). L'ancien 1,30 donnait 78 min pour 1 UT = trop permissif de 8 min.
+Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
+| Fichier | Avant | Après |
+|---|---|---|
+| `static/js/saisie_pratique.js` | `_depassement130`, `cumul >= ref*1.30` | `_depassementTemps`, `cumul >= ref*FACTEUR_SEUIL_TEMPS` (+ `limite` dans le retour) |
+| idem (bandeau couleur du compteur) | orange 100-130 %, rouge ≥130 % | orange 100 %→tolérance, rouge au-delà |
+| idem (`_etatTempsHtml`) | « Temps dépassé (>130%) » | « Temps dépassé (hors tolérance) » |
+| `app/services/calcul_fiche_reco.py` | `if pct > 130` | `if pct > SEUIL_TEMPS_PCT` (`700.0/6.0`) — **change les heures de formation recommandées** |
+| `app/services/pdf_resultat_pratique.py` | `if pct <= 130` | `if pct <= SEUIL_TEMPS_PCT` |
+| `app/services/pdf_fiche_reco.py` + `static/js/session_detail.js` | « (> 130%) » / « (100–130%) » | « (> 10 min/UT) » / « (dans la tolérance de 10 min/UT) » |
+
+**⚠️ Pas de constante partagée JS/Python** (pas de module commun) : `FACTEUR_SEUIL_TEMPS` (JS) et `SEUIL_TEMPS_PCT` (×2 en Python) doivent être modifiés **ensemble**. Commentaire de renvoi croisé posé dans les 3 fichiers.
+
+**Comparaison conservée en `>=`** (JS) / `>` sur un pct arrondi (Python) : à 70:00 pile sur 1 UT → **échec** (`round(116,67)=117 > 116,67`). Les deux côtés sont cohérents. Si la tolérance doit être inclusive (70:00 accepté, échec à 70:01), c'est 1 caractère à changer en JS + repasser le pct non arrondi côté Python.
+
+**⚠️ Piège corrigé au passage (sinon régression silencieuse) :** le verdict cherchait le compteur de base par une clé **écrite en dur** `_dep("CAT")` (`ouvrirModalValidation`). Avec les clés `CAT:<variante>` de la cat A, `_groupeByKey` ne trouvait plus rien → `{depasse:false}` → **la règle de temps aurait cessé de s'appliquer à la cat A sans le moindre message**. Généralisé : `_basesKeys` collecte toutes les clés `CAT` **ou** `CAT:*`, un seul dépassement suffit à faire échouer la catégorie ; `_etatTempsHtml` accepte désormais une clé **ou une liste**. Comportement identique partout ailleurs (une seule clé `CAT`).
+`calcul_fiche_reco.py:_reco_temps_par_groupe` teste `gk == "CAT"` : avec `CAT:PH` il tombe dans le `else` et utilise `r.label` (« Engin N°1 (PH) », persisté en base) → libellé correct, pas de crash.
+
+**Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
 ### ✅ Chantier terminé : habilitation option testeur valable sur toute la famille (2026-07-03, commit bc8890b)
 

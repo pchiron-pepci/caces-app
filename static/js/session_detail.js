@@ -1103,9 +1103,10 @@ function construireFormFicheReco(data) {
                     var elim = (tb.niveau === 'eliminatoire');
                     var pctBg = elim ? '#a32d2d' : '#e0a94a';
                     var pctFg = elim ? '#ffffff' : '#5a3a00';
+                    // Tolerance : 1 UT = 1 h +/- 10 min, au prorata (70 min pour 1 UT).
                     var etiq = elim
-                        ? '<span style="color:#a32d2d; font-weight:600;">temps éliminatoire (&gt; 130%)</span>'
-                        : '<span style="color:#b26a00; font-weight:600;">à améliorer (100–130%)</span>';
+                        ? '<span style="color:#a32d2d; font-weight:600;">temps éliminatoire (&gt; 10 min/UT)</span>'
+                        : '<span style="color:#b26a00; font-weight:600;">à améliorer (dans la tolérance de 10 min/UT)</span>';
                     var champTid = 'fr-temps-' + cat + '-' + tiT; tiT++;
                     return '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">'
                         + '<div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#333;">'

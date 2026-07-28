@@ -197,13 +197,19 @@ def _fmt_hms(sec) -> str:
     return "%d:%02d" % (h, m)
 
 
+# Tolérance de temps : 1 UT = 1 heure +/- 10 minutes, au prorata de l'UT
+# (70 min pour 1 UT, 35 min pour 0,5 UT). Aligné sur SEUIL_TEMPS_PCT de
+# app/services/calcul_fiche_reco.py et FACTEUR_SEUIL_TEMPS du JS de saisie.
+SEUIL_TEMPS_PCT = 700.0 / 6.0     # = 116,67 %
+
+
 def _pct_style(pct):
-    """Triple seuil : vert <100, orange 100-130, rouge >130."""
+    """Triple seuil : vert <100, orange 100 -> tolérance, rouge au-delà."""
     if pct is None:
         return "", ""
     if pct < 100:
         return "#e8f5e9", "#1b5e20"
-    if pct <= 130:
+    if pct <= SEUIL_TEMPS_PCT:
         return "#fff3e0", "#b26a00"
     return "#fdecea", "#a32d2d"
 

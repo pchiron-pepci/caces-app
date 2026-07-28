@@ -29,6 +29,11 @@ HEURES_FAUTE_ELIMINATOIRE = 1.0   # pratique : +1h forfaitaire si >=1 faute éli
 SEUIL_THEORIE = 50.0              # note_totale >= 50 -> durée courte, sinon longue
 HEURES_THEORIE_COURTE = 2.0       # théorie : note >= 50
 HEURES_THEORIE_LONGUE = 4.0       # théorie : note < 50
+# Tolérance de temps : 1 UT = 1 heure +/- 10 minutes, au prorata de l'UT.
+# Seuil (en % du temps alloué) au-delà duquel le temps est éliminatoire :
+# 70/60 -> 70 min pour 1 UT, 35 min pour 0,5 UT.
+# Doit rester aligné sur FACTEUR_SEUIL_TEMPS de static/js/saisie_pratique.js.
+SEUIL_TEMPS_PCT = 700.0 / 6.0     # = 116,67 %
 
 NOMS_THEMES_THEORIE = {
     1: "Connaissances générales",
@@ -118,9 +123,12 @@ def _theorie_echec(rt: ResultatTheorie, params=None) -> dict:
 def _reco_temps_par_groupe(saisie, db, params):
     """Pour une saisie NON acquise (verifie en amont), calcule la reco temps
     par group_key (CAT = categorie, OPT:<code> = option). Regle :
-      > 130%  -> variable pleine (temps eliminatoire)
-      100-130% -> moitie (a ameliorer)
+      > tolerance -> variable pleine (temps eliminatoire)
+      100% -> tolerance -> moitie (a ameliorer)
       <= 100% -> rien.
+    Tolerance : 1 UT = 1 h +/- 10 min, au prorata => seuil = 70/60 = 116,67 %
+    (70 min pour 1 UT, 35 min pour 0,5 UT). Doit rester aligne sur
+    FACTEUR_SEUIL_TEMPS de static/js/saisie_pratique.js.
     Renvoie (liste_blocs_temps, total_heures_temps)."""
     from app.models.grille_pratique import CompteurTemps
     h_temps = float(params.get("h_temps", 1.0) or 0.0)
@@ -142,7 +150,7 @@ def _reco_temps_par_groupe(saisie, db, params):
             libelle = r.label or ("Option " + gk[4:])
         else:
             libelle = r.label or gk
-        if pct > 130:
+        if pct > SEUIL_TEMPS_PCT:
             h = h_temps
             niveau = "eliminatoire"
         else:

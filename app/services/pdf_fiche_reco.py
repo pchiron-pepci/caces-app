@@ -94,7 +94,8 @@ def _bloc_pratique(p, duree_label):
         lignes_t = ""
         for tb in p["temps_blocs"]:
             elim = (tb["niveau"] == "eliminatoire")
-            etiq = "temps éliminatoire (dépassement &gt; 130%)" if elim else "à améliorer (100–130%)"
+            etiq = ("temps éliminatoire (dépassement &gt; 10 min/UT)" if elim
+                    else "à améliorer (dépassement dans la tolérance de 10 min/UT)")
             pct_bg = "#a32d2d" if elim else "#e0a94a"
             pct_fg = "#ffffff" if elim else "#5a3a00"
             duree_col = "#a32d2d" if elim else "#b26a00"

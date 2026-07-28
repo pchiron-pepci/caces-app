@@ -97,21 +97,77 @@
 
   // ─── LOT 1 : calcul des compteurs (1 UT = 60 min, proportionnel) ───
   var MINUTES_PAR_UT = 60;
+  // Tolerance de temps : 1 UT = 1 heure +/- 10 minutes, AU PRORATA de l'UT.
+  // Seuil d'echec = ref x 70/60 : 1 UT -> 70 min ; 0,5 UT -> 35 min.
+  var MINUTES_TOLERANCE_PAR_UT = 10;
+  var FACTEUR_SEUIL_TEMPS = (MINUTES_PAR_UT + MINUTES_TOLERANCE_PAR_UT) / MINUTES_PAR_UT;
+
+  // Cat A (R.482) = 2 engins de base successifs (PH + N2), 2 prises de poste
+  // => 1 chrono PAR engin (l'UT vient de la grille : PH = 1 UT, N2 = 0,5 UT).
+  // VERROU FAMILLE : R.486 a AUSSI une categorie A. Sans ce test, une future
+  // cat A de R.486 a variantes basculerait en multi-chronos par erreur.
+  // data-famille vaut "R482" (SANS point, = Famille.code) alors que les grilles
+  // portent "R.482" (AVEC point) : on normalise exactement comme le serveur
+  // (_recommandation_from_famille dans app/routers/saisie_pratique.py).
+  function _multiEngin() {
+    var fam = String(FAMILLE || "").toUpperCase().replace(/[. ]/g, "");
+    if (fam !== "R482") return false;
+    if (String(CATEGORIE || "").toUpperCase() !== "A") return false;
+    var n = (state.blocs || []).filter(function (b) {
+      var g = b.grille || {};
+      return g.type === "base" && g.variante;
+    }).length;
+    return n >= 2;
+  }
+  function _baseKey(g) {
+    return (_multiEngin() && g.type === "base" && g.variante) ? ("CAT:" + g.variante) : "CAT";
+  }
+
+  function _utDe(g) {
+    return (typeof g.ut === "number") ? g.ut : (parseFloat(g.ut || 0) || 0);
+  }
 
   function calculerCompteurs(blocs) {
-    var utBaseMax = 0, utInclus = 0, options = {};
+    var options = {};
     (blocs || []).forEach(function (b) {
       var g = b.grille || {};
-      var ut = (typeof g.ut === "number") ? g.ut : (parseFloat(g.ut || 0) || 0);
+      if (g.type === "option" && !g.incluse && g.code_option) {
+        var utO = _utDe(g);
+        options[g.code_option] = { ut: utO, secondes: Math.round(utO * MINUTES_PAR_UT * 60), libelle: g.libelle || g.code_option };
+      }
+    });
+
+    // Cat A multi-engins : UN compteur par engin de base (PH = engin N°1).
+    if (_multiEngin()) {
+      var brut = (blocs || []).filter(function (b) {
+        var g = b.grille || {};
+        return g.type === "base" && g.variante;
+      });
+      var ph = brut.filter(function (b) { return b.grille.variante === "PH"; });
+      var autres = brut.filter(function (b) { return b.grille.variante !== "PH"; });
+      var bases = ph.concat(autres).map(function (b, i) {
+        var g = b.grille;
+        var utB = _utDe(g);
+        return {
+          key: "CAT:" + g.variante,
+          label: "Engin N°" + (i + 1) + " (" + g.variante + ")",
+          ut: utB,
+          secondes: Math.round(utB * MINUTES_PAR_UT * 60)
+        };
+      });
+      return { bases: bases, options: options };
+    }
+
+    // Cas standard (toutes les autres categories, cat G incluse) : inchange.
+    // Plusieurs machines base = UNE epreuve => MAX, on n'additionne pas.
+    var utBaseMax = 0, utInclus = 0;
+    (blocs || []).forEach(function (b) {
+      var g = b.grille || {};
+      var ut = _utDe(g);
       if (g.type === "base") {
-        // Plusieurs machines base (ex. cat A : PH + N2) = UNE epreuve.
-        // On prend le MAX, on n'additionne pas (sinon 1,5 + 1,5 = 3, faux).
         if (ut > utBaseMax) utBaseMax = ut;
-      } else if (g.type === "option") {
-        if (g.incluse) { utInclus += ut; }
-        else if (g.code_option) {
-          options[g.code_option] = { ut: ut, secondes: Math.round(ut * MINUTES_PAR_UT * 60), libelle: g.libelle || g.code_option };
-        }
+      } else if (g.type === "option" && g.incluse) {
+        utInclus += ut;
       }
     });
     var utCat = utBaseMax + utInclus;
@@ -188,17 +244,19 @@
     state.horaires[gkey] = h;
   }
 
-  // Depassement 130% d'un compteur : cumul(pp+mn+fp) >= 1.30*ref.
-  // Retourne {depasse, cumul, ref, aTemps}.
-  function _depassement130(gkey) {
+  // Depassement de la tolerance : cumul(pp+mn+fp) >= ref x 70/60.
+  // (1 UT = 1 h +/- 10 min => 70 min pour 1 UT, 35 min pour 0,5 UT.)
+  // Retourne {depasse, cumul, ref, limite, aTemps}.
+  function _depassementTemps(gkey) {
     var g = _groupeByKey(gkey);
-    if (!g || !g.ref) return { depasse: false, cumul: 0, ref: 0, aTemps: false };
+    if (!g || !g.ref) return { depasse: false, cumul: 0, ref: 0, limite: 0, aTemps: false };
     var h = state.horaires[gkey] || {};
     var cumul = 0, aTemps = false;
     ["pp", "mn", "fp"].forEach(function (c) {
       if (h[c]) { cumul += _dureeEnSecondes(h[c]); aTemps = true; }
     });
-    return { depasse: aTemps && cumul >= g.ref * 1.30, cumul: cumul, ref: g.ref, aTemps: aTemps };
+    var limite = g.ref * FACTEUR_SEUIL_TEMPS;
+    return { depasse: aTemps && cumul >= limite, cumul: cumul, ref: g.ref, limite: limite, aTemps: aTemps };
   }
 
   function _dureeEnSecondes(mmss) {
@@ -244,8 +302,9 @@
 
   function renderBloc(bloc) {
     var g = bloc.grille;
-    // group_key de la section : CAT (base) ou OPT:<code> (option).
-    var _gk = (g.type === "option" && g.code_option) ? ("OPT:" + g.code_option) : "CAT";
+    // group_key de la section : CAT (ou CAT:<variante> en cat A multi-engins)
+    // pour une base, OPT:<code> pour une option.
+    var _gk = (g.type === "option" && g.code_option) ? ("OPT:" + g.code_option) : _baseKey(g);
     var html = '<div class="sp-section" data-group="' + _gk + '">';
     if (g.type === "option") {
       // Meme bandeau que les machines (sp-engin-head) mais CENTRE + accent vert.
@@ -317,7 +376,7 @@
     var set = {};
     (state.blocs || []).forEach(function (b) {
       var g = b.grille || {};
-      var gk = (g.type === "option" && g.code_option) ? ("OPT:" + g.code_option) : "CAT";
+      var gk = (g.type === "option" && g.code_option) ? ("OPT:" + g.code_option) : _baseKey(g);
       var aNote = b.notes && Object.keys(b.notes).some(function (k) { return b.notes[k] != null; });
       var aElim = b.elim && b.elim.length > 0;
       if (aNote || aElim) set[gk] = true;
@@ -328,10 +387,15 @@
   function _groupes() {
     var c = state.compteurs || { categorie: { secondes: 0, ut: 0 }, options: {} };
     var out = [];
-    if (c.categorie.secondes > 0) {
+    if (c.bases && c.bases.length) {
+      // Cat A multi-engins : un compteur par engin de base.
+      c.bases.forEach(function (bse) {
+        if (bse.secondes > 0) out.push({ key: bse.key, label: bse.label, ref: bse.secondes, ut: bse.ut });
+      });
+    } else if (c.categorie && c.categorie.secondes > 0) {
       out.push({ key: "CAT", label: "Categorie " + (CATEGORIE || ""), ref: c.categorie.secondes, ut: c.categorie.ut });
     }
-    Object.keys(c.options).forEach(function (code) {
+    Object.keys(c.options || {}).forEach(function (code) {
       var o = c.options[code];
       out.push({ key: "OPT:" + code, label: "Option " + code, ref: o.secondes, ut: o.ut });
     });
@@ -408,11 +472,12 @@
       if (_jg.fp != null) _cumul = _jg.fp;
       else if (_jg.mn != null) _cumul = _jg.mn;
       else if (_jg.pp != null) _cumul = _jg.pp;
-      // Etat couleur du groupe : vert (<100%), orange (100-130%), rouge (>=130%).
-      var _ref = g.ref, _seuil130 = _ref * 1.30;
+      // Etat couleur : vert (dans le temps), orange (depasse mais dans la
+      // tolerance +10 min/UT), rouge (hors tolerance = echec).
+      var _ref = g.ref, _seuilTemps = _ref * FACTEUR_SEUIL_TEMPS;
       var _etat = "vert";
       if (_cumul != null) {
-        if (_cumul >= _seuil130) _etat = "rouge";
+        if (_cumul >= _seuilTemps) _etat = "rouge";
         else if (_cumul >= _ref) _etat = "orange";
       }
       var _COL = {
@@ -745,7 +810,7 @@
   window._SP = { state: state, api: api, BASE: BASE, toast: toast, renderAll: renderAll, fmt: fmt,
                  compteurLance: _compteurLance, groupDeCible: _groupDeCible,
                  groupes: _groupes, groupesAvecNotes: _groupesAvecNotes,
-                 depassement130: _depassement130 };
+                 depassementTemps: _depassementTemps };
 
   // ─── Testeurs habilites (famille + categorie + options du candidat) ───
   function chargerTesteurs(options, testeurIdPreselect) {
@@ -1412,9 +1477,15 @@
   }
 
   function ouvrirModalValidation(res) {
-    // Regle 130% : depassement d'un compteur => echec force.
-    function _dep(gk) { return (window._SP && _SP.depassement130) ? _SP.depassement130(gk) : { depasse:false }; }
-    var _depCat = _dep("CAT");
+    // Regle de temps : depassement de la tolerance (+10 min/UT) => echec force.
+    function _dep(gk) { return (window._SP && _SP.depassementTemps) ? _SP.depassementTemps(gk) : { depasse:false }; }
+    // Compteurs de base : "CAT" partout, "CAT:<variante>" en cat A multi-engins
+    // (1 par engin). UN SEUL depassement suffit a faire echouer la categorie.
+    var _basesKeys = ((window._SP && _SP.groupes) ? _SP.groupes() : [])
+      .filter(function (g) { return g.key === "CAT" || g.key.indexOf("CAT:") === 0; })
+      .map(function (g) { return g.key; });
+    if (!_basesKeys.length) _basesKeys = ["CAT"];
+    var _depCat = { depasse: _basesKeys.some(function (k) { return _dep(k).depasse; }) };
     var baseReussi = (res.base ? res.base.reussi : false) && !_depCat.depasse;
     var _optDep = {};
     (res.options || []).forEach(function (o) {
@@ -1430,7 +1501,7 @@
       + '<h2 style="font-size:18px;margin-bottom:12px;color:#2d2d2d;">Valider le résultat</h2>';
 
     // recap base
-    html += blocRecap("Catégorie — " + (res.base ? res.base.libelle : ""), res.base, "base", baseReussi, "CAT");
+    html += blocRecap("Catégorie — " + (res.base ? res.base.libelle : ""), res.base, "base", baseReussi, _basesKeys);
     // recap options
     (res.options || []).forEach(function (o) {
       html += blocRecap("Option — " + o.libelle, o, "opt_" + o.code_option, o.acquis, "OPT:" + o.code_option);
@@ -1493,19 +1564,27 @@
     }
   }
 
-  // Etat du temps d'un compteur : conforme / depasse (>130%). Vide si pas de temps.
+  // Etat du temps d'un compteur : conforme / hors tolerance. Vide si pas de temps.
+  // Accepte une cle OU une liste de cles (cat A : un compteur par engin de base) :
+  // un seul depassement suffit a afficher "depasse".
   function _etatTempsHtml(groupKey) {
-    if (!groupKey || !window._SP || !_SP.depassement130) return "";
-    var d = _SP.depassement130(groupKey);
-    if (!d.aTemps) return "";
-    var col = d.depasse ? "#a32d2d" : "#0f6e56";
-    var txt = d.depasse ? "Temps dépassé (>130%)" : "Temps conforme";
+    if (!groupKey || !window._SP || !_SP.depassementTemps) return "";
+    var keys = (typeof groupKey === "string") ? [groupKey] : groupKey;
+    var aTemps = false, depasse = false;
+    keys.forEach(function (k) {
+      var d = _SP.depassementTemps(k);
+      if (d.aTemps) aTemps = true;
+      if (d.depasse) depasse = true;
+    });
+    if (!aTemps) return "";
+    var col = depasse ? "#a32d2d" : "#0f6e56";
+    var txt = depasse ? "Temps dépassé (hors tolérance)" : "Temps conforme";
     return ' · <span style="color:' + col + ';font-weight:700;">' + txt + '</span>';
   }
 
   function blocRecap(titre, d, key, propAcquis, groupKey) {
     if (!d) return "";
-    var ok = !!propAcquis;   // verdict CALCULE (integre deja le 130%)
+    var ok = !!propAcquis;   // verdict CALCULE (integre deja la tolerance de temps)
     var color = ok ? "#0f6e56" : "#a32d2d";
     var label = ok ? "Réussi" : "Échec";
     // Verrouillage TOTAL : plus de radios. Le verdict s'impose, non modifiable.

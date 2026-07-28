@@ -177,7 +177,7 @@ for variante, lib_engin in ENGINS:
     grille = GrillePratique(
         recommandation="R.482", categorie="A", type="base", code_option=None,
         variante=variante, libelle="Engins compacts - %s" % lib_engin,
-        ut=1.5, note_min=70, note_max=100, version="2025",
+        ut=(1.0 if variante == "PH" else 0.5), note_min=70, note_max=100, version="2025",
         ordre={"PH": 0, "MB": 1, "CH": 2, "CP": 3}[variante], actif=True,
     )
     db.add(grille)
