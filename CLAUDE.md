@@ -2478,7 +2478,25 @@ L'historique reste UN SEUL tableau commun (toutes familles, colonne Famille) —
 **Partie 1 — 2 chronos en cat A (R.482), catégorie A UNIQUEMENT.**
 Avant : un seul compteur de 1h30 (la grille base A portait `ut=1.5`, PE inclus, et `calculerCompteurs` prenait le MAX des blocs base). Or la cat A se déroule sur 2 engins successifs (PH + N°2) = 2 prises de poste → 2 chronos.
 - `static/js/saisie_pratique.js` : helpers `_multiEngin()` (cat A + ≥2 grilles base à variante) et `_baseKey(g)` (→ `CAT:<variante>` en multi-engins, `CAT` sinon) ; `calculerCompteurs` renvoie `{bases:[...], options}` en multi-engins, `{categorie, options}` sinon (comportement **inchangé** pour toutes les autres catégories, **cat G comprise** : MAX des bases + `utInclus`) ; `_groupes()` empile un compteur par engin ; `renderBloc` et `_groupesAvecNotes` utilisent `_baseKey(g)` → chaque section de notation est reliée à SON chrono.
-- `init_grille_pratique_r482a.py` : `ut=1.5` → `ut=(1.0 if variante == "PH" else 0.5)`. **PH = engin N°1 = 1 UT (1h) ; MB/CH/CP = engin N°2 = 0,5 UT (30 min).** `note_min`/`note_max` inchangés (chaque engin reste noté /100, 70 exigé). **Reseed obligatoire** (`python init_grille_pratique_r482a.py`) sinon les grilles restent à 1.5 et un seul chrono s'affiche.
+- `init_grille_pratique_r482a.py` : `ut=1.5` → `ut=(1.0 if variante == "PH" else 0.5)`. **PH = engin N°1 = 1 UT (1h) ; MB/CH/CP = engin N°2 = 0,5 UT (30 min).** `note_min`/`note_max` inchangés (chaque engin reste noté /100, 70 exigé). Le seed reste la référence pour une base **neuve** ; sur une base **existante**, utiliser la migration ci-dessous.
+- **`migrate_ut_cat_a_engins.py`** (nouveau, idempotent) : `UPDATE grille_pratique SET ut = ...` sur les 4 grilles base A. **C'est LUI qu'il faut lancer en prod**, pas le seed. Ne supprime ni ne recrée rien : ids de grilles, thèmes, PE, items, critères et saisies intacts (vérifié). Sans lui, les grilles restent à `ut=1.5` et un seul chrono s'affiche.
+
+### ⛔ RÈGLE PERMANENTE : les seeds `init_grille_pratique_*.py` sont DESTRUCTIFS — jamais en prod sur une base exploitée
+
+**Constat en production (2026-07-28)** : `python init_grille_pratique_r482a.py` sur le Render Shell a échoué sur
+`ForeignKeyViolation: update or delete on table "item_pratique" violates constraint "saisie_item_note_item_id_fkey"`.
+Ces scripts commencent tous par un `db.delete(g)` sur leurs grilles avant de les recréer. Dès qu'une saisie pratique existe, ses notes (`saisie_item_note`) référencent les `item_pratique` → la suppression est refusée.
+
+**La contrainte FK a protégé les données** : sans elle, le seed aurait détruit des évaluations réelles (notes, critères cochés) de candidats déjà testés. L'échec est le comportement souhaitable.
+
+**Aucun dégât** : le `db.delete()` se fait AVANT le `db.commit()` (ligne 174 du seed A), l'exception survient pendant l'autoflush → PostgreSQL annule toute la transaction. Grilles et saisies intactes. Vérifier après un tel échec :
+`SELECT variante, ut FROM grille_pratique WHERE recommandation='R.482' AND categorie='A' AND type='base' ORDER BY ordre;`
+
+**Le terme « idempotent » employé dans ce MP pour ces scripts est trompeur** : ils le sont sur une base *sans données dépendantes* (dev fraîche), pas sur une base exploitée. À lire comme « rejouable en dev », jamais « sûr en prod ».
+
+**Règle à appliquer** : pour modifier une grille déjà en production, écrire un `migrate_*.py` chirurgical (UPDATE ciblé sur les colonnes concernées), jamais rejouer le seed. Les seeds ne servent qu'à l'initialisation d'une base neuve.
+
+**Leçon de méthode** : la vérification « aucune `saisie_bloc` ne référence ces grilles » avait été faite sur la base **locale** (0 saisie) et présentée à tort comme valant pour la prod. Une base de dev vide ne dit RIEN de l'état de la prod — ne jamais extrapoler un contrôle d'intégrité local à la production.
 - Le tri force PH en engin N°1 quel que soit l'ordre des blocs en base. Cat A avec 1 seul bloc base (dégradé) retombe sur la clé `CAT`.
 
 **⚠️ VERROU FAMILLE dans `_multiEngin()` — NE JAMAIS RETIRER.** `R.486 a AUSSI une catégorie A`. La 1re version du garde ne testait que `CATEGORIE !== "A"` : elle n'était protégée que par la condition « ≥2 grilles base à variante » (R.486 A est mono-grille aujourd'hui). Le jour où R.486 A recevrait des variantes, elle basculait en multi-chronos toute seule. Le test famille est désormais explicite.
