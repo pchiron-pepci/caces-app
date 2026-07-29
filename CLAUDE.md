@@ -2525,6 +2525,48 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
+### ⏳ À VALIDER EN PROD (non marqué terminé) : fiche reco + PDF alignés sur le verdict de temps (2026-07-29)
+
+**Problème.** Le verdict d'échec sur le temps compare les **secondes brutes** (`static/js/saisie_pratique.js:259` — `cumul >= ref * FACTEUR_SEUIL_TEMPS`). La fiche de reco et le PDF résultat comparaient un **pourcentage arrondi** (`pct = round(realise*100/ref)` puis `pct > SEUIL_TEMPS_PCT`). L'arrondi les faisait basculer en « temps éliminatoire » **quelques secondes AVANT** le verdict : 69:55 au lieu de 70:00 sur 1 UT (−2 s sur 0,5 UT, −7 s sur 1,2 UT). Un candidat entre 69:55 et 69:59 avait un temps **conforme** au verdict mais « éliminatoire » sur deux documents qui lui sont remis — et la fiche reco lui allouait la durée pleine au lieu de la moitié.
+
+**Correctif.** Comparaison sur les secondes brutes avec `>=`, identique au verdict :
+- `app/services/calcul_fiche_reco.py` : `if pct > SEUIL_TEMPS_PCT:` → `if realise >= ref * SEUIL_TEMPS_PCT / 100.0:`
+- `app/services/pdf_resultat_pratique.py` : `_pct_style(pct)` → `_pct_style(pct, realise=None, ref=None)`. La ligne 212 n'avait **ni `realise` ni `ref` dans sa portée** — il a fallu les passer depuis le seul site d'appel. Repli sur l'ancien comportement si les secondes sont absentes.
+
+**RÈGLE PERMANENTE : le verdict de temps se compare sur les SECONDES, jamais sur un pourcentage arrondi.** `pct` est une donnée d'**affichage** (colonne « % » du PDF, badge de la fiche) — il reste calculé, il ne décide plus rien. Tout nouveau site qui déciderait d'un dépassement doit utiliser `realise >= ref * SEUIL_TEMPS_PCT / 100.0`.
+
+**Bandes de couleur du PDF** (bornes en secondes, ref = 3600 s) — contiguës, sans chevauchement ni trou :
+| Bande | Avant | Après |
+|---|---|---|
+| Vert | `pct < 100` | `pct < 100` (inchangé) |
+| Orange (borne basse) | `pct >= 100` | `pct >= 100` (inchangé) |
+| Orange (borne haute) | `realise < 4194 s` (69:54) | **`realise < 4200 s`** (70:00) |
+| Rouge | `realise >= 4194 s` | **`realise >= 4200 s`** |
+
+**Vérifié en runtime** sur les fonctions réellement importées (`_reco_temps_par_groupe` avec une session stubée, `_pct_style` directement), 1 UT / ref 3600 s / limite 4200 s :
+| cumul | pct affiché | fiche reco | PDF | verdict JS |
+|---|---|---|---|---|
+| 4155 s (69:15) | 115 % | à améliorer | à améliorer | conforme |
+| **4199 s (69:59)** | **117 %** | **à améliorer** | **à améliorer** | **conforme** |
+| 4200 s (70:00) | 117 % | éliminatoire | éliminatoire | éliminatoire |
+| 4201 s (70:01) | 117 % | éliminatoire | éliminatoire | éliminatoire |
+
+La ligne à 4199 s est la preuve du correctif : le pourcentage affiché vaut 117 %, donc l'ancien test `pct > 116,67` l'aurait classée « éliminatoire ». Seuils vérifiés numériquement identiques : `SEUIL_TEMPS_PCT/100 == FACTEUR_SEUIL_TEMPS == 70/60`.
+
+**Écart mineur non traité (hors sujet de ce commit)** : la borne des 100 % reste sur le `pct` arrondi des deux côtés, et diverge légèrement entre les deux fichiers — la fiche reco ignore le bloc si `pct <= 100`, le PDF passe en orange dès `pct >= 100`. À `pct == 100` pile : aucune heure recommandée mais bande orange. Antérieur à ce chantier, sans effet sur le verdict d'échec.
+
+### ⚠️ DETTE CONNUE : la règle de temps n'est PAS opposable côté serveur
+
+**Le verdict d'échec sur le temps vit UNIQUEMENT dans le navigateur.** Constaté en diagnostic (2026-07-29) :
+- Le calcul est dans `static/js/saisie_pratique.js` (`_depassementTemps` l.258-259 → `_depCat` l.1488 → `baseReussi` l.1489 → `echecGlobal` l.1496), puis transmis au serveur sous la forme du seul booléen `decision_base`.
+- Le moteur serveur **ignore totalement la durée** : `app/services/calcul_pratique.py` énonce ses 4 critères de réussite (note globale, note par thème, PE non nul, aucun critère éliminatoire coché) — aucune notion de temps. Un `grep` de `ref_secondes`/`cumul_secondes` sur tout `app/` ne les trouve que dans le modèle, la route de persistance des compteurs, la fiche reco et le PDF : jamais dans un calcul de réussite.
+- `app/routers/saisie_pratique.py:685` et `:698` — `epreuve.obtenue = data.decision_base`, le booléen du client tel quel. C'est lui qui décide l'obtention du CACES.
+- L'anti-repêchage (l.620) n'interdit que la transformation d'un échec **calculé** (sur les notes) en réussite. Un échec pour dépassement de temps est un *recalage* (réussite → échec), explicitement autorisé : le serveur l'accepte sans savoir pourquoi.
+
+**Conséquence :** une requête forgée avec `decision_base=true` et un temps hors limite serait acceptée — le serveur n'a aucun moyen de la contredire. **En usage normal via l'interface, la règle s'applique correctement.**
+
+**Chantier futur (NON traité dans ce commit)** : porter le calcul du temps côté serveur pour en faire l'autorité — recalculer le dépassement depuis `CompteurTemps` dans `valider()` et refuser un `decision_base=true` incompatible, sur le modèle de l'anti-repêchage existant. Cela suppose de traiter le cas des saisies dont les 3 temps ne sont pas renseignés.
+
 ### ✅ Chantier terminé : habilitation option testeur valable sur toute la famille (2026-07-03, commit bc8890b)
 
 **Fichier :** `app/routers/saisie_pratique.py`

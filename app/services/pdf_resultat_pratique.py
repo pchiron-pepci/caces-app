@@ -203,12 +203,23 @@ def _fmt_hms(sec) -> str:
 SEUIL_TEMPS_PCT = 700.0 / 6.0     # = 116,67 %
 
 
-def _pct_style(pct):
-    """Triple seuil : vert <100, orange 100 -> tolérance, rouge au-delà."""
+def _pct_style(pct, realise=None, ref=None):
+    """Triple seuil : vert <100, orange 100 -> tolérance, rouge au-delà.
+
+    La bascule ROUGE se decide sur les SECONDES BRUTES avec >=, exactement
+    comme le verdict d'echec (static/js/saisie_pratique.js:259) : un pourcentage
+    arrondi ferait basculer le PDF quelques secondes avant le verdict.
+    Le pct ne sert plus qu'a la bande verte et a l'affichage.
+    """
     if pct is None:
         return "", ""
     if pct < 100:
         return "#e8f5e9", "#1b5e20"
+    if realise is not None and ref:
+        if realise >= ref * SEUIL_TEMPS_PCT / 100.0:
+            return "#fdecea", "#a32d2d"
+        return "#fff3e0", "#b26a00"
+    # Repli (secondes indisponibles) : ancien comportement sur le pourcentage.
     if pct <= SEUIL_TEMPS_PCT:
         return "#fff3e0", "#b26a00"
     return "#fdecea", "#a32d2d"
@@ -246,7 +257,7 @@ def _temps_html(saisie, db) -> str:
         pct = None
         if ref and realise is not None and ref > 0:
             pct = round(realise * 100.0 / ref)
-        bg, fg = _pct_style(pct)
+        bg, fg = _pct_style(pct, realise, ref)
         pct_cell = "--"
         if pct is not None:
             pct_cell = ('<span style="background:%s;color:%s;padding:1px 6px;'

@@ -140,6 +140,8 @@ def _reco_temps_par_groupe(saisie, db, params):
         realise = r.cumul_secondes
         if not ref or realise is None or ref <= 0:
             continue
+        # pct : AFFICHAGE UNIQUEMENT. Le verdict se decide sur les secondes
+        # brutes (voir plus bas), jamais sur ce pourcentage arrondi.
         pct = round(realise * 100.0 / ref)
         if pct <= 100:
             continue
@@ -150,7 +152,9 @@ def _reco_temps_par_groupe(saisie, db, params):
             libelle = r.label or ("Option " + gk[4:])
         else:
             libelle = r.label or gk
-        if pct > SEUIL_TEMPS_PCT:
+        # SECONDES BRUTES + >= : bascule a la meme seconde que le verdict
+        # d'echec (static/js/saisie_pratique.js:259, cumul >= ref * facteur).
+        if realise >= ref * SEUIL_TEMPS_PCT / 100.0:
             h = h_temps
             niveau = "eliminatoire"
         else:
