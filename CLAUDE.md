@@ -2525,7 +2525,7 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
-### ⏳ À VALIDER EN PROD (non marqué terminé) : seuil de temps unifié — résidu de 130 % trouvé sous la forme `0.30` (2026-07-30)
+### ✅ Terminé (validé en prod le 2026-07-30) : seuil de temps unifié — résidu de 130 % trouvé sous la forme `0.30`
 
 **Résidu trouvé.** Le chantier du 29/07 (130 % → tolérance 10 min/UT) avait laissé **deux sites** intacts, parce qu'ils exprimaient le seuil « à l'envers » : au lieu de `écoulé >= ref × 1.30`, ils écrivaient `restant <= −(ref × 0.30)` — mathématiquement identique, mais invisible à un grep sur `1.30|130`.
 - `renderBarreCompteurs` (l.465) et `_majAffichageCompteur` (l.596) : `var seuil = Math.round(ref * 0.30); var alerte = ch.restant <= -seuil;` → l'**alerte rouge du compteur** (bordure + fond `#fcebeb`) ne se déclenchait qu'à **130 %**, alors que le verdict échoue dès **116,67 %**. Désalignement de **8 min sur 1 UT** (78:00 au lieu de 70:00) et **4 min sur 0,5 UT**. Le testeur voyait un compteur non alarmant alors que le candidat était déjà en échec sur le temps.
@@ -2556,7 +2556,7 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **LEÇON DE MÉTHODE.** Un seuil peut être écrit sous une forme algébriquement équivalente qui échappe au grep : `ref * 0.30` sur le *restant* == `ref * 1.30` sur l'*écoulé*. Pour retrouver tous les sites d'un seuil, **grepper aussi le complément** (`0.30` pour 130 %, `1/6`/`0.16` pour 7/6) et les variables intermédiaires (`seuil`, `alerte`, `marge`), pas seulement la valeur nominale.
 
-### 🔴 À VALIDER EN PROD (non marqué terminé) : BUG CRITIQUE multi-engins — le verdict ne voyait que le 1er engin (2026-07-30)
+### ✅ Terminé (validé en prod le 2026-07-30) : BUG CRITIQUE multi-engins — le verdict ne voyait que le 1er engin
 
 **Gravité.** Sur une catégorie multi-engins (cat A : PH + engin N°2), un **échec sur l'engin N°2 s'affichait « Réussi »** et pouvait être validé → CACES délivré à tort. Le serveur calculait déjà juste (`res["base_reussie"] = all(b["reussi"] for b in res_bases)`, `calcul_pratique.py:157`) ; ce sont les **consommateurs** qui lisaient `res["base"]` = **le premier bloc seulement** (alias de compatibilité mono-engin).
 
@@ -2584,7 +2584,9 @@ Les 4 séries de tests antérieures (compteurs, seuil de temps, verrou famille, 
 
 **Reste identifié, NON traité :** `valider()` l.681 compose `note_testeur` avec `res["base"]["note_globale"]` seul — pour une cat A, le libellé « Saisie en ligne - base X/100 » ne reflète que l'engin N°1. Purement cosmétique (libellé), n'affecte aucun verdict.
 
-### ⏳ À VALIDER EN PROD (non marqué terminé) : verrou visuel des sections réévalué après reprise des compteurs (2026-07-30)
+**CLÔTURE DU CHANTIER CHRONO / SAISIE PRATIQUE (2026-07-30).** Les 3 correctifs ci-dessus (verrou visuel après reprise, verdict multi-engins, seuil de temps unifié sur 7/6) sont **en production jusqu'au commit `29e1407`**, tests OK. **Audit données non nécessaire — résultats en base confirmés corrects par l'utilisateur (2026-07-30) : aucune saisie A/G obtenue à tort.**
+
+### ✅ Terminé (validé en prod le 2026-07-30) : verrou visuel des sections réévalué après reprise des compteurs
 
 **Bug.** À la reprise d'une saisie pratique (réouverture d'une saisie déjà commencée, ou reprise après coupure réseau), les sections restaient grisées avec le bandeau « Compteur non lancé — lancez le chrono pour noter cette partie », alors que le compteur repartait correctement. Il fallait mettre le chrono en pause puis le relancer pour retrouver la saisie.
 
