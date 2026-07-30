@@ -320,12 +320,15 @@
         + '</span></div>';
     } else if (g.type === "base") {
       // En-tete d'engin uniforme pour TOUTES les categories.
-      //  - cat A multi-engins (g.variante) : badge "ENGIN N°1/N°2" + nom mappe + code.
-      //  - categorie a un seul engin       : badge "ENGIN" + nom = g.libelle.
+      //  - VRAI multi-engins (cat A) : badge "ENGIN N°1/N°2" + nom mappe + code.
+      //  - un seul engin             : badge "ENGIN" + nom = g.libelle.
+      // Le test _multiEngin() est indispensable : une variante EXCLUSIVE
+      // (C1 CH/CP, B2 CA/CP) porte une variante mais n'a QU'UN engin -> elle
+      // affichait "ENGIN N°2" a tort.
       var badge, nom;
-      if (g.variante) {
-        var rang = (g.variante === "PH") ? "N°1" : "N°2";
-        badge = "ENGIN " + rang;
+      if (g.variante && _multiEngin()) {
+        var _ord = (typeof g.ordre === "number") ? g.ordre : (g.variante === "PH" ? 0 : 1);
+        badge = "ENGIN N°" + (_ord + 1);
         nom = (ENGIN_LABELS[g.variante] || g.variante) + " (" + g.variante + ")";
       } else {
         badge = "ENGIN";
@@ -424,11 +427,15 @@
   }
 
   // Grise les sections dont le compteur n'est pas lance (indice visuel).
+  // Une section DEJA SAISIE reste deverrouillee : a la reprise, le chrono peut
+  // etre a l'arret alors que des notes existent -> on ne rebloque pas la
+  // modification de donnees deja enregistrees.
   function _majSectionsVerrou() {
     var secs = document.querySelectorAll(".sp-section");
+    var avecNotes = _groupesAvecNotes();
     secs.forEach(function (sec) {
       var gk = sec.getAttribute("data-group");
-      var lance = _compteurLance(gk);
+      var lance = _compteurLance(gk) || !!avecNotes[gk];
       sec.style.opacity = lance ? "1" : "0.55";
       var flag = sec.querySelector(".sp-section-lock");
       if (!lance) {
@@ -1258,10 +1265,13 @@
 
     // Garde-fou : notation interdite tant que le compteur de la section
     // n'est pas lance. Concerne bin / palier / step / elim.
+    // EXCEPTION : une section deja saisie reste modifiable (reprise), sinon on
+    // bloquerait la correction de donnees deja enregistrees.
     var _actNote = e.target.closest('[data-action="bin"],[data-action="palier"],[data-action="step"],[data-action="elim"]');
     if (_actNote && window._SP && _SP.groupDeCible && _SP.compteurLance) {
       var _gk = _SP.groupDeCible(_actNote);
-      if (_gk && !_SP.compteurLance(_gk)) {
+      var _avec = (_SP.groupesAvecNotes ? _SP.groupesAvecNotes() : {});
+      if (_gk && !_SP.compteurLance(_gk) && !_avec[_gk]) {
         e.preventDefault();
         var _lib = (_gk === "CAT") ? "de la catégorie" : "de l'option";
         _SP.toast("Lancez d'abord le compteur " + _lib + " (clic sur le chrono) avant de noter.");

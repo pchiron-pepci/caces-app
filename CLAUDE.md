@@ -2525,6 +2525,36 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
+### ⏳ À VALIDER EN PROD (non marqué terminé) : reprise modifiable toutes catégories + badge « ENGIN N°2 » corrigé sur les variantes exclusives (2026-07-30)
+
+**(1) Une section déjà saisie n'est plus reverrouillée à la reprise.** Le verrou « Compteur non lancé » se fondait sur le seul état du chrono (`_compteurLance`). À la reprise d'une saisie, le chrono peut être **à l'arrêt** alors que des notes existent déjà → la section était regrisée et la notation refusée, empêchant de **corriger une donnée déjà enregistrée**. Concerne **toutes** les catégories (le correctif du verrou visuel de la veille ne traitait que le rafraîchissement après restauration, pas ce cas).
+- `_majSectionsVerrou` : `var lance = _compteurLance(gk) || !!avecNotes[gk];` (avec `var avecNotes = _groupesAvecNotes();`).
+- Garde-fou de notation (handler click, bloc `_actNote`) : `if (_gk && !_SP.compteurLance(_gk) && !_avec[_gk])`, avec `_avec = _SP.groupesAvecNotes()` (déjà exposé sur `window._SP`).
+- **Règle métier préservée** : une saisie **neuve** exige toujours de lancer le chrono avant la 1re note. `_groupesAvecNotes()` détecte une note **ou** un critère éliminatoire coché — la levée du verrou n'intervient donc que s'il y a réellement une donnée à modifier.
+
+**(2) Badge « ENGIN N°2 » affiché à tort sur les variantes exclusives.** `renderBloc` déduisait le rang du seul `g.variante` : une catégorie à variante **exclusive** (C1 `CH`/`CP`, B2 `CA`/`CP`) affichait « ENGIN N°2 » alors qu'elle n'a **qu'un seul engin** (le rang venait du repli `variante === "PH" ? N°1 : N°2`). Corrigé par `if (g.variante && _multiEngin())` → sinon badge « ENGIN » + `g.libelle`.
+**Même piège que pour les clés de compteur** (cf. entrée « BUG CRITIQUE multi-engins ») : `variante` renseignée ≠ multi-engins. Toujours confronter à `_multiEngin()`.
+Note : `g.ordre` n'est **pas** exposé par `_grille_dict` côté serveur — le `typeof g.ordre === "number"` est donc toujours faux et le repli `PH ? 0 : 1` s'applique, ce qui donne le bon rang pour la cat A (seule multi-engins). Si un jour l'ordre serveur est exposé, il primera automatiquement.
+
+**Vérifié** sur les fonctions réellement extraites du source :
+| Cas | Déverrouillée | Notation bloquée |
+|---|---|---|
+| C1 en reprise, notes présentes, chrono arrêté | **oui** | non |
+| B1 en reprise, éliminatoire coché, chrono arrêté | **oui** | non |
+| C1 **neuve**, aucune note | non | **oui** |
+| F neuve, option PE sans note | non | **oui** |
+| F, chrono en marche, aucune note | oui | non |
+
+| Catégorie | Badge |
+|---|---|
+| Cat A engin PH / CH | ENGIN N°1 / **ENGIN N°2** |
+| **C1 (variante CH)** | **ENGIN** (c'était « ENGIN N°2 ») |
+| B2 (variante CP) | ENGIN |
+| Cat G (cumul_total, 2 variantes) | ENGIN |
+| Cat F (sans variante) | ENGIN |
+
+Les 6 séries de tests antérieures repassent.
+
 ### ✅ Terminé (validé en prod le 2026-07-30) : seuil de temps unifié — résidu de 130 % trouvé sous la forme `0.30`
 
 **Résidu trouvé.** Le chantier du 29/07 (130 % → tolérance 10 min/UT) avait laissé **deux sites** intacts, parce qu'ils exprimaient le seuil « à l'envers » : au lieu de `écoulé >= ref × 1.30`, ils écrivaient `restant <= −(ref × 0.30)` — mathématiquement identique, mais invisible à un grep sur `1.30|130`.
