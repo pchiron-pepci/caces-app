@@ -17,6 +17,7 @@ from app.services.calcul_pratique import calculer_saisie
 
 db = sessionmaker(bind=create_engine(os.environ["DATABASE_URL"]))()
 divergences, non_calculables = [], []
+sans_epreuve = 0
 
 for s in db.query(SaisiePratique).filter(SaisiePratique.statut == "valide").all():
     try:
@@ -29,7 +30,10 @@ for s in db.query(SaisiePratique).filter(SaisiePratique.statut == "valide").all(
         SessionEpreuve.session_id == jour.session_id,
         SessionEpreuve.stagiaire_id == s.stagiaire_id,
         SessionEpreuve.categorie == s.categorie).first() if jour else None
-    if not ep or ep.obtenue is None:
+    if not ep:
+        sans_epreuve += 1
+        continue
+    if ep.obtenue is None:
         continue
     if bool(ep.obtenue) != base_reussie:
         sess = db.query(SessionModel).filter(SessionModel.id == jour.session_id).first() if jour else None
@@ -57,4 +61,5 @@ if not divergences:
 if non_calculables:
     print("\n[!] %d saisie(s) non recalculable(s) (verif manuelle) :" % len(non_calculables))
     for sid, e in non_calculables: print("  saisie %s : %s" % (sid, e))
+print("\nSaisies VALIDEES sans epreuve rattachee : %d (a investiguer si > 0)" % sans_epreuve)
 db.close()
