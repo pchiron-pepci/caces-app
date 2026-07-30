@@ -2558,6 +2558,35 @@ SELECT COUNT(*) FROM saisie_item_note a JOIN saisie_item_note b
 
 **Dette laissée :** `scheduleSync()` (l.1118) n'est **plus appelée nulle part** — code mort conservé (sa suppression dépassait le périmètre). Ne pas la rebrancher sur un chemin de notation sans réintroduire la course.
 
+**MÊME CORRECTIF ÉTENDU À `compteur_temps` (2026-07-30).** Même bug, même cause : `enregistrer_compteur` upserte par `SELECT … .first()` sur `(saisie_id, group_key)` sans contrainte d'unicité → doublons par course de sauvegarde, et des temps lus depuis une jumelle périmée. Deux instructions ajoutées à `_MIGRATIONS`, même ordre obligatoire :
+```sql
+DELETE FROM compteur_temps a USING compteur_temps b
+ WHERE a.saisie_id = b.saisie_id AND a.group_key = b.group_key AND a.id > b.id;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_compteur_temps_saisie_group
+ ON compteur_temps (saisie_id, group_key);
+```
+Modèle vérifié : table `compteur_temps`, colonnes `saisie_id` / `group_key` conformes.
+
+**⚠️ DIFFÉRENCE MAJEURE AVEC `saisie_item_note` — un discriminateur fiable EXISTE ici et n'est pas utilisé.** `CompteurTemps` porte `date_maj = Column(DateTime, server_default=func.now(), onupdate=func.now())`, présent **dès la création de la table** (aucune migration `ALTER` sur cette table) donc **non-NULL sur toutes les lignes**. La ligne qui reçoit les `UPDATE` voit son `date_maj` avancer ; la jumelle orpheline garde son horodatage d'insertion. `date_maj` désigne donc **de façon déterministe** la ligne à jour — là où `saisie_item_note` n'avait aucun horodatage et où le choix du MIN était un pari assumé.
+**La règle livrée garde malgré tout l'`id` MIN** (cohérence avec l'autre table, conformément à la demande). Divergence démontrée sur un cas type : paire `(5, 'CAT')` avec `id=1` à 09:00 (`duree_pp=300`) et `id=2` à 10:15 (`duree_pp=420`) → **la règle MIN conserve 300, la règle `date_maj` conserverait 420**. Sur les paires identiques et les lignes uniques, les deux règles coïncident.
+
+**Enjeu plus élevé que pour les notes** : ces temps alimentent le **verdict de tolérance** (échec sur dépassement), les **heures recommandées** de la fiche de reco, et le garde-fou « 3 temps obligatoires » à la validation. Un mauvais choix peut donc figer un verdict de temps erroné.
+
+**Variante `date_maj`, prête à substituer** si l'on préfère la règle déterministe (PostgreSQL, comparaison de tuples ; `date_maj` non-NULL donc pas de piège NULL) :
+```sql
+DELETE FROM compteur_temps a USING compteur_temps b
+ WHERE a.saisie_id = b.saisie_id AND a.group_key = b.group_key
+   AND (a.date_maj, a.id) < (b.date_maj, b.id);
+```
+**Requête décisive à passer AVANT redémarrage** — combien de paires où les deux règles divergent (0 ⇒ aucun risque, le choix est sans objet) :
+```sql
+SELECT COUNT(*) FROM (
+  SELECT MIN(id) AS id_min,
+         (array_agg(id ORDER BY date_maj DESC, id DESC))[1] AS id_recent
+    FROM compteur_temps GROUP BY saisie_id, group_key HAVING COUNT(*) > 1
+) t WHERE id_min <> id_recent;
+```
+
 ### ⏳ À VALIDER EN PROD (non marqué terminé) : reprise modifiable toutes catégories + badge « ENGIN N°2 » corrigé sur les variantes exclusives (2026-07-30)
 
 **(1) Une section déjà saisie n'est plus reverrouillée à la reprise.** Le verrou « Compteur non lancé » se fondait sur le seul état du chrono (`_compteurLance`). À la reprise d'une saisie, le chrono peut être **à l'arrêt** alors que des notes existent déjà → la section était regrisée et la notation refusée, empêchant de **corriger une donnée déjà enregistrée**. Concerne **toutes** les catégories (le correctif du verrou visuel de la veille ne traitait que le rafraîchissement après restauration, pas ce cas).

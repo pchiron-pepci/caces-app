@@ -223,6 +223,17 @@ def _run_startup_migrations():
         "WHERE a.bloc_id = b.bloc_id AND a.item_id = b.item_id AND a.id > b.id",
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_saisie_item_note_bloc_item "
         "ON saisie_item_note (bloc_id, item_id)",
+        # compteur_temps : MEME bug, meme cause (course de sauvegarde sur un
+        # upsert SELECT .first() + INSERT, sans contrainte d'unicite).
+        # Doublons sur (saisie_id, group_key) -> les temps lus pouvaient venir
+        # d'une ligne jumelle perimee. Meme ordre obligatoire qu'au-dessus.
+        # NB : contrairement a saisie_item_note, cette table a une colonne
+        # date_maj (onupdate=func.now(), non-NULL) qui permettrait de garder la
+        # ligne REELLEMENT la plus recente plutot que l'id MIN — voir CLAUDE.md.
+        "DELETE FROM compteur_temps a USING compteur_temps b "
+        "WHERE a.saisie_id = b.saisie_id AND a.group_key = b.group_key AND a.id > b.id",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_compteur_temps_saisie_group "
+        "ON compteur_temps (saisie_id, group_key)",
     ]
     for sql in _MIGRATIONS:
         try:
