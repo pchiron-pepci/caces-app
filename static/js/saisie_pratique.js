@@ -98,9 +98,10 @@
   // ─── LOT 1 : calcul des compteurs (1 UT = 60 min, proportionnel) ───
   var MINUTES_PAR_UT = 60;
   // Tolerance de temps : 1 UT = 1 heure +/- 10 minutes, AU PRORATA de l'UT.
-  // Seuil d'echec = ref x 70/60 : 1 UT -> 70 min ; 0,5 UT -> 35 min.
-  var MINUTES_TOLERANCE_PAR_UT = 10;
-  var FACTEUR_SEUIL_TEMPS = (MINUTES_PAR_UT + MINUTES_TOLERANCE_PAR_UT) / MINUTES_PAR_UT;
+  // Seuil applique a la ref PROPRE de chaque compteur (par engin, jamais une ref
+  // unique de categorie) : 1 UT -> 70 min ; 0,5 UT -> 35 min ; 0,6 UT -> 42 min.
+  // La marge de tolerance vaut ref x (FACTEUR - 1) = 10 min par UT.
+  var FACTEUR_SEUIL_TEMPS = 7 / 6;   // +10 min par UT (60+10, 30+5)
 
   // Cat A (R.482) = 2 engins de base successifs (PH + N2), 2 prises de poste
   // => 1 chrono PAR engin (l'UT vient de la grille : PH = 1 UT, N2 = 0,5 UT).
@@ -462,7 +463,9 @@
       var ch = _ensureChrono(g.key, g.ref);
       var hr = state.horaires[g.key];
       var depasse = ch.restant < 0;
-      var seuil = Math.round(g.ref * 0.30);
+      // Alerte rouge a la LIMITE DE TOLERANCE (meme facteur que le verdict),
+      // pas a +30 % : marge = ref x (FACTEUR - 1) = 10 min par UT.
+      var seuil = Math.round(g.ref * (FACTEUR_SEUIL_TEMPS - 1));
       var alerte = ch.restant <= -seuil;
       var bordure = alerte ? "#cc0000" : (depasse ? "#e24b4a" : "#e0e3e6");
       var bg = alerte ? "#fcebeb" : "#fff";
@@ -593,7 +596,8 @@
     if (!el) return;
     var ch = state.chronos[key]; if (!ch) return;
     var depasse = ch.restant < 0;
-    var seuil = Math.round(ch.ref * 0.30);
+    // Meme seuil que le verdict : marge = ref x (FACTEUR - 1) = 10 min par UT.
+    var seuil = Math.round(ch.ref * (FACTEUR_SEUIL_TEMPS - 1));
     var alerte = ch.restant <= -seuil;
     var t = el.querySelector(".sp-cmp-t");
     t.textContent = fmtChrono(ch.restant);

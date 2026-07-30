@@ -2525,6 +2525,37 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
+### ⏳ À VALIDER EN PROD (non marqué terminé) : seuil de temps unifié — résidu de 130 % trouvé sous la forme `0.30` (2026-07-30)
+
+**Résidu trouvé.** Le chantier du 29/07 (130 % → tolérance 10 min/UT) avait laissé **deux sites** intacts, parce qu'ils exprimaient le seuil « à l'envers » : au lieu de `écoulé >= ref × 1.30`, ils écrivaient `restant <= −(ref × 0.30)` — mathématiquement identique, mais invisible à un grep sur `1.30|130`.
+- `renderBarreCompteurs` (l.465) et `_majAffichageCompteur` (l.596) : `var seuil = Math.round(ref * 0.30); var alerte = ch.restant <= -seuil;` → l'**alerte rouge du compteur** (bordure + fond `#fcebeb`) ne se déclenchait qu'à **130 %**, alors que le verdict échoue dès **116,67 %**. Désalignement de **8 min sur 1 UT** (78:00 au lieu de 70:00) et **4 min sur 0,5 UT**. Le testeur voyait un compteur non alarmant alors que le candidat était déjà en échec sur le temps.
+
+**Correctif.** `Math.round(ref * (FACTEUR_SEUIL_TEMPS - 1))` aux deux sites. `FACTEUR − 1 = 1/6`, donc la marge vaut **exactement 10 min par UT** par construction — l'alerte visuelle bascule à la même seconde que le verdict.
+
+**Constante fixée à `7 / 6`** (au lieu de `(MINUTES_PAR_UT + MINUTES_TOLERANCE_PAR_UT) / MINUTES_PAR_UT`). Vérifié : les deux formes sont **bit-identiques** en IEEE754 (`écart ULP = 0`), le changement est neutre. `MINUTES_TOLERANCE_PAR_UT` devenait inutilisée → supprimée plutôt que laissée en code mort. `MINUTES_PAR_UT` reste (conversion ut → secondes dans `calculerCompteurs`).
+
+**Les 4 sites de temps du JS sont désormais sur la même constante** — aucun littéral de seuil ne subsiste (grep `1\.30|1\.3\b|130|0\.30` : plus que la constante et ses 4 usages) :
+| Site | Ligne | Usage |
+|---|---|---|
+| `_depassementTemps` | 259 | verdict : `cumul >= g.ref * FACTEUR` |
+| `renderBarreCompteurs` (alerte) | 468 | `ref * (FACTEUR - 1)` |
+| `renderBarreCompteurs` (bandes) | 480 | `_ref * FACTEUR` |
+| `_majAffichageCompteur` (alerte) | 600 | `ch.ref * (FACTEUR - 1)` |
+
+**Référence PROPRE à chaque compteur** (confirmé) : les 3 sites lisent `g.ref` / `ch.ref`, soit `ut × 3600` **par engin** — jamais une ref unique de catégorie. Cat A : PH 1 UT → 70 min, engin N°2 0,5 UT → 35 min, indépendamment.
+
+**Vérifié** (constante relue dans le source, pas recopiée) — alerte, bande rouge et verdict basculent à la même seconde :
+| ref | marge | alerte | verdict | bande |
+|---|---|---|---|---|
+| 1,0 UT (60 min) | 10 min | 70:00 | 70:00 | 70:00 |
+| 0,5 UT (30 min) | 5 min | 35:00 | 35:00 | 35:00 |
+| 0,6 UT (36 min) | 6 min | 42:00 | 42:00 | 42:00 |
+| 1,2 UT (72 min) | 12 min | 84:00 | 84:00 | 84:00 |
+
+**Côté Python : déjà aligné, rien à changer.** `SEUIL_TEMPS_PCT = 700.0/6.0` dans `calcul_fiche_reco.py` (l.36) et `pdf_resultat_pratique.py` (l.203) — soit `7/6 × 100`. `pdf_fiche_reco.py` n'a pas de seuil (libellés seuls). Le `130px` de `pdf_resultat_pratique.py:473` est une largeur CSS, sans rapport.
+
+**LEÇON DE MÉTHODE.** Un seuil peut être écrit sous une forme algébriquement équivalente qui échappe au grep : `ref * 0.30` sur le *restant* == `ref * 1.30` sur l'*écoulé*. Pour retrouver tous les sites d'un seuil, **grepper aussi le complément** (`0.30` pour 130 %, `1/6`/`0.16` pour 7/6) et les variables intermédiaires (`seuil`, `alerte`, `marge`), pas seulement la valeur nominale.
+
 ### 🔴 À VALIDER EN PROD (non marqué terminé) : BUG CRITIQUE multi-engins — le verdict ne voyait que le 1er engin (2026-07-30)
 
 **Gravité.** Sur une catégorie multi-engins (cat A : PH + engin N°2), un **échec sur l'engin N°2 s'affichait « Réussi »** et pouvait être validé → CACES délivré à tort. Le serveur calculait déjà juste (`res["base_reussie"] = all(b["reussi"] for b in res_bases)`, `calcul_pratique.py:157`) ; ce sont les **consommateurs** qui lisaient `res["base"]` = **le premier bloc seulement** (alias de compatibilité mono-engin).
