@@ -2525,6 +2525,28 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
+### ⏳ À VALIDER EN PROD (non marqué terminé) : verrou visuel des sections réévalué après reprise des compteurs (2026-07-30)
+
+**Bug.** À la reprise d'une saisie pratique (réouverture d'une saisie déjà commencée, ou reprise après coupure réseau), les sections restaient grisées avec le bandeau « Compteur non lancé — lancez le chrono pour noter cette partie », alors que le compteur repartait correctement. Il fallait mettre le chrono en pause puis le relancer pour retrouver la saisie.
+
+**Cause.** `_majSectionsVerrou()` n'était appelée qu'à **deux** endroits : `renderAll()` (l.787) et la branche `toggle` du clic compteur (l.719).
+Le déroulé d'une reprise était :
+1. `renderAll()` reconstruit le DOM puis appelle `_majSectionsVerrou()` — à cet instant `state.chronos` est encore **neuf** (`run:false`, `restant === ref`, cf. `_ensureChrono`) → `_compteurLance()` renvoie `false` → toutes les sections grisées. Normal à ce stade.
+2. `_rechargerCompteurs()` restaure ensuite l'état réel depuis le serveur **en asynchrone** (`ch.restant`, `ch.run`, `setInterval`) et se terminait par `renderBarreCompteurs();` **seul**.
+
+Le DOM des sections conservait donc l'`opacity:0.55` et le bandeau posés à l'étape 1. L'état interne était déjà correct — seul l'affichage restait en retard. Le pause+relance manuel ne « réparait » rien : il ne faisait que déclencher le `_majSectionsVerrou()` manquant (l.719). D'où le symptôme trompeur : le dégrisage survenait dès la **mise en pause** (car `restant !== ref` devient vrai), avant même le redémarrage.
+
+**Portée** : le défaut se produisait à **chaque** `_rechargerCompteurs()`, donc à toute réouverture d'une saisie commencée (appel en fin de `traiterReponseSaisie`), pas seulement après une rupture réseau.
+
+**Fix (1 ligne).** `_majSectionsVerrou();` ajoutée dans `_rechargerCompteurs()`, **dans le `.then()`**, immédiatement après `renderBarreCompteurs()` — donc après la boucle de restauration. Emplacement vérifié avant application : `.then()` ouvert l.888, boucle de restauration l.890-913, appel l.914-915, `.catch` l.916 ; indentation 6 espaces identique à la ligne précédente.
+
+**RÈGLE PERMANENTE.** `_majSectionsVerrou()` est **purement VISUEL** (`opacity` + bandeau ambre) : aucun `disabled`, aucun `pointer-events:none`. La règle métier « on ne note pas une section dont le chrono n'a jamais tourné » (condition `_compteurLance` : `ch.run || ch.restant !== ch.ref`) est **inchangée**. **Toute restauration asynchrone de `state.chronos` DOIT être suivie d'un `_majSectionsVerrou()`**, sans quoi le DOM ne reflète pas l'état restauré.
+
+**Résidus repérés au diagnostic, NON traités dans ce commit :**
+- `state.online` (l.18, `online: navigator.onLine`) est un **flag mort** : initialisé, jamais relu. Le grisage n'a jamais dépendu de l'état réseau — la coupure n'était que le déclencheur du rechargement.
+- Branches `act === "start"` (l.721) et `act === "stop"` (l.722) du clic compteur : elles appellent `renderBarreCompteurs()` **sans** `_majSectionsVerrou()`, contrairement à `toggle` (l.718-719). Si un `data-cmp="start"`/`"stop"` existe dans le DOM, elles reproduisent le même symptôme — non vérifié.
+- `renderAll()` (l.787-788) appelle `_majSectionsVerrou()` **puis** `renderBarreCompteurs()`, soit l'ordre inverse du nouveau site. Sans conséquence (les deux lisent le même `state`, aucune ne dépend du DOM de l'autre), mais l'incohérence d'ordre est réelle.
+
 ### ⏳ À VALIDER EN PROD (non marqué terminé) : fiche reco + PDF alignés sur le verdict de temps (2026-07-29)
 
 **Problème.** Le verdict d'échec sur le temps compare les **secondes brutes** (`static/js/saisie_pratique.js:259` — `cumul >= ref * FACTEUR_SEUIL_TEMPS`). La fiche de reco et le PDF résultat comparaient un **pourcentage arrondi** (`pct = round(realise*100/ref)` puis `pct > SEUIL_TEMPS_PCT`). L'arrondi les faisait basculer en « temps éliminatoire » **quelques secondes AVANT** le verdict : 69:55 au lieu de 70:00 sur 1 UT (−2 s sur 0,5 UT, −7 s sur 1,2 UT). Un candidat entre 69:55 et 69:59 avait un temps **conforme** au verdict mais « éliminatoire » sur deux documents qui lui sont remis — et la fiche reco lui allouait la durée pleine au lieu de la moitié.

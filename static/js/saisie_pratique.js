@@ -912,6 +912,7 @@
         }
       });
       renderBarreCompteurs();
+      _majSectionsVerrou();   // rafraichit le verrou APRES restauration des chronos
     }).catch(function () {});
   }
 
