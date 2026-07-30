@@ -210,6 +210,19 @@ def _run_startup_migrations():
         # justificatifs
         "ALTER TABLE justificatifs ADD COLUMN IF NOT EXISTS libelle VARCHAR(300)",
         "ALTER TABLE justificatifs ADD COLUMN IF NOT EXISTS uploade_par_role VARCHAR(20)",
+        # saisie_item_note : doublons (bloc_id, item_id) issus d'une course entre
+        # deux sync concurrentes. Consequence : une note remise a 0 ne redescendait
+        # jamais le calcul (l'upsert mettait a jour une ligne, calcul_pratique.py:33
+        # lisait la jumelle, la comprehension de dict retenant la DERNIERE parcourue).
+        # 1) dedoublonnage : on garde la ligne d'id MIN (celle que .first() met a
+        #    jour, donc porteuse de la valeur fraiche) ; 2) l'index unique interdit
+        #    toute recidive. L'ORDRE DES DEUX EST OBLIGATOIRE.
+        # NB : "DELETE ... USING" est du PostgreSQL — echoue en WARN sur SQLite local,
+        # comme les "ADD COLUMN IF NOT EXISTS" ci-dessus.
+        "DELETE FROM saisie_item_note a USING saisie_item_note b "
+        "WHERE a.bloc_id = b.bloc_id AND a.item_id = b.item_id AND a.id > b.id",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_saisie_item_note_bloc_item "
+        "ON saisie_item_note (bloc_id, item_id)",
     ]
     for sql in _MIGRATIONS:
         try:

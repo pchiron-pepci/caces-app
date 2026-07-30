@@ -1107,7 +1107,9 @@
     b.notes[itemId] = val;
     state.dirty[b.bloc_id] = true;
     majProgression(); majScores();
-    scheduleSync(b.bloc_id);
+    // PAS de scheduleSync ici : debouncedCalc -> runCalc -> syncAll -> syncBloc
+    // enregistre deja TOUS les blocs. Le 2e POST concurrent creait une course
+    // qui a produit des doublons (bloc_id, item_id) en base.
     debouncedCalc();
   }
 
@@ -1320,7 +1322,8 @@
     if (cb.checked && idx < 0) b.elim.push(crit);
     if (!cb.checked && idx >= 0) b.elim.splice(idx, 1);
     state.dirty[b.bloc_id] = true;
-    scheduleSync(b.bloc_id);
+    // Meme raison que dans setNote : pas de 2e POST concurrent. syncBloc
+    // transmet deja "eliminatoires" avec les notes, donc rien n'est perdu.
     debouncedCalc();
   });
 

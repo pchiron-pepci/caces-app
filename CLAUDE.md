@@ -2525,6 +2525,39 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
+### 🔴 À VALIDER EN PROD (non marqué terminé) : doublons `saisie_item_note` — une note remise à 0 ne redescendait jamais le calcul (2026-07-30)
+
+**Symptôme.** Une note ramenée à 0 restait sans effet sur le résultat calculé.
+
+**Cause — deux défauts cumulés :**
+1. **Course entre deux POST concurrents.** `setNote` appelait `scheduleSync(bloc_id)` **et** `debouncedCalc()`. Or `debouncedCalc → runCalc → syncAll → syncBloc` poste **déjà** le bloc complet. Deux `POST /enregistrer` simultanés passaient donc tous deux par `enregistrer_lot` (`saisie_pratique.py:497`), dont l'upsert est un `SELECT … .first()` suivi d'un `INSERT` si absent : les deux ne trouvaient rien et **inséraient chacun leur ligne**.
+2. **Aucune contrainte d'unicité** sur `(bloc_id, item_id)` pour l'empêcher.
+Ensuite, `calcul_pratique.py:33` lit les notes par **compréhension de dict** (`{n.item_id: n.note for n in …}`) **sans `ORDER BY`** : en cas de doublon, c'est la **dernière ligne parcourue** qui gagne, dans un ordre non déterministe. L'upsert mettait à jour une ligne, le calcul lisait la jumelle périmée.
+
+**CORRECTIF 1 — base (`app/main.py`, `_MIGRATIONS`), deux instructions dans cet ordre :**
+```sql
+DELETE FROM saisie_item_note a USING saisie_item_note b
+ WHERE a.bloc_id = b.bloc_id AND a.item_id = b.item_id AND a.id > b.id;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_saisie_item_note_bloc_item
+ ON saisie_item_note (bloc_id, item_id);
+```
+**L'ordre est obligatoire** (l'index échouerait sur des doublons subsistants). La boucle `for sql in _MIGRATIONS` (l.214) enveloppe déjà chaque instruction dans son `try/except` avec un `print("[migration] WARN …")` — **c'est ce WARN qui signale un échec du CREATE UNIQUE INDEX**, à surveiller dans les logs Render au redémarrage.
+`DELETE … USING` est du PostgreSQL : échoue en WARN sur SQLite local, comme les `ADD COLUMN IF NOT EXISTS`.
+
+**⚠️ CHOIX DE LA LIGNE CONSERVÉE — hypothèse à connaître.** On garde l'`id` **MIN**. Or **ni l'écrivain ni le lecteur ne sont déterministes** : l'upsert utilise `.first()` **sans `ORDER BY`**, et le calcul une compréhension de dict. Il n'existe **aucun horodatage** sur `SaisieItemNote` (colonnes : `id`, `bloc_id`, `item_id`, `note`) permettant de désigner la ligne à jour a posteriori. Le choix du MIN s'appuie sur le symptôme observé (la valeur fraîche était bien dans la ligne mise à jour, la périmée dans la jumelle lue par le calcul), pas sur une garantie du SGBD. **Seules les paires dont les notes DIFFÈRENT sont concernées** ; pour les paires identiques le choix est indifférent. Requête de contrôle à passer **avant** redémarrage si l'on veut mesurer l'exposition :
+```sql
+SELECT COUNT(*) FROM saisie_item_note a JOIN saisie_item_note b
+  ON a.bloc_id = b.bloc_id AND a.item_id = b.item_id AND a.id > b.id
+ WHERE a.note IS DISTINCT FROM b.note;
+```
+
+**CORRECTIF 2 — client (`static/js/saisie_pratique.js`), la course elle-même :** `scheduleSync(b.bloc_id)` retiré de `setNote` **et** du handler des critères éliminatoires (l.1316-1327), qui portait **exactement le même pattern**. `syncBloc` transmet déjà `notes` **et** `eliminatoires` du bloc : rien n'est perdu.
+**Pourquoi les deux et pas seulement `setNote` :** une fois l'index unique posé, la course restante ne produit plus des doublons silencieux mais des **500 (violation d'unicité)** sur `/enregistrer`. Laisser le chemin « éliminatoire » en course aurait transformé un bug de données en erreurs visibles au clic.
+
+**Vérifié :** sémantique du dédoublonnage simulée (doublon avec notes différentes, doublon identique, triplon, ligne unique d'un autre bloc) → 8 lignes ramenées à 4, l'`id` MIN conservé à chaque fois, la ligne unique intacte ; index unique créé ; réinsertion d'un doublon **rejetée**. Base locale : `saisie_item_note` vide (0 ligne), donc **le correctif n'est pas démontrable en dev** — la validation se fera en prod. `py_compile` + `node --check` OK, les 6 séries de tests repassent.
+
+**Dette laissée :** `scheduleSync()` (l.1118) n'est **plus appelée nulle part** — code mort conservé (sa suppression dépassait le périmètre). Ne pas la rebrancher sur un chemin de notation sans réintroduire la course.
+
 ### ⏳ À VALIDER EN PROD (non marqué terminé) : reprise modifiable toutes catégories + badge « ENGIN N°2 » corrigé sur les variantes exclusives (2026-07-30)
 
 **(1) Une section déjà saisie n'est plus reverrouillée à la reprise.** Le verrou « Compteur non lancé » se fondait sur le seul état du chrono (`_compteurLance`). À la reprise d'une saisie, le chrono peut être **à l'arrêt** alors que des notes existent déjà → la section était regrisée et la notation refusée, empêchant de **corriger une donnée déjà enregistrée**. Concerne **toutes** les catégories (le correctif du verrou visuel de la veille ne traitait que le rafraîchissement après restauration, pas ce cas).
