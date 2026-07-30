@@ -2561,31 +2561,24 @@ SELECT COUNT(*) FROM saisie_item_note a JOIN saisie_item_note b
 **MÊME CORRECTIF ÉTENDU À `compteur_temps` (2026-07-30).** Même bug, même cause : `enregistrer_compteur` upserte par `SELECT … .first()` sur `(saisie_id, group_key)` sans contrainte d'unicité → doublons par course de sauvegarde, et des temps lus depuis une jumelle périmée. Deux instructions ajoutées à `_MIGRATIONS`, même ordre obligatoire :
 ```sql
 DELETE FROM compteur_temps a USING compteur_temps b
- WHERE a.saisie_id = b.saisie_id AND a.group_key = b.group_key AND a.id > b.id;
+ WHERE a.saisie_id = b.saisie_id AND a.group_key = b.group_key
+   AND (a.date_maj, a.id) < (b.date_maj, b.id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_compteur_temps_saisie_group
  ON compteur_temps (saisie_id, group_key);
 ```
 Modèle vérifié : table `compteur_temps`, colonnes `saisie_id` / `group_key` conformes.
 
-**⚠️ DIFFÉRENCE MAJEURE AVEC `saisie_item_note` — un discriminateur fiable EXISTE ici et n'est pas utilisé.** `CompteurTemps` porte `date_maj = Column(DateTime, server_default=func.now(), onupdate=func.now())`, présent **dès la création de la table** (aucune migration `ALTER` sur cette table) donc **non-NULL sur toutes les lignes**. La ligne qui reçoit les `UPDATE` voit son `date_maj` avancer ; la jumelle orpheline garde son horodatage d'insertion. `date_maj` désigne donc **de façon déterministe** la ligne à jour — là où `saisie_item_note` n'avait aucun horodatage et où le choix du MIN était un pari assumé.
-**La règle livrée garde malgré tout l'`id` MIN** (cohérence avec l'autre table, conformément à la demande). Divergence démontrée sur un cas type : paire `(5, 'CAT')` avec `id=1` à 09:00 (`duree_pp=300`) et `id=2` à 10:15 (`duree_pp=420`) → **la règle MIN conserve 300, la règle `date_maj` conserverait 420**. Sur les paires identiques et les lignes uniques, les deux règles coïncident.
+**⚠️ LES DEUX TABLES N'ONT PAS LA MÊME RÈGLE DE DÉDOUBLONNAGE — c'est délibéré :**
+| Table | Règle | Pourquoi |
+|---|---|---|
+| `saisie_item_note` | garde l'**`id` MIN** | aucun horodatage sur le modèle (`id`, `bloc_id`, `item_id`, `note`) → **pari assumé**, appuyé sur le symptôme observé |
+| `compteur_temps` | garde le **`date_maj` le plus récent**, `id` en départage | `date_maj` (`server_default` + `onupdate`) présent **dès la création de la table**, donc **non-NULL partout** → choix **déterministe** |
 
-**Enjeu plus élevé que pour les notes** : ces temps alimentent le **verdict de tolérance** (échec sur dépassement), les **heures recommandées** de la fiche de reco, et le garde-fou « 3 temps obligatoires » à la validation. Un mauvais choix peut donc figer un verdict de temps erroné.
+La ligne qui reçoit les `UPDATE` voit son `date_maj` avancer ; la jumelle orpheline garde son horodatage d'insertion. `date_maj` désigne donc sans ambiguïté la ligne à jour. La comparaison de tuples PostgreSQL `(a.date_maj, a.id) < (b.date_maj, b.id)` est sûre ici précisément **parce que `date_maj` est non-NULL** — avec une colonne nullable elle renverrait NULL, la ligne ne serait pas supprimée et le `CREATE UNIQUE INDEX` échouerait ensuite.
 
-**Variante `date_maj`, prête à substituer** si l'on préfère la règle déterministe (PostgreSQL, comparaison de tuples ; `date_maj` non-NULL donc pas de piège NULL) :
-```sql
-DELETE FROM compteur_temps a USING compteur_temps b
- WHERE a.saisie_id = b.saisie_id AND a.group_key = b.group_key
-   AND (a.date_maj, a.id) < (b.date_maj, b.id);
-```
-**Requête décisive à passer AVANT redémarrage** — combien de paires où les deux règles divergent (0 ⇒ aucun risque, le choix est sans objet) :
-```sql
-SELECT COUNT(*) FROM (
-  SELECT MIN(id) AS id_min,
-         (array_agg(id ORDER BY date_maj DESC, id DESC))[1] AS id_recent
-    FROM compteur_temps GROUP BY saisie_id, group_key HAVING COUNT(*) > 1
-) t WHERE id_min <> id_recent;
-```
+**Pourquoi le déterminisme importait davantage ici** : ces temps alimentent le **verdict de tolérance** (échec sur dépassement), les **heures recommandées** de la fiche de reco, et le garde-fou « 3 temps obligatoires » à la validation. Garder la mauvaise ligne y figerait un verdict de temps erroné — alors que sur `saisie_item_note` l'enjeu se limite à une note isolée.
+
+**Vérifié** (condition relue dans `app/main.py`, rejouée sur un jeu type) : `date_maj` plus récent conservé même quand son `id` est **plus petit** ; départage par `id` le plus grand à **égalité** de `date_maj` ; lignes uniques intactes. 7 lignes → 4, exactement celles attendues.
 
 ### ⏳ À VALIDER EN PROD (non marqué terminé) : reprise modifiable toutes catégories + badge « ENGIN N°2 » corrigé sur les variantes exclusives (2026-07-30)
 

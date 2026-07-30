@@ -227,11 +227,16 @@ def _run_startup_migrations():
         # upsert SELECT .first() + INSERT, sans contrainte d'unicite).
         # Doublons sur (saisie_id, group_key) -> les temps lus pouvaient venir
         # d'une ligne jumelle perimee. Meme ordre obligatoire qu'au-dessus.
-        # NB : contrairement a saisie_item_note, cette table a une colonne
-        # date_maj (onupdate=func.now(), non-NULL) qui permettrait de garder la
-        # ligne REELLEMENT la plus recente plutot que l'id MIN — voir CLAUDE.md.
+        # DEDOUBLONNAGE DETERMINISTE (different de saisie_item_note) : cette
+        # table porte date_maj (server_default + onupdate, presente des la
+        # creation donc NON-NULL partout). La ligne qui recoit les UPDATE voit
+        # son date_maj avancer ; la jumelle orpheline garde son horodatage
+        # d'insertion. On garde donc la PLUS RECEMMENT MISE A JOUR, id en
+        # departage a egalite de date_maj (comparaison de tuples PostgreSQL,
+        # sans piege NULL puisque date_maj est non-NULL).
         "DELETE FROM compteur_temps a USING compteur_temps b "
-        "WHERE a.saisie_id = b.saisie_id AND a.group_key = b.group_key AND a.id > b.id",
+        "WHERE a.saisie_id = b.saisie_id AND a.group_key = b.group_key "
+        "AND (a.date_maj, a.id) < (b.date_maj, b.id)",
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_compteur_temps_saisie_group "
         "ON compteur_temps (saisie_id, group_key)",
     ]
