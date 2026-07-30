@@ -2525,7 +2525,7 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
-### 🔴 À VALIDER EN PROD (non marqué terminé) : doublons `saisie_item_note` — une note remise à 0 ne redescendait jamais le calcul (2026-07-30)
+### ✅ Terminé (validé en prod le 2026-07-30) : doublons `saisie_item_note` — une note remise à 0 ne redescendait jamais le calcul
 
 **Symptôme.** Une note ramenée à 0 restait sans effet sur le résultat calculé.
 
@@ -2580,7 +2580,7 @@ La ligne qui reçoit les `UPDATE` voit son `date_maj` avancer ; la jumelle orphe
 
 **Vérifié** (condition relue dans `app/main.py`, rejouée sur un jeu type) : `date_maj` plus récent conservé même quand son `id` est **plus petit** ; départage par `id` le plus grand à **égalité** de `date_maj` ; lignes uniques intactes. 7 lignes → 4, exactement celles attendues.
 
-### ⏳ À VALIDER EN PROD (non marqué terminé) : reprise modifiable toutes catégories + badge « ENGIN N°2 » corrigé sur les variantes exclusives (2026-07-30)
+### ✅ Terminé (validé en prod le 2026-07-30) : reprise modifiable toutes catégories + badge « ENGIN N°2 » corrigé sur les variantes exclusives
 
 **(1) Une section déjà saisie n'est plus reverrouillée à la reprise.** Le verrou « Compteur non lancé » se fondait sur le seul état du chrono (`_compteurLance`). À la reprise d'une saisie, le chrono peut être **à l'arrêt** alors que des notes existent déjà → la section était regrisée et la notation refusée, empêchant de **corriger une donnée déjà enregistrée**. Concerne **toutes** les catégories (le correctif du verrou visuel de la veille ne traitait que le rafraîchissement après restauration, pas ce cas).
 - `_majSectionsVerrou` : `var lance = _compteurLance(gk) || !!avecNotes[gk];` (avec `var avecNotes = _groupesAvecNotes();`).
@@ -2674,7 +2674,18 @@ Les 4 séries de tests antérieures (compteurs, seuil de temps, verrou famille, 
 
 **Reste identifié, NON traité :** `valider()` l.681 compose `note_testeur` avec `res["base"]["note_globale"]` seul — pour une cat A, le libellé « Saisie en ligne - base X/100 » ne reflète que l'engin N°1. Purement cosmétique (libellé), n'affecte aucun verdict.
 
-**CLÔTURE DU CHANTIER CHRONO / SAISIE PRATIQUE (2026-07-30).** Les 3 correctifs ci-dessus (verrou visuel après reprise, verdict multi-engins, seuil de temps unifié sur 7/6) sont **en production jusqu'au commit `29e1407`**, tests OK. **Audit données non nécessaire — résultats en base confirmés corrects par l'utilisateur (2026-07-30) : aucune saisie A/G obtenue à tort.**
+## ✅ CLÔTURE DU CHANTIER SAISIE PRATIQUE (validé en prod le 2026-07-30)
+
+**Périmètre clos** — verrou reprise / verdict multi-engin / seuil temps 7/6 / doublons `SaisieItemNote` & `CompteurTemps`. **En production jusqu'au commit `01475e2`**, tests OK. Les 5 entrées détaillées ci-dessous sont toutes marquées ✅ :
+1. verrou visuel des sections réévalué après reprise des compteurs ;
+2. reprise modifiable toutes catégories + garde-fou dur de notation retiré + badge « ENGIN N°2 » corrigé sur les variantes exclusives ;
+3. verdict multi-engins (cat A/G) : `base_reussie` sur TOUS les engins — front, modale et anti-repêchage serveur ;
+4. seuil de temps unifié sur 7/6 (+10 min par UT), 4 sites JS + 2 sites Python alignés ;
+5. doublons `saisie_item_note` (dédoublonnage `id` MIN) et `compteur_temps` (dédoublonnage déterministe sur `date_maj`) + index uniques.
+
+**Audit prod `audit_verdicts_pratique.py` = 0 divergence, 0 obtenu-à-tort, 0 orpheline → aucune certification à reprendre. Test terrain C1 OK (décocher fait redescendre le score et le global).**
+
+**Audit données complémentaire non nécessaire** — résultats en base confirmés corrects par l'utilisateur (2026-07-30) : aucune saisie A/G obtenue à tort.
 
 ### ✅ Terminé (validé en prod le 2026-07-30) : verrou visuel des sections réévalué après reprise des compteurs
 
