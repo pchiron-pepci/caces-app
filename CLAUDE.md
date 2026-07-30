@@ -2525,6 +2525,34 @@ Le seuil était **répliqué en dur dans 5 fichiers** — tous alignés :
 
 **Vérifié** (tests exécutés sur le code réellement livré, fonctions extraites du fichier source) : cat A → 2 chronos PH 1h + N°2 30 min, chaque section reliée à son chrono ; cat G / F / C1 / cat A dégradée strictement inchangées ; dépassement sur PH **ou** sur l'engin N°2 → échec catégorie ; facteur relu depuis le source = 1,1667 → 70 min / 35 min. `node --check` + `py_compile` OK, zéro résidu `130`.
 
+### 🔴 À VALIDER EN PROD (non marqué terminé) : BUG CRITIQUE multi-engins — le verdict ne voyait que le 1er engin (2026-07-30)
+
+**Gravité.** Sur une catégorie multi-engins (cat A : PH + engin N°2), un **échec sur l'engin N°2 s'affichait « Réussi »** et pouvait être validé → CACES délivré à tort. Le serveur calculait déjà juste (`res["base_reussie"] = all(b["reussi"] for b in res_bases)`, `calcul_pratique.py:157`) ; ce sont les **consommateurs** qui lisaient `res["base"]` = **le premier bloc seulement** (alias de compatibilité mono-engin).
+
+**3 correctifs front (`static/js/saisie_pratique.js`) :**
+- `renderPropo` : `if (res.base) html += blocLine(res.base, null)` → boucle sur `res.bases` (repli `[res.base]`), un bloc par engin + verdict catégorie global basé sur `res.base_reussie` si >1 engin.
+- `ouvrirModalValidation` : `baseReussi = res.base.reussi && !_depCat.depasse` → **`baseReussi = (res.base_reussie === true) && !_depBase`**, où `_depBase` teste le dépassement **par engin**.
+- Récap de la modale : un `blocRecap` **par engin** si multi-engins (« Engin — … » + son propre chrono), suivi d'une ligne « Catégorie : RÉUSSIE / ÉCHEC (un engin non obtenu) ». Cas mono-engin inchangé.
+
+**1 correctif serveur (`app/routers/saisie_pratique.py`, anti-repêchage l.620) :**
+`if res["base"] and (not res["base"]["reussi"]) and data.decision_base:` → **`if (not res["base_reussie"]) and data.decision_base:`** — le garde anti-repêchage couvre désormais TOUS les engins. Auparavant, un échec sur l'engin N°2 n'était pas protégé : le serveur acceptait un `decision_base=true`.
+
+**⚠️ PIÈGE ÉVITÉ — clé de compteur ≠ présence d'une variante.** Le correctif spécifié dérivait la clé du chrono de `b.variante` (`"CAT:" + variante`). Or une catégorie à **variante EXCLUSIVE** (C1 CH/CP, B2 CA/CP, et tout futur exclusif) porte bien une `variante` mais n'a **qu'un seul chrono, de clé `"CAT"`** (`_multiEngin()` exige ≥2 blocs base à variante). La clé `"CAT:CH"` n'existant pas, `_depassementTemps` aurait renvoyé `{depasse:false}` → **le contrôle de temps aurait été silencieusement sauté sur C1/B2/B3**. Le helper `_cleBase(b)` ne retient donc `"CAT:<variante>"` que si ce compteur **existe réellement** dans `_SP.groupes()`, sinon il retombe sur `"CAT"`. Règle : **ne jamais déduire une clé de compteur de la seule présence d'une `variante` — toujours la confronter aux compteurs réellement rendus.**
+
+**Vérifié** sur le bloc de décision réellement livré (extrait du fichier source) :
+| Scénario | `baseReussi` |
+|---|---|
+| Cat A, engin N°2 en échec (PH ok, CH ko) | **false** ✔ (c'était `true` = le bug) |
+| Cat A, les 2 engins réussis | true ✔ |
+| Cat A, 2 engins réussis mais N°2 hors temps | false ✔ |
+| Cat A, 2 engins réussis mais N°1 hors temps | false ✔ |
+| Cat F réussie / hors temps | true / false ✔ |
+| **C1 (variante CH, chrono `CAT`) hors temps** | **false** ✔ (le piège ci-dessus) |
+
+Les 4 séries de tests antérieures (compteurs, seuil de temps, verrou famille, bornes reco/PDF) repassent.
+
+**Reste identifié, NON traité :** `valider()` l.681 compose `note_testeur` avec `res["base"]["note_globale"]` seul — pour une cat A, le libellé « Saisie en ligne - base X/100 » ne reflète que l'engin N°1. Purement cosmétique (libellé), n'affecte aucun verdict.
+
 ### ⏳ À VALIDER EN PROD (non marqué terminé) : verrou visuel des sections réévalué après reprise des compteurs (2026-07-30)
 
 **Bug.** À la reprise d'une saisie pratique (réouverture d'une saisie déjà commencée, ou reprise après coupure réseau), les sections restaient grisées avec le bandeau « Compteur non lancé — lancez le chrono pour noter cette partie », alors que le compteur repartait correctement. Il fallait mettre le chrono en pause puis le relancer pour retrouver la saisie.

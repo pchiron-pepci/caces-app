@@ -1149,7 +1149,19 @@
       }
       return '<div class="sp-propo-head"><span>' + d.libelle + '</span><span>' + fmt(d.note_globale) + ' / ' + fmt(d.note_max) + '</span></div>' + verdict + raisons;
     }
-    if (res.base) html += blocLine(res.base, null);
+    // TOUS les blocs base (cat A = 2 engins), jamais le seul premier.
+    var _bases = (res.bases && res.bases.length) ? res.bases : (res.base ? [res.base] : []);
+    _bases.forEach(function (b, i) {
+      if (i) html += '<div style="margin-top:12px;"></div>';
+      html += blocLine(b, null);
+    });
+    if (_bases.length > 1) {
+      // Verdict categorie = base_reussie (serveur) = TOUS les engins reussis.
+      var _catOk = res.base_reussie === true;
+      html += '<div class="sp-verdict ' + (_catOk ? "ok" : "ko") + '" style="margin-top:8px;">'
+        + (_catOk ? "Catégorie réussie (proposé)"
+                  : "Catégorie en échec — un engin au moins n'est pas obtenu (proposé)") + '</div>';
+    }
     (res.options || []).forEach(function (o) {
       html += '<div style="margin-top:12px;"></div>' + blocLine(o, o.acquis);
     });
@@ -1480,14 +1492,23 @@
   function ouvrirModalValidation(res) {
     // Regle de temps : depassement de la tolerance (+10 min/UT) => echec force.
     function _dep(gk) { return (window._SP && _SP.depassementTemps) ? _SP.depassementTemps(gk) : { depasse:false }; }
-    // Compteurs de base : "CAT" partout, "CAT:<variante>" en cat A multi-engins
-    // (1 par engin). UN SEUL depassement suffit a faire echouer la categorie.
-    var _basesKeys = ((window._SP && _SP.groupes) ? _SP.groupes() : [])
-      .filter(function (g) { return g.key === "CAT" || g.key.indexOf("CAT:") === 0; })
-      .map(function (g) { return g.key; });
-    if (!_basesKeys.length) _basesKeys = ["CAT"];
-    var _depCat = { depasse: _basesKeys.some(function (k) { return _dep(k).depasse; }) };
-    var baseReussi = (res.base ? res.base.reussi : false) && !_depCat.depasse;
+    // TOUS les blocs base (cat A = 2 engins), jamais le seul premier.
+    var _basesV = (res.bases && res.bases.length) ? res.bases : (res.base ? [res.base] : []);
+    // Cle du compteur d'un engin : "CAT:<variante>" SEULEMENT si ce compteur
+    // existe reellement (cat A multi-engins). Une categorie a variante EXCLUSIVE
+    // (C1 CH/CP, B2 CA/CP) porte une variante SANS chrono par engin : sa cle
+    // reste "CAT", sinon le controle de temps serait silencieusement saute.
+    var _clesCompteurs = {};
+    ((window._SP && _SP.groupes) ? _SP.groupes() : []).forEach(function (g) { _clesCompteurs[g.key] = true; });
+    function _cleBase(b) {
+      var k = (b && b.variante) ? ("CAT:" + b.variante) : "CAT";
+      return _clesCompteurs[k] ? k : "CAT";
+    }
+    var _clesBase = _basesV.length ? _basesV.map(_cleBase) : ["CAT"];
+    // UN SEUL engin hors tolerance suffit a faire echouer la categorie.
+    var _depBase = _clesBase.some(function (k) { return _dep(k).depasse; });
+    // base_reussie (serveur) = TOUS les engins reussis, jamais le seul premier.
+    var baseReussi = (res.base_reussie === true) && !_depBase;
     var _optDep = {};
     (res.options || []).forEach(function (o) {
       var d = _dep("OPT:" + o.code_option);
@@ -1501,8 +1522,19 @@
       + '<div style="background:#fff;border-radius:14px;padding:20px;max-width:440px;width:100%;max-height:90vh;overflow:auto;">'
       + '<h2 style="font-size:18px;margin-bottom:12px;color:#2d2d2d;">Valider le résultat</h2>';
 
-    // recap base
-    html += blocRecap("Catégorie — " + (res.base ? res.base.libelle : ""), res.base, "base", baseReussi, _basesKeys);
+    // recap base : un bloc PAR ENGIN si multi-engins, sinon un seul.
+    if (_basesV.length > 1) {
+      _basesV.forEach(function (b) {
+        var _k = _cleBase(b);
+        html += blocRecap("Engin — " + b.libelle, b, "base_" + (b.variante || ""),
+                          b.reussi && !_dep(_k).depasse, _k);
+      });
+      html += '<div style="text-align:center;font-size:13px;font-weight:700;margin:2px 0 10px;color:'
+        + (baseReussi ? "#0f6e56" : "#a32d2d") + ';">Catégorie : '
+        + (baseReussi ? "RÉUSSIE" : "ÉCHEC (un engin non obtenu)") + '</div>';
+    } else {
+      html += blocRecap("Catégorie — " + (res.base ? res.base.libelle : ""), res.base, "base", baseReussi, _clesBase);
+    }
     // recap options
     (res.options || []).forEach(function (o) {
       html += blocRecap("Option — " + o.libelle, o, "opt_" + o.code_option, o.acquis, "OPT:" + o.code_option);

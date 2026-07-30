@@ -617,7 +617,9 @@ def valider(session_id: int, saisie_id: int, data: ValiderSaisie,
 
     res = appliquer_resultats(saisie, db)
 
-    if res["base"] and (not res["base"]["reussi"]) and data.decision_base:
+    # base_reussie = TOUS les blocs base reussis (cat A = 2 engins), jamais le
+    # seul premier : un echec sur l'engin N2 doit bloquer le repechage.
+    if (not res["base_reussie"]) and data.decision_base:
         raise HTTPException(422,
             "Echec au test : le resultat ne peut pas etre transforme en reussite. "
             "NORYX n'autorise jamais le repechage d'un echec calcule.")
