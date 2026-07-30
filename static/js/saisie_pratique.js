@@ -1263,21 +1263,14 @@
       return;
     }
 
-    // Garde-fou : notation interdite tant que le compteur de la section
-    // n'est pas lance. Concerne bin / palier / step / elim.
-    // EXCEPTION : une section deja saisie reste modifiable (reprise), sinon on
-    // bloquerait la correction de donnees deja enregistrees.
-    var _actNote = e.target.closest('[data-action="bin"],[data-action="palier"],[data-action="step"],[data-action="elim"]');
-    if (_actNote && window._SP && _SP.groupDeCible && _SP.compteurLance) {
-      var _gk = _SP.groupDeCible(_actNote);
-      var _avec = (_SP.groupesAvecNotes ? _SP.groupesAvecNotes() : {});
-      if (_gk && !_SP.compteurLance(_gk) && !_avec[_gk]) {
-        e.preventDefault();
-        var _lib = (_gk === "CAT") ? "de la catégorie" : "de l'option";
-        _SP.toast("Lancez d'abord le compteur " + _lib + " (clic sur le chrono) avant de noter.");
-        return;
-      }
-    }
+    // NOTE : il n'y a PLUS de garde-fou dur bloquant la notation quand le
+    // compteur d'une section n'est pas lance (retire le 2026-07-30).
+    // Il etait REDONDANT et bloquait la reprise sur certaines categories :
+    // la validation exige deja les 3 temps de tout compteur entame OU de toute
+    // section comportant des cases cochees (_compteursTempsIncomplets, appelee
+    // en amont de la modale de validation, qui INTERDIT de valider tant qu'il
+    // manque un temps). Le grisage pose par _majSectionsVerrou subsiste comme
+    // simple INDICE VISUEL. Ne pas retablir de blocage ici.
 
     if ((t = e.target.closest('[data-action="bin"]'))) {
       var iid = parseInt(t.dataset.item, 10);
